@@ -184,6 +184,17 @@ export function buildTonnageChartData(rows: WeeklyVolumeRow[]) {
   }));
 }
 
+export function buildTonnageChartDataForLift(
+  rows: WeeklyVolumeRow[],
+  lift: SbdLift,
+) {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.weekTitle,
+    value: row[lift].tonnage,
+  }));
+}
+
 export function sumAllLiftVolume(rows: WeeklyVolumeRow[]) {
   return SBD_LIFTS.reduce(
     (totals, lift) => {

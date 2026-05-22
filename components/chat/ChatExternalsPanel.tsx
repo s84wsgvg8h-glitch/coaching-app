@@ -24,6 +24,7 @@ import {
   type ExternalMetric,
 } from "@/lib/chatExternalsData";
 import { formatShortDate } from "@/lib/chatBwData";
+import ChatWeekRangeFilters from "@/components/chat/ChatWeekRangeFilters";
 import { captureElementAsPngFile } from "@/lib/captureChartAsPng";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
 
@@ -260,6 +261,16 @@ export default function ChatExternalsPanel({
     setEndDate(range.endDate);
   }
 
+  function applyDateSelection(nextStartDate: string, nextEndDate: string) {
+    setBeginWeekId("");
+    setEndWeekId("");
+    setStartDate(nextStartDate);
+    setEndDate(nextEndDate);
+  }
+
+  const allStartDate = points[0]?.date || "";
+  const allEndDate = points[points.length - 1]?.date || "";
+
   async function handleSendMetricToChat(metric: ExternalMetric) {
     if (!onSendChartToChat || sendingMetric) return;
 
@@ -323,47 +334,19 @@ export default function ChatExternalsPanel({
         </div>
 
         {!loading && !error && points.length > 0 && (
-          <div className="mb-4 space-y-3">
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Begin week
-              </label>
-              <select
-                value={beginWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(event.target.value, endWeekId)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`begin-${week.id}`} value={week.id}>
-                    {formatExternalWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Eind week
-              </label>
-              <select
-                value={endWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(beginWeekId, event.target.value)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`end-${week.id}`} value={week.id}>
-                    {formatExternalWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <ChatWeekRangeFilters
+            className="mb-4"
+            weekOptions={weekOptions}
+            formatWeekLabel={formatExternalWeekOptionLabel}
+            beginWeekId={beginWeekId}
+            endWeekId={endWeekId}
+            startDate={startDate}
+            endDate={endDate}
+            minDate={allStartDate}
+            maxDate={allEndDate}
+            onWeekChange={applyWeekSelection}
+            onDateChange={applyDateSelection}
+          />
         )}
 
         {loading && (

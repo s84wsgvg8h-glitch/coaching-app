@@ -6,15 +6,15 @@ import {
   Bar,
   BarChart,
   CartesianGrid,
-  Legend,
   ResponsiveContainer,
   Tooltip,
   XAxis,
   YAxis,
 } from "recharts";
+import ChatWeekRangeFilters from "@/components/chat/ChatWeekRangeFilters";
 import { formatShortDate } from "@/lib/chatBwData";
 import {
-  buildTonnageChartData,
+  buildTonnageChartDataForLift,
   buildVolumeWeekOptions,
   filterVolumeRowsByDateRange,
   formatLiftLabel,
@@ -98,19 +98,15 @@ export default function ChatVolumePanel({
 
   const weekOptions = useMemo(() => buildVolumeWeekOptions(rows), [rows]);
 
+  const allStartDate = rows[0]?.date || "";
+  const allEndDate = rows[rows.length - 1]?.date || "";
+
   const filteredRows = useMemo(
     () => filterVolumeRowsByDateRange(rows, startDate, endDate),
     [rows, startDate, endDate],
   );
 
   const totals = useMemo(() => sumAllLiftVolume(filteredRows), [filteredRows]);
-  const tonnageChartData = useMemo(
-    () => buildTonnageChartData(filteredRows),
-    [filteredRows],
-  );
-  const hasTonnageData = tonnageChartData.some(
-    (row) => row.squat > 0 || row.bench > 0 || row.deadlift > 0,
-  );
   const hasWeekFilter = Boolean(beginWeekId || endWeekId);
 
   function applyWeekSelection(nextBeginWeekId: string, nextEndWeekId: string) {
@@ -118,14 +114,21 @@ export default function ChatVolumePanel({
       weekOptions,
       nextBeginWeekId,
       nextEndWeekId,
-      rows[0]?.date || "",
-      rows[rows.length - 1]?.date || "",
+      allStartDate,
+      allEndDate,
     );
 
     setBeginWeekId(nextBeginWeekId);
     setEndWeekId(nextEndWeekId);
     setStartDate(range.startDate);
     setEndDate(range.endDate);
+  }
+
+  function applyDateSelection(nextStartDate: string, nextEndDate: string) {
+    setBeginWeekId("");
+    setEndWeekId("");
+    setStartDate(nextStartDate);
+    setEndDate(nextEndDate);
   }
 
   return (
@@ -161,47 +164,19 @@ export default function ChatVolumePanel({
         </div>
 
         {!loading && !error && rows.length > 0 && (
-          <div className="mb-4 space-y-3">
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Begin week
-              </label>
-              <select
-                value={beginWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(event.target.value, endWeekId)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`begin-${week.id}`} value={week.id}>
-                    {formatVolumeWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Eind week
-              </label>
-              <select
-                value={endWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(beginWeekId, event.target.value)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`end-${week.id}`} value={week.id}>
-                    {formatVolumeWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <ChatWeekRangeFilters
+            className="mb-4"
+            weekOptions={weekOptions}
+            formatWeekLabel={formatVolumeWeekOptionLabel}
+            beginWeekId={beginWeekId}
+            endWeekId={endWeekId}
+            startDate={startDate}
+            endDate={endDate}
+            minDate={allStartDate}
+            maxDate={allEndDate}
+            onWeekChange={applyWeekSelection}
+            onDateChange={applyDateSelection}
+          />
         )}
 
         {loading && (
@@ -261,52 +236,55 @@ export default function ChatVolumePanel({
               ))}
             </div>
 
-            {hasTonnageData && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="mb-3 px-1">
-                  <p className="text-xs font-black uppercase text-gray-500">
-                    Tonnage per week
-                  </p>
-                  <h5 className="text-sm font-black text-black">
-                    Gewicht × reps per lift
-                  </h5>
-                </div>
-                <div className="h-[240px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={tonnageChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 10 }}
-                        minTickGap={16}
-                      />
-                      <YAxis
-                        tick={{ fontSize: 10 }}
-                        tickFormatter={(value) => formatTonnage(Number(value))}
-                      />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          formatTonnage(Number(value)),
-                          formatLiftLabel(name as SbdLift),
-                        ]}
-                      />
-                      <Legend
-                        formatter={(value) => formatLiftLabel(value as SbdLift)}
-                      />
-                      {SBD_LIFTS.map((lift) => (
+            {SBD_LIFTS.map((lift) => {
+              const chartData = buildTonnageChartDataForLift(filteredRows, lift);
+              const hasData = chartData.some((row) => row.value > 0);
+
+              if (!hasData) return null;
+
+              return (
+                <div
+                  key={lift}
+                  className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+                >
+                  <div className="mb-3 px-1">
+                    <p className="text-xs font-black uppercase text-gray-500">
+                      Tonnage per week
+                    </p>
+                    <h5 className="text-sm font-black text-black">
+                      {formatLiftLabel(lift)}
+                    </h5>
+                  </div>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 10 }}
+                          minTickGap={16}
+                        />
+                        <YAxis
+                          tick={{ fontSize: 10 }}
+                          tickFormatter={(value) => formatTonnage(Number(value))}
+                        />
+                        <Tooltip
+                          formatter={(value) => [
+                            formatTonnage(Number(value)),
+                            "Tonnage",
+                          ]}
+                        />
                         <Bar
-                          key={lift}
-                          dataKey={lift}
-                          name={lift}
+                          dataKey="value"
                           fill={LIFT_COLORS[lift]}
                           radius={[4, 4, 0, 0]}
                         />
-                      ))}
-                    </BarChart>
-                  </ResponsiveContainer>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
 
             <div className="overflow-hidden rounded-2xl border border-gray-200">
               <table className="w-full text-left text-sm">

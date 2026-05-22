@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import {
+  BACK_BODY_SILHOUETTE,
   BACK_MUSCLE_AREAS,
   BODY_MAP_IMAGE,
   BODY_MAP_LAYOUT,
+  FRONT_BODY_SILHOUETTE,
   FRONT_MUSCLE_AREAS,
   getMuscleAreaById,
   type MuscleArea,
@@ -169,6 +171,28 @@ export default function MuscleBodyMap({
             stroke="#e2e8f0"
             strokeDasharray="4 4"
           />
+          <g
+            transform={`translate(${BODY_MAP_LAYOUT.front.translateX} ${BODY_MAP_LAYOUT.front.translateY}) scale(${BODY_MAP_LAYOUT.front.scale})`}
+          >
+            <path
+              d={FRONT_BODY_SILHOUETTE}
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth={1.5}
+              pointerEvents="none"
+            />
+          </g>
+          <g
+            transform={`translate(${BODY_MAP_LAYOUT.back.translateX} ${BODY_MAP_LAYOUT.back.translateY}) scale(${BODY_MAP_LAYOUT.back.scale})`}
+          >
+            <path
+              d={BACK_BODY_SILHOUETTE}
+              fill="none"
+              stroke="#cbd5e1"
+              strokeWidth={1.5}
+              pointerEvents="none"
+            />
+          </g>
           <MuscleSideOverlay
             areas={FRONT_MUSCLE_AREAS}
             layout={BODY_MAP_LAYOUT.front}

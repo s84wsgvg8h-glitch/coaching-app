@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import {
   CartesianGrid,
-  Legend,
   Line,
   LineChart,
   ResponsiveContainer,
@@ -12,10 +11,11 @@ import {
   XAxis,
   YAxis,
 } from "recharts";
+import ChatWeekRangeFilters from "@/components/chat/ChatWeekRangeFilters";
 import { formatShortDate } from "@/lib/chatBwData";
 import {
   buildIntensityWeekOptions,
-  buildPeakLoadChartData,
+  buildPeakLoadChartDataForLift,
   filterIntensitySnapshotByDateRange,
   formatIntensity,
   formatIntensityWeekOptionLabel,
@@ -42,6 +42,43 @@ const LIFT_COLORS: Record<SbdLift, string> = {
   deadlift: "#9ca3af",
 };
 
+type StatKey = "averageIntensity" | "peakIntensity" | "peakLoad";
+
+const STAT_TOGGLES: { key: StatKey; label: string }[] = [
+  { key: "averageIntensity", label: "Gem. intensiteit" },
+  { key: "peakIntensity", label: "Piek intensiteit" },
+  { key: "peakLoad", label: "Piek load" },
+];
+
+function formatStatValue(key: StatKey, value: number | null) {
+  if (key === "peakLoad") return formatPeakLoad(value);
+  return formatIntensity(value);
+}
+
+function ToggleChip({
+  active,
+  label,
+  onClick,
+}: {
+  active: boolean;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
+        active
+          ? "bg-black text-white"
+          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+      }`}
+    >
+      {label}
+    </button>
+  );
+}
+
 export default function ChatIntensityPanel({
   athleteId,
   athleteName,
@@ -54,6 +91,12 @@ export default function ChatIntensityPanel({
   const [endDate, setEndDate] = useState("");
   const [beginWeekId, setBeginWeekId] = useState("");
   const [endWeekId, setEndWeekId] = useState("");
+  const [visibleStats, setVisibleStats] = useState<Set<StatKey>>(
+    () => new Set(["averageIntensity", "peakIntensity", "peakLoad"]),
+  );
+  const [visibleLifts, setVisibleLifts] = useState<Set<SbdLift>>(
+    () => new Set(SBD_LIFTS),
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -101,19 +144,15 @@ export default function ChatIntensityPanel({
     [snapshot],
   );
 
+  const allStartDate = snapshot?.peakLoadRows[0]?.date || "";
+  const allEndDate =
+    snapshot?.peakLoadRows[snapshot.peakLoadRows.length - 1]?.date || "";
+
   const filteredSnapshot = useMemo(() => {
     if (!snapshot) return null;
     return filterIntensitySnapshotByDateRange(snapshot, startDate, endDate);
   }, [snapshot, startDate, endDate]);
 
-  const peakLoadChartData = useMemo(
-    () => buildPeakLoadChartData(filteredSnapshot?.peakLoadRows || []),
-    [filteredSnapshot],
-  );
-
-  const hasPeakLoadData = peakLoadChartData.some(
-    (row) => row.squat !== null || row.bench !== null || row.deadlift !== null,
-  );
   const hasAnyData = Boolean(
     snapshot &&
       (snapshot.setRecords.length > 0 || snapshot.peakLoadRows.length > 0),
@@ -125,14 +164,45 @@ export default function ChatIntensityPanel({
       weekOptions,
       nextBeginWeekId,
       nextEndWeekId,
-      snapshot?.peakLoadRows[0]?.date || "",
-      snapshot?.peakLoadRows[snapshot.peakLoadRows.length - 1]?.date || "",
+      allStartDate,
+      allEndDate,
     );
 
     setBeginWeekId(nextBeginWeekId);
     setEndWeekId(nextEndWeekId);
     setStartDate(range.startDate);
     setEndDate(range.endDate);
+  }
+
+  function applyDateSelection(nextStartDate: string, nextEndDate: string) {
+    setBeginWeekId("");
+    setEndWeekId("");
+    setStartDate(nextStartDate);
+    setEndDate(nextEndDate);
+  }
+
+  function toggleStat(key: StatKey) {
+    setVisibleStats((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        if (next.size > 1) next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
+  }
+
+  function toggleLift(lift: SbdLift) {
+    setVisibleLifts((current) => {
+      const next = new Set(current);
+      if (next.has(lift)) {
+        if (next.size > 1) next.delete(lift);
+      } else {
+        next.add(lift);
+      }
+      return next;
+    });
   }
 
   return (
@@ -168,47 +238,19 @@ export default function ChatIntensityPanel({
         </div>
 
         {!loading && !error && hasAnyData && (
-          <div className="mb-4 space-y-3">
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Begin week
-              </label>
-              <select
-                value={beginWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(event.target.value, endWeekId)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`begin-${week.id}`} value={week.id}>
-                    {formatIntensityWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Eind week
-              </label>
-              <select
-                value={endWeekId}
-                onChange={(event) =>
-                  applyWeekSelection(beginWeekId, event.target.value)
-                }
-                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
-              >
-                <option value="">Alle weken</option>
-                {weekOptions.map((week) => (
-                  <option key={`end-${week.id}`} value={week.id}>
-                    {formatIntensityWeekOptionLabel(week)}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+          <ChatWeekRangeFilters
+            className="mb-4"
+            weekOptions={weekOptions}
+            formatWeekLabel={formatIntensityWeekOptionLabel}
+            beginWeekId={beginWeekId}
+            endWeekId={endWeekId}
+            startDate={startDate}
+            endDate={endDate}
+            minDate={allStartDate}
+            maxDate={allEndDate}
+            onWeekChange={applyWeekSelection}
+            onDateChange={applyDateSelection}
+          />
         )}
 
         {loading && (
@@ -231,8 +273,40 @@ export default function ChatIntensityPanel({
 
         {!loading && !error && filteredSnapshot && (
           <div className="space-y-4">
+            <div>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                Statistieken
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {STAT_TOGGLES.map(({ key, label }) => (
+                  <ToggleChip
+                    key={key}
+                    active={visibleStats.has(key)}
+                    label={label}
+                    onClick={() => toggleStat(key)}
+                  />
+                ))}
+              </div>
+            </div>
+
+            <div>
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                Grafieken per lift
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {SBD_LIFTS.map((lift) => (
+                  <ToggleChip
+                    key={lift}
+                    active={visibleLifts.has(lift)}
+                    label={formatLiftLabel(lift)}
+                    onClick={() => toggleLift(lift)}
+                  />
+                ))}
+              </div>
+            </div>
+
             <div className="grid grid-cols-3 gap-2">
-              {SBD_LIFTS.map((lift) => (
+              {SBD_LIFTS.filter((lift) => visibleLifts.has(lift)).map((lift) => (
                 <div
                   key={lift}
                   className="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center"
@@ -240,76 +314,84 @@ export default function ChatIntensityPanel({
                   <p className="text-[10px] font-black uppercase text-gray-400">
                     {formatLiftLabel(lift)}
                   </p>
-                  <p className="mt-1 text-[10px] font-bold uppercase text-gray-500">
-                    Gem. intensiteit
-                  </p>
-                  <p className="text-xl font-black text-black">
-                    {formatIntensity(filteredSnapshot.stats[lift].averageIntensity)}
-                  </p>
-                  <p className="mt-2 text-[10px] font-bold uppercase text-gray-500">
-                    Piek intensiteit
-                  </p>
-                  <p className="text-lg font-black text-black">
-                    {formatIntensity(filteredSnapshot.stats[lift].peakIntensity)}
-                  </p>
-                  <p className="mt-2 text-[10px] font-bold uppercase text-gray-500">
-                    Piek load
-                  </p>
-                  <p className="text-sm font-black text-black">
-                    {formatPeakLoad(filteredSnapshot.stats[lift].peakLoad)}
-                  </p>
+                  {STAT_TOGGLES.filter(({ key }) => visibleStats.has(key)).map(
+                    ({ key, label }) => (
+                      <div key={key} className="mt-2">
+                        <p className="text-[10px] font-bold uppercase text-gray-500">
+                          {label}
+                        </p>
+                        <p
+                          className={`font-black text-black ${
+                            key === "peakLoad" ? "text-sm" : "text-lg"
+                          }`}
+                        >
+                          {formatStatValue(
+                            key,
+                            filteredSnapshot.stats[lift][key],
+                          )}
+                        </p>
+                      </div>
+                    ),
+                  )}
                 </div>
               ))}
             </div>
 
-            {hasPeakLoadData && (
-              <div className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm">
-                <div className="mb-3 px-1">
-                  <p className="text-xs font-black uppercase text-gray-500">
-                    Piek load per week
-                  </p>
-                  <h5 className="text-sm font-black text-black">
-                    Hoogste gewicht per lift
-                  </h5>
-                </div>
-                <div className="h-[240px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart data={peakLoadChartData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="label"
-                        tick={{ fontSize: 10 }}
-                        minTickGap={16}
-                      />
-                      <YAxis tick={{ fontSize: 10 }} unit=" kg" />
-                      <Tooltip
-                        formatter={(value, name) => [
-                          value !== null && value !== undefined
-                            ? `${value} kg`
-                            : "-",
-                          formatLiftLabel(name as SbdLift),
-                        ]}
-                      />
-                      <Legend
-                        formatter={(value) => formatLiftLabel(value as SbdLift)}
-                      />
-                      {SBD_LIFTS.map((lift) => (
+            {SBD_LIFTS.filter((lift) => visibleLifts.has(lift)).map((lift) => {
+              const chartData = buildPeakLoadChartDataForLift(
+                filteredSnapshot.peakLoadRows,
+                lift,
+              );
+              const hasData = chartData.some((row) => row.value !== null);
+
+              if (!hasData) return null;
+
+              return (
+                <div
+                  key={lift}
+                  className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+                >
+                  <div className="mb-3 px-1">
+                    <p className="text-xs font-black uppercase text-gray-500">
+                      Piek load
+                    </p>
+                    <h5 className="text-sm font-black text-black">
+                      {formatLiftLabel(lift)} per week
+                    </h5>
+                  </div>
+                  <div className="h-[200px]">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={chartData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis
+                          dataKey="label"
+                          tick={{ fontSize: 10 }}
+                          minTickGap={16}
+                        />
+                        <YAxis tick={{ fontSize: 10 }} unit=" kg" />
+                        <Tooltip
+                          formatter={(value) => [
+                            value !== null && value !== undefined
+                              ? `${value} kg`
+                              : "-",
+                            "Piek load",
+                          ]}
+                        />
                         <Line
-                          key={lift}
                           type="linear"
-                          dataKey={lift}
-                          name={lift}
+                          dataKey="value"
+                          name={formatLiftLabel(lift)}
                           stroke={LIFT_COLORS[lift]}
                           strokeWidth={2}
                           dot={{ r: 3 }}
                           connectNulls
                         />
-                      ))}
-                    </LineChart>
-                  </ResponsiveContainer>
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })}
           </div>
         )}
       </div>

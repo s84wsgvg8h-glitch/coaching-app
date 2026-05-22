@@ -262,6 +262,17 @@ export function buildPeakLoadChartData(rows: WeeklyPeakLoadRow[]) {
   }));
 }
 
+export function buildPeakLoadChartDataForLift(
+  rows: WeeklyPeakLoadRow[],
+  lift: SbdLift,
+) {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.weekTitle,
+    value: row[lift],
+  }));
+}
+
 export function computeIntensityStats(
   intensities: Record<SbdLift, number[]>,
   peakLoads: Record<SbdLift, number[]>,
