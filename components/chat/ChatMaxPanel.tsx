@@ -13,7 +13,7 @@ import {
 } from "@/lib/chatPrData";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
 
-type ChatPrPanelProps = {
+type ChatMaxPanelProps = {
   athleteId: string;
   athleteName: string;
   onClose: () => void;
@@ -21,11 +21,11 @@ type ChatPrPanelProps = {
 
 const SBD_LIFTS: SbdLift[] = ["squat", "bench", "deadlift"];
 
-export default function ChatPrPanel({
+export default function ChatMaxPanel({
   athleteId,
   athleteName,
   onClose,
-}: ChatPrPanelProps) {
+}: ChatMaxPanelProps) {
   const [lifts, setLifts] = useState<LiftPrData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -46,7 +46,7 @@ export default function ChatPrPanel({
         setError(
           loadError instanceof Error
             ? loadError.message
-            : "PR-data kon niet worden geladen.",
+            : "Max-data kon niet worden geladen.",
         );
         setLifts([]);
       } finally {
@@ -69,14 +69,14 @@ export default function ChatPrPanel({
     <aside className={CHAT_SIDE_PANEL_CLASS}>
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">PR&apos;s</h3>
+          <h3 className="truncate text-base font-bold text-black">Max</h3>
           <p className="truncate text-xs text-gray-500">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
           className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
-          aria-label="PR's sluiten"
+          aria-label="Max sluiten"
         >
           <X className="h-4 w-4" />
         </button>
@@ -85,7 +85,7 @@ export default function ChatPrPanel({
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
         <div className="mb-4">
           <p className="text-xs font-black uppercase text-gray-500">
-            SBD PR-lijst
+            SBD max-lijst
           </p>
           <h4 className="text-lg font-black text-black">All-time maxima</h4>
           <p className="mt-1 text-xs text-gray-500">
@@ -95,7 +95,7 @@ export default function ChatPrPanel({
 
         {loading && (
           <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
-            PR&apos;s laden...
+            Maxima laden...
           </div>
         )}
 
@@ -107,7 +107,7 @@ export default function ChatPrPanel({
 
         {!loading && !error && !hasData && (
           <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
-            Nog geen SBD PR&apos;s voor deze atleet.
+            Nog geen SBD maxima voor deze atleet.
           </div>
         )}
 

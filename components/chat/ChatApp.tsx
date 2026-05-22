@@ -89,7 +89,7 @@ import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
 import ChatVolumePanel from "@/components/chat/ChatVolumePanel";
-import ChatPrPanel from "@/components/chat/ChatPrPanel";
+import ChatMaxPanel from "@/components/chat/ChatMaxPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
 import ChatSlashCommandMenu from "@/components/chat/ChatSlashCommandMenu";
@@ -99,7 +99,7 @@ import {
   parseDataCommand,
   parseExternalsCommand,
   parseInjuriesCommand,
-  parsePrCommand,
+  parseMaxCommand,
   parseProgramCommand,
   parseToolsCommand,
   parseVolumeCommand,
@@ -755,8 +755,17 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/volume") ? "" : current));
   }
 
-  function closePrPanel() {
-    setMessage((current) => (current.startsWith("/pr") ? "" : current));
+  function closeMaxPanel() {
+    setMessage((current) => {
+      const normalized = current.trim();
+      if (
+        normalized.startsWith("/max") ||
+        /^\/pr(?:\s|$)/i.test(normalized)
+      ) {
+        return "";
+      }
+      return current;
+    });
   }
 
   function closeDataPanel() {
@@ -806,7 +815,7 @@ export default function ChatApp() {
     if (parseBwCommand(message).active) return;
     if (parseExternalsCommand(message).active) return;
     if (parseVolumeCommand(message).active) return;
-    if (parsePrCommand(message).active) return;
+    if (parseMaxCommand(message).active) return;
     if (parseDataCommand(message).active) return;
     if (parseInjuriesCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
@@ -1678,7 +1687,7 @@ export default function ChatApp() {
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
   const externalsCommand = useMemo(() => parseExternalsCommand(message), [message]);
   const volumeCommand = useMemo(() => parseVolumeCommand(message), [message]);
-  const prCommand = useMemo(() => parsePrCommand(message), [message]);
+  const maxCommand = useMemo(() => parseMaxCommand(message), [message]);
   const dataCommand = useMemo(() => parseDataCommand(message), [message]);
   const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
   const toolsPanelOpen =
@@ -1703,8 +1712,8 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
-  const prPanelOpen =
-    prCommand.active &&
+  const maxPanelOpen =
+    maxCommand.active &&
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
@@ -1723,7 +1732,7 @@ export default function ChatApp() {
     bwPanelOpen ||
     externalsPanelOpen ||
     volumePanelOpen ||
-    prPanelOpen ||
+    maxPanelOpen ||
     dataPanelOpen ||
     injuriesPanelOpen;
   const activeAthleteName = useMemo(() => {
@@ -1992,11 +2001,11 @@ export default function ChatApp() {
           />
         )}
 
-        {prPanelOpen && activeUserId && (
-          <ChatPrPanel
+        {maxPanelOpen && activeUserId && (
+          <ChatMaxPanel
             athleteId={activeUserId}
             athleteName={activeAthleteName}
-            onClose={closePrPanel}
+            onClose={closeMaxPanel}
           />
         )}
 
@@ -2530,8 +2539,8 @@ export default function ChatApp() {
                             closeExternalsPanel();
                           } else if (volumePanelOpen) {
                             closeVolumePanel();
-                          } else if (prPanelOpen) {
-                            closePrPanel();
+                          } else if (maxPanelOpen) {
+                            closeMaxPanel();
                           } else if (dataPanelOpen) {
                             closeDataPanel();
                           } else if (injuriesPanelOpen) {
@@ -2564,8 +2573,8 @@ export default function ChatApp() {
                               ? "Externals geopend..."
                               : volumePanelOpen
                                 ? "Volume geopend..."
-                                : prPanelOpen
-                                  ? "PR geopend..."
+                                : maxPanelOpen
+                                  ? "Max geopend..."
                                   : dataPanelOpen
                             ? "Data geopend..."
                             : injuriesPanelOpen

@@ -3,7 +3,8 @@ const PROGRAM_PREFIX = "/program";
 const BW_PREFIX = "/bw";
 const EXTERNALS_PREFIX = "/externals";
 const VOLUME_PREFIX = "/volume";
-const PR_PREFIX = "/pr";
+const MAX_PREFIX = "/max";
+const LEGACY_PR_PREFIX = "/pr";
 const DATA_PREFIX = "/data";
 const INJURIES_PREFIX = "/injuries";
 
@@ -50,9 +51,9 @@ export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
     requiresDirectChat: true,
   },
   {
-    command: PR_PREFIX,
-    label: "PR",
-    description: "PR-lijst SBD",
+    command: MAX_PREFIX,
+    label: "Max",
+    description: "Max-lijst SBD",
     coachOnly: true,
     requiresDirectChat: true,
   },
@@ -117,6 +118,24 @@ function isLegacyRawDataCommand(message: string) {
   return /^\/raw\s*data\b/i.test(normalized) || /^\/rawdata\b/i.test(normalized);
 }
 
+function isMaxCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+  return (
+    normalized.startsWith(MAX_PREFIX) &&
+    (normalized.length === MAX_PREFIX.length ||
+      normalized.charAt(MAX_PREFIX.length) === " ")
+  );
+}
+
+function isLegacyPrCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+  return (
+    normalized.startsWith(LEGACY_PR_PREFIX) &&
+    (normalized.length === LEGACY_PR_PREFIX.length ||
+      normalized.charAt(LEGACY_PR_PREFIX.length) === " ")
+  );
+}
+
 function isOtherSlashCommand(message: string, prefix: string) {
   const normalized = normalizeChatCommand(message);
 
@@ -126,7 +145,8 @@ function isOtherSlashCommand(message: string, prefix: string) {
     (prefix !== BW_PREFIX && normalized.startsWith(BW_PREFIX)) ||
     (prefix !== EXTERNALS_PREFIX && normalized.startsWith(EXTERNALS_PREFIX)) ||
     (prefix !== VOLUME_PREFIX && normalized.startsWith(VOLUME_PREFIX)) ||
-    (prefix !== PR_PREFIX && normalized.startsWith(PR_PREFIX)) ||
+    (prefix !== MAX_PREFIX &&
+      (isMaxCommand(normalized) || isLegacyPrCommand(normalized))) ||
     (prefix !== DATA_PREFIX &&
       (isDataCommand(normalized) || isLegacyRawDataCommand(normalized))) ||
     (prefix !== INJURIES_PREFIX && normalized.startsWith(INJURIES_PREFIX))
@@ -203,20 +223,30 @@ export function parseVolumeCommand(message: string) {
   return { active: true, query };
 }
 
-export function parsePrCommand(message: string) {
+export function parseMaxCommand(message: string) {
   const normalized = normalizeChatCommand(message);
 
-  if (
-    !normalized.startsWith(PR_PREFIX) ||
-    isOtherSlashCommand(normalized, PR_PREFIX)
-  ) {
-    return { active: false, query: "" };
+  if (isMaxCommand(normalized) && !isOtherSlashCommand(normalized, MAX_PREFIX)) {
+    const rest = normalized.slice(MAX_PREFIX.length);
+    const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+    return { active: true, query };
   }
 
-  const rest = normalized.slice(PR_PREFIX.length);
-  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+  if (
+    isLegacyPrCommand(normalized) &&
+    !isOtherSlashCommand(normalized, MAX_PREFIX)
+  ) {
+    const rest = normalized.slice(LEGACY_PR_PREFIX.length);
+    const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+    return { active: true, query };
+  }
 
-  return { active: true, query };
+  return { active: false, query: "" };
+}
+
+/** @deprecated Use parseMaxCommand instead. */
+export function parsePrCommand(message: string) {
+  return parseMaxCommand(message);
 }
 
 export function parseDataCommand(message: string) {
