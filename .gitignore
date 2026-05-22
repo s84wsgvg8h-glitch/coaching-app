@@ -20,6 +20,9 @@
 # production
 /build
 
+# local knowledge base (copyrighted PDF extracts — run npm run ingest:ess)
+/data/knowledge-local.json
+
 # misc
 .DS_Store
 *.pem

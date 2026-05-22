@@ -45,6 +45,12 @@ set end_date = start_date
 where end_date is null
   and start_date is not null;
 
+-- Legacy column: existing wedstrijden table may require NOT NULL on datum
+update public.wedstrijden
+set datum = coalesce(datum, start_date)
+where datum is null
+  and start_date is not null;
+
 alter table public.wedstrijden
   alter column start_date set not null,
   alter column end_date set not null;
@@ -127,22 +133,22 @@ create policy "profiles_update_coach"
   using (public.is_coach())
   with check (public.is_coach());
 
-insert into public.wedstrijden (naam, start_date, end_date)
+insert into public.wedstrijden (naam, datum, start_date, end_date)
 values
-  ('Breda Open Cup & Grand Prix', '2026-05-09', '2026-05-10'),
-  ('Beginnerswedstrijd TOPFIT', '2026-05-31', '2026-05-31'),
-  ('Masters NK Powerliften', '2026-06-06', '2026-06-07'),
-  ('Subjunioren NK Powerliften', '2026-06-06', '2026-06-07'),
-  ('RK Zuid', '2026-06-27', '2026-06-28'),
-  ('RK Noord', '2026-07-11', '2026-07-12'),
-  ('Ascending Cup 2.0', '2026-09-05', '2026-09-06'),
-  ('Beginnerswedstrijd Prime Strength', '2026-09-12', '2026-09-13'),
-  ('Open NK Deadliften', '2026-09-19', '2026-09-20'),
-  ('Open Deadlift Cup', '2026-09-19', '2026-09-20'),
-  ('NSK Powerliften', '2026-10-10', '2026-10-11'),
-  ('Beginnerswedstrijd Q4', '2026-10-31', '2026-11-01'),
-  ('Open NK Powerliften', '2026-11-07', '2026-11-08'),
-  ('Lichtstad Cup', '2026-11-28', '2026-11-29'),
-  ('Open NK Bankdrukken', '2026-12-12', '2026-12-13'),
-  ('Open Bankdruk Cup', '2026-12-12', '2026-12-13')
+  ('Breda Open Cup & Grand Prix', '2026-05-09', '2026-05-09', '2026-05-10'),
+  ('Beginnerswedstrijd TOPFIT', '2026-05-31', '2026-05-31', '2026-05-31'),
+  ('Masters NK Powerliften', '2026-06-06', '2026-06-06', '2026-06-07'),
+  ('Subjunioren NK Powerliften', '2026-06-06', '2026-06-06', '2026-06-07'),
+  ('RK Zuid', '2026-06-27', '2026-06-27', '2026-06-28'),
+  ('RK Noord', '2026-07-11', '2026-07-11', '2026-07-12'),
+  ('Ascending Cup 2.0', '2026-09-05', '2026-09-05', '2026-09-06'),
+  ('Beginnerswedstrijd Prime Strength', '2026-09-12', '2026-09-12', '2026-09-13'),
+  ('Open NK Deadliften', '2026-09-19', '2026-09-19', '2026-09-20'),
+  ('Open Deadlift Cup', '2026-09-19', '2026-09-19', '2026-09-20'),
+  ('NSK Powerliften', '2026-10-10', '2026-10-10', '2026-10-11'),
+  ('Beginnerswedstrijd Q4', '2026-10-31', '2026-10-31', '2026-11-01'),
+  ('Open NK Powerliften', '2026-11-07', '2026-11-07', '2026-11-08'),
+  ('Lichtstad Cup', '2026-11-28', '2026-11-28', '2026-11-29'),
+  ('Open NK Bankdrukken', '2026-12-12', '2026-12-12', '2026-12-13'),
+  ('Open Bankdruk Cup', '2026-12-12', '2026-12-12', '2026-12-13')
 on conflict (naam, start_date) do nothing;

@@ -26,7 +26,7 @@ export function getNavLinks(
       badge: pendingCount,
     },
     {
-      href: "/profile",
+      href: "/athlete-profiles",
       icon: "📋",
       title: "Atleten profielen",
       description: "Bekijk profielen en lichaamsgebieden.",
@@ -152,6 +152,10 @@ export function getNavLinks(
 export function isActiveNavPath(pathname: string, href: string) {
   if (href === "/dashboard") {
     return pathname === "/dashboard";
+  }
+
+  if (href === "/athlete-profiles") {
+    return pathname === "/athlete-profiles" || pathname.startsWith("/profile/");
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);

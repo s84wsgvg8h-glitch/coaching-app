@@ -77,15 +77,21 @@ export default function UserProfilePage() {
         : profile?.role || "Gebruiker";
 
   const canEdit = Boolean(profile && (viewerId === profile.id || viewerRole === "coach"));
+  const canEditPayment = Boolean(
+    profile && viewerRole === "coach" && profile.role === "atleet",
+  );
+  const backHref = viewerRole === "coach" ? "/athlete-profiles" : chatBackHref;
+  const backLabel =
+    viewerRole === "coach" ? "← Terug naar atleten profielen" : "← Terug naar chat";
 
   return (
     <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6">
       <div className="mx-auto max-w-3xl space-y-6">
         <Link
-          href={chatBackHref}
+          href={backHref}
           className="inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black shadow"
         >
-          ← Terug naar chat
+          {backLabel}
         </Link>
 
         {loading && (
@@ -114,6 +120,7 @@ export default function UserProfilePage() {
               <AthleteProfileSection
                 athleteId={profile.id}
                 canEdit={canEdit}
+                canEditPayment={canEditPayment}
                 initialGeboortedatum={profile.geboortedatum}
                 initialLidnummer={profile.lidnummer}
                 onSaved={() => void loadProfile()}

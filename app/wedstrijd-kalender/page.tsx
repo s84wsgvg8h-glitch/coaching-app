@@ -10,6 +10,16 @@ import {
   type Competition,
 } from "@/lib/competitions";
 
+type EditForm = {
+  naam: string;
+  startDate: string;
+  endDate: string;
+};
+
+function emptyEditForm(): EditForm {
+  return { naam: "", startDate: "", endDate: "" };
+}
+
 export default function WedstrijdKalenderPage() {
   const [wedstrijden, setWedstrijden] = useState<Competition[]>([]);
   const [naam, setNaam] = useState("");
@@ -17,6 +27,9 @@ export default function WedstrijdKalenderPage() {
   const [endDate, setEndDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [toevoegenLoading, setToevoegenLoading] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState<EditForm>(emptyEditForm());
+  const [opslaanLoading, setOpslaanLoading] = useState(false);
 
   useEffect(() => {
     void haalWedstrijdenOp();
@@ -59,6 +72,7 @@ export default function WedstrijdKalenderPage() {
     const { error } = await supabase.from("wedstrijden").insert([
       {
         naam: naam.trim(),
+        datum: startDate,
         start_date: startDate,
         end_date: resolvedEndDate,
       },
@@ -76,6 +90,57 @@ export default function WedstrijdKalenderPage() {
     setEndDate("");
     setToevoegenLoading(false);
 
+    await haalWedstrijdenOp();
+  }
+
+  function startBewerken(wedstrijd: Competition) {
+    setEditingId(wedstrijd.id);
+    setEditForm({
+      naam: wedstrijd.naam,
+      startDate: wedstrijd.start_date,
+      endDate: wedstrijd.end_date,
+    });
+  }
+
+  function annuleerBewerken() {
+    setEditingId(null);
+    setEditForm(emptyEditForm());
+  }
+
+  async function slaWedstrijdOp(id: string) {
+    if (!editForm.naam.trim() || !editForm.startDate) {
+      alert("Vul een wedstrijdnaam en startdatum in.");
+      return;
+    }
+
+    const resolvedEndDate = editForm.endDate || editForm.startDate;
+
+    if (resolvedEndDate < editForm.startDate) {
+      alert("De einddatum mag niet voor de startdatum liggen.");
+      return;
+    }
+
+    setOpslaanLoading(true);
+
+    const { error } = await supabase
+      .from("wedstrijden")
+      .update({
+        naam: editForm.naam.trim(),
+        datum: editForm.startDate,
+        start_date: editForm.startDate,
+        end_date: resolvedEndDate,
+      })
+      .eq("id", id);
+
+    setOpslaanLoading(false);
+
+    if (error) {
+      alert(error.message);
+      console.error(error);
+      return;
+    }
+
+    annuleerBewerken();
     await haalWedstrijdenOp();
   }
 
@@ -97,8 +162,120 @@ export default function WedstrijdKalenderPage() {
       return;
     }
 
-    setWedstrijden(
-      wedstrijden.filter((wedstrijd) => wedstrijd.id !== id)
+    if (editingId === id) {
+      annuleerBewerken();
+    }
+
+    setWedstrijden(wedstrijden.filter((wedstrijd) => wedstrijd.id !== id));
+  }
+
+  function renderWedstrijdRow(wedstrijd: Competition, muted = false) {
+    const isEditing = editingId === wedstrijd.id;
+
+    if (isEditing) {
+      return (
+        <div
+          key={wedstrijd.id}
+          className="rounded-2xl border border-black/10 bg-gray-50 p-5"
+        >
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            <input
+              type="text"
+              value={editForm.naam}
+              onChange={(event) =>
+                setEditForm((current) => ({
+                  ...current,
+                  naam: event.target.value,
+                }))
+              }
+              placeholder="Naam van wedstrijd"
+              className="rounded-lg border px-4 py-3 md:col-span-2"
+            />
+
+            <input
+              type="date"
+              value={editForm.startDate}
+              onChange={(event) =>
+                setEditForm((current) => ({
+                  ...current,
+                  startDate: event.target.value,
+                }))
+              }
+              aria-label="Startdatum"
+              className="rounded-lg border px-4 py-3"
+            />
+
+            <input
+              type="date"
+              value={editForm.endDate}
+              onChange={(event) =>
+                setEditForm((current) => ({
+                  ...current,
+                  endDate: event.target.value,
+                }))
+              }
+              aria-label="Einddatum"
+              className="rounded-lg border px-4 py-3"
+            />
+          </div>
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => void slaWedstrijdOp(wedstrijd.id)}
+              disabled={opslaanLoading}
+              className="rounded-xl bg-black px-4 py-2 font-semibold text-white transition hover:bg-gray-800 disabled:opacity-50"
+            >
+              {opslaanLoading ? "Opslaan..." : "Opslaan"}
+            </button>
+
+            <button
+              onClick={annuleerBewerken}
+              disabled={opslaanLoading}
+              className="rounded-xl bg-gray-200 px-4 py-2 font-semibold text-black transition hover:bg-gray-300 disabled:opacity-50"
+            >
+              Annuleren
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div
+        key={wedstrijd.id}
+        className={`flex items-center justify-between gap-4 rounded-2xl border p-5 ${
+          muted ? "border-gray-100 text-gray-600" : ""
+        }`}
+      >
+        <div>
+          <h3 className={`font-bold ${muted ? "font-semibold" : "text-lg"}`}>
+            {wedstrijd.naam}
+          </h3>
+
+          <p className={`mt-1 ${muted ? "text-sm" : "text-gray-500"}`}>
+            {formatCompetitionDateRange(
+              wedstrijd.start_date,
+              wedstrijd.end_date,
+            )}
+          </p>
+        </div>
+
+        <div className="flex shrink-0 gap-2">
+          <button
+            onClick={() => startBewerken(wedstrijd)}
+            className="rounded-xl bg-black px-4 py-2 text-white transition hover:bg-gray-800"
+          >
+            Aanpassen
+          </button>
+
+          <button
+            onClick={() => void verwijderWedstrijd(wedstrijd.id)}
+            className="rounded-xl bg-red-500 px-4 py-2 text-white transition hover:bg-red-600"
+          >
+            Verwijderen
+          </button>
+        </div>
+      </div>
     );
   }
 
@@ -160,7 +337,7 @@ export default function WedstrijdKalenderPage() {
             />
 
             <button
-              onClick={voegWedstrijdToe}
+              onClick={() => void voegWedstrijdToe()}
               disabled={toevoegenLoading}
               className="bg-black text-white rounded-lg px-4 py-3 font-semibold hover:bg-gray-800 transition disabled:opacity-50 md:col-span-4"
             >
@@ -180,30 +357,9 @@ export default function WedstrijdKalenderPage() {
             </p>
           ) : (
             <div className="space-y-4">
-              {upcomingWedstrijden.map((wedstrijd) => (
-                <div
-                  key={wedstrijd.id}
-                  className="border rounded-2xl p-5 flex items-center justify-between gap-4"
-                >
-                  <div>
-                    <h3 className="font-bold text-lg">{wedstrijd.naam}</h3>
-
-                    <p className="text-gray-500 mt-1">
-                      {formatCompetitionDateRange(
-                        wedstrijd.start_date,
-                        wedstrijd.end_date,
-                      )}
-                    </p>
-                  </div>
-
-                  <button
-                    onClick={() => verwijderWedstrijd(wedstrijd.id)}
-                    className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-xl transition shrink-0"
-                  >
-                    Verwijderen
-                  </button>
-                </div>
-              ))}
+              {upcomingWedstrijden.map((wedstrijd) =>
+                renderWedstrijdRow(wedstrijd),
+              )}
             </div>
           )}
 
@@ -213,20 +369,9 @@ export default function WedstrijdKalenderPage() {
                 Afgelopen wedstrijden
               </h2>
               <div className="space-y-3">
-                {pastWedstrijden.map((wedstrijd) => (
-                  <div
-                    key={wedstrijd.id}
-                    className="rounded-2xl border border-gray-100 p-4 text-gray-600"
-                  >
-                    <h3 className="font-semibold">{wedstrijd.naam}</h3>
-                    <p className="mt-1 text-sm">
-                      {formatCompetitionDateRange(
-                        wedstrijd.start_date,
-                        wedstrijd.end_date,
-                      )}
-                    </p>
-                  </div>
-                ))}
+                {pastWedstrijden.map((wedstrijd) =>
+                  renderWedstrijdRow(wedstrijd, true),
+                )}
               </div>
             </div>
           )}

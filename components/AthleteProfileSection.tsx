@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   formatCompetitionDateRange,
   loadAthleteCompetitionIds,
@@ -8,11 +8,20 @@ import {
   saveAthleteCompetitions,
   type Competition,
 } from "@/lib/competitions";
+import {
+  formatPaymentDay,
+  formatPaymentPrice,
+  loadAthletePayment,
+  PAYMENT_MIGRATION_SQL,
+  parsePaymentDayInput,
+  saveAthletePayment,
+} from "@/lib/athletePayments";
 import { supabase } from "@/lib/supabaseClient";
 
 type AthleteProfileSectionProps = {
   athleteId: string;
   canEdit?: boolean;
+  canEditPayment?: boolean;
   initialGeboortedatum?: string | null;
   initialLidnummer?: string | null;
   onSaved?: () => void;
@@ -22,6 +31,7 @@ type AthleteProfileSectionProps = {
 export default function AthleteProfileSection({
   athleteId,
   canEdit = true,
+  canEditPayment = false,
   initialGeboortedatum = "",
   initialLidnummer = "",
   onSaved,
@@ -29,11 +39,16 @@ export default function AthleteProfileSection({
 }: AthleteProfileSectionProps) {
   const [geboortedatum, setGeboortedatum] = useState(initialGeboortedatum || "");
   const [lidnummer, setLidnummer] = useState(initialLidnummer || "");
+  const [betalingPrijs, setBetalingPrijs] = useState("");
+  const [betalingDag, setBetalingDag] = useState("");
+  const [paymentMigrationRequired, setPaymentMigrationRequired] = useState(false);
   const [upcomingCompetitions, setUpcomingCompetitions] = useState<Competition[]>([]);
   const [selectedCompetitionIds, setSelectedCompetitionIds] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const autoSaveReady = useRef(false);
+  const saveMessageTimer = useRef<number | null>(null);
 
   useEffect(() => {
     setGeboortedatum(initialGeboortedatum || "");
@@ -47,15 +62,38 @@ export default function AthleteProfileSection({
       setLoading(true);
       setMessage("");
 
-      const [{ data: competitions }, { data: selectedIds }] = await Promise.all([
+      const requests: [
+        ReturnType<typeof loadUpcomingCompetitions>,
+        ReturnType<typeof loadAthleteCompetitionIds>,
+        ReturnType<typeof loadAthletePayment> | Promise<null>,
+      ] = [
         loadUpcomingCompetitions(),
         loadAthleteCompetitionIds(athleteId),
-      ]);
+        canEditPayment ? loadAthletePayment(athleteId) : Promise.resolve(null),
+      ];
+
+      const [competitionsResult, selectedResult, paymentResult] =
+        await Promise.all(requests);
 
       if (cancelled) return;
 
-      setUpcomingCompetitions(competitions);
-      setSelectedCompetitionIds(selectedIds);
+      setUpcomingCompetitions(competitionsResult.data);
+      setSelectedCompetitionIds(selectedResult.data);
+
+      if (paymentResult) {
+        setBetalingPrijs(
+          paymentResult.payment.betaling_prijs !== null
+            ? String(paymentResult.payment.betaling_prijs)
+            : "",
+        );
+        setBetalingDag(
+          paymentResult.payment.betaling_dag !== null
+            ? String(paymentResult.payment.betaling_dag)
+            : "",
+        );
+        setPaymentMigrationRequired(paymentResult.migrationRequired);
+      }
+
       setLoading(false);
     }
 
@@ -64,7 +102,47 @@ export default function AthleteProfileSection({
     return () => {
       cancelled = true;
     };
-  }, [athleteId]);
+  }, [athleteId, canEditPayment]);
+
+  useEffect(() => {
+    autoSaveReady.current = false;
+
+    if (!loading) {
+      const timer = window.setTimeout(() => {
+        autoSaveReady.current = true;
+      }, 150);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [loading, athleteId]);
+
+  useEffect(() => {
+    if (!canEdit || loading || !autoSaveReady.current) return;
+
+    const timer = window.setTimeout(() => {
+      void saveProfile();
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    geboortedatum,
+    lidnummer,
+    betalingPrijs,
+    betalingDag,
+    selectedCompetitionIds,
+    canEdit,
+    canEditPayment,
+    athleteId,
+    loading,
+  ]);
+
+  useEffect(() => {
+    return () => {
+      if (saveMessageTimer.current) {
+        window.clearTimeout(saveMessageTimer.current);
+      }
+    };
+  }, []);
 
   const selectedCompetitions = useMemo(
     () =>
@@ -100,6 +178,39 @@ export default function AthleteProfileSection({
       return;
     }
 
+    if (canEditPayment) {
+      const trimmedPrice = betalingPrijs.trim().replace(",", ".");
+      let parsedPrice: number | null = null;
+
+      if (trimmedPrice) {
+        parsedPrice = Number.parseFloat(trimmedPrice);
+        if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
+          setSaving(false);
+          setMessage("Vul een geldige prijs in.");
+          return;
+        }
+      }
+
+      const parsedDay = parsePaymentDayInput(betalingDag);
+      if (betalingDag.trim() && parsedDay === null) {
+        setSaving(false);
+        setMessage("Betaaldag moet tussen 1 en 31 liggen.");
+        return;
+      }
+
+      try {
+        const paymentResult = await saveAthletePayment(athleteId, {
+          betaling_prijs: parsedPrice,
+          betaling_dag: parsedDay,
+        });
+        setPaymentMigrationRequired(paymentResult.migrationRequired);
+      } catch {
+        setSaving(false);
+        setMessage("Betaling opslaan mislukt.");
+        return;
+      }
+    }
+
     const { error: competitionsError } = await saveAthleteCompetitions(
       athleteId,
       selectedCompetitionIds,
@@ -113,6 +224,12 @@ export default function AthleteProfileSection({
     }
 
     setMessage("Profiel opgeslagen.");
+    if (saveMessageTimer.current) {
+      window.clearTimeout(saveMessageTimer.current);
+    }
+    saveMessageTimer.current = window.setTimeout(() => {
+      setMessage("");
+    }, 2000);
     onSaved?.();
   }
 
@@ -164,6 +281,89 @@ export default function AthleteProfileSection({
                 Lidnummer
               </p>
               <p className="mt-1 font-semibold text-black">{lidnummer}</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {canEditPayment && (
+        <div>
+          <h3 className="text-lg font-bold text-black">Betaling</h3>
+          <p className="mt-1 text-sm text-gray-500">
+            Prijs en vaste betaaldag per maand voor deze atleet.
+          </p>
+
+          {paymentMigrationRequired && (
+            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              <p className="font-semibold">Supabase-migratie nog niet gedraaid</p>
+              <p className="mt-1">
+                Betaling wordt tijdelijk lokaal opgeslagen. Run in Supabase SQL Editor:
+              </p>
+              <pre className="mt-2 overflow-x-auto rounded-xl bg-white p-3 text-xs text-black">
+                {PAYMENT_MIGRATION_SQL}
+              </pre>
+            </div>
+          )}
+
+          {canEdit ? (
+            <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Prijs</label>
+                <div className="relative">
+                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
+                    €
+                  </span>
+                  <input
+                    type="text"
+                    inputMode="decimal"
+                    value={betalingPrijs}
+                    onChange={(event) => setBetalingPrijs(event.target.value)}
+                    placeholder="0,00"
+                    className="w-full rounded-2xl border border-gray-300 py-3 pl-9 pr-4 outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Betaaldag (dag van de maand)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={31}
+                  value={betalingDag}
+                  onChange={(event) => setBetalingDag(event.target.value)}
+                  placeholder="Bijv. 20"
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Bijvoorbeeld 20 = elke maand op de 20ste.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+              <div className="rounded-2xl bg-gray-50 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                  Prijs
+                </p>
+                <p className="mt-1 font-semibold text-black">
+                  {formatPaymentPrice(
+                    betalingPrijs.trim()
+                      ? Number.parseFloat(betalingPrijs.replace(",", "."))
+                      : null,
+                  )}
+                </p>
+              </div>
+              <div className="rounded-2xl bg-gray-50 px-4 py-3">
+                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                  Betaaldag
+                </p>
+                <p className="mt-1 font-semibold text-black">
+                  {formatPaymentDay(parsePaymentDayInput(betalingDag))}
+                </p>
+              </div>
             </div>
           )}
         </div>
@@ -243,16 +443,12 @@ export default function AthleteProfileSection({
       </div>
 
       {canEdit && (
-        <div>
-          {message && <p className="mb-4 text-sm text-gray-600">{message}</p>}
-          <button
-            type="button"
-            onClick={() => void saveProfile()}
-            disabled={saving}
-            className="rounded-2xl bg-black px-6 py-3 text-white transition hover:opacity-90 disabled:opacity-50"
-          >
-            {saving ? "Opslaan..." : "Profiel opslaan"}
-          </button>
+        <div className="flex min-h-6 items-center gap-3 text-sm text-gray-500">
+          {saving ? <span>Opslaan...</span> : null}
+          {message ? <span>{message}</span> : null}
+          {!saving && !message ? (
+            <span>Wijzigingen worden automatisch opgeslagen</span>
+          ) : null}
         </div>
       )}
     </div>

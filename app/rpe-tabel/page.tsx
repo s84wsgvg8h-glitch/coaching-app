@@ -11,6 +11,36 @@ function formatRpe(value: number) {
   return Number.isInteger(value) ? String(value) : String(value).replace(".", ",");
 }
 
+const RPE_RIR_LEGEND = [
+  {
+    zone: "Hoge intensiteit",
+    tone: "bg-red-600/90",
+    rows: [
+      { rpe: "10", rir: "Kon geen reps of load meer doen" },
+      { rpe: "9,5", rir: "Kon geen reps meer, wel iets meer load" },
+      { rpe: "9", rir: "Kon nog 1 herhaling doen" },
+      { rpe: "8,5", rir: "Kon nog 1 herhaling, mogelijk 2" },
+    ],
+  },
+  {
+    zone: "Matig tot hoog",
+    tone: "bg-[#1e3a5f]/90",
+    rows: [
+      { rpe: "8", rir: "Kon nog 2 herhalingen doen" },
+      { rpe: "7,5", rir: "Kon nog 2 herhalingen, mogelijk 3" },
+      { rpe: "7", rir: "Kon nog 3 herhalingen doen" },
+    ],
+  },
+  {
+    zone: "Licht tot matig",
+    tone: "bg-sky-600/80",
+    rows: [
+      { rpe: "5–6", rir: "Kon nog 4–6 herhalingen doen" },
+      { rpe: "1–4", rir: "Zeer licht tot weinig inspanning" },
+    ],
+  },
+] as const;
+
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
 }
@@ -117,11 +147,45 @@ export default function RpeTablePage() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-green-50">
-            <p className="font-bold">Uitleg</p>
-            <p className="mt-1">
-              Kies eerst de RPE/RIR links, daarna het aantal reps bovenaan. De cel geeft het percentage load dat bij die combinatie hoort.
-            </p>
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4 text-sm text-green-50">
+              <p className="font-bold">Load/RIR chart</p>
+              <p className="mt-1">
+                Kies eerst de RPE/RIR links, daarna het aantal reps bovenaan. De cel geeft het percentage load dat bij die combinatie hoort.
+              </p>
+            </div>
+
+            <div className="overflow-hidden rounded-2xl border border-white/15 bg-white/10">
+              <div className="border-b border-white/10 px-4 py-3">
+                <p className="text-sm font-bold text-green-50">RPE → Reps In Reserve</p>
+              </div>
+              <div className="divide-y divide-white/10">
+                {RPE_RIR_LEGEND.map((section) => (
+                  <div key={section.zone}>
+                    <div
+                      className={`px-4 py-2 text-xs font-black uppercase tracking-wide text-white ${section.tone}`}
+                    >
+                      {section.zone}
+                    </div>
+                    <table className="w-full text-left text-sm text-green-50">
+                      <tbody>
+                        {section.rows.map((row) => (
+                          <tr
+                            key={`${section.zone}-${row.rpe}`}
+                            className="border-t border-white/10"
+                          >
+                            <td className="w-16 px-4 py-2 font-black text-white">
+                              {row.rpe}
+                            </td>
+                            <td className="px-4 py-2">{row.rir}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
       </div>

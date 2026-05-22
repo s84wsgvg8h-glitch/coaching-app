@@ -27,7 +27,7 @@ export default function AthletesPage() {
       await loadProfiles();
     }
 
-    init();
+    void init();
   }, []);
 
   async function loadProfiles() {
@@ -55,7 +55,7 @@ export default function AthletesPage() {
 
   async function deleteProfile(profileId: string) {
     const confirmed = confirm(
-      "Weet je zeker dat je deze aanvraag wilt verwijderen?"
+      "Weet je zeker dat je deze aanvraag wilt verwijderen?",
     );
 
     if (!confirmed) return;
@@ -78,7 +78,6 @@ export default function AthletesPage() {
       <div className="max-w-5xl mx-auto">
         <div className="mb-8">
           <h1 className="text-3xl font-bold">Atleten beheren</h1>
-
           <p className="text-gray-500">
             Accepteer of verwijder nieuwe aanmeldingen
           </p>
@@ -94,16 +93,13 @@ export default function AthletesPage() {
                 <h2 className="font-semibold text-lg">
                   {profile.full_name || "Geen naam"}
                 </h2>
-
-                <p className="text-gray-500 text-sm">
-                  Status: {profile.role}
-                </p>
+                <p className="text-gray-500 text-sm">Status: {profile.role}</p>
               </div>
 
               <div className="flex gap-2">
                 {profile.role === "pending" && (
                   <button
-                    onClick={() => acceptAsAthlete(profile.id)}
+                    onClick={() => void acceptAsAthlete(profile.id)}
                     className="bg-black text-white px-4 py-2 rounded-xl"
                   >
                     Accepteren
@@ -111,7 +107,7 @@ export default function AthletesPage() {
                 )}
 
                 <button
-                  onClick={() => deleteProfile(profile.id)}
+                  onClick={() => void deleteProfile(profile.id)}
                   className="bg-red-500 text-white px-4 py-2 rounded-xl"
                 >
                   Verwijderen

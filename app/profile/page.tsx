@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
@@ -22,6 +22,9 @@ export default function ProfilePage() {
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [profileLoaded, setProfileLoaded] = useState(false);
+  const autoSaveReady = useRef(false);
+  const saveMessageTimer = useRef<number | null>(null);
 
   useEffect(() => {
     async function getProfile() {
@@ -51,12 +54,44 @@ export default function ProfilePage() {
         setGeboortedatum(data.geboortedatum || "");
         setAvatarUrl(data.avatar_url || null);
       }
+
+      setProfileLoaded(true);
     }
 
     getProfile();
   }, []);
 
-  async function saveProfile() {
+  useEffect(() => {
+    autoSaveReady.current = false;
+
+    if (profileLoaded) {
+      const timer = window.setTimeout(() => {
+        autoSaveReady.current = true;
+      }, 150);
+
+      return () => window.clearTimeout(timer);
+    }
+  }, [profileLoaded, userId]);
+
+  useEffect(() => {
+    if (!profileLoaded || !userId || !autoSaveReady.current) return;
+
+    const timer = window.setTimeout(() => {
+      void saveProfile(false);
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [editedFullName, editedEmail, profileLoaded, userId]);
+
+  useEffect(() => {
+    return () => {
+      if (saveMessageTimer.current) {
+        window.clearTimeout(saveMessageTimer.current);
+      }
+    };
+  }, []);
+
+  async function saveProfile(clearPasswordAfterSave = true) {
     if (!editedFullName.trim()) {
       setMessage("Vul een naam in.");
       return;
@@ -99,9 +134,22 @@ export default function ProfilePage() {
     }
 
     setEmail(editedEmail.trim());
-    setEditedPassword("");
+    if (clearPasswordAfterSave) {
+      setEditedPassword("");
+    }
     setSaving(false);
     setMessage("Profiel opgeslagen.");
+    if (saveMessageTimer.current) {
+      window.clearTimeout(saveMessageTimer.current);
+    }
+    saveMessageTimer.current = window.setTimeout(() => {
+      setMessage("");
+    }, 2000);
+  }
+
+  async function savePasswordOnBlur() {
+    if (!editedPassword.trim() || !userId) return;
+    await saveProfile(true);
   }
 
   async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
@@ -163,7 +211,7 @@ export default function ProfilePage() {
           </div>
           <div>
             <label className="block text-sm font-semibold mb-2">Nieuw wachtwoord</label>
-            <input type="password" value={editedPassword} onChange={(e) => setEditedPassword(e.target.value)} placeholder="Laat leeg als je niks wilt wijzigen" className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
+            <input type="password" value={editedPassword} onChange={(e) => setEditedPassword(e.target.value)} onBlur={() => void savePasswordOnBlur()} placeholder="Laat leeg als je niks wilt wijzigen" className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
           </div>
           <div>
             <label className="block text-sm font-semibold mb-2">Rol</label>
@@ -171,11 +219,13 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {message && <p className="mt-6 text-sm text-gray-600">{message}</p>}
-
-        <button onClick={saveProfile} disabled={saving} className="mt-8 bg-black text-white px-6 py-3 rounded-2xl hover:opacity-90 transition disabled:opacity-50">
-          {saving ? "Opslaan..." : "Profiel opslaan"}
-        </button>
+        <div className="mt-8 flex min-h-6 items-center gap-3 text-sm text-gray-500">
+          {saving ? <span>Opslaan...</span> : null}
+          {message ? <span>{message}</span> : null}
+          {!saving && !message ? (
+            <span>Wijzigingen worden automatisch opgeslagen</span>
+          ) : null}
+        </div>
       </div>
 
       {userId && (
