@@ -84,6 +84,12 @@ import ChatMessageMenu, {
   ChatMessageMenuTrigger,
 } from "@/components/chat/ChatMessageMenu";
 import HighlightedText from "@/components/chat/HighlightedText";
+import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
+import {
+  parseToolsCommand,
+  type ChatToolItem,
+  type ProgramBlockTool,
+} from "@/lib/chatTools";
 
 type ChatListEntry =
   | (ChatProfile & { kind: "direct" })
@@ -171,6 +177,8 @@ export default function ChatApp() {
     message: ChatMessage;
     anchorRect: DOMRect | null;
   } | null>(null);
+  const [toolPrograms, setToolPrograms] = useState<ProgramBlockTool[]>([]);
+  const [toolProgramsLoading, setToolProgramsLoading] = useState(false);
   const conversationPanelRef = useRef<HTMLDivElement | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const listLongPressTriggeredRef = useRef(false);
@@ -707,8 +715,35 @@ export default function ChatApp() {
     setTimeout(() => inputRef.current?.focus(), 0);
   }
 
+  function closeToolsPanel() {
+    setMessage((current) => (current.startsWith("/tools") ? "" : current));
+  }
+
+  function handleToolsQueryChange(query: string) {
+    setMessage(query ? `/tools ${query}` : "/tools");
+  }
+
+  function handleToolsSelect(item: ChatToolItem) {
+    closeToolsPanel();
+
+    if (item.chatKind === "direct" && item.targetId) {
+      openDirectChat(item.targetId);
+      return;
+    }
+
+    if (item.chatKind === "group" && item.targetId) {
+      openGroupChat(item.targetId);
+      return;
+    }
+
+    if (item.href) {
+      router.push(item.href);
+    }
+  }
+
   async function sendMessage() {
     if (!message.trim() || !userId) return;
+    if (parseToolsCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1573,6 +1608,82 @@ export default function ChatApp() {
     return messages.find((item) => item.id === pinnedId) || null;
   }, [messages, currentConversationSettings?.pinned_message_id]);
 
+  const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
+  const toolsPanelOpen =
+    toolsCommand.active && Boolean(activeUserId || activeGroupId);
+
+  useEffect(() => {
+    if (!toolsPanelOpen || !userId) return;
+
+    let cancelled = false;
+
+    async function loadToolPrograms() {
+      setToolProgramsLoading(true);
+
+      let blocksQuery = supabase
+        .from("program_blocks")
+        .select("id, title, athlete_id")
+        .order("title", { ascending: true });
+
+      if (userRole !== "coach") {
+        blocksQuery = blocksQuery.eq("athlete_id", userId);
+      }
+
+      const { data: blocks, error } = await blocksQuery;
+
+      if (cancelled) return;
+
+      if (error || !blocks) {
+        setToolPrograms([]);
+        setToolProgramsLoading(false);
+        return;
+      }
+
+      const athleteIds = Array.from(
+        new Set(
+          blocks
+            .map((block) => block.athlete_id)
+            .filter((id): id is string => Boolean(id)),
+        ),
+      );
+
+      let athleteNames: Record<string, string> = {};
+
+      if (athleteIds.length > 0) {
+        const { data: profiles } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .in("id", athleteIds);
+
+        athleteNames = Object.fromEntries(
+          (profiles || []).map((profile) => [
+            profile.id,
+            profile.full_name || "Atleet",
+          ]),
+        );
+      }
+
+      if (cancelled) return;
+
+      setToolPrograms(
+        blocks.map((block) => ({
+          id: block.id,
+          title: block.title || "Programma",
+          athleteName: block.athlete_id
+            ? athleteNames[block.athlete_id]
+            : undefined,
+        })),
+      );
+      setToolProgramsLoading(false);
+    }
+
+    void loadToolPrograms();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [toolsPanelOpen, userId, userRole]);
+
   return (
     <AppShell
       className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-100 lg:relative lg:inset-auto lg:min-h-screen"
@@ -1797,6 +1908,8 @@ export default function ChatApp() {
                 />
               </header>
 
+              <div className="relative flex min-h-0 flex-1 overflow-hidden">
+                <div className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
               {messageSearchOpen ? (
                 <ChatMessageSearchPanel
                   query={messageSearchQuery}
@@ -2137,19 +2250,34 @@ export default function ChatApp() {
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
+                      if (event.key === "Escape" && toolsPanelOpen) {
+                        event.preventDefault();
+                        closeToolsPanel();
+                        return;
+                      }
+
                       if (event.key === "Enter" && !event.shiftKey) {
+                        if (toolsPanelOpen) {
+                          event.preventDefault();
+                          return;
+                        }
+
                         event.preventDefault();
                         sendMessage();
                       }
                     }}
                     placeholder={
-                      uploadingMedia ? "Media uploaden..." : "Typ een bericht"
+                      uploadingMedia
+                        ? "Media uploaden..."
+                        : toolsPanelOpen
+                          ? "Zoek in tools..."
+                          : "Typ een bericht"
                     }
                     disabled={!canSendMessages || uploadingMedia}
                     className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
                   />
 
-                  {message.trim() ? (
+                  {message.trim() && !toolsPanelOpen ? (
                     <button
                       type="button"
                       onClick={sendMessage}
@@ -2159,18 +2287,46 @@ export default function ChatApp() {
                     >
                       <SendHorizontal className="h-4 w-4" />
                     </button>
-                  ) : (
+                  ) : !toolsPanelOpen ? (
                     <ChatVoiceRecorder
                       disabled={!canSendMessages || uploadingMedia}
                       onSend={(blob, mimeType) => {
                         void sendVoiceMessage(blob, mimeType);
                       }}
                     />
+                  ) : (
+                    <div className="mb-0.5 h-10 w-10 shrink-0" aria-hidden />
                   )}
                 </div>
               </footer>
                 </>
               )}
+                </div>
+
+                {toolsPanelOpen && (
+                  <>
+                    <button
+                      type="button"
+                      className="fixed inset-0 z-[55] bg-black/20 md:hidden"
+                      onClick={closeToolsPanel}
+                      aria-label="Tools sluiten"
+                    />
+                    <div className="fixed inset-y-0 right-0 z-[60] flex max-w-[85vw] md:static md:max-w-none md:z-auto">
+                      <ChatToolsPanel
+                        query={toolsCommand.query}
+                        onQueryChange={handleToolsQueryChange}
+                        onClose={closeToolsPanel}
+                        onSelect={handleToolsSelect}
+                        userRole={userRole}
+                        contacts={contacts}
+                        groups={groups}
+                        programs={toolPrograms}
+                        loadingPrograms={toolProgramsLoading}
+                      />
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           )}
         </section>
