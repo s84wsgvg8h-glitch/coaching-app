@@ -8,12 +8,33 @@ export function notifyChatUnreadChanged() {
   }
 }
 
+async function getMutedPeerUserIds(userId: string) {
+  const { data } = await supabase
+    .from("chat_conversation_settings")
+    .select("peer_user_id")
+    .eq("user_id", userId)
+    .eq("muted", true)
+    .not("peer_user_id", "is", null);
+
+  return (data || [])
+    .map((row) => row.peer_user_id)
+    .filter((id): id is string => Boolean(id));
+}
+
 export async function getUnreadMessageCount(userId: string) {
-  const { count, error } = await supabase
+  const mutedPeerIds = await getMutedPeerUserIds(userId);
+
+  let query = supabase
     .from("messages")
     .select("*", { count: "exact", head: true })
     .eq("receiver_id", userId)
     .is("read_at", null);
+
+  for (const peerId of mutedPeerIds) {
+    query = query.neq("sender_id", peerId);
+  }
+
+  const { count, error } = await query;
 
   if (error) {
     return 0;
@@ -25,7 +46,12 @@ export async function getUnreadMessageCount(userId: string) {
 export async function getUnreadCountForConversation(
   userId: string,
   otherUserId: string,
+  options?: { muted?: boolean },
 ) {
+  if (options?.muted) {
+    return 0;
+  }
+
   const { count, error } = await supabase
     .from("messages")
     .select("*", { count: "exact", head: true })

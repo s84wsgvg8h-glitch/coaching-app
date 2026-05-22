@@ -55,7 +55,15 @@ export async function loadUserChatGroups(userId: string): Promise<ChatGroup[]> {
   return (groups || []) as ChatGroup[];
 }
 
-export async function getGroupUnreadCount(userId: string, groupId: string) {
+export async function getGroupUnreadCount(
+  userId: string,
+  groupId: string,
+  options?: { muted?: boolean },
+) {
+  if (options?.muted) {
+    return 0;
+  }
+
   const { data: readState } = await supabase
     .from("chat_group_read_states")
     .select("last_read_at")

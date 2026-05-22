@@ -5,10 +5,13 @@ import { useEffect, useMemo, useRef, useState, startTransition } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
   ArrowLeft,
+  BellOff,
   Camera,
   Check,
   CheckCheck,
   MessageCircle,
+  MoreVertical,
+  Pin,
   Plus,
   Search,
   SendHorizontal,
@@ -34,6 +37,7 @@ import {
   markConversationUnread,
   muteConversation,
   pinConversation,
+  pinConversationMessage,
   type ChatConversationSettings,
   unhideConversation,
 } from "@/lib/chatSettings";
@@ -76,6 +80,9 @@ import {
 import ChatSearchField from "@/components/chat/ChatSearchField";
 import ChatMessageSearchPanel from "@/components/chat/ChatMessageSearchPanel";
 import ChatListMenuSheet from "@/components/chat/ChatListMenuSheet";
+import ChatMessageMenu, {
+  ChatMessageMenuTrigger,
+} from "@/components/chat/ChatMessageMenu";
 import HighlightedText from "@/components/chat/HighlightedText";
 
 type ChatListEntry =
@@ -160,8 +167,13 @@ export default function ChatApp() {
   const [globalSearchLoading, setGlobalSearchLoading] = useState(false);
   const [listMenuEntry, setListMenuEntry] = useState<ChatListEntry | null>(null);
   const [highlightedMessageId, setHighlightedMessageId] = useState("");
+  const [messageMenu, setMessageMenu] = useState<{
+    message: ChatMessage;
+    anchorRect: DOMRect | null;
+  } | null>(null);
   const conversationPanelRef = useRef<HTMLDivElement | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
+  const listLongPressTriggeredRef = useRef(false);
 
   useEffect(() => {
     bootstrap();
@@ -366,12 +378,7 @@ export default function ChatApp() {
     setUserRole(profile.role);
     setUserName(profile.full_name || "");
 
-    const [loadedContacts, loadedGroups, loadedSettings] = await Promise.all([
-      loadContacts(user.id, profile.role),
-      loadGroups(user.id),
-      loadAllConversationSettings(user.id),
-    ]);
-
+    const loadedSettings = await loadAllConversationSettings(user.id);
     const settingsMap: Record<string, ChatConversationSettings> = {};
     for (const item of loadedSettings) {
       settingsMap[
@@ -383,6 +390,11 @@ export default function ChatApp() {
       ] = item;
     }
 
+    const [loadedContacts, loadedGroups] = await Promise.all([
+      loadContacts(user.id, profile.role, settingsMap),
+      loadGroups(user.id, settingsMap),
+    ]);
+
     setConversationSettings(settingsMap);
 
     setContacts(loadedContacts);
@@ -390,7 +402,11 @@ export default function ChatApp() {
     setBootstrapping(false);
   }
 
-  async function loadContacts(currentUserId: string, role: string) {
+  async function loadContacts(
+    currentUserId: string,
+    role: string,
+    settingsMap: Record<string, ChatConversationSettings> = {},
+  ) {
     let contactQuery = supabase.from("profiles").select("*");
 
     if (role === "coach") {
@@ -416,9 +432,13 @@ export default function ChatApp() {
 
         const lastMessage = lastMessages?.[0] as ChatMessage | undefined;
         const preview = getMessagePreview(lastMessage, currentUserId);
+        const muted = Boolean(
+          settingsMap[getSettingsKey({ peerUserId: contact.id })]?.muted,
+        );
         const unreadCount = await getUnreadCountForConversation(
           currentUserId,
           contact.id,
+          { muted },
         );
 
         return {
@@ -438,7 +458,10 @@ export default function ChatApp() {
     );
   }
 
-  async function loadGroups(currentUserId: string) {
+  async function loadGroups(
+    currentUserId: string,
+    settingsMap: Record<string, ChatConversationSettings> = {},
+  ) {
     const baseGroups = await loadUserChatGroups(currentUserId);
 
     return Promise.all(
@@ -468,7 +491,12 @@ export default function ChatApp() {
           currentUserId,
           senderName,
         );
-        const unreadCount = await getGroupUnreadCount(currentUserId, group.id);
+        const muted = Boolean(
+          settingsMap[getSettingsKey({ groupId: group.id })]?.muted,
+        );
+        const unreadCount = await getGroupUnreadCount(currentUserId, group.id, {
+          muted,
+        });
 
         return {
           ...group,
@@ -1030,11 +1058,39 @@ export default function ChatApp() {
     return conversationSettings[key];
   }
 
+  function patchEntrySettings(
+    entry: ChatListEntry,
+    patch: Partial<ChatConversationSettings>,
+  ) {
+    const key =
+      entry.kind === "direct"
+        ? getSettingsKey({ peerUserId: entry.id })
+        : getSettingsKey({ groupId: entry.id });
+
+    setConversationSettings((current) => ({
+      ...current,
+      [key]: {
+        id: current[key]?.id || "",
+        user_id: userId,
+        peer_user_id: entry.kind === "direct" ? entry.id : null,
+        group_id: entry.kind === "group" ? entry.id : null,
+        pinned: current[key]?.pinned ?? false,
+        muted: current[key]?.muted ?? false,
+        cleared_at: current[key]?.cleared_at ?? null,
+        hidden_at: current[key]?.hidden_at ?? null,
+        pinned_message_id: current[key]?.pinned_message_id ?? null,
+        ...patch,
+      },
+    }));
+  }
+
   async function handleEntryPin(entry: ChatListEntry) {
     if (!userId) return;
     const target = getEntryConversationTarget(entry);
     const settings = getEntrySettings(entry);
-    await pinConversation(userId, target, !settings?.pinned);
+    const nextPinned = !settings?.pinned;
+    patchEntrySettings(entry, { pinned: nextPinned });
+    await pinConversation(userId, target, nextPinned);
     await refreshConversationSettings();
   }
 
@@ -1042,8 +1098,32 @@ export default function ChatApp() {
     if (!userId) return;
     const target = getEntryConversationTarget(entry);
     const settings = getEntrySettings(entry);
-    await muteConversation(userId, target, !settings?.muted);
+    const nextMuted = !settings?.muted;
+    patchEntrySettings(entry, { muted: nextMuted });
+
+    if (entry.kind === "direct") {
+      setContacts((current) =>
+        current.map((contact) =>
+          contact.id === entry.id
+            ? { ...contact, unreadCount: nextMuted ? 0 : contact.unreadCount }
+            : contact,
+        ),
+      );
+    } else {
+      setGroups((current) =>
+        current.map((group) =>
+          group.id === entry.id
+            ? { ...group, unreadCount: nextMuted ? 0 : group.unreadCount }
+            : group,
+        ),
+      );
+    }
+
+    await muteConversation(userId, target, nextMuted);
     await refreshConversationSettings();
+    if (!nextMuted) {
+      await bootstrapSidebarCounts();
+    }
   }
 
   async function handleEntryMarkUnread(entry: ChatListEntry) {
@@ -1082,12 +1162,64 @@ export default function ChatApp() {
     if (!userId) return;
 
     const [loadedContacts, loadedGroups] = await Promise.all([
-      loadContacts(userId, userRole),
-      loadGroups(userId),
+      loadContacts(userId, userRole, conversationSettings),
+      loadGroups(userId, conversationSettings),
     ]);
 
     setContacts(loadedContacts);
     setGroups(loadedGroups);
+  }
+
+  function canDeleteMessage(msg: ChatMessage) {
+    if (msg.sender_id === userId) return true;
+
+    if (activeGroupId) {
+      return (
+        groupMemberRoles[userId] === "admin" ||
+        activeGroup?.created_by === userId
+      );
+    }
+
+    return false;
+  }
+
+  async function handleDeleteMessage(msg: ChatMessage) {
+    if (!canDeleteMessage(msg)) return;
+    if (!confirm("Bericht verwijderen?")) return;
+
+    const { error } = await supabase.from("messages").delete().eq("id", msg.id);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setMessages((current) => current.filter((item) => item.id !== msg.id));
+
+    const target = getConversationTarget();
+    if (target && getCurrentConversationSettings()?.pinned_message_id === msg.id) {
+      await pinConversationMessage(userId, target, null);
+      await refreshConversationSettings();
+    }
+  }
+
+  async function handlePinMessage(msg: ChatMessage) {
+    const target = getConversationTarget();
+    if (!target || !userId) return;
+
+    const current = getCurrentConversationSettings();
+    const nextId = current?.pinned_message_id === msg.id ? null : msg.id;
+    await pinConversationMessage(userId, target, nextId);
+    await refreshConversationSettings();
+  }
+
+  function openMessageMenu(
+    msg: ChatMessage,
+    event: React.MouseEvent<HTMLElement>,
+  ) {
+    event.stopPropagation();
+    const anchor = (event.currentTarget as HTMLElement).getBoundingClientRect();
+    setMessageMenu({ message: msg, anchorRect: anchor });
   }
 
   function scrollToMessage(messageId: string) {
@@ -1111,16 +1243,18 @@ export default function ChatApp() {
   }
 
   function openListMenu(entry: ChatListEntry) {
-    if (window.matchMedia("(min-width: 768px)").matches) return;
     setListMenuEntry(entry);
   }
 
   function startListLongPress(entry: ChatListEntry) {
+    listLongPressTriggeredRef.current = false;
+
     if (longPressTimerRef.current) {
       window.clearTimeout(longPressTimerRef.current);
     }
 
     longPressTimerRef.current = window.setTimeout(() => {
+      listLongPressTriggeredRef.current = true;
       openListMenu(entry);
     }, 500);
   }
@@ -1130,6 +1264,131 @@ export default function ChatApp() {
       window.clearTimeout(longPressTimerRef.current);
       longPressTimerRef.current = null;
     }
+  }
+
+  function handleListEntryClick(entry: ChatListEntry) {
+    if (listLongPressTriggeredRef.current) {
+      listLongPressTriggeredRef.current = false;
+      return;
+    }
+
+    if (entry.kind === "direct") {
+      openDirectChat(entry.id);
+      return;
+    }
+
+    openGroupChat(entry.id);
+  }
+
+  function renderChatListEntry(entry: ChatListEntry, highlightQuery = "") {
+    const isActive =
+      entry.kind === "direct"
+        ? entry.id === activeUserId
+        : entry.id === activeGroupId;
+    const settings = getEntrySettings(entry);
+    const isMuted = Boolean(settings?.muted);
+    const isPinned = Boolean(settings?.pinned);
+    const hasUnread = !isMuted && (entry.unreadCount || 0) > 0;
+    const title = entry.kind === "direct" ? entry.full_name : entry.name;
+
+    return (
+      <div
+        key={`${highlightQuery ? "search-chat-" : ""}${entry.kind}-${entry.id}`}
+        className={`flex w-full items-center gap-2 border-b border-gray-100 px-2 py-2 transition hover:bg-gray-50 ${
+          isActive ? "bg-gray-100" : ""
+        }`}
+      >
+        <button
+          type="button"
+          onClick={() => handleListEntryClick(entry)}
+          onContextMenu={(event) => {
+            event.preventDefault();
+            openListMenu(entry);
+          }}
+          onTouchStart={() => startListLongPress(entry)}
+          onTouchEnd={cancelListLongPress}
+          onTouchMove={cancelListLongPress}
+          className="flex min-w-0 flex-1 items-center gap-3 px-2 py-1 text-left"
+        >
+          <ChatAvatar
+            name={entry.kind === "direct" ? entry.full_name : entry.name}
+            imageUrl={entry.avatar_url}
+            className="h-12 w-12"
+            fallbackClassName={
+              entry.kind === "group" ? "bg-gray-700 text-white" : "bg-black text-white"
+            }
+          >
+            {entry.kind === "group" ? <Users className="h-5 w-5" /> : undefined}
+          </ChatAvatar>
+
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex min-w-0 items-center gap-1.5">
+                {isPinned && (
+                  <Pin className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
+                )}
+                {isMuted && (
+                  <BellOff
+                    className="h-3.5 w-3.5 shrink-0 text-gray-500"
+                    aria-hidden
+                  />
+                )}
+                <p
+                  className={`truncate text-[15px] ${
+                    hasUnread
+                      ? "font-bold text-black"
+                      : "font-semibold text-black"
+                  }`}
+                >
+                  {highlightQuery ? (
+                    <HighlightedText text={title || ""} query={highlightQuery} />
+                  ) : (
+                    title
+                  )}
+                </p>
+              </div>
+              <span
+                className={`shrink-0 text-xs ${
+                  hasUnread ? "font-semibold text-black" : "text-gray-400"
+                }`}
+              >
+                {formatChatListTime(entry.lastMessageTime)}
+              </span>
+            </div>
+
+            <div className="mt-1 flex items-center justify-between gap-3">
+              <p
+                className={`truncate text-sm ${
+                  hasUnread ? "font-semibold text-black" : "text-gray-500"
+                }`}
+              >
+                {entry.lastMessageSender
+                  ? `${entry.lastMessageSender}: ${entry.lastMessage}`
+                  : entry.lastMessage}
+              </p>
+
+              {hasUnread && (
+                <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-black px-1.5 text-[11px] font-semibold text-white">
+                  {entry.unreadCount}
+                </span>
+              )}
+            </div>
+          </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            openListMenu(entry);
+          }}
+          className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-black"
+          aria-label="Chatopties"
+        >
+          <MoreVertical className="h-5 w-5" />
+        </button>
+      </div>
+    );
   }
 
   async function handleCreateGroup() {
@@ -1153,7 +1412,7 @@ export default function ChatApp() {
       return;
     }
 
-    const refreshedGroups = await loadGroups(userId);
+    const refreshedGroups = await loadGroups(userId, conversationSettings);
     setGroups(refreshedGroups);
     setCreateGroupOpen(false);
     setNewGroupName("");
@@ -1276,6 +1535,12 @@ export default function ChatApp() {
 
   const visibleMessages = messages;
 
+  const pinnedMessage = useMemo(() => {
+    const pinnedId = currentConversationSettings?.pinned_message_id;
+    if (!pinnedId) return null;
+    return messages.find((item) => item.id === pinnedId) || null;
+  }, [messages, currentConversationSettings?.pinned_message_id]);
+
   return (
     <AppShell
       className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-100 lg:relative lg:inset-auto lg:min-h-screen"
@@ -1320,93 +1585,9 @@ export default function ChatApp() {
             )}
 
             {searchQuery.trim().length > 0 &&
-              filteredEntries.map((entry) => {
-                const isActive =
-                  entry.kind === "direct"
-                    ? entry.id === activeUserId
-                    : entry.id === activeGroupId;
-                const hasUnread = (entry.unreadCount || 0) > 0;
-                const title =
-                  entry.kind === "direct" ? entry.full_name : entry.name;
-
-                return (
-                  <button
-                    key={`search-chat-${entry.kind}-${entry.id}`}
-                    type="button"
-                    onClick={() =>
-                      entry.kind === "direct"
-                        ? openDirectChat(entry.id)
-                        : openGroupChat(entry.id)
-                    }
-                    onContextMenu={(event) => {
-                      event.preventDefault();
-                      openListMenu(entry);
-                    }}
-                    onTouchStart={() => startListLongPress(entry)}
-                    onTouchEnd={cancelListLongPress}
-                    onTouchMove={cancelListLongPress}
-                    className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition hover:bg-gray-50 ${
-                      isActive ? "bg-gray-100" : ""
-                    }`}
-                  >
-                    <ChatAvatar
-                      name={entry.kind === "direct" ? entry.full_name : entry.name}
-                      imageUrl={entry.avatar_url}
-                      className="h-12 w-12"
-                      fallbackClassName={
-                        entry.kind === "group"
-                          ? "bg-gray-700 text-white"
-                          : "bg-black text-white"
-                      }
-                    >
-                      {entry.kind === "group" ? (
-                        <Users className="h-5 w-5" />
-                      ) : undefined}
-                    </ChatAvatar>
-
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-3">
-                        <p
-                          className={`truncate text-[15px] ${
-                            hasUnread
-                              ? "font-bold text-black"
-                              : "font-semibold text-black"
-                          }`}
-                        >
-                          <HighlightedText text={title || ""} query={searchQuery} />
-                        </p>
-                        <span
-                          className={`shrink-0 text-xs ${
-                            hasUnread ? "font-semibold text-black" : "text-gray-400"
-                          }`}
-                        >
-                          {formatChatListTime(entry.lastMessageTime)}
-                        </span>
-                      </div>
-
-                      <div className="mt-1 flex items-center justify-between gap-3">
-                        <p
-                          className={`truncate text-sm ${
-                            hasUnread
-                              ? "font-semibold text-black"
-                              : "text-gray-500"
-                          }`}
-                        >
-                          {entry.lastMessageSender
-                            ? `${entry.lastMessageSender}: ${entry.lastMessage}`
-                            : entry.lastMessage}
-                        </p>
-
-                        {hasUnread && (
-                          <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-black px-1.5 text-[11px] font-semibold text-white">
-                            {entry.unreadCount}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </button>
-                );
-              })}
+              filteredEntries.map((entry) =>
+                renderChatListEntry(entry, searchQuery),
+              )}
 
             {searchQuery.trim().length > 0 &&
               !bootstrapping &&
@@ -1469,91 +1650,7 @@ export default function ChatApp() {
             )}
 
             {searchQuery.trim().length < 2 &&
-              filteredEntries.map((entry) => {
-              const isActive =
-                entry.kind === "direct"
-                  ? entry.id === activeUserId
-                  : entry.id === activeGroupId;
-              const hasUnread = (entry.unreadCount || 0) > 0;
-              const title =
-                entry.kind === "direct" ? entry.full_name : entry.name;
-
-              return (
-                <button
-                  key={`${entry.kind}-${entry.id}`}
-                  type="button"
-                  onClick={() =>
-                    entry.kind === "direct"
-                      ? openDirectChat(entry.id)
-                      : openGroupChat(entry.id)
-                  }
-                  onContextMenu={(event) => {
-                    event.preventDefault();
-                    openListMenu(entry);
-                  }}
-                  onTouchStart={() => startListLongPress(entry)}
-                  onTouchEnd={cancelListLongPress}
-                  onTouchMove={cancelListLongPress}
-                  className={`flex w-full items-center gap-3 border-b border-gray-100 px-4 py-3 text-left transition hover:bg-gray-50 ${
-                    isActive ? "bg-gray-100" : ""
-                  }`}
-                >
-                  <ChatAvatar
-                    name={entry.kind === "direct" ? entry.full_name : entry.name}
-                    imageUrl={
-                      entry.kind === "direct"
-                        ? entry.avatar_url
-                        : entry.avatar_url
-                    }
-                    className="h-12 w-12"
-                    fallbackClassName={
-                      entry.kind === "group" ? "bg-gray-700 text-white" : "bg-black text-white"
-                    }
-                  >
-                    {entry.kind === "group" ? <Users className="h-5 w-5" /> : undefined}
-                  </ChatAvatar>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-center justify-between gap-3">
-                      <p
-                        className={`truncate text-[15px] ${
-                          hasUnread ? "font-bold text-black" : "font-semibold text-black"
-                        }`}
-                      >
-                        {title}
-                      </p>
-                      <span
-                        className={`shrink-0 text-xs ${
-                          hasUnread ? "font-semibold text-black" : "text-gray-400"
-                        }`}
-                      >
-                        {formatChatListTime(entry.lastMessageTime)}
-                      </span>
-                    </div>
-
-                    <div className="mt-1 flex items-center justify-between gap-3">
-                      <p
-                        className={`truncate text-sm ${
-                          hasUnread
-                            ? "font-semibold text-black"
-                            : "text-gray-500"
-                        }`}
-                      >
-                        {entry.lastMessageSender
-                          ? `${entry.lastMessageSender}: ${entry.lastMessage}`
-                          : entry.lastMessage}
-                      </p>
-
-                      {hasUnread && (
-                        <span className="flex h-5 min-w-5 shrink-0 items-center justify-center rounded-full bg-black px-1.5 text-[11px] font-semibold text-white">
-                          {entry.unreadCount}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                </button>
-              );
-            })}
+              filteredEntries.map((entry) => renderChatListEntry(entry))}
           </div>
         </aside>
 
@@ -1583,7 +1680,7 @@ export default function ChatApp() {
               contacts={contacts}
               onBack={closeGroupInfo}
               onUpdated={async () => {
-                const refreshedGroups = await loadGroups(userId);
+                const refreshedGroups = await loadGroups(userId, conversationSettings);
                 setGroups(refreshedGroups);
                 setActiveGroup(
                   refreshedGroups.find((group) => group.id === activeGroupId) ||
@@ -1693,6 +1790,24 @@ export default function ChatApp() {
                 </div>
               )}
 
+              {pinnedMessage && (
+                <button
+                  type="button"
+                  onClick={() => scrollToMessage(pinnedMessage.id)}
+                  className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left hover:bg-gray-50"
+                >
+                  <Pin className="h-4 w-4 shrink-0 text-emerald-600" />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-xs font-semibold text-emerald-700">
+                      Vastgezet bericht
+                    </p>
+                    <p className="truncate text-sm text-gray-700">
+                      {getReplyText(pinnedMessage)}
+                    </p>
+                  </div>
+                </button>
+              )}
+
               <div
                 ref={messagesContainerRef}
                 data-chat-scroll="true"
@@ -1747,13 +1862,21 @@ export default function ChatApp() {
                           )}
 
                           <div
-                            onDoubleClick={() => handleReply(msg)}
-                            className={`relative px-4 py-3 shadow-sm ${
+                            onClick={(event) => openMessageMenu(msg, event)}
+                            onDoubleClick={(event) => {
+                              event.stopPropagation();
+                              handleReply(msg);
+                            }}
+                            className={`group relative cursor-pointer px-4 py-3 shadow-sm ${
                               isMine
                                 ? "rounded-2xl rounded-br-md bg-black text-white"
                                 : "rounded-2xl rounded-bl-md bg-white text-black"
                             }`}
                           >
+                          <ChatMessageMenuTrigger
+                            isMine={isMine}
+                            onOpen={(event) => openMessageMenu(msg, event)}
+                          />
                           {msg.reply_to_body && (
                             <div
                               className={`mb-2 rounded-xl border-l-4 px-3 py-2 ${
@@ -1784,16 +1907,19 @@ export default function ChatApp() {
                               src={msg.file_url}
                               alt="Gedeelde foto"
                               onLoad={handleMediaLoaded}
+                              onClick={(event) => event.stopPropagation()}
                               className="mb-2 max-h-72 w-full rounded-xl object-cover"
                             />
                           )}
 
                           {msg.file_url && msg.file_type === "video" && exerciseVideo && (
-                            <ExerciseVideoMessage
-                              videoUrl={msg.file_url}
-                              payload={exerciseVideo}
-                              isMine={isMine}
-                            />
+                            <div onClick={(event) => event.stopPropagation()}>
+                              <ExerciseVideoMessage
+                                videoUrl={msg.file_url}
+                                payload={exerciseVideo}
+                                isMine={isMine}
+                              />
+                            </div>
                           )}
 
                           {msg.file_url && msg.file_type === "video" &&
@@ -1804,15 +1930,18 @@ export default function ChatApp() {
                                 preload="metadata"
                                 playsInline
                                 onLoadedData={handleMediaLoaded}
+                                onClick={(event) => event.stopPropagation()}
                                 className="mb-2 max-h-72 w-full rounded-xl"
                               />
                             )}
 
                           {msg.file_url && msg.file_type === "audio" && (
-                            <ChatVoiceMessage
-                              src={msg.file_url}
-                              isMine={isMine}
-                            />
+                            <div onClick={(event) => event.stopPropagation()}>
+                              <ChatVoiceMessage
+                                src={msg.file_url}
+                                isMine={isMine}
+                              />
+                            </div>
                           )}
 
                           {msg.body && !exerciseVideo && (
@@ -2104,6 +2233,27 @@ export default function ChatApp() {
         }}
         onDelete={() => {
           if (listMenuEntry) void handleEntryDelete(listMenuEntry);
+        }}
+      />
+
+      <ChatMessageMenu
+        open={Boolean(messageMenu)}
+        onClose={() => setMessageMenu(null)}
+        anchorRect={messageMenu?.anchorRect || null}
+        isMine={messageMenu?.message.sender_id === userId}
+        canDelete={messageMenu ? canDeleteMessage(messageMenu.message) : false}
+        isPinned={
+          messageMenu?.message.id ===
+          currentConversationSettings?.pinned_message_id
+        }
+        onReply={() => {
+          if (messageMenu) handleReply(messageMenu.message);
+        }}
+        onPin={() => {
+          if (messageMenu) void handlePinMessage(messageMenu.message);
+        }}
+        onDelete={() => {
+          if (messageMenu) void handleDeleteMessage(messageMenu.message);
         }}
       />
     </AppShell>

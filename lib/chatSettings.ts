@@ -10,6 +10,7 @@ export type ChatConversationSettings = {
   muted: boolean;
   cleared_at: string | null;
   hidden_at: string | null;
+  pinned_message_id?: string | null;
 };
 
 type ConversationTarget =
@@ -51,7 +52,7 @@ export async function upsertConversationSettings(
   patch: Partial<
     Pick<
       ChatConversationSettings,
-      "pinned" | "muted" | "cleared_at" | "hidden_at"
+      "pinned" | "muted" | "cleared_at" | "hidden_at" | "pinned_message_id"
     >
   >,
 ) {
@@ -98,6 +99,22 @@ export async function muteConversation(
   muted: boolean,
 ) {
   return upsertConversationSettings(userId, target, { muted });
+}
+
+export async function pinConversationMessage(
+  userId: string,
+  target: ConversationTarget,
+  messageId: string | null,
+) {
+  return upsertConversationSettings(userId, target, {
+    pinned_message_id: messageId,
+  });
+}
+
+export function isConversationMuted(
+  settings: ChatConversationSettings | undefined,
+) {
+  return Boolean(settings?.muted);
 }
 
 export async function clearConversation(userId: string, target: ConversationTarget) {
