@@ -18,6 +18,7 @@ import {
   formatBwNumber,
   formatShortDate,
   loadAthleteDailyBwData,
+  resolveBwDateRangeFromWeeks,
   type DailyBwPoint,
 } from "@/lib/chatBwData";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
@@ -38,7 +39,8 @@ export default function ChatBwPanel({
   const [error, setError] = useState("");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-  const [selectedWeekId, setSelectedWeekId] = useState("");
+  const [beginWeekId, setBeginWeekId] = useState("");
+  const [endWeekId, setEndWeekId] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +53,8 @@ export default function ChatBwPanel({
         const data = await loadAthleteDailyBwData(athleteId);
         if (cancelled) return;
         setPoints(data);
-        setSelectedWeekId("");
+        setBeginWeekId("");
+        setEndWeekId("");
         setStartDate(data[0]?.date || "");
         setEndDate(data[data.length - 1]?.date || "");
       } catch (loadError) {
@@ -64,7 +67,8 @@ export default function ChatBwPanel({
         setPoints([]);
         setStartDate("");
         setEndDate("");
-        setSelectedWeekId("");
+        setBeginWeekId("");
+        setEndWeekId("");
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -113,24 +117,37 @@ export default function ChatBwPanel({
   const maxWeight =
     values.length > 0 ? Math.ceil(Math.max(...values) + 3) : 100;
 
-  function handleWeekChange(weekKey: string) {
-    setSelectedWeekId(weekKey);
+  const hasWeekFilter = Boolean(beginWeekId || endWeekId);
+  const hasCustomDateRange =
+    points.length > 0 &&
+    (startDate !== points[0]?.date || endDate !== points[points.length - 1]?.date);
 
-    if (!weekKey) {
-      setStartDate(points[0]?.date || "");
-      setEndDate(points[points.length - 1]?.date || "");
-      return;
-    }
+  function applyWeekSelection(nextBeginWeekId: string, nextEndWeekId: string) {
+    const range = resolveBwDateRangeFromWeeks(
+      weekOptions,
+      nextBeginWeekId,
+      nextEndWeekId,
+      points[0]?.date || "",
+      points[points.length - 1]?.date || "",
+    );
 
-    const week = weekOptions.find((option) => option.id === weekKey);
-    if (!week) return;
+    setBeginWeekId(nextBeginWeekId);
+    setEndWeekId(nextEndWeekId);
+    setStartDate(range.startDate);
+    setEndDate(range.endDate);
+  }
 
-    setStartDate(week.firstFilledDate);
-    setEndDate(week.lastFilledDate);
+  function handleBeginWeekChange(weekKey: string) {
+    applyWeekSelection(weekKey, endWeekId);
+  }
+
+  function handleEndWeekChange(weekKey: string) {
+    applyWeekSelection(beginWeekId, weekKey);
   }
 
   function handleStartDateChange(value: string) {
-    setSelectedWeekId("");
+    setBeginWeekId("");
+    setEndWeekId("");
     setStartDate(value);
     if (endDate && value > endDate) {
       setEndDate(value);
@@ -138,7 +155,8 @@ export default function ChatBwPanel({
   }
 
   function handleEndDateChange(value: string) {
-    setSelectedWeekId("");
+    setBeginWeekId("");
+    setEndWeekId("");
     setEndDate(value);
     if (startDate && value < startDate) {
       setStartDate(value);
@@ -169,7 +187,7 @@ export default function ChatBwPanel({
               Lichaamsgewicht
             </p>
             <h4 className="text-lg font-black text-black">
-              {selectedWeekId ? "Gefilterde periode" : "Alle dagen"}
+              {hasWeekFilter || hasCustomDateRange ? "Gefilterde periode" : "Alle dagen"}
             </h4>
           </div>
 
@@ -197,16 +215,34 @@ export default function ChatBwPanel({
           <div className="mb-4 space-y-3">
             <div>
               <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                Week kiezen
+                Begin week
               </label>
               <select
-                value={selectedWeekId}
-                onChange={(event) => handleWeekChange(event.target.value)}
+                value={beginWeekId}
+                onChange={(event) => handleBeginWeekChange(event.target.value)}
                 className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
               >
                 <option value="">Alle weken</option>
                 {weekOptions.map((week) => (
-                  <option key={week.id} value={week.id}>
+                  <option key={`begin-${week.id}`} value={week.id}>
+                    {week.blockTitle} · {week.weekTitle}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                Eind week
+              </label>
+              <select
+                value={endWeekId}
+                onChange={(event) => handleEndWeekChange(event.target.value)}
+                className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
+              >
+                <option value="">Alle weken</option>
+                {weekOptions.map((week) => (
+                  <option key={`end-${week.id}`} value={week.id}>
                     {week.blockTitle} · {week.weekTitle}
                   </option>
                 ))}

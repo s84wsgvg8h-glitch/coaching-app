@@ -112,6 +112,55 @@ export function filterBwPointsByDateRange(
   });
 }
 
+export function findBwWeekOption(
+  weekOptions: BwWeekOption[],
+  weekId: string,
+) {
+  return weekOptions.find((option) => option.id === weekId);
+}
+
+export function resolveBwDateRangeFromWeeks(
+  weekOptions: BwWeekOption[],
+  beginWeekId: string,
+  endWeekId: string,
+  allStartDate: string,
+  allEndDate: string,
+) {
+  if (!beginWeekId && !endWeekId) {
+    return { startDate: allStartDate, endDate: allEndDate };
+  }
+
+  const beginWeek = beginWeekId
+    ? findBwWeekOption(weekOptions, beginWeekId)
+    : undefined;
+  const endWeek = endWeekId
+    ? findBwWeekOption(weekOptions, endWeekId)
+    : undefined;
+
+  let startDate = beginWeek?.firstFilledDate || allStartDate;
+  let endDate = endWeek?.lastFilledDate || allEndDate;
+
+  if (beginWeek && endWeek) {
+    const beginIndex = weekOptions.findIndex((option) => option.id === beginWeek.id);
+    const endIndex = weekOptions.findIndex((option) => option.id === endWeek.id);
+
+    if (beginIndex > endIndex) {
+      startDate = endWeek.firstFilledDate;
+      endDate = beginWeek.lastFilledDate;
+    }
+  }
+
+  if (startDate > endDate) {
+    if (beginWeek && !endWeek) {
+      endDate = beginWeek.lastFilledDate;
+    } else if (endWeek && !beginWeek) {
+      startDate = endWeek.firstFilledDate;
+    }
+  }
+
+  return { startDate, endDate };
+}
+
 export async function loadAthleteDailyBwData(athleteId: string) {
   const { data: blocks, error: blocksError } = await supabase
     .from("program_blocks")

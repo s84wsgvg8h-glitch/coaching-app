@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -102,6 +103,28 @@ type RawBlock = {
 type ViewMode = "all" | "week" | "progression";
 
 export default function RawDataPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="min-h-[100dvh] bg-gray-100">
+          <section className="flex-1 p-8 pb-24">
+            <div className="bg-white rounded-2xl border border-gray-200 shadow p-6 text-gray-500">
+              Data laden...
+            </div>
+          </section>
+        </main>
+      }
+    >
+      <RawDataPageContent />
+    </Suspense>
+  );
+}
+
+function RawDataPageContent() {
+  const searchParams = useSearchParams();
+  const embeddedAthleteId = searchParams.get("athlete") || "";
+  const embeddedInChat = searchParams.get("embedded") === "chat";
+
   const [loading, setLoading] = useState(true);
   const [rawBlocks, setRawBlocks] = useState<RawBlock[]>([]);
   const [errorMessage, setErrorMessage] = useState("");
@@ -135,7 +158,14 @@ export default function RawDataPage() {
   }, [rawBlocks]);
 
   useEffect(() => {
+    if (!embeddedAthleteId) return;
+
+    setSelectedAthleteId(embeddedAthleteId);
+  }, [embeddedAthleteId]);
+
+  useEffect(() => {
     if (athleteOptions.length === 0) return;
+    if (embeddedAthleteId) return;
 
     const savedAthleteId =
       typeof window !== "undefined"
@@ -164,9 +194,10 @@ export default function RawDataPage() {
 
   useEffect(() => {
     if (!selectedAthleteId || typeof window === "undefined") return;
+    if (embeddedInChat) return;
 
     window.localStorage.setItem("rawDataSelectedAthleteId", selectedAthleteId);
-  }, [selectedAthleteId]);
+  }, [selectedAthleteId, embeddedInChat]);
 
   const filteredRawBlocks = useMemo(() => {
     if (!selectedAthleteId) return [];
@@ -1761,44 +1792,68 @@ export default function RawDataPage() {
   const selectedRightWeek = viewMode === "week" ? getSelectedWeek(rightSelection) : null;
 
   return (
-    <main className="min-h-[100dvh] bg-gray-100">
-      <section className="flex-1 p-8 pb-24">
-          <div className="flex items-end justify-between gap-4 mb-6">
-            <div>
-              <h1 className="text-3xl font-bold text-black">Raw Data</h1>
-              <p className="text-gray-500 mt-2">
-                Bekijk alle data, vergelijk weken of bekijk progression per block.
-              </p>
-            </div>
-
-            <div className="min-w-[280px]">
-              <p className="text-xs font-black text-gray-500 uppercase mb-1">
-                Atleet
-              </p>
-
-              <select
-                value={selectedAthleteId}
-                onChange={(e) => setSelectedAthleteId(e.target.value)}
-                className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+    <main
+      className={
+        embeddedInChat ? "min-h-full bg-gray-100" : "min-h-[100dvh] bg-gray-100"
+      }
+    >
+      <section
+        className={
+          embeddedInChat ? "flex-1 p-3 pb-4" : "flex-1 p-8 pb-24"
+        }
+      >
+          <div
+            className={`flex items-end justify-between gap-4 ${
+              embeddedInChat ? "mb-3" : "mb-6"
+            }`}
+          >
+            <div className="min-w-0">
+              <h1
+                className={`font-bold text-black ${
+                  embeddedInChat ? "text-lg" : "text-3xl"
+                }`}
               >
-                {!selectedAthleteId && (
-                  <option value="">Kies atleet</option>
-                )}
-                {athleteOptions.map((athlete) => (
-                  <option key={athlete.id} value={athlete.id}>
-                    {athlete.name}
-                  </option>
-                ))}
-              </select>
+                Raw Data
+              </h1>
+              {!embeddedInChat && (
+                <p className="text-gray-500 mt-2">
+                  Bekijk alle data, vergelijk weken of bekijk progression per block.
+                </p>
+              )}
             </div>
 
-            <button
-              type="button"
-              onClick={loadRawData}
-              className="bg-black text-white px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition"
-            >
-              Ververs
-            </button>
+            {!embeddedInChat && (
+              <div className="min-w-[280px]">
+                <p className="text-xs font-black text-gray-500 uppercase mb-1">
+                  Atleet
+                </p>
+
+                <select
+                  value={selectedAthleteId}
+                  onChange={(e) => setSelectedAthleteId(e.target.value)}
+                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                >
+                  {!selectedAthleteId && (
+                    <option value="">Kies atleet</option>
+                  )}
+                  {athleteOptions.map((athlete) => (
+                    <option key={athlete.id} value={athlete.id}>
+                      {athlete.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {!embeddedInChat && (
+              <button
+                type="button"
+                onClick={loadRawData}
+                className="bg-black text-white px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition"
+              >
+                Ververs
+              </button>
+            )}
           </div>
 
           {loading && (
@@ -1894,7 +1949,13 @@ export default function RawDataPage() {
               ) : viewMode === "progression" ? (
                 renderProgressionView()
               ) : (
-                <div className="grid grid-cols-2 gap-5 items-start h-[calc(100vh-300px)] min-h-[520px] overflow-hidden">
+                <div
+                  className={`grid grid-cols-2 gap-5 items-start overflow-hidden ${
+                    embeddedInChat
+                      ? "h-[calc(100vh-220px)] min-h-[360px]"
+                      : "h-[calc(100vh-300px)] min-h-[520px]"
+                  }`}
+                >
                   <div className="h-full overflow-y-auto overflow-x-hidden pr-2 rounded-2xl">
                     {selectedLeftWeek ? renderWeekCard(selectedLeftWeek) : null}
                   </div>
@@ -1907,7 +1968,7 @@ export default function RawDataPage() {
             </>
           )}
         </section>
-      <AppSidebar />
+      {!embeddedInChat && <AppSidebar />}
     </main>
   );
 }
