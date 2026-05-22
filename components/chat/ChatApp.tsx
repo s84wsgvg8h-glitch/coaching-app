@@ -86,7 +86,9 @@ import ChatMessageMenu, {
 import HighlightedText from "@/components/chat/HighlightedText";
 import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
 import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
+import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import {
+  parseBwCommand,
   parseProgramCommand,
   parseToolsCommand,
 } from "@/lib/chatCommands";
@@ -727,6 +729,10 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/program") ? "" : current));
   }
 
+  function closeBwPanel() {
+    setMessage((current) => (current.startsWith("/bw") ? "" : current));
+  }
+
   function handleToolsQueryChange(query: string) {
     setMessage(query ? `/tools ${query}` : "/tools");
   }
@@ -753,6 +759,7 @@ export default function ChatApp() {
     if (!message.trim() || !userId) return;
     if (parseToolsCommand(message).active) return;
     if (parseProgramCommand(message).active) return;
+    if (parseBwCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1619,6 +1626,7 @@ export default function ChatApp() {
 
   const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
   const programCommand = useMemo(() => parseProgramCommand(message), [message]);
+  const bwCommand = useMemo(() => parseBwCommand(message), [message]);
   const toolsPanelOpen =
     toolsCommand.active && Boolean(activeUserId || activeGroupId);
   const programPanelOpen =
@@ -1626,6 +1634,12 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
+  const bwPanelOpen =
+    bwCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
+  const sidePanelOpen = programPanelOpen || bwPanelOpen;
   const activeAthleteName = useMemo(() => {
     if (!activeUserId) return "Atleet";
     return (
@@ -1633,7 +1647,7 @@ export default function ChatApp() {
       "Atleet"
     );
   }, [activeUserId, contacts]);
-  const slashPanelOpen = toolsPanelOpen || programPanelOpen;
+  const slashPanelOpen = toolsPanelOpen || sidePanelOpen;
 
   useEffect(() => {
     if (!toolsPanelOpen || !userId) return;
@@ -1714,12 +1728,12 @@ export default function ChatApp() {
     >
       <div
         className={`flex h-full min-h-0 w-full overflow-hidden bg-gray-100 ${
-          programPanelOpen ? "flex-row" : ""
+          programPanelOpen || bwPanelOpen ? "flex-row" : ""
         }`}
       >
         <aside
           className={`flex h-full min-h-0 w-full flex-col border-r border-gray-200 bg-white md:w-[420px] md:max-w-[40%] ${
-            programPanelOpen
+            programPanelOpen || bwPanelOpen
               ? "hidden"
               : showConversationOnMobile
                 ? "hidden md:flex"
@@ -1836,10 +1850,18 @@ export default function ChatApp() {
           />
         )}
 
+        {bwPanelOpen && activeUserId && (
+          <ChatBwPanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeBwPanel}
+          />
+        )}
+
         <section
           ref={conversationPanelRef}
           className={`flex h-full min-h-0 flex-col overflow-hidden bg-gray-100 overscroll-x-none ${
-            programPanelOpen
+            sidePanelOpen
               ? "min-w-0 flex-1"
               : `flex-1 md:relative ${
                   showConversationOnMobile
@@ -2297,6 +2319,8 @@ export default function ChatApp() {
                         event.preventDefault();
                         if (programPanelOpen) {
                           closeProgramPanel();
+                        } else if (bwPanelOpen) {
+                          closeBwPanel();
                         } else {
                           closeToolsPanel();
                         }
@@ -2318,9 +2342,11 @@ export default function ChatApp() {
                         ? "Media uploaden..."
                         : programPanelOpen
                           ? "Programma geopend..."
-                          : toolsPanelOpen
-                            ? "Zoek in tools..."
-                            : "Typ een bericht"
+                          : bwPanelOpen
+                            ? "BW geopend..."
+                            : toolsPanelOpen
+                              ? "Zoek in tools..."
+                              : "Typ een bericht"
                     }
                     disabled={!canSendMessages || uploadingMedia}
                     className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
@@ -2352,7 +2378,7 @@ export default function ChatApp() {
               )}
                 </div>
 
-                {toolsPanelOpen && !programPanelOpen && (
+                {toolsPanelOpen && !sidePanelOpen && (
                   <>
                     <button
                       type="button"

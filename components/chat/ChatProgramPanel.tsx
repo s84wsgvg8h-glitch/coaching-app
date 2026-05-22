@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
+import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
 
 type ProgramBlock = {
   id: string;
@@ -130,7 +131,7 @@ export default function ChatProgramPanel({
   }
 
   return (
-    <aside className="flex h-full min-h-0 w-full max-w-[440px] min-w-[220px] flex-col border-r border-gray-200 bg-white max-md:w-[38%] md:w-1/3">
+    <aside className={CHAT_SIDE_PANEL_CLASS}>
       <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
         <div className="min-w-0">
           <h3 className="truncate text-base font-bold text-black">Programma</h3>
