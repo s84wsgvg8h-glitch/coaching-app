@@ -1,0 +1,217 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { X } from "lucide-react";
+import { supabase } from "@/lib/supabaseClient";
+
+type ProgramBlock = {
+  id: string;
+  title: string;
+  start_date: string | null;
+};
+
+type ProgramWeek = {
+  id: string;
+  title: string;
+  week_number: number;
+  program_block_id: string;
+};
+
+type ChatProgramPanelProps = {
+  athleteId: string;
+  athleteName: string;
+  onClose: () => void;
+};
+
+export default function ChatProgramPanel({
+  athleteId,
+  athleteName,
+  onClose,
+}: ChatProgramPanelProps) {
+  const [blocks, setBlocks] = useState<ProgramBlock[]>([]);
+  const [weeksByBlock, setWeeksByBlock] = useState<Record<string, ProgramWeek[]>>(
+    {},
+  );
+  const [selectedBlockId, setSelectedBlockId] = useState("");
+  const [selectedWeekId, setSelectedWeekId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadProgramNavigation() {
+      setLoading(true);
+      setError("");
+
+      const { data: blocksData, error: blocksError } = await supabase
+        .from("program_blocks")
+        .select("id, title, start_date")
+        .eq("athlete_id", athleteId)
+        .order("start_date", { ascending: true });
+
+      if (cancelled) return;
+
+      if (blocksError) {
+        setError(blocksError.message);
+        setLoading(false);
+        return;
+      }
+
+      const loadedBlocks = (blocksData || []) as ProgramBlock[];
+      setBlocks(loadedBlocks);
+
+      if (loadedBlocks.length === 0) {
+        setWeeksByBlock({});
+        setSelectedBlockId("");
+        setSelectedWeekId("");
+        setLoading(false);
+        return;
+      }
+
+      const blockIds = loadedBlocks.map((block) => block.id);
+      const { data: weeksData, error: weeksError } = await supabase
+        .from("program_weeks")
+        .select("id, title, week_number, program_block_id")
+        .in("program_block_id", blockIds)
+        .order("week_number", { ascending: true });
+
+      if (cancelled) return;
+
+      if (weeksError) {
+        setError(weeksError.message);
+        setLoading(false);
+        return;
+      }
+
+      const grouped: Record<string, ProgramWeek[]> = {};
+      loadedBlocks.forEach((block) => {
+        grouped[block.id] = [];
+      });
+
+      (weeksData || []).forEach((week) => {
+        if (!grouped[week.program_block_id]) {
+          grouped[week.program_block_id] = [];
+        }
+        grouped[week.program_block_id].push(week as ProgramWeek);
+      });
+
+      setWeeksByBlock(grouped);
+
+      const initialBlockId = loadedBlocks[0].id;
+      const initialWeekId = grouped[initialBlockId]?.[0]?.id || "";
+
+      setSelectedBlockId(initialBlockId);
+      setSelectedWeekId(initialWeekId);
+      setLoading(false);
+    }
+
+    void loadProgramNavigation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [athleteId]);
+
+  const weeksForSelectedBlock = useMemo(
+    () => weeksByBlock[selectedBlockId] || [],
+    [selectedBlockId, weeksByBlock],
+  );
+
+  const iframeSrc =
+    selectedBlockId && selectedWeekId
+      ? `/programs/${selectedBlockId}/weeks/${selectedWeekId}?athlete=${athleteId}&embedded=chat`
+      : "";
+
+  function handleBlockChange(blockId: string) {
+    setSelectedBlockId(blockId);
+    const weeks = weeksByBlock[blockId] || [];
+    setSelectedWeekId(weeks[0]?.id || "");
+  }
+
+  return (
+    <aside className="flex h-full min-h-0 w-full max-w-[440px] min-w-[220px] flex-col border-r border-gray-200 bg-white max-md:w-[38%] md:w-1/3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+        <div className="min-w-0">
+          <h3 className="truncate text-base font-bold text-black">Programma</h3>
+          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          aria-label="Programma sluiten"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-gray-200 px-3 py-3">
+        <div className="min-w-0">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Block
+          </label>
+          <select
+            value={selectedBlockId}
+            onChange={(event) => handleBlockChange(event.target.value)}
+            disabled={loading || blocks.length === 0}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
+          >
+            {blocks.map((block) => (
+              <option key={block.id} value={block.id}>
+                {block.title || "Block"}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="min-w-0">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Week
+          </label>
+          <select
+            value={selectedWeekId}
+            onChange={(event) => setSelectedWeekId(event.target.value)}
+            disabled={loading || weeksForSelectedBlock.length === 0}
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
+          >
+            {weeksForSelectedBlock.map((week) => (
+              <option key={week.id} value={week.id}>
+                {week.title || `Week ${week.week_number}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      <div className="relative min-h-0 flex-1 bg-gray-100">
+        {loading && (
+          <div className="flex h-full items-center justify-center text-sm text-gray-500">
+            Programma laden...
+          </div>
+        )}
+
+        {!loading && error && (
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-red-600">
+            {error}
+          </div>
+        )}
+
+        {!loading && !error && blocks.length === 0 && (
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-gray-500">
+            Nog geen programma voor deze atleet.
+          </div>
+        )}
+
+        {!loading && !error && iframeSrc && (
+          <iframe
+            key={iframeSrc}
+            title={`Programma ${athleteName}`}
+            src={iframeSrc}
+            className="h-full w-full border-0 bg-gray-100"
+          />
+        )}
+      </div>
+    </aside>
+  );
+}

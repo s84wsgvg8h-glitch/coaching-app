@@ -150,6 +150,7 @@ export default function ProgramWeekPage() {
   const blockId = params.id as string;
   const weekId = params.weekId as string;
   const athleteId = searchParams.get("athlete");
+  const embeddedInChat = searchParams.get("embedded") === "chat";
 
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("");
@@ -4546,11 +4547,24 @@ export default function ProgramWeekPage() {
   }
 
   return (
-    <div className="relative min-h-[100dvh] bg-gray-100 supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:min-h-screen">
-      <AppSidebar />
-      {renderBlocksSidebar()}
+    <div
+      className={
+        embeddedInChat
+          ? "h-full min-h-0 bg-gray-100"
+          : "relative min-h-[100dvh] bg-gray-100 supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:min-h-screen"
+      }
+    >
+      {!embeddedInChat && <AppSidebar />}
+      {!embeddedInChat && renderBlocksSidebar()}
 
-      <main className="relative min-w-0 flex-1">
+      <main
+        className={
+          embeddedInChat
+            ? "h-full min-h-0 min-w-0 overflow-y-auto"
+            : "relative min-w-0 flex-1"
+        }
+      >
+      {!embeddedInChat && (
       <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[999] lg:bottom-5 lg:right-5">
         <div
           className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg text-base font-black transition-all duration-200 ${
@@ -4573,7 +4587,9 @@ export default function ProgramWeekPage() {
           {saveState === "error" && "✕"}
         </div>
       </div>
+      )}
 
+      {!embeddedInChat && (
       <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[998] hidden rounded-2xl border border-gray-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur lg:block lg:top-4 lg:right-4">
         <div className="flex items-center gap-3">
           {getShortSbdWeekSummary().map((item) => (
@@ -4586,6 +4602,7 @@ export default function ProgramWeekPage() {
           ))}
         </div>
       </div>
+      )}
 
       {(isPending || navigatingUrl) && (
         <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gray-200 overflow-hidden">
@@ -4593,11 +4610,13 @@ export default function ProgramWeekPage() {
         </div>
       )}
       <section
-        className={`min-w-0 overflow-hidden p-3 pb-16 transition-opacity duration-200 lg:p-8 lg:pb-8 ${navigatingUrl ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+        className={`min-w-0 overflow-hidden transition-opacity duration-200 ${
+          embeddedInChat ? "p-2 pb-4" : "p-3 pb-16 lg:p-8 lg:pb-8"
+        } ${navigatingUrl ? "pointer-events-none opacity-60" : "opacity-100"}`}
       >
           {role === "atleet" ? (
             <div className="max-w-full">
-              {renderBlockWeekNav()}
+              {!embeddedInChat && renderBlockWeekNav()}
 
               <div className="mb-0 hidden lg:mb-8 lg:block">
                 <h1 className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
@@ -4808,6 +4827,7 @@ export default function ProgramWeekPage() {
             </div>
           ) : (
             <div className="max-w-full">
+              {!embeddedInChat && (
               <div className="mb-4 hidden flex-col gap-3 lg:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between lg:pr-44">
                 <div className="min-w-0">
                   <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -4834,8 +4854,9 @@ export default function ProgramWeekPage() {
                   Terug
                 </button>
               </div>
+              )}
 
-              {renderBlockWeekNav()}
+              {!embeddedInChat && renderBlockWeekNav()}
 
               <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 pl-1 pr-3 [-webkit-overflow-scrolling:touch] lg:mx-0 lg:snap-none lg:gap-4 lg:px-0">
                 {days.map((day) => {

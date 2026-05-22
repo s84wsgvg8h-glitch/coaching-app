@@ -20,7 +20,7 @@ export type ProgramBlockTool = {
 const TOOLS_PREFIX = "/tools";
 
 export function parseToolsCommand(message: string) {
-  if (!message.startsWith(TOOLS_PREFIX)) {
+  if (!message.startsWith(TOOLS_PREFIX) || message.startsWith("/program")) {
     return { active: false, query: "" };
   }
 

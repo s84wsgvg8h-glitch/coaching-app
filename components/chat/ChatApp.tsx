@@ -85,8 +85,12 @@ import ChatMessageMenu, {
 } from "@/components/chat/ChatMessageMenu";
 import HighlightedText from "@/components/chat/HighlightedText";
 import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
+import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import {
+  parseProgramCommand,
   parseToolsCommand,
+} from "@/lib/chatCommands";
+import {
   type ChatToolItem,
   type ProgramBlockTool,
 } from "@/lib/chatTools";
@@ -719,6 +723,10 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/tools") ? "" : current));
   }
 
+  function closeProgramPanel() {
+    setMessage((current) => (current.startsWith("/program") ? "" : current));
+  }
+
   function handleToolsQueryChange(query: string) {
     setMessage(query ? `/tools ${query}` : "/tools");
   }
@@ -744,6 +752,7 @@ export default function ChatApp() {
   async function sendMessage() {
     if (!message.trim() || !userId) return;
     if (parseToolsCommand(message).active) return;
+    if (parseProgramCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1609,8 +1618,22 @@ export default function ChatApp() {
   }, [messages, currentConversationSettings?.pinned_message_id]);
 
   const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
+  const programCommand = useMemo(() => parseProgramCommand(message), [message]);
   const toolsPanelOpen =
     toolsCommand.active && Boolean(activeUserId || activeGroupId);
+  const programPanelOpen =
+    programCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
+  const activeAthleteName = useMemo(() => {
+    if (!activeUserId) return "Atleet";
+    return (
+      contacts.find((contact) => contact.id === activeUserId)?.full_name ||
+      "Atleet"
+    );
+  }, [activeUserId, contacts]);
+  const slashPanelOpen = toolsPanelOpen || programPanelOpen;
 
   useEffect(() => {
     if (!toolsPanelOpen || !userId) return;
@@ -1689,10 +1712,18 @@ export default function ChatApp() {
       className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-100 lg:relative lg:inset-auto lg:min-h-screen"
       contentClassName="flex h-full min-h-0 flex-1 overflow-hidden p-0 pb-0"
     >
-      <div className="flex h-full min-h-0 w-full overflow-hidden bg-gray-100">
+      <div
+        className={`flex h-full min-h-0 w-full overflow-hidden bg-gray-100 ${
+          programPanelOpen ? "flex-row" : ""
+        }`}
+      >
         <aside
           className={`flex h-full min-h-0 w-full flex-col border-r border-gray-200 bg-white md:w-[420px] md:max-w-[40%] ${
-            showConversationOnMobile ? "hidden md:flex" : "flex"
+            programPanelOpen
+              ? "hidden"
+              : showConversationOnMobile
+                ? "hidden md:flex"
+                : "flex"
           }`}
         >
           <div className="shrink-0 border-b border-gray-200 bg-white px-4 pb-3 pt-5">
@@ -1797,12 +1828,24 @@ export default function ChatApp() {
           </div>
         </aside>
 
+        {programPanelOpen && activeUserId && (
+          <ChatProgramPanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeProgramPanel}
+          />
+        )}
+
         <section
           ref={conversationPanelRef}
-          className={`flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-gray-100 overscroll-x-none md:relative ${
-            showConversationOnMobile
-              ? "fixed inset-0 z-50 touch-pan-y md:static md:inset-auto md:z-auto"
-              : "hidden md:flex"
+          className={`flex h-full min-h-0 flex-col overflow-hidden bg-gray-100 overscroll-x-none ${
+            programPanelOpen
+              ? "min-w-0 flex-1"
+              : `flex-1 md:relative ${
+                  showConversationOnMobile
+                    ? "fixed inset-0 z-50 touch-pan-y md:static md:inset-auto md:z-auto"
+                    : "hidden md:flex"
+                }`
           }`}
         >
           {!activeUserId && !activeGroupId ? (
@@ -2250,14 +2293,18 @@ export default function ChatApp() {
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Escape" && toolsPanelOpen) {
+                      if (event.key === "Escape" && slashPanelOpen) {
                         event.preventDefault();
-                        closeToolsPanel();
+                        if (programPanelOpen) {
+                          closeProgramPanel();
+                        } else {
+                          closeToolsPanel();
+                        }
                         return;
                       }
 
                       if (event.key === "Enter" && !event.shiftKey) {
-                        if (toolsPanelOpen) {
+                        if (slashPanelOpen) {
                           event.preventDefault();
                           return;
                         }
@@ -2269,15 +2316,17 @@ export default function ChatApp() {
                     placeholder={
                       uploadingMedia
                         ? "Media uploaden..."
-                        : toolsPanelOpen
-                          ? "Zoek in tools..."
-                          : "Typ een bericht"
+                        : programPanelOpen
+                          ? "Programma geopend..."
+                          : toolsPanelOpen
+                            ? "Zoek in tools..."
+                            : "Typ een bericht"
                     }
                     disabled={!canSendMessages || uploadingMedia}
                     className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
                   />
 
-                  {message.trim() && !toolsPanelOpen ? (
+                  {message.trim() && !slashPanelOpen ? (
                     <button
                       type="button"
                       onClick={sendMessage}
@@ -2287,7 +2336,7 @@ export default function ChatApp() {
                     >
                       <SendHorizontal className="h-4 w-4" />
                     </button>
-                  ) : !toolsPanelOpen ? (
+                  ) : !slashPanelOpen ? (
                     <ChatVoiceRecorder
                       disabled={!canSendMessages || uploadingMedia}
                       onSend={(blob, mimeType) => {
@@ -2303,7 +2352,7 @@ export default function ChatApp() {
               )}
                 </div>
 
-                {toolsPanelOpen && (
+                {toolsPanelOpen && !programPanelOpen && (
                   <>
                     <button
                       type="button"
