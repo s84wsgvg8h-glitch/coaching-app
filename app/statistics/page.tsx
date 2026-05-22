@@ -118,6 +118,8 @@ export default function StatisticsPage() {
   const [targetBodyweightDate, setTargetBodyweightDate] = useState("");
   const [activeTargetBodyweight, setActiveTargetBodyweight] = useState("");
   const [activeTargetBodyweightDate, setActiveTargetBodyweightDate] = useState("");
+  const [activeTargetBodyweightSetDate, setActiveTargetBodyweightSetDate] =
+    useState("");
 
   useEffect(() => {
     loadStatisticsData();
@@ -144,6 +146,14 @@ export default function StatisticsPage() {
       setSelectedAthleteId(athleteOptions[0].id);
     }
   }, [athleteOptions, selectedAthleteId]);
+
+  useEffect(() => {
+    setActiveTargetBodyweight("");
+    setActiveTargetBodyweightDate("");
+    setActiveTargetBodyweightSetDate("");
+    setTargetBodyweight("");
+    setTargetBodyweightDate("");
+  }, [selectedAthleteId]);
 
   function parseNumber(value: string | null | undefined) {
     if (!value) return null;
@@ -190,6 +200,73 @@ export default function StatisticsPage() {
     end.setHours(0, 0, 0, 0);
 
     return Math.round((end.getTime() - start.getTime()) / 86400000);
+  }
+
+  function getWeekEndDate(weekStartDate: string | null) {
+    return addDays(weekStartDate, 6);
+  }
+
+  function roundToNearestWeekEnd(
+    dateString: string,
+    baseData: Array<{ date: string | null }>,
+  ) {
+    const weekEnds = baseData
+      .map((item) => getWeekEndDate(item.date))
+      .filter((date): date is string => Boolean(date));
+
+    if (weekEnds.length === 0) {
+      const date = new Date(dateString);
+      if (Number.isNaN(date.getTime())) return dateString;
+
+      date.setHours(0, 0, 0, 0);
+      const day = date.getDay();
+      const diffToSunday = day === 0 ? 0 : 7 - day;
+      const diffFromSunday = day === 0 ? 0 : day;
+
+      if (diffToSunday <= diffFromSunday) {
+        date.setDate(date.getDate() + diffToSunday);
+      } else {
+        date.setDate(date.getDate() - diffFromSunday);
+      }
+
+      return date.toISOString().slice(0, 10);
+    }
+
+    let closestWeekEnd = weekEnds[0];
+    let smallestDiff = Math.abs(daysBetween(dateString, closestWeekEnd));
+
+    weekEnds.forEach((weekEnd) => {
+      const diff = Math.abs(daysBetween(dateString, weekEnd));
+      if (diff < smallestDiff) {
+        smallestDiff = diff;
+        closestWeekEnd = weekEnd;
+      }
+    });
+
+    return closestWeekEnd;
+  }
+
+  function findWeekPointForDate(
+    dateString: string,
+    baseData: ReturnType<typeof getBaseBwChartData>,
+  ) {
+    const sorted = [...baseData]
+      .filter((item) => item.date)
+      .sort((a, b) => String(a.date).localeCompare(String(b.date)));
+
+    const containingWeek = sorted.find((item) => {
+      const weekEnd = getWeekEndDate(item.date);
+      if (!weekEnd) return false;
+
+      return String(item.date) <= dateString && dateString <= weekEnd;
+    });
+
+    if (containingWeek) return containingWeek;
+
+    return (
+      sorted.filter((item) => String(item.date) <= dateString).at(-1) ??
+      sorted[0]
+    );
   }
 
   function formatShortDate(dateString: string | null) {
@@ -408,8 +485,31 @@ export default function StatisticsPage() {
       return;
     }
 
+    const baseData = getBaseBwChartData();
+
+    if (baseData.length === 0) {
+      alert("Geen BW data beschikbaar om een goal op te zetten");
+      return;
+    }
+
+    const roundedEndDate = roundToNearestWeekEnd(targetBodyweightDate, baseData);
+    const setDate = new Date().toISOString().slice(0, 10);
+    const startPoint = findWeekPointForDate(setDate, baseData);
+
+    if (!startPoint?.date || startPoint.value === null) {
+      alert("Geen BW gevonden voor de week waarin je de goal zet");
+      return;
+    }
+
+    if (daysBetween(startPoint.date, roundedEndDate) <= 0) {
+      alert("Kies een einddatum na de huidige week");
+      return;
+    }
+
     setActiveTargetBodyweight(targetBodyweight);
-    setActiveTargetBodyweightDate(targetBodyweightDate);
+    setActiveTargetBodyweightDate(roundedEndDate);
+    setActiveTargetBodyweightSetDate(setDate);
+    setTargetBodyweightDate(roundedEndDate);
   }
 
   function getBwChartData(): BwChartRow[] {
@@ -427,100 +527,111 @@ export default function StatisticsPage() {
     if (
       baseData.length === 0 ||
       targetWeight === null ||
-      !activeTargetBodyweightDate
+      !activeTargetBodyweightDate ||
+      !activeTargetBodyweightSetDate
     ) {
       return emptyTargetData;
     }
 
-    const latestPoint = [...baseData]
-      .filter((item) => item.value !== null && item.date)
-      .sort((a, b) => String(a.date).localeCompare(String(b.date)))
-      .at(-1);
+    const startPoint = findWeekPointForDate(
+      activeTargetBodyweightSetDate,
+      baseData,
+    );
 
-    if (!latestPoint || latestPoint.value === null || !latestPoint.date) {
+    if (!startPoint?.date || startPoint.value === null) {
       return emptyTargetData;
     }
 
-    const startDate = latestPoint.date;
-    const startWeight = latestPoint.value;
-    const totalDays = daysBetween(startDate, activeTargetBodyweightDate);
+    const startDate = startPoint.date;
+    const startWeight = startPoint.value;
+    const endDate = activeTargetBodyweightDate;
+    const totalDays = daysBetween(startDate, endDate);
 
     if (totalDays <= 0) {
       return emptyTargetData;
     }
 
-    const chartData: BwChartRow[] = baseData.map((item) => {
-      if (!item.date) {
-        return {
-          ...item,
-          targetValue: null,
-          low: 0,
-          band: 0,
-        };
-      }
-
-      const currentDays = daysBetween(startDate, item.date);
+    const getTargetForDate = (date: string) => {
+      const currentDays = daysBetween(startDate, date);
 
       if (currentDays < 0 || currentDays > totalDays) {
-        return {
-          ...item,
-          targetValue: null,
-          low: 0,
-          band: 0,
-        };
+        return null;
       }
 
       const progress = currentDays / totalDays;
-      const targetValue =
+
+      return (
         Math.round((startWeight + (targetWeight - startWeight) * progress) * 10) /
-        10;
+        10
+      );
+    };
 
-      const actualValue = item.value;
+    const dateKeys = new Set<string>();
 
-      return {
-        ...item,
-        targetValue,
-        low:
-          actualValue !== null
-            ? Math.min(actualValue, targetValue)
-            : Math.min(startWeight, targetValue),
-        band:
-          actualValue !== null
-            ? Math.abs(actualValue - targetValue)
-            : Math.abs(startWeight - targetValue),
-      };
+    baseData.forEach((item) => {
+      if (item.date) {
+        dateKeys.add(item.date);
+      }
     });
 
-    if (!chartData.some((item) => item.date === startDate)) {
-      chartData.push({
-        name: `Start · ${formatShortDate(startDate)}`,
-        weekNumber: latestPoint.weekNumber,
-        blockTitle: latestPoint.blockTitle,
-        date: startDate,
-        value: startWeight,
-        targetValue: startWeight,
-        low: startWeight,
-        band: 0,
-      });
+    let cursor = startDate;
+
+    while (cursor <= endDate) {
+      dateKeys.add(cursor);
+
+      const weekEnd = getWeekEndDate(cursor);
+      if (weekEnd && weekEnd <= endDate) {
+        dateKeys.add(weekEnd);
+      }
+
+      const next = addDays(cursor, 7);
+      if (!next || next === cursor) {
+        break;
+      }
+
+      cursor = next;
     }
 
-    if (!chartData.some((item) => item.date === activeTargetBodyweightDate)) {
-      chartData.push({
-        name: `Goal · ${formatShortDate(activeTargetBodyweightDate)}`,
-        weekNumber: latestPoint.weekNumber + Math.ceil(totalDays / 7),
-        blockTitle: latestPoint.blockTitle,
-        date: activeTargetBodyweightDate,
-        value: null,
-        targetValue: targetWeight,
-        low: Math.min(startWeight, targetWeight),
-        band: Math.abs(startWeight - targetWeight),
-      });
-    }
+    dateKeys.add(endDate);
 
-    return chartData.sort((a, b) => {
-      if (a.date && b.date) return a.date.localeCompare(b.date);
-      return a.weekNumber - b.weekNumber;
-    });
+    const baseByDate = new Map(
+      baseData
+        .filter((item) => item.date)
+        .map((item) => [item.date as string, item]),
+    );
+
+    return Array.from(dateKeys)
+      .sort((a, b) => a.localeCompare(b))
+      .map((date) => {
+        const base = baseByDate.get(date);
+        const targetValue = getTargetForDate(date);
+        const actualValue = base?.value ?? null;
+
+        return {
+          name:
+            base?.name ??
+            (date === endDate
+              ? `Goal · ${formatShortDate(date)}`
+              : `Doel · ${formatShortDate(date)}`),
+          weekNumber: base?.weekNumber ?? startPoint.weekNumber,
+          blockTitle: base?.blockTitle ?? startPoint.blockTitle,
+          date,
+          value: actualValue,
+          targetValue,
+          low:
+            actualValue !== null && targetValue !== null
+              ? Math.min(actualValue, targetValue)
+              : targetValue !== null
+                ? Math.min(startWeight, targetValue)
+                : 0,
+          band:
+            actualValue !== null && targetValue !== null
+              ? Math.abs(actualValue - targetValue)
+              : targetValue !== null
+                ? Math.abs(startWeight - targetValue)
+                : 0,
+        };
+      });
   }
 
   async function loadStatisticsData() {
@@ -909,7 +1020,7 @@ export default function StatisticsPage() {
         <div className="grid grid-cols-1 md:grid-cols-[1fr_1fr_auto] gap-3 mb-4 max-w-[680px] items-end">
           <div>
             <p className="text-[10px] font-black text-gray-500 uppercase mb-1">
-              Target BW
+              Goal BW
             </p>
             <input
               value={targetBodyweight}
@@ -921,7 +1032,7 @@ export default function StatisticsPage() {
 
           <div>
             <p className="text-[10px] font-black text-gray-500 uppercase mb-1">
-              Einddatum
+              Einddatum (week)
             </p>
             <input
               type="date"
@@ -983,7 +1094,7 @@ export default function StatisticsPage() {
                 <Line
                   type="linear"
                   dataKey="targetValue"
-                  name="Afval lijn"
+                  name="Goal lijn"
                   stroke="#2563eb"
                   strokeWidth={2}
                   strokeDasharray="6 4"
@@ -999,11 +1110,8 @@ export default function StatisticsPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <div className="flex min-h-screen">
-        <AppSidebar />
-
-        <section className="flex-1 p-8">
+    <main className="min-h-[100dvh] bg-gray-100">
+      <section className="flex-1 p-8 pb-24">
           <div className="flex items-end justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-black">Statistics</h1>
@@ -1085,7 +1193,7 @@ export default function StatisticsPage() {
             </>
           )}
         </section>
-      </div>
+      <AppSidebar />
     </main>
   );
 }

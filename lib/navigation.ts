@@ -6,7 +6,11 @@ export type NavLink = {
   badge?: number;
 };
 
-export function getNavLinks(role: string, pendingCount = 0): NavLink[] {
+export function getNavLinks(
+  role: string,
+  pendingCount = 0,
+  chatUnreadCount = 0,
+): NavLink[] {
   const coachLinks: NavLink[] = [
     {
       href: "/dashboard",
@@ -62,6 +66,7 @@ export function getNavLinks(role: string, pendingCount = 0): NavLink[] {
       icon: "💬",
       title: "Chat",
       description: "Stuur berichten naar atleten.",
+      badge: chatUnreadCount,
     },
     {
       href: "/wedstrijd-kalender",
@@ -119,6 +124,7 @@ export function getNavLinks(role: string, pendingCount = 0): NavLink[] {
       icon: "💬",
       title: "Chat met coach",
       description: "Stel vragen aan je coach.",
+      badge: chatUnreadCount,
     },
     {
       href: "/wedstrijd-kalender",

@@ -27,10 +27,10 @@ type ProgramWeek = {
 export default function ProgramsPage() {
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("");
-
   const [athletes, setAthletes] = useState<Profile[]>([]);
   const [loading, setLoading] = useState(true);
   const [openingAthleteId, setOpeningAthleteId] = useState("");
+  const [redirectingAthlete, setRedirectingAthlete] = useState(false);
 
   useEffect(() => {
     loadData();
@@ -56,11 +56,10 @@ export default function ProgramsPage() {
       .eq("id", user.id)
       .single();
 
-    if (profile) {
-      setRole(profile.role || "");
-    }
+    const loadedRole = profile?.role || "";
+    setRole(loadedRole);
 
-    if (profile?.role === "coach") {
+    if (loadedRole === "coach") {
       const { data: acceptedAthletes, error } = await supabase
         .from("profiles")
         .select("*")
@@ -78,7 +77,9 @@ export default function ProgramsPage() {
       return;
     }
 
-    await openAthleteProgram(user.id, profile?.role || "");
+    setRedirectingAthlete(true);
+    await openAthleteProgram(user.id, loadedRole);
+    setLoading(false);
   }
 
   async function openAthleteProgram(athleteId: string, loadedRole?: string) {
@@ -95,6 +96,7 @@ export default function ProgramsPage() {
     if (blocksError) {
       alert(blocksError.message);
       setOpeningAthleteId("");
+      setRedirectingAthlete(false);
       return;
     }
 
@@ -116,6 +118,7 @@ export default function ProgramsPage() {
       if (createBlockError || !createdBlock) {
         alert(createBlockError?.message || "Block kon niet worden aangemaakt");
         setOpeningAthleteId("");
+        setRedirectingAthlete(false);
         return;
       }
 
@@ -131,6 +134,7 @@ export default function ProgramsPage() {
     if (weeksError) {
       alert(weeksError.message);
       setOpeningAthleteId("");
+      setRedirectingAthlete(false);
       return;
     }
 
@@ -150,6 +154,7 @@ export default function ProgramsPage() {
       if (createWeekError || !createdWeek) {
         alert(createWeekError?.message || "Week kon niet worden aangemaakt");
         setOpeningAthleteId("");
+        setRedirectingAthlete(false);
         return;
       }
 
@@ -159,6 +164,7 @@ export default function ProgramsPage() {
     if (!block || !week) {
       alert("Geen block of week gevonden");
       setOpeningAthleteId("");
+      setRedirectingAthlete(false);
       return;
     }
 
@@ -168,29 +174,41 @@ export default function ProgramsPage() {
         : `/programs/${block.id}/weeks/${week.id}`;
   }
 
+  if (redirectingAthlete || (loading && role !== "coach")) {
+    return (
+      <AppShell contentClassName="flex-1 p-8">
+        <div className="mx-auto max-w-5xl">
+          <div className="rounded-2xl bg-white p-8 shadow">
+            <p className="text-gray-500">Programma openen...</p>
+          </div>
+        </div>
+      </AppShell>
+    );
+  }
+
   return (
     <AppShell contentClassName="flex-1 p-8">
-      <div className="max-w-5xl mx-auto">
+      <div className="mx-auto max-w-5xl">
         <div className="mb-8">
-          <p className="text-sm text-gray-500 mb-1">Programma’s</p>
+          <p className="mb-1 text-sm text-gray-500">Programma’s</p>
 
-          <h1 className="text-3xl font-bold">Kies een atleet</h1>
+          <h1 className="text-3xl font-bold text-black">Kies een atleet</h1>
 
-          <p className="text-gray-500 mt-2">
+          <p className="mt-2 text-gray-500">
             Klik op een atleet om direct naar zijn of haar blocks en weken te
             gaan.
           </p>
         </div>
 
         {loading && (
-          <div className="bg-white rounded-2xl shadow p-8">
+          <div className="rounded-2xl bg-white p-8 shadow">
             <p className="text-gray-500">Laden...</p>
           </div>
         )}
 
         {!loading && role === "coach" && athletes.length === 0 && (
-          <div className="bg-white rounded-2xl shadow p-8">
-            <h2 className="text-xl font-bold mb-2">Geen atleten gevonden</h2>
+          <div className="rounded-2xl bg-white p-8 shadow">
+            <h2 className="mb-2 text-xl font-bold text-black">Geen atleten gevonden</h2>
 
             <p className="text-gray-500">
               Er zijn nog geen atleten met de rol “atleet”.
@@ -209,20 +227,20 @@ export default function ProgramsPage() {
                   type="button"
                   onClick={() => openAthleteProgram(athlete.id)}
                   disabled={!!openingAthleteId}
-                  className={`w-full text-left bg-white rounded-2xl shadow p-5 border-2 transition-all duration-150 ${
+                  className={`w-full rounded-2xl border-2 bg-white p-5 text-left shadow transition-all duration-150 ${
                     isOpening
-                      ? "border-black scale-[0.99] opacity-80"
-                      : "border-transparent hover:border-black hover:-translate-y-0.5 hover:shadow-lg"
+                      ? "scale-[0.99] border-black opacity-80"
+                      : "border-transparent hover:-translate-y-0.5 hover:border-black hover:shadow-lg"
                   }`}
                 >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 rounded-2xl bg-black text-white flex items-center justify-center text-xl font-bold">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-xl font-bold text-white">
                         {(athlete.full_name || "A").charAt(0).toUpperCase()}
                       </div>
 
                       <div>
-                        <h2 className="text-lg font-bold">
+                        <h2 className="text-lg font-bold text-black">
                           {athlete.full_name || "Naamloze atleet"}
                         </h2>
 

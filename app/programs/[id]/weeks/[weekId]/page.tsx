@@ -3,9 +3,12 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabaseClient";
+import { sendExerciseVideoMessageToCoach } from "@/lib/chatUtils";
+import { captureVideoThumbnail } from "@/lib/videoThumbnail";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 
@@ -71,6 +74,7 @@ type AthleteExerciseVideo = {
   video_url: string | null;
   video_path: string | null;
   file_name: string | null;
+  caption: string | null;
 };
 
 type AthleteDayCheckin = {
@@ -237,17 +241,29 @@ export default function ProgramWeekPage() {
   const [cameraReady, setCameraReady] = useState(false);
   const [cameraError, setCameraError] = useState("");
   const [isRecordingVideo, setIsRecordingVideo] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [recordedVideoUrl, setRecordedVideoUrl] = useState("");
   const [recordedVideoFile, setRecordedVideoFile] = useState<File | null>(null);
   const [videoDuration, setVideoDuration] = useState(0);
   const [trimStart, setTrimStart] = useState(0);
   const [trimEnd, setTrimEnd] = useState(0);
   const [trimmingVideo, setTrimmingVideo] = useState(false);
+  const [videoCaption, setVideoCaption] = useState("");
+  const [flashOn, setFlashOn] = useState(false);
+  const [muteVideoAudio, setMuteVideoAudio] = useState(false);
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryFiles, setGalleryFiles] = useState<File[]>([]);
+  const [activeTrimHandle, setActiveTrimHandle] = useState<"start" | "end" | null>(
+    null,
+  );
+  const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const trimSliderRef = useRef<HTMLDivElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const recordedChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<number | null>(null);
   const ffmpegRef = useRef<FFmpeg | null>(null);
   const [athleteDayCheckins, setAthleteDayCheckins] = useState<
     Record<string, AthleteDayCheckin>
@@ -259,6 +275,10 @@ export default function ProgramWeekPage() {
   const [previousWeekData, setPreviousWeekData] =
     useState<PreviousWeekSetData | null>(null);
   const [previousWeekMessage, setPreviousWeekMessage] = useState("");
+  const [blockNavOpen, setBlockNavOpen] = useState(false);
+  const [weekNavOpen, setWeekNavOpen] = useState(false);
+  const blockNavRef = useRef<HTMLDivElement | null>(null);
+  const weekNavRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setNavigatingUrl("");
@@ -301,19 +321,87 @@ export default function ProgramWeekPage() {
       return;
     }
 
-    startCameraStream();
+    if (recordedVideoUrl) {
+      stopCameraStream();
+    }
+  }, [videoRecorderOpen, recordedVideoUrl]);
+
+  useEffect(() => {
+    if (!videoRecorderOpen || recordedVideoUrl) return;
+
+    stopCameraStream();
+    void startCameraStream();
+  }, [cameraFacingMode]);
+
+  useEffect(() => {
+    void applyTorch(flashOn);
+  }, [flashOn]);
+
+  useEffect(() => {
+    if (!videoRecorderOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+    const previousTouchAction = document.body.style.touchAction;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+    if (!recordedVideoUrl) {
+      document.body.style.touchAction = "none";
+    }
 
     return () => {
-      stopCameraStream();
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+      document.body.style.touchAction = previousTouchAction;
     };
-  }, [videoRecorderOpen, cameraFacingMode]);
+  }, [videoRecorderOpen, recordedVideoUrl]);
+
+  useEffect(() => {
+    if (!athleteExercisePanelOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previousOverscroll = document.body.style.overscrollBehavior;
+
+    document.body.style.overflow = "hidden";
+    document.body.style.overscrollBehavior = "none";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.body.style.overscrollBehavior = previousOverscroll;
+    };
+  }, [athleteExercisePanelOpen]);
 
   useEffect(() => {
     return () => {
       if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
       stopCameraStream();
+      stopRecordingTimer();
     };
   }, [recordedVideoUrl]);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as Node;
+
+      if (blockNavRef.current && !blockNavRef.current.contains(target)) {
+        setBlockNavOpen(false);
+      }
+
+      if (weekNavRef.current && !weekNavRef.current.contains(target)) {
+        setWeekNavOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  function scrollMobileFieldIntoView(target: HTMLElement) {
+    window.setTimeout(() => {
+      target.scrollIntoView({ block: "center", behavior: "smooth" });
+    }, 300);
+  }
 
   function setSavedSoon() {
     setSaveState("saved");
@@ -525,6 +613,721 @@ export default function ProgramWeekPage() {
 
   function goToProgram(targetBlockId: string, targetWeekId: string) {
     goToUrl(programUrl(targetBlockId, targetWeekId));
+  }
+
+  function goToBlock(targetBlockId: string) {
+    if (targetBlockId === blockId) return;
+
+    const blockWeeks = weeksByBlock[targetBlockId] || [];
+
+    if (blockWeeks.length === 0) {
+      goToUrl(programUrl(targetBlockId, weekId));
+      return;
+    }
+
+    const preferredWeek =
+      blockWeeks.find((item) => item.week_number === week?.week_number) ||
+      blockWeeks[0];
+
+    goToProgram(targetBlockId, preferredWeek.id);
+  }
+
+  function renderBlockWeekNav() {
+    const blockWeeks = weeksByBlock[blockId] || [];
+    const activeBlock = navBlocks.find((block) => block.id === blockId) || currentBlock;
+    const activeWeek = blockWeeks.find((item) => item.id === weekId) || week;
+
+    const activeBlockStart = activeBlock
+      ? getBlockStartDateObject(activeBlock)
+      : null;
+    const activeBlockEnd = activeBlock
+      ? getBlockEndDateObject(activeBlock, blockWeeks)
+      : null;
+    const activeWeekStart =
+      activeBlock && activeWeek
+        ? getWeekStartDateObject(activeBlock, activeWeek)
+        : null;
+    const activeWeekEnd =
+      activeBlock && activeWeek
+        ? getWeekEndDateObject(activeBlock, activeWeek)
+        : null;
+
+    return (
+      <div className="sticky top-0 z-20 -mx-3 mb-4 space-y-3 border-b border-gray-200 bg-gray-100/95 px-3 pb-3 pt-1 backdrop-blur lg:hidden md:-mx-8 md:px-8">
+        <div className="grid grid-cols-2 gap-2">
+          <div ref={blockNavRef} className="relative min-w-0">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-gray-400">
+              Block
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setWeekNavOpen(false);
+                setBlockNavOpen((current) => !current);
+              }}
+              className={`flex w-full items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm font-bold transition active:scale-95 ${
+                blockId
+                  ? "border-black bg-black text-white"
+                  : "border-gray-200 bg-white text-black"
+              }`}
+            >
+              <span className="min-w-0 truncate">
+                {activeBlock?.title || "Block"}
+                <span
+                  className={`block text-[11px] font-semibold ${
+                    blockId ? "text-white/75" : "text-gray-500"
+                  }`}
+                >
+                  {formatDateRangeLabel(activeBlockStart, activeBlockEnd)}
+                </span>
+              </span>
+              <span
+                className={`shrink-0 text-xs ${
+                  blockId ? "text-white/70" : "text-gray-400"
+                }`}
+              >
+                ▼
+              </span>
+            </button>
+
+            {blockNavOpen && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+                {navBlocks.map((block) => {
+                  const weeksForBlock = weeksByBlock[block.id] || [];
+                  const blockStart = getBlockStartDateObject(block);
+                  const blockEnd = getBlockEndDateObject(block, weeksForBlock);
+                  const isActive = block.id === blockId;
+
+                  return (
+                    <button
+                      key={block.id}
+                      type="button"
+                      onClick={() => {
+                        setBlockNavOpen(false);
+                        goToBlock(block.id);
+                      }}
+                      className={`flex w-full flex-col px-4 py-2.5 text-left transition hover:bg-gray-50 ${
+                        isActive ? "bg-gray-100" : ""
+                      }`}
+                    >
+                      <span className="truncate text-sm font-bold text-black">
+                        {block.title}
+                      </span>
+                      <span className="text-[11px] font-semibold text-gray-500">
+                        {formatDateRangeLabel(blockStart, blockEnd)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          <div ref={weekNavRef} className="relative min-w-0">
+            <p className="mb-1.5 text-[10px] font-black uppercase tracking-wider text-gray-400">
+              Week
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setBlockNavOpen(false);
+                setWeekNavOpen((current) => !current);
+              }}
+              className={`flex w-full items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm font-bold transition active:scale-95 ${
+                weekId
+                  ? "border-black bg-black text-white"
+                  : "border-gray-200 bg-white text-black"
+              }`}
+            >
+              <span className="min-w-0 truncate">
+                {activeWeek?.title || "Week"}
+                <span
+                  className={`block text-[11px] font-semibold ${
+                    weekId ? "text-white/75" : "text-gray-500"
+                  }`}
+                >
+                  {formatDateRangeLabel(activeWeekStart, activeWeekEnd)}
+                </span>
+              </span>
+              <span
+                className={`shrink-0 text-xs ${
+                  weekId ? "text-white/70" : "text-gray-400"
+                }`}
+              >
+                ▼
+              </span>
+            </button>
+
+            {weekNavOpen && (
+              <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
+                {blockWeeks.map((item) => {
+                  const weekStart =
+                    activeBlock ? getWeekStartDateObject(activeBlock, item) : null;
+                  const weekEnd =
+                    activeBlock ? getWeekEndDateObject(activeBlock, item) : null;
+                  const isActive = item.id === weekId;
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setWeekNavOpen(false);
+                        goToProgram(blockId, item.id);
+                      }}
+                      className={`flex w-full flex-col px-4 py-2.5 text-left transition hover:bg-gray-50 ${
+                        isActive ? "bg-gray-100" : ""
+                      }`}
+                    >
+                      <span className="truncate text-sm font-bold text-black">
+                        {item.title}
+                      </span>
+                      <span className="text-[11px] font-semibold text-gray-500">
+                        {formatDateRangeLabel(weekStart, weekEnd)}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {role === "coach" && (
+          <div className="flex gap-2">
+            <button
+              type="button"
+              onClick={() => setCreatingBlock(true)}
+              className="rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95"
+            >
+              + Block
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setCreatingWeekBlockId(blockId);
+                setNewWeekTitle(`Week ${blockWeeks.length + 1}`);
+              }}
+              className="rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95"
+            >
+              + Week
+            </button>
+          </div>
+        )}
+
+        {role === "coach" && creatingBlock && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <input
+              value={newBlockTitle}
+              onChange={(e) => setNewBlockTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createBlock();
+              }}
+              placeholder="Naam block"
+              className="mb-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+            />
+            <input
+              type="date"
+              value={newBlockStartDate}
+              onChange={(e) => setNewBlockStartDate(e.target.value)}
+              className="mb-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+            />
+            <textarea
+              value={newBlockDescription}
+              onChange={(e) => setNewBlockDescription(e.target.value)}
+              placeholder="Beschrijving"
+              className="mb-2 min-h-[70px] w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={createBlock}
+                className="flex-1 rounded-xl bg-black px-3 py-2 text-sm text-white"
+              >
+                Opslaan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatingBlock(false);
+                  setNewBlockTitle("");
+                  setNewBlockDescription("");
+                  setNewBlockStartDate("");
+                }}
+                className="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-sm text-black"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {role === "coach" && creatingWeekBlockId === blockId && (
+          <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
+            <input
+              value={newWeekTitle}
+              onChange={(e) => setNewWeekTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createWeek(blockId);
+              }}
+              placeholder="Naam week"
+              className="mb-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => createWeek(blockId)}
+                className="flex-1 rounded-xl bg-black px-3 py-2 text-sm text-white"
+              >
+                Opslaan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatingWeekBlockId("");
+                  setNewWeekTitle("");
+                }}
+                className="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-sm text-black"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  function renderBlocksSidebar() {
+    return (
+              <aside className="group/blocks sticky top-0 hidden h-screen self-start w-[70px] min-w-[70px] overflow-y-auto border-r border-gray-200 bg-white p-3 z-20 transition-all duration-200 hover:w-[300px] hover:min-w-[300px] lg:block">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150 overflow-hidden whitespace-nowrap">
+                    <h2 className="text-lg font-bold">Blocks</h2>
+                    <p className="text-xs text-gray-500">Blocks en weken</p>
+                  </div>
+      
+                  <div className="opacity-100 group-hover/blocks:opacity-0 absolute left-5 top-5 text-xl">
+                    📚
+                  </div>
+      
+                  {role === "coach" && (
+                    <button
+                      type="button"
+                      onClick={() => setCreatingBlock(true)}
+                      className="w-9 h-9 min-w-9 rounded-xl bg-black text-white text-xl flex items-center justify-center"
+                    >
+                      +
+                    </button>
+                  )}
+                </div>
+      
+                <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150">
+                  {role === "coach" && creatingBlock && (
+                    <div className="bg-gray-100 rounded-2xl p-3 mb-4">
+                      <input
+                        value={newBlockTitle}
+                        onChange={(e) => setNewBlockTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") createBlock();
+                        }}
+                        placeholder="Naam block"
+                        className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
+                      />
+      
+                      <input
+                        type="date"
+                        value={newBlockStartDate}
+                        onChange={(e) => setNewBlockStartDate(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") createBlock();
+                        }}
+                        className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
+                      />
+      
+                      <textarea
+                        value={newBlockDescription}
+                        onChange={(e) => setNewBlockDescription(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            createBlock();
+                          }
+                        }}
+                        placeholder="Beschrijving"
+                        className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none resize-none min-h-[70px] text-black"
+                      />
+      
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={createBlock}
+                          className="flex-1 bg-black text-white rounded-xl px-3 py-2 text-sm"
+                        >
+                          Opslaan
+                        </button>
+      
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatingBlock(false);
+                            setNewBlockTitle("");
+                            setNewBlockDescription("");
+                            setNewBlockStartDate("");
+                          }}
+                          className="flex-1 bg-white text-black rounded-xl px-3 py-2 text-sm"
+                        >
+                          Annuleer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+      
+                  <div className="space-y-3">
+                    {navBlocks.map((block) => {
+                      const isOpen = openBlockIds[block.id];
+                      const activeBlock = block.id === blockId;
+                      const blockWeeks = weeksByBlock[block.id] || [];
+                      const isEditingBlock = editingBlockId === block.id;
+      
+                      return (
+                        <div
+                          key={block.id}
+                          className={`rounded-2xl border overflow-hidden ${
+                            activeBlock ? "border-black" : "border-gray-200"
+                          }`}
+                        >
+                          <div
+                            className={`p-3 ${
+                              activeBlock
+                                ? "bg-black text-white"
+                                : "bg-gray-50 text-black"
+                            }`}
+                          >
+                            <div className="flex items-start justify-between gap-2">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setOpenBlockIds((current) => ({
+                                    ...current,
+                                    [block.id]: !current[block.id],
+                                  }))
+                                }
+                                className="flex-1 text-left"
+                              >
+                                <p
+                                  className={`text-[10px] mb-1 ${
+                                    activeBlock ? "text-gray-300" : "text-gray-400"
+                                  }`}
+                                >
+                                  {formatDate(block.start_date)}
+                                </p>
+      
+                                {!isEditingBlock && (
+                                  <h3 className="font-bold text-sm leading-tight">
+                                    {isOpen ? "⌄" : "›"} {block.title}
+                                  </h3>
+                                )}
+                              </button>
+      
+                              {role === "coach" && !isEditingBlock && (
+                                <div className="flex gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setEditingBlockId(block.id);
+                                      setEditingBlockTitle(block.title);
+                                      setEditingBlockStartDate(
+                                        block.start_date || "",
+                                      );
+                                    }}
+                                    className={`w-7 h-7 rounded-lg text-xs ${
+                                      activeBlock
+                                        ? "bg-white/20 hover:bg-white/30 text-white"
+                                        : "bg-white hover:bg-gray-100 text-black"
+                                    }`}
+                                    title="Aanpassen"
+                                  >
+                                    ✎
+                                  </button>
+      
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      duplicateBlock(block);
+                                    }}
+                                    className={`w-7 h-7 rounded-lg text-xs ${
+                                      activeBlock
+                                        ? "bg-white/20 hover:bg-white/30 text-white"
+                                        : "bg-white hover:bg-gray-100 text-black"
+                                    }`}
+                                    title="Dupliceren"
+                                  >
+                                    ⧉
+                                  </button>
+      
+                                  <button
+                                    type="button"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      deleteBlock(block);
+                                    }}
+                                    className={`w-7 h-7 rounded-lg text-xs ${
+                                      activeBlock
+                                        ? "bg-white/20 hover:bg-red-500 text-white"
+                                        : "bg-white hover:bg-red-500 hover:text-white text-black"
+                                    }`}
+                                    title="Verwijderen"
+                                  >
+                                    ✕
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+      
+                            {isEditingBlock && (
+                              <div className="mt-2 space-y-2">
+                                <input
+                                  value={editingBlockTitle}
+                                  onChange={(e) =>
+                                    setEditingBlockTitle(e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") renameBlock(block.id);
+                                  }}
+                                  className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
+                                  placeholder="Naam block"
+                                />
+      
+                                <input
+                                  type="date"
+                                  value={editingBlockStartDate}
+                                  onChange={(e) =>
+                                    setEditingBlockStartDate(e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === "Enter") renameBlock(block.id);
+                                  }}
+                                  className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
+                                />
+      
+                                <div className="flex gap-2">
+                                  <button
+                                    type="button"
+                                    onClick={() => renameBlock(block.id)}
+                                    className="flex-1 bg-white text-black rounded-xl px-2 py-1 text-xs font-bold"
+                                  >
+                                    Opslaan
+                                  </button>
+      
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingBlockId("");
+                                      setEditingBlockTitle("");
+                                      setEditingBlockStartDate("");
+                                    }}
+                                    className="flex-1 bg-gray-200 text-black rounded-xl px-2 py-1 text-xs font-bold"
+                                  >
+                                    Stop
+                                  </button>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+      
+                          {isOpen && (
+                            <div className="p-2 bg-white space-y-2">
+                              {blockWeeks.map((item) => {
+                                const activeWeek = item.id === weekId;
+                                const isEditingWeek = editingWeekId === item.id;
+      
+                                return (
+                                  <div
+                                    key={item.id}
+                                    className={`rounded-xl ${
+                                      activeWeek
+                                        ? "bg-black text-white"
+                                        : "bg-gray-100 text-black"
+                                    }`}
+                                  >
+                                    {!isEditingWeek && (
+                                      <div className="flex items-center gap-2 p-2">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            goToProgram(block.id, item.id)
+                                          }
+                                          className="flex-1 text-left text-sm font-semibold"
+                                        >
+                                          {item.title}
+                                        </button>
+      
+                                        {role === "coach" && (
+                                          <>
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                setEditingWeekId(item.id);
+                                                setEditingWeekTitle(item.title);
+                                              }}
+                                              className={`w-7 h-7 rounded-lg text-xs ${
+                                                activeWeek
+                                                  ? "bg-white/20 text-white"
+                                                  : "bg-white text-black"
+                                              }`}
+                                              title="Aanpassen"
+                                            >
+                                              ✎
+                                            </button>
+      
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                duplicateWeek(item);
+                                              }}
+                                              className={`w-7 h-7 rounded-lg text-xs ${
+                                                activeWeek
+                                                  ? "bg-white/20 text-white"
+                                                  : "bg-white text-black"
+                                              }`}
+                                              title="Dupliceren"
+                                            >
+                                              ⧉
+                                            </button>
+      
+                                            <button
+                                              type="button"
+                                              onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                deleteWeek(item);
+                                              }}
+                                              className={`w-7 h-7 rounded-lg text-xs ${
+                                                activeWeek
+                                                  ? "bg-white/20 hover:bg-red-500 text-white"
+                                                  : "bg-white hover:bg-red-500 hover:text-white text-black"
+                                              }`}
+                                              title="Verwijderen"
+                                            >
+                                              ✕
+                                            </button>
+                                          </>
+                                        )}
+                                      </div>
+                                    )}
+      
+                                    {isEditingWeek && (
+                                      <div className="p-2">
+                                        <input
+                                          value={editingWeekTitle}
+                                          onChange={(e) =>
+                                            setEditingWeekTitle(e.target.value)
+                                          }
+                                          onKeyDown={(e) => {
+                                            if (e.key === "Enter") renameWeek(item);
+                                          }}
+                                          className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
+                                        />
+      
+                                        <div className="flex gap-2 mt-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => renameWeek(item)}
+                                            className="flex-1 bg-black text-white rounded-xl px-2 py-1 text-xs"
+                                          >
+                                            Opslaan
+                                          </button>
+      
+                                          <button
+                                            type="button"
+                                            onClick={() => {
+                                              setEditingWeekId("");
+                                              setEditingWeekTitle("");
+                                            }}
+                                            className="flex-1 bg-white rounded-xl px-2 py-1 text-xs text-black"
+                                          >
+                                            Stop
+                                          </button>
+                                        </div>
+                                      </div>
+                                    )}
+                                  </div>
+                                );
+                              })}
+      
+                              {role === "coach" &&
+                                creatingWeekBlockId !== block.id && (
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCreatingWeekBlockId(block.id);
+                                      setNewWeekTitle(
+                                        `Week ${blockWeeks.length + 1}`,
+                                      );
+                                    }}
+                                    className="w-full rounded-xl border-2 border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:border-black hover:text-black"
+                                  >
+                                    + Week toevoegen
+                                  </button>
+                                )}
+      
+                              {role === "coach" &&
+                                creatingWeekBlockId === block.id && (
+                                  <div className="bg-gray-100 rounded-xl p-2">
+                                    <input
+                                      value={newWeekTitle}
+                                      onChange={(e) =>
+                                        setNewWeekTitle(e.target.value)
+                                      }
+                                      onKeyDown={(e) => {
+                                        if (e.key === "Enter") createWeek(block.id);
+                                      }}
+                                      placeholder="Naam week"
+                                      className="w-full rounded-xl px-3 py-2 text-sm outline-none mb-2 text-black bg-white border border-gray-300"
+                                    />
+      
+                                    <div className="flex gap-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => createWeek(block.id)}
+                                        className="flex-1 bg-black text-white rounded-xl px-2 py-1 text-xs"
+                                      >
+                                        Opslaan
+                                      </button>
+      
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCreatingWeekBlockId("");
+                                          setNewWeekTitle("");
+                                        }}
+                                        className="flex-1 bg-white text-black rounded-xl px-2 py-1 text-xs"
+                                      >
+                                        Annuleer
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </aside>
+      
+    );
   }
 
   async function createBlock() {
@@ -1159,7 +1962,7 @@ export default function ProgramWeekPage() {
           rpe: rpeValue,
           notes: "",
           exercise_number: (exercisesByDay[dayId] || []).length + 1,
-          priority: "primary",
+          priority: "",
         });
 
         if (error) throw error;
@@ -1780,6 +2583,57 @@ export default function ProgramWeekPage() {
     return formatDutchDateWithFullMonth(new Date(date));
   }
 
+  function formatShortDutchDate(date: Date) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    return `${day}-${month}`;
+  }
+
+  function getBlockStartDateObject(block: ProgramBlock) {
+    if (!block.start_date) return null;
+
+    const date = new Date(block.start_date);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  function getBlockEndDateObject(block: ProgramBlock, blockWeeks: ProgramWeek[]) {
+    const start = getBlockStartDateObject(block);
+    if (!start) return null;
+
+    const weekCount = Math.max(blockWeeks.length, 1);
+    const end = new Date(start);
+    end.setDate(end.getDate() + weekCount * 7 - 1);
+    return end;
+  }
+
+  function getWeekStartDateObject(block: ProgramBlock, programWeek: ProgramWeek) {
+    const start = getBlockStartDateObject(block);
+    if (!start) return null;
+
+    const weekStart = new Date(start);
+    weekStart.setDate(weekStart.getDate() + (programWeek.week_number - 1) * 7);
+    return weekStart;
+  }
+
+  function getWeekEndDateObject(block: ProgramBlock, programWeek: ProgramWeek) {
+    const weekStart = getWeekStartDateObject(block, programWeek);
+    if (!weekStart) return null;
+
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekEnd.getDate() + 6);
+    return weekEnd;
+  }
+
+  function formatDateRangeLabel(
+    start: Date | null,
+    end: Date | null,
+    fallback = "Geen datum",
+  ) {
+    if (!start || !end) return fallback;
+    return `${formatShortDutchDate(start)} - ${formatShortDutchDate(end)}`;
+  }
+
   function hasExercises(dayId: string) {
     return (exercisesByDay[dayId] || []).length > 0;
   }
@@ -1825,7 +2679,7 @@ export default function ProgramWeekPage() {
       return "bg-[#cfe2f3] text-black";
     }
 
-    return "bg-gray-100 text-gray-700";
+    return "bg-gray-100 text-black";
   }
 
   function getExercisePriority(exercise: ProgramExercise) {
@@ -1833,8 +2687,9 @@ export default function ProgramWeekPage() {
   }
 
   function getExercisePriorityLabel(exercise: ProgramExercise) {
-    const priority = getExercisePriority(exercise) || "primary";
+    const priority = getExercisePriority(exercise);
 
+    if (!priority) return "";
     if (priority === "primary") return "Primary";
     if (priority === "secondary") return "Secondary";
     if (priority === "tertiary") return "Tertiary";
@@ -1843,11 +2698,15 @@ export default function ProgramWeekPage() {
     if (priority === "senary") return "Senary";
     if (priority === "septenary") return "Septenary";
 
-    return "Primary";
+    return "";
   }
 
   function getExercisePriorityClass(exercise: ProgramExercise) {
-    const priority = getExercisePriority(exercise) || "primary";
+    const priority = getExercisePriority(exercise);
+
+    if (!priority) {
+      return "bg-gray-50 text-gray-500 border-gray-200";
+    }
 
     if (priority === "primary") {
       return "bg-red-100 text-red-700 border-red-200";
@@ -2401,6 +3260,7 @@ export default function ProgramWeekPage() {
         video_url: null,
         video_path: null,
         file_name: null,
+        caption: null,
       };
     });
 
@@ -2438,6 +3298,13 @@ export default function ProgramWeekPage() {
     return type.includes("mp4") ? "mp4" : "webm";
   }
 
+  function stopRecordingTimer() {
+    if (recordingTimerRef.current) {
+      window.clearInterval(recordingTimerRef.current);
+      recordingTimerRef.current = null;
+    }
+  }
+
   function openVideoRecorder(exercise: ProgramExercise, setNumber: number) {
     if (!navigator.mediaDevices?.getUserMedia) {
       alert("Je browser ondersteunt opnemen in de app niet.");
@@ -2452,9 +3319,20 @@ export default function ProgramWeekPage() {
     setVideoDuration(0);
     setTrimStart(0);
     setTrimEnd(0);
+    setRecordingSeconds(0);
+    setGalleryOpen(false);
+    setGalleryFiles([]);
+    setMuteVideoAudio(false);
+    setFlashOn(false);
+    setActiveTrimHandle(null);
+    setVideoCaption(
+      getAthleteSetVideo(exercise.id, setNumber)?.caption?.trim() || "",
+    );
     setCameraError("");
     setCameraReady(false);
     setVideoRecorderOpen(true);
+    // iOS Safari requires getUserMedia inside the tap/click handler.
+    void startCameraStream();
   }
 
   function closeVideoRecorder() {
@@ -2466,6 +3344,8 @@ export default function ProgramWeekPage() {
     setVideoRecorderOpen(false);
     setVideoRecorderTarget(null);
     setIsRecordingVideo(false);
+    stopRecordingTimer();
+    setRecordingSeconds(0);
     setCameraReady(false);
     setCameraError("");
 
@@ -2476,12 +3356,66 @@ export default function ProgramWeekPage() {
     setVideoDuration(0);
     setTrimStart(0);
     setTrimEnd(0);
+    setRecordingSeconds(0);
+    setGalleryOpen(false);
+    setGalleryFiles([]);
+    setMuteVideoAudio(false);
+    setFlashOn(false);
+    setActiveTrimHandle(null);
+    setVideoCaption("");
+  }
+
+  function isIgnorableCameraError(error: unknown) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : typeof error === "string"
+          ? error
+          : "";
+
+    return /aborted|AbortError|interrupted by a new load request/i.test(message);
+  }
+
+  function getCameraErrorMessage(error: unknown) {
+    if (isIgnorableCameraError(error)) return "";
+
+    const message = error instanceof Error ? error.message : String(error);
+
+    return (
+      message ||
+      "Camera kon niet worden geopend. Geef Safari/Chrome toestemming voor camera en microfoon."
+    );
+  }
+
+  async function playCameraPreview() {
+    if (!cameraVideoRef.current) return;
+
+    try {
+      await cameraVideoRef.current.play();
+    } catch (error) {
+      if (!isIgnorableCameraError(error)) {
+        console.warn("CAMERA PREVIEW PLAY ERROR:", error);
+      }
+    }
   }
 
   async function startCameraStream() {
-    setCameraReady(false);
     setCameraError("");
-    stopCameraStream();
+
+    if (cameraStreamRef.current) {
+      if (
+        cameraVideoRef.current &&
+        cameraVideoRef.current.srcObject !== cameraStreamRef.current
+      ) {
+        cameraVideoRef.current.srcObject = cameraStreamRef.current;
+        await playCameraPreview();
+      }
+      setCameraReady(true);
+      await applyTorch(flashOn);
+      return;
+    }
+
+    setCameraReady(false);
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({
@@ -2497,16 +3431,17 @@ export default function ProgramWeekPage() {
 
       if (cameraVideoRef.current) {
         cameraVideoRef.current.srcObject = stream;
-        await cameraVideoRef.current.play();
+        await playCameraPreview();
       }
 
       setCameraReady(true);
+      await applyTorch(flashOn);
     } catch (error: any) {
       console.error("CAMERA ERROR:", error);
-      setCameraError(
-        error?.message ||
-          "Camera kon niet worden geopend. Geef Safari/Chrome toestemming voor camera en microfoon.",
-      );
+      const message = getCameraErrorMessage(error);
+      if (message) {
+        setCameraError(message);
+      }
       setCameraReady(false);
     }
   }
@@ -2518,6 +3453,78 @@ export default function ProgramWeekPage() {
     if (cameraVideoRef.current) {
       cameraVideoRef.current.srcObject = null;
     }
+  }
+
+  async function applyTorch(nextFlashOn: boolean) {
+    const videoTrack = cameraStreamRef.current?.getVideoTracks()[0];
+    if (!videoTrack) return;
+
+    try {
+      const capabilities = videoTrack.getCapabilities?.() as MediaTrackCapabilities & {
+        torch?: boolean;
+      };
+      if (!capabilities?.torch) return;
+
+      await videoTrack.applyConstraints({
+        advanced: [{ torch: nextFlashOn } as MediaTrackConstraintSet],
+      });
+    } catch (error) {
+      console.warn("FLASH NOT SUPPORTED:", error);
+      if (nextFlashOn) setFlashOn(false);
+    }
+  }
+
+  function toggleFlash() {
+    setFlashOn((current) => !current);
+  }
+
+  function switchCameraFacingMode() {
+    if (isRecordingVideo) return;
+    setFlashOn(false);
+    setCameraFacingMode((current) =>
+      current === "environment" ? "user" : "environment",
+    );
+  }
+
+  function handleRecordButtonClick() {
+    if (isRecordingVideo) {
+      stopVideoRecording();
+    } else {
+      startVideoRecording();
+    }
+  }
+
+  function handleGalleryFiles(files: FileList | null) {
+    const videos = Array.from(files || []).filter((file) =>
+      file.type.startsWith("video/"),
+    );
+
+    if (videos.length === 0) {
+      alert("Kies minimaal één video uit je camerarol");
+      return;
+    }
+
+    setGalleryFiles(videos);
+    setGalleryOpen(true);
+  }
+
+  function chooseGalleryFile(file: File) {
+    if (!file.type.startsWith("video/")) {
+      alert("Kies een video uit je camerarol");
+      return;
+    }
+
+    if (recordedVideoUrl) URL.revokeObjectURL(recordedVideoUrl);
+
+    const url = URL.createObjectURL(file);
+    setRecordedVideoFile(file);
+    setRecordedVideoUrl(url);
+    setTrimStart(0);
+    setTrimEnd(0);
+    setRecordingSeconds(0);
+    setGalleryOpen(false);
+    stopRecordingTimer();
+    setIsRecordingVideo(false);
   }
 
   function startVideoRecording() {
@@ -2563,10 +3570,16 @@ export default function ProgramWeekPage() {
         setRecordedVideoUrl(url);
         setTrimStart(0);
         setTrimEnd(0);
+        stopRecordingTimer();
         setIsRecordingVideo(false);
       };
 
       recorder.start(250);
+      setRecordingSeconds(0);
+      stopRecordingTimer();
+      recordingTimerRef.current = window.setInterval(() => {
+        setRecordingSeconds((current) => current + 1);
+      }, 1000);
       setIsRecordingVideo(true);
     } catch (error: any) {
       console.error("RECORD ERROR:", error);
@@ -2577,6 +3590,8 @@ export default function ProgramWeekPage() {
 
   function stopVideoRecording() {
     if (!mediaRecorderRef.current) return;
+
+    stopRecordingTimer();
 
     if (mediaRecorderRef.current.state !== "inactive") {
       mediaRecorderRef.current.stop();
@@ -2591,6 +3606,24 @@ export default function ProgramWeekPage() {
     setVideoDuration(0);
     setTrimStart(0);
     setTrimEnd(0);
+    setActiveTrimHandle(null);
+    setRecordingSeconds(0);
+    setGalleryOpen(false);
+    setCameraError("");
+    setVideoCaption("");
+
+    window.setTimeout(() => {
+      if (!videoRecorderOpen) return;
+
+      if (cameraStreamRef.current && cameraVideoRef.current) {
+        cameraVideoRef.current.srcObject = cameraStreamRef.current;
+        void playCameraPreview();
+        setCameraReady(true);
+        return;
+      }
+
+      void startCameraStream();
+    }, 80);
   }
 
   function handlePreviewLoadedMetadata() {
@@ -2611,6 +3644,46 @@ export default function ProgramWeekPage() {
     return `${minutes}:${String(seconds).padStart(2, "0")}`;
   }
 
+  function togglePreviewMute() {
+    setMuteVideoAudio((current) => {
+      const nextValue = !current;
+      if (previewVideoRef.current) {
+        previewVideoRef.current.muted = nextValue;
+        previewVideoRef.current.volume = nextValue ? 0 : 1;
+      }
+      return nextValue;
+    });
+  }
+
+  function updateTrimFromClientX(clientX: number, handle?: "start" | "end") {
+    if (!trimSliderRef.current || !videoDuration) return;
+
+    const rect = trimSliderRef.current.getBoundingClientRect();
+    const rawPercent = (clientX - rect.left) / rect.width;
+    const nextTime = Math.min(
+      videoDuration,
+      Math.max(0, rawPercent * videoDuration),
+    );
+    const minGap = Math.min(0.4, Math.max(0.1, videoDuration / 30));
+    const currentEnd = trimEnd || videoDuration;
+    const chosenHandle =
+      handle ||
+      (Math.abs(nextTime - trimStart) <= Math.abs(nextTime - currentEnd)
+        ? "start"
+        : "end");
+
+    if (chosenHandle === "start") {
+      const nextStart = Math.min(nextTime, currentEnd - minGap);
+      setTrimStart(nextStart);
+      if (previewVideoRef.current) previewVideoRef.current.currentTime = nextStart;
+      return;
+    }
+
+    const nextEnd = Math.max(nextTime, trimStart + minGap);
+    setTrimEnd(nextEnd);
+    if (previewVideoRef.current) previewVideoRef.current.currentTime = nextEnd;
+  }
+
   async function getFFmpeg() {
     if (ffmpegRef.current?.loaded) return ffmpegRef.current;
 
@@ -2625,15 +3698,24 @@ export default function ProgramWeekPage() {
   }
 
   async function trimVideoFile(file: File, start: number, end: number) {
-    if (!videoDuration || (start <= 0.05 && end >= videoDuration - 0.05)) {
+    const effectiveEnd = end > 0 ? end : videoDuration;
+
+    if (
+      !muteVideoAudio &&
+      (!videoDuration ||
+        (start <= 0.05 &&
+          effectiveEnd >= Math.max(videoDuration - 0.05, 0)))
+    ) {
       return file;
     }
 
     const safeStart = Math.max(0, start);
-    const safeEnd = Math.min(videoDuration, end);
+    const safeEnd = videoDuration
+      ? Math.min(videoDuration, effectiveEnd || videoDuration)
+      : Math.max(effectiveEnd || 0, safeStart + 0.5);
 
     if (safeEnd <= safeStart) {
-      throw new Error("Eindtijd moet na starttijd liggen");
+      return file;
     }
 
     setTrimmingVideo(true);
@@ -2646,7 +3728,7 @@ export default function ProgramWeekPage() {
       const outputName = "output.mp4";
 
       await ffmpeg.writeFile(inputName, await fetchFile(file));
-      await ffmpeg.exec([
+      const ffmpegArgs = [
         "-ss",
         String(safeStart),
         "-to",
@@ -2657,20 +3739,25 @@ export default function ProgramWeekPage() {
         "libx264",
         "-preset",
         "veryfast",
-        "-c:a",
-        "aac",
-        outputName,
-      ]);
+      ];
+
+      if (muteVideoAudio) {
+        ffmpegArgs.push("-an");
+      } else {
+        ffmpegArgs.push("-c:a", "aac");
+      }
+
+      ffmpegArgs.push(outputName);
+      await ffmpeg.exec(ffmpegArgs);
 
       const output = await ffmpeg.readFile(outputName);
-      const outputData = output instanceof Uint8Array ? output : new TextEncoder().encode(output);
-      const fixedOutputData = new Uint8Array(
-  outputData as Uint8Array
-).buffer;
+      const outputData =
+        output instanceof Uint8Array ? output : new TextEncoder().encode(output);
+      const fixedOutputData = new Uint8Array(outputData as Uint8Array).buffer;
 
-const trimmedBlob = new Blob([fixedOutputData], {
-  type: "video/mp4",
-});
+      const trimmedBlob = new Blob([fixedOutputData], {
+        type: "video/mp4",
+      });
 
       await ffmpeg.deleteFile(inputName).catch(() => undefined);
       await ffmpeg.deleteFile(outputName).catch(() => undefined);
@@ -2689,23 +3776,32 @@ const trimmedBlob = new Blob([fixedOutputData], {
       return;
     }
 
+    const endTime = trimEnd || videoDuration || 0;
+    let fileToUpload = recordedVideoFile;
+
     try {
-      const trimmedFile = await trimVideoFile(
-        recordedVideoFile,
-        trimStart,
-        trimEnd || videoDuration,
-      );
+      try {
+        fileToUpload = await trimVideoFile(
+          recordedVideoFile,
+          trimStart,
+          endTime,
+        );
+      } catch (trimError) {
+        console.error("TRIM ERROR, uploading original video:", trimError);
+        fileToUpload = recordedVideoFile;
+      }
 
       await uploadAthleteSetVideo(
         videoRecorderTarget.exercise,
         videoRecorderTarget.setNumber,
-        trimmedFile,
+        fileToUpload,
+        videoCaption.trim() || null,
       );
 
       closeVideoRecorder();
     } catch (error: any) {
-      console.error("TRIM ERROR:", error);
-      alert(error?.message || "Video knippen mislukt");
+      console.error("SAVE VIDEO ERROR:", error);
+      alert(error?.message || "Video opslaan mislukt");
     }
   }
 
@@ -2713,6 +3809,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
     exercise: ProgramExercise,
     setNumber: number,
     file: File | null,
+    caption: string | null = null,
   ) {
     const ownerAthleteId = getOwnerAthleteId();
 
@@ -2774,6 +3871,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
         video_url: publicUrlData.publicUrl,
         video_path: filePath,
         file_name: file.name,
+        caption,
       };
 
       const { data: existingVideo, error: findError } = await supabase
@@ -2805,6 +3903,53 @@ const trimmedBlob = new Blob([fixedOutputData], {
         ...current,
         [videoKey]: videoRow,
       }));
+
+      let thumbnailUrl: string | null = null;
+
+      try {
+        const thumbnailBlob = await captureVideoThumbnail(file);
+        const thumbnailPath = `${ownerAthleteId}/${exercise.id}/set-${setNumber}/thumb-${Date.now()}.jpg`;
+
+        const { error: thumbnailUploadError } = await supabase.storage
+          .from("exercise-videos")
+          .upload(thumbnailPath, thumbnailBlob, {
+            upsert: true,
+            contentType: "image/jpeg",
+          });
+
+        if (!thumbnailUploadError) {
+          const { data: thumbnailPublicUrl } = supabase.storage
+            .from("exercise-videos")
+            .getPublicUrl(thumbnailPath);
+
+          thumbnailUrl = thumbnailPublicUrl.publicUrl;
+        }
+      } catch (thumbnailError) {
+        console.error("VIDEO THUMBNAIL ERROR:", thumbnailError);
+      }
+
+      if (role === "atleet" && userId) {
+        const setRow = getSetRowsForExercise(exercise).find(
+          (row) => row.set_number === setNumber,
+        );
+
+        const { error: chatError } = await sendExerciseVideoMessageToCoach({
+          athleteId: userId,
+          videoUrl: publicUrlData.publicUrl,
+          thumbnailUrl,
+          caption,
+          exerciseName: capitalizeExerciseName(exercise.name),
+          setNumber,
+          reps: setRow?.reps || null,
+          coachReps: exercise.reps || null,
+          weight: setRow?.weight || null,
+          rpe: setRow?.rpe || null,
+        });
+
+        if (chatError) {
+          console.error("CHAT VIDEO MESSAGE ERROR:", chatError);
+        }
+      }
     } catch (error: any) {
       console.error("VIDEO UPLOAD ERROR:", error);
       console.error("VIDEO UPLOAD ERROR JSON:", JSON.stringify(error, null, 2));
@@ -2839,6 +3984,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
         video_url: null,
         video_path: null,
         file_name: null,
+        caption: null,
       },
     }));
 
@@ -3232,12 +4378,12 @@ const trimmedBlob = new Blob([fixedOutputData], {
     const options = [0, 2, 4, 6];
 
     return (
-      <div className="mb-4 rounded-xl border border-gray-200 bg-gray-50 p-2.5 shadow-sm">
+      <div className="mb-0.5 rounded-xl border border-gray-200 bg-gray-50 p-2.5 shadow-sm">
         <p className="mb-2 text-[10px] font-black uppercase tracking-wide text-gray-400">
           Athlete check-in
         </p>
 
-        <div className="grid grid-cols-[58px_1fr_1fr_52px] gap-2 items-start">
+        <div className="grid grid-cols-[52px_1fr_1fr_44px] gap-1.5 items-end md:grid-cols-[58px_1fr_1fr_52px] md:gap-2">
           <div>
             <p className="text-[10px] font-black text-gray-400 uppercase mb-1">
               BW
@@ -3256,7 +4402,8 @@ const trimmedBlob = new Blob([fixedOutputData], {
                 })
               }
               placeholder="BW"
-              className="w-full h-[38px] rounded-xl border border-gray-200 bg-white px-1.5 text-[11px] font-bold text-black outline-none focus:border-black"
+              inputMode="decimal"
+              className="w-full h-[38px] rounded-xl border border-gray-200 bg-white px-1.5 text-base font-bold text-black outline-none focus:border-black md:text-[11px]"
             />
           </div>
 
@@ -3265,7 +4412,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
               Herstel
             </p>
 
-            <div className="flex gap-1">
+            <div className="flex h-[38px] gap-0.5 md:gap-1">
               {options.map((option) => (
                 <button
                   key={option}
@@ -3275,10 +4422,10 @@ const trimmedBlob = new Blob([fixedOutputData], {
                       recovery: option,
                     })
                   }
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-black transition ${
+                  className={`flex flex-1 items-center justify-center rounded-xl text-xs font-black transition md:text-sm ${
                     checkin.recovery === option
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-emerald-600 text-white"
+                      : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                   }`}
                 >
                   {option}
@@ -3292,7 +4439,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
               Fatigue
             </p>
 
-            <div className="flex gap-1">
+            <div className="flex h-[38px] gap-0.5 md:gap-1">
               {options.map((option) => (
                 <button
                   key={option}
@@ -3302,10 +4449,10 @@ const trimmedBlob = new Blob([fixedOutputData], {
                       fatigue: option,
                     })
                   }
-                  className={`flex-1 rounded-xl px-3 py-2 text-sm font-black transition ${
+                  className={`flex flex-1 items-center justify-center rounded-xl text-xs font-black transition md:text-sm ${
                     checkin.fatigue === option
-                      ? "bg-black text-white"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                      ? "bg-orange-600 text-white"
+                      : "bg-orange-50 text-orange-800 hover:bg-orange-100"
                   }`}
                 >
                   {option}
@@ -3314,7 +4461,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
             </div>
           </div>
 
-          <div className="w-[52px]">
+          <div>
             <p className="text-[10px] font-black text-gray-400 uppercase mb-1">
               Note
             </p>
@@ -3326,7 +4473,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                   current === day.id ? "" : day.id,
                 )
               }
-              className={`h-[32px] w-[44px] rounded-lg px-1 text-[10px] font-black transition ${
+              className={`flex h-[38px] w-full items-center justify-center rounded-xl px-1 text-[10px] font-black transition md:w-[44px] ${
                 checkin.notes?.trim()
                   ? "bg-yellow-100 text-yellow-900"
                   : "bg-gray-100 text-gray-700 hover:bg-gray-200"
@@ -3351,7 +4498,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
               })
             }
             placeholder="Notes over deze dag..."
-            className="mt-3 min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-black outline-none focus:border-black"
+            className="mt-3 min-h-[80px] w-full resize-none rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-base text-black outline-none focus:border-black md:text-sm"
           />
         )}
       </div>
@@ -3399,8 +4546,12 @@ const trimmedBlob = new Blob([fixedOutputData], {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 relative">
-      <div className="fixed bottom-5 right-5 z-[999]">
+    <div className="relative min-h-[100dvh] bg-gray-100 supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:min-h-screen">
+      <AppSidebar />
+      {renderBlocksSidebar()}
+
+      <main className="relative min-w-0 flex-1">
+      <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-[max(1rem,env(safe-area-inset-right))] z-[999] lg:bottom-5 lg:right-5">
         <div
           className={`flex h-9 w-9 items-center justify-center rounded-full shadow-lg text-base font-black transition-all duration-200 ${
             saveState === "saved"
@@ -3423,7 +4574,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
         </div>
       </div>
 
-      <div className="fixed top-4 right-4 z-[998] rounded-2xl border border-gray-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur">
+      <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[998] hidden rounded-2xl border border-gray-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur lg:block lg:top-4 lg:right-4">
         <div className="flex items-center gap-3">
           {getShortSbdWeekSummary().map((item) => (
             <div key={item.label} className="text-center leading-tight">
@@ -3441,467 +4592,25 @@ const trimmedBlob = new Blob([fixedOutputData], {
           <div className="h-full w-1/3 bg-black animate-[loadingbar_0.9s_ease-in-out_infinite]" />
         </div>
       )}
-      <div className="flex min-h-screen">
-        <AppSidebar />
-
-        <aside className="group/blocks sticky top-0 h-screen self-start w-[70px] hover:w-[300px] min-w-[70px] hover:min-w-[300px] bg-white border-r border-gray-200 p-3 overflow-y-auto z-20 transition-all duration-200">
-          <div className="flex items-center justify-between mb-4">
-            <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150 overflow-hidden whitespace-nowrap">
-              <h2 className="text-lg font-bold">Blocks</h2>
-              <p className="text-xs text-gray-500">Blocks en weken</p>
-            </div>
-
-            <div className="opacity-100 group-hover/blocks:opacity-0 absolute left-5 top-5 text-xl">
-              📚
-            </div>
-
-            {role === "coach" && (
-              <button
-                type="button"
-                onClick={() => setCreatingBlock(true)}
-                className="w-9 h-9 min-w-9 rounded-xl bg-black text-white text-xl flex items-center justify-center"
-              >
-                +
-              </button>
-            )}
-          </div>
-
-          <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150">
-            {role === "coach" && creatingBlock && (
-              <div className="bg-gray-100 rounded-2xl p-3 mb-4">
-                <input
-                  value={newBlockTitle}
-                  onChange={(e) => setNewBlockTitle(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") createBlock();
-                  }}
-                  placeholder="Naam block"
-                  className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
-                />
-
-                <input
-                  type="date"
-                  value={newBlockStartDate}
-                  onChange={(e) => setNewBlockStartDate(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") createBlock();
-                  }}
-                  className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
-                />
-
-                <textarea
-                  value={newBlockDescription}
-                  onChange={(e) => setNewBlockDescription(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      createBlock();
-                    }
-                  }}
-                  placeholder="Beschrijving"
-                  className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none resize-none min-h-[70px] text-black"
-                />
-
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    onClick={createBlock}
-                    className="flex-1 bg-black text-white rounded-xl px-3 py-2 text-sm"
-                  >
-                    Opslaan
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setCreatingBlock(false);
-                      setNewBlockTitle("");
-                      setNewBlockDescription("");
-                      setNewBlockStartDate("");
-                    }}
-                    className="flex-1 bg-white text-black rounded-xl px-3 py-2 text-sm"
-                  >
-                    Annuleer
-                  </button>
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-3">
-              {navBlocks.map((block) => {
-                const isOpen = openBlockIds[block.id];
-                const activeBlock = block.id === blockId;
-                const blockWeeks = weeksByBlock[block.id] || [];
-                const isEditingBlock = editingBlockId === block.id;
-
-                return (
-                  <div
-                    key={block.id}
-                    className={`rounded-2xl border overflow-hidden ${
-                      activeBlock ? "border-black" : "border-gray-200"
-                    }`}
-                  >
-                    <div
-                      className={`p-3 ${
-                        activeBlock
-                          ? "bg-black text-white"
-                          : "bg-gray-50 text-black"
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <button
-                          type="button"
-                          onClick={() =>
-                            setOpenBlockIds((current) => ({
-                              ...current,
-                              [block.id]: !current[block.id],
-                            }))
-                          }
-                          className="flex-1 text-left"
-                        >
-                          <p
-                            className={`text-[10px] mb-1 ${
-                              activeBlock ? "text-gray-300" : "text-gray-400"
-                            }`}
-                          >
-                            {formatDate(block.start_date)}
-                          </p>
-
-                          {!isEditingBlock && (
-                            <h3 className="font-bold text-sm leading-tight">
-                              {isOpen ? "⌄" : "›"} {block.title}
-                            </h3>
-                          )}
-                        </button>
-
-                        {role === "coach" && !isEditingBlock && (
-                          <div className="flex gap-1">
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                setEditingBlockId(block.id);
-                                setEditingBlockTitle(block.title);
-                                setEditingBlockStartDate(
-                                  block.start_date || "",
-                                );
-                              }}
-                              className={`w-7 h-7 rounded-lg text-xs ${
-                                activeBlock
-                                  ? "bg-white/20 hover:bg-white/30 text-white"
-                                  : "bg-white hover:bg-gray-100 text-black"
-                              }`}
-                              title="Aanpassen"
-                            >
-                              ✎
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                duplicateBlock(block);
-                              }}
-                              className={`w-7 h-7 rounded-lg text-xs ${
-                                activeBlock
-                                  ? "bg-white/20 hover:bg-white/30 text-white"
-                                  : "bg-white hover:bg-gray-100 text-black"
-                              }`}
-                              title="Dupliceren"
-                            >
-                              ⧉
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                deleteBlock(block);
-                              }}
-                              className={`w-7 h-7 rounded-lg text-xs ${
-                                activeBlock
-                                  ? "bg-white/20 hover:bg-red-500 text-white"
-                                  : "bg-white hover:bg-red-500 hover:text-white text-black"
-                              }`}
-                              title="Verwijderen"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                        )}
-                      </div>
-
-                      {isEditingBlock && (
-                        <div className="mt-2 space-y-2">
-                          <input
-                            value={editingBlockTitle}
-                            onChange={(e) =>
-                              setEditingBlockTitle(e.target.value)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") renameBlock(block.id);
-                            }}
-                            className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
-                            placeholder="Naam block"
-                          />
-
-                          <input
-                            type="date"
-                            value={editingBlockStartDate}
-                            onChange={(e) =>
-                              setEditingBlockStartDate(e.target.value)
-                            }
-                            onKeyDown={(e) => {
-                              if (e.key === "Enter") renameBlock(block.id);
-                            }}
-                            className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
-                          />
-
-                          <div className="flex gap-2">
-                            <button
-                              type="button"
-                              onClick={() => renameBlock(block.id)}
-                              className="flex-1 bg-white text-black rounded-xl px-2 py-1 text-xs font-bold"
-                            >
-                              Opslaan
-                            </button>
-
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setEditingBlockId("");
-                                setEditingBlockTitle("");
-                                setEditingBlockStartDate("");
-                              }}
-                              className="flex-1 bg-gray-200 text-black rounded-xl px-2 py-1 text-xs font-bold"
-                            >
-                              Stop
-                            </button>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    {isOpen && (
-                      <div className="p-2 bg-white space-y-2">
-                        {blockWeeks.map((item) => {
-                          const activeWeek = item.id === weekId;
-                          const isEditingWeek = editingWeekId === item.id;
-
-                          return (
-                            <div
-                              key={item.id}
-                              className={`rounded-xl ${
-                                activeWeek
-                                  ? "bg-black text-white"
-                                  : "bg-gray-100 text-black"
-                              }`}
-                            >
-                              {!isEditingWeek && (
-                                <div className="flex items-center gap-2 p-2">
-                                  <button
-                                    type="button"
-                                    onClick={() =>
-                                      goToProgram(block.id, item.id)
-                                    }
-                                    className="flex-1 text-left text-sm font-semibold"
-                                  >
-                                    {item.title}
-                                  </button>
-
-                                  {role === "coach" && (
-                                    <>
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setEditingWeekId(item.id);
-                                          setEditingWeekTitle(item.title);
-                                        }}
-                                        className={`w-7 h-7 rounded-lg text-xs ${
-                                          activeWeek
-                                            ? "bg-white/20 text-white"
-                                            : "bg-white text-black"
-                                        }`}
-                                        title="Aanpassen"
-                                      >
-                                        ✎
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          duplicateWeek(item);
-                                        }}
-                                        className={`w-7 h-7 rounded-lg text-xs ${
-                                          activeWeek
-                                            ? "bg-white/20 text-white"
-                                            : "bg-white text-black"
-                                        }`}
-                                        title="Dupliceren"
-                                      >
-                                        ⧉
-                                      </button>
-
-                                      <button
-                                        type="button"
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          deleteWeek(item);
-                                        }}
-                                        className={`w-7 h-7 rounded-lg text-xs ${
-                                          activeWeek
-                                            ? "bg-white/20 hover:bg-red-500 text-white"
-                                            : "bg-white hover:bg-red-500 hover:text-white text-black"
-                                        }`}
-                                        title="Verwijderen"
-                                      >
-                                        ✕
-                                      </button>
-                                    </>
-                                  )}
-                                </div>
-                              )}
-
-                              {isEditingWeek && (
-                                <div className="p-2">
-                                  <input
-                                    value={editingWeekTitle}
-                                    onChange={(e) =>
-                                      setEditingWeekTitle(e.target.value)
-                                    }
-                                    onKeyDown={(e) => {
-                                      if (e.key === "Enter") renameWeek(item);
-                                    }}
-                                    className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
-                                  />
-
-                                  <div className="flex gap-2 mt-2">
-                                    <button
-                                      type="button"
-                                      onClick={() => renameWeek(item)}
-                                      className="flex-1 bg-black text-white rounded-xl px-2 py-1 text-xs"
-                                    >
-                                      Opslaan
-                                    </button>
-
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setEditingWeekId("");
-                                        setEditingWeekTitle("");
-                                      }}
-                                      className="flex-1 bg-white rounded-xl px-2 py-1 text-xs text-black"
-                                    >
-                                      Stop
-                                    </button>
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          );
-                        })}
-
-                        {role === "coach" &&
-                          creatingWeekBlockId !== block.id && (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setCreatingWeekBlockId(block.id);
-                                setNewWeekTitle(
-                                  `Week ${blockWeeks.length + 1}`,
-                                );
-                              }}
-                              className="w-full rounded-xl border-2 border-dashed border-gray-300 py-2 text-sm text-gray-500 hover:border-black hover:text-black"
-                            >
-                              + Week toevoegen
-                            </button>
-                          )}
-
-                        {role === "coach" &&
-                          creatingWeekBlockId === block.id && (
-                            <div className="bg-gray-100 rounded-xl p-2">
-                              <input
-                                value={newWeekTitle}
-                                onChange={(e) =>
-                                  setNewWeekTitle(e.target.value)
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === "Enter") createWeek(block.id);
-                                }}
-                                placeholder="Naam week"
-                                className="w-full rounded-xl px-3 py-2 text-sm outline-none mb-2 text-black bg-white border border-gray-300"
-                              />
-
-                              <div className="flex gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => createWeek(block.id)}
-                                  className="flex-1 bg-black text-white rounded-xl px-2 py-1 text-xs"
-                                >
-                                  Opslaan
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    setCreatingWeekBlockId("");
-                                    setNewWeekTitle("");
-                                  }}
-                                  className="flex-1 bg-white text-black rounded-xl px-2 py-1 text-xs"
-                                >
-                                  Annuleer
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </aside>
-
-        <section
-          className={`flex-1 p-8 overflow-hidden transition-opacity duration-200 ${navigatingUrl ? "opacity-60 pointer-events-none" : "opacity-100"}`}
-        >
+      <section
+        className={`min-w-0 overflow-hidden p-3 pb-16 transition-opacity duration-200 lg:p-8 lg:pb-8 ${navigatingUrl ? "opacity-60 pointer-events-none" : "opacity-100"}`}
+      >
           {role === "atleet" ? (
             <div className="max-w-full">
-              <div className="flex items-center justify-between mb-8">
-                <div>
-                  <h1 className="flex items-baseline gap-4">
-                    <span className="text-3xl font-bold text-black">
-                      {currentBlock?.title || "Block"}
-                    </span>
-                    <span className="text-2xl font-bold text-gray-400">
-                      {week?.title || "Week"}
-                    </span>
-                  </h1>
+              {renderBlockWeekNav()}
 
-                  <p className="text-gray-500 mt-2">
-                    Je trainingsprogramma voor deze week.
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => goToUrl("/programs")}
-                  className="bg-black text-white px-4 py-2 rounded-xl"
-                >
-                  Terug
-                </button>
+              <div className="mb-0 hidden lg:mb-8 lg:block">
+                <h1 className="flex flex-wrap items-baseline gap-x-4 gap-y-1">
+                  <span className="text-3xl font-bold text-black">
+                    {currentBlock?.title || "Block"}
+                  </span>
+                  <span className="text-2xl font-bold text-gray-400">
+                    {week?.title || "Week"}
+                  </span>
+                </h1>
               </div>
 
-              <div className="flex gap-5 overflow-x-auto pb-4 items-start">
+              <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 pl-1 pr-3 [-webkit-overflow-scrolling:touch] lg:mx-0 lg:snap-none lg:items-start lg:gap-5 lg:px-0">
                 {days.map((day) => {
                   const exercises = exercisesByDay[day.id] || [];
                   const athleteCheckin = renderAthleteDayCheckin(day);
@@ -3909,14 +4618,14 @@ const trimmedBlob = new Blob([fixedOutputData], {
                   return (
                     <div
                       key={day.id}
-                      className="flex flex-col gap-2 min-w-[520px] w-[520px] flex-shrink-0"
+                      className="flex w-[calc(100vw-1.5rem)] max-w-[520px] flex-shrink-0 snap-center flex-col gap-0.5 lg:w-[520px] lg:min-w-[520px]"
                     >
                       {athleteCheckin}
 
-                      <div className="bg-white rounded-2xl shadow border border-gray-200 p-5">
-                        <div className="mb-4">
-                          <div className="flex items-baseline gap-2">
-                            <h2 className="text-2xl font-bold">{day.title}</h2>
+                      <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow md:p-5">
+                        <div className="mb-3 md:mb-4">
+                          <div className="flex flex-wrap items-baseline gap-2">
+                            <h2 className="text-xl font-bold text-black md:text-2xl">{day.title}</h2>
                             <p className="text-sm text-gray-500">{getDayDate(day.day_number)}</p>
                           </div>
                         </div>
@@ -3983,7 +4692,8 @@ const trimmedBlob = new Blob([fixedOutputData], {
                                             {capitalizeExerciseName(exercise.name) || "Oefening"}
                                           </h3>
 
-                                          {getExercisePriorityLabel(exercise) && (
+                                          {isPriorityExercise(exercise.name) &&
+                                            getExercisePriorityLabel(exercise) && (
                                             <span
                                               className={`inline-flex shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-bold ${getExercisePriorityClass(
                                                 exercise,
@@ -4098,13 +4808,13 @@ const trimmedBlob = new Blob([fixedOutputData], {
             </div>
           ) : (
             <div className="max-w-full">
-              <div className="flex items-center justify-between gap-4 mb-4 pr-44">
-                <div>
-                  <h1 className="flex items-baseline gap-4">
-                    <span className="text-3xl font-bold text-black">
+              <div className="mb-4 hidden flex-col gap-3 lg:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between lg:pr-44">
+                <div className="min-w-0">
+                  <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="text-2xl font-bold text-black md:text-3xl">
                       {currentBlock?.title || "Block"}
                     </span>
-                    <span className="text-2xl font-bold text-gray-400">
+                    <span className="text-xl font-bold text-gray-400 md:text-2xl">
                       {week?.title || "Week"}
                     </span>
                   </h1>
@@ -4119,13 +4829,15 @@ const trimmedBlob = new Blob([fixedOutputData], {
                         : "/programs",
                     )
                   }
-                  className="bg-black text-white px-4 py-2 rounded-xl"
+                  className="w-full shrink-0 rounded-xl bg-black px-4 py-2.5 text-sm text-white sm:w-auto"
                 >
                   Terug
                 </button>
               </div>
 
-              <div className="flex gap-4 overflow-x-auto pb-4 items-start">
+              {renderBlockWeekNav()}
+
+              <div className="-mx-1 flex snap-x snap-mandatory gap-3 overflow-x-auto pb-4 pl-1 pr-3 [-webkit-overflow-scrolling:touch] lg:mx-0 lg:snap-none lg:gap-4 lg:px-0">
                 {days.map((day) => {
                   const exercises = exercisesByDay[day.id] || [];
                   const isAddingExercise = creatingExerciseDayId === day.id;
@@ -4141,7 +4853,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                       onDragOver={(e) => handleDragOver(e, day.id)}
                       onDrop={(e) => e.preventDefault()}
                       onDragEnd={saveDayOrder}
-                      className={`group rounded-2xl shadow border-2 w-[360px] min-w-[360px] p-4 flex flex-col bg-white text-black border-gray-200 hover:border-black transform-gpu transition-all duration-300 ease-out ${
+                      className={`group flex w-[min(360px,calc(100vw-1.5rem))] min-w-[min(360px,calc(100vw-1.5rem))] flex-shrink-0 snap-center flex-col rounded-2xl border-2 border-gray-200 bg-white p-3 text-black shadow transform-gpu transition-all duration-300 ease-out hover:border-black lg:w-[360px] lg:min-w-[360px] lg:p-4 ${
                         role === "coach"
                           ? "cursor-grab active:cursor-grabbing"
                           : ""
@@ -4452,7 +5164,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                                     {role === "coach" &&
                                       isPriorityExercise(exercise.name) && (
                                         <select
-                                          value={exercise.priority || "primary"}
+                                          value={exercise.priority || ""}
                                           onChange={(e) =>
                                             saveExercisePriority(
                                               exercise.id,
@@ -4463,13 +5175,16 @@ const trimmedBlob = new Blob([fixedOutputData], {
                                           style={{
                                             width: `${Math.max(
                                               54,
-                                              getExercisePriorityLabel(exercise).length * 5.2 + 18,
+                                              (getExercisePriorityLabel(exercise) || "—").length *
+                                                5.2 +
+                                                18,
                                             )}px`,
                                           }}
                                           className={`h-[21px] shrink-0 rounded-full border px-1 py-0 text-[10px] font-bold leading-none outline-none ${getExercisePriorityClass(
                                             exercise,
                                           )}`}
                                         >
+                                          <option value="">—</option>
                                           {priorityOptions.map((priority) => (
                                             <option
                                               key={priority}
@@ -4953,8 +5668,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
               </div>
             </div>
           )}
-        </section>
-      </div>
+      </section>
 
       <style jsx global>{`
         @keyframes loadingbar {
@@ -4974,6 +5688,15 @@ const trimmedBlob = new Blob([fixedOutputData], {
           100% {
             opacity: 1;
             transform: translate(-50%, -50%) scale(1);
+          }
+        }
+
+        @keyframes slidepanel {
+          0% {
+            transform: translateY(100%);
+          }
+          100% {
+            transform: translateY(0);
           }
         }
       `}</style>
@@ -5004,18 +5727,20 @@ const trimmedBlob = new Blob([fixedOutputData], {
 
               <section
                 data-athlete-set-panel="true"
-                className="absolute left-1/2 top-1/2 w-[min(640px,calc(100vw-32px))] -translate-x-1/2 -translate-y-1/2 rounded-3xl bg-white shadow-2xl border border-gray-200 p-5 max-h-[82vh] overflow-y-auto animate-[floatpanel_0.18s_ease-out]"
+                className="absolute bottom-0 left-0 right-0 flex h-[min(78dvh,calc(100dvh-env(safe-area-inset-bottom)-0.5rem))] w-full animate-[slidepanel_0.22s_ease-out] flex-col overflow-hidden rounded-t-3xl border border-gray-200 bg-white shadow-2xl lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[82vh] lg:w-[min(640px,calc(100vw-32px))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:animate-[floatpanel_0.18s_ease-out] lg:rounded-3xl"
                 onClick={(e) => e.stopPropagation()}
               >
-                <div className="flex items-start justify-between gap-4 border-b border-gray-200 pb-4 mb-4">
-                  <div>
-                    <p className="text-sm text-gray-500 mb-1">
+                <div className="mx-auto mb-3 mt-3 h-1 w-10 shrink-0 rounded-full bg-gray-300 lg:hidden" />
+
+                <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 pb-3 pt-0 md:gap-4 md:px-5 md:pb-4">
+                  <div className="min-w-0 pr-2">
+                    <p className="mb-1 text-xs text-gray-500 md:text-sm">
                       {day.title} · {getDayDate(day.day_number)}
                     </p>
-                    <h2 className="text-2xl font-bold">
+                    <h2 className="text-xl font-bold leading-tight text-black md:text-2xl">
                       {capitalizeExerciseName(exercise.name) || "Oefening invullen"}
                     </h2>
-                    <p className="text-sm text-gray-500 mt-1">
+                    <p className="text-xs text-gray-500 mt-1 md:text-sm">
                       Voorgeschreven: {exercise.sets || "-"} sets ·{" "}
                       {exercise.reps || "-"} reps ·{" "}
                       {getDisplayIntensity(exercise)}
@@ -5046,13 +5771,14 @@ const trimmedBlob = new Blob([fixedOutputData], {
                       setAthleteNotePanelOpen(false);
                       resetPreviousWeekData();
                     }}
-                    className="w-9 h-9 min-w-9 rounded-full bg-gray-100 hover:bg-black hover:text-white transition flex items-center justify-center"
+                    className="flex h-11 w-11 min-w-11 items-center justify-center rounded-full border-2 border-black bg-white text-xl font-bold text-black shadow-md transition hover:bg-black hover:text-white"
                   >
                     ✕
                   </button>
                 </div>
 
-                <div className="mb-4">
+                <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pb-[max(1rem,env(safe-area-inset-bottom))] md:px-5">
+                <div className="mb-4 pt-3">
                   <button
                     type="button"
                     onClick={() => setAthleteNotePanelOpen((open) => !open)}
@@ -5094,7 +5820,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                           saveAthleteExerciseNote(exercise, e.target.value)
                         }
                         placeholder="Schrijf hier je note bij deze oefening..."
-                        className="w-full min-h-[70px] resize-none rounded-xl border border-green-200 bg-white px-3 py-2 text-sm text-black placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-green-300"
+                        className="w-full min-h-[70px] resize-none rounded-xl border border-green-200 bg-white px-3 py-2 text-base text-black placeholder:text-gray-400 outline-none focus:ring-2 focus:ring-green-300 md:text-sm"
                       />
                     </div>
                   )}
@@ -5213,7 +5939,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    <div className="grid grid-cols-[52px_58px_1fr_1fr_1fr_42px] gap-2 px-1">
+                    <div className="grid grid-cols-[44px_48px_1fr_1fr_1fr_36px] gap-1.5 px-0.5 md:grid-cols-[52px_58px_1fr_1fr_1fr_42px] md:gap-2 md:px-1">
                       <p className="text-[10px] font-bold text-gray-400 text-center">
                         VIDEO
                       </p>
@@ -5235,7 +5961,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                     {setRows.map((row) => (
                       <div
                         key={`${exercise.id}-${row.set_number}`}
-                        className="grid grid-cols-[52px_58px_1fr_1fr_1fr_42px] gap-2 items-center rounded-2xl bg-gray-50 border border-gray-200 p-2"
+                        className="grid grid-cols-[44px_48px_1fr_1fr_1fr_36px] gap-1.5 items-center rounded-2xl bg-gray-50 border border-gray-200 p-1.5 md:grid-cols-[52px_58px_1fr_1fr_1fr_42px] md:gap-2 md:p-2"
                       >
                         <div className="flex items-center justify-center">
                           <button
@@ -5245,7 +5971,7 @@ const trimmedBlob = new Blob([fixedOutputData], {
                               uploadingVideoSetKey ===
                               getAthleteSetVideoKey(exercise.id, row.set_number)
                             }
-                            className={`flex h-10 w-10 items-center justify-center rounded-xl border text-base font-bold transition ${
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl border text-base font-bold transition md:h-10 md:w-10 ${
                               getAthleteSetVideo(exercise.id, row.set_number)
                                 ?.video_url
                                 ? "border-green-300 bg-green-50 text-green-700 hover:bg-green-100"
@@ -5300,39 +6026,36 @@ const trimmedBlob = new Blob([fixedOutputData], {
                           }
                           onKeyDown={handleAthleteSetArrowNavigation}
                           placeholder="8"
-                          className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black"
+                          inputMode="numeric"
+                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
                         />
 
-                        <div className="relative">
-                          <input
-                            data-athlete-set-input="true"
-                            data-athlete-field="weight"
-                            data-set-number={row.set_number}
-                            value={row.weight || ""}
-                            onChange={(e) =>
-                              updateAthleteSetLocal(
-                                exercise,
-                                row.set_number,
-                                "weight",
-                                e.target.value,
-                              )
-                            }
-                            onBlur={(e) =>
-                              saveAthleteSetField(
-                                exercise,
-                                row.set_number,
-                                "weight",
-                                e.target.value,
-                              )
-                            }
-                            onKeyDown={handleAthleteSetArrowNavigation}
-                            placeholder="100"
-                            className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 pr-9 text-sm text-black outline-none focus:ring-2 focus:ring-black"
-                          />
-                          <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-gray-400">
-                            kg
-                          </span>
-                        </div>
+                        <input
+                          data-athlete-set-input="true"
+                          data-athlete-field="weight"
+                          data-set-number={row.set_number}
+                          value={row.weight || ""}
+                          onChange={(e) =>
+                            updateAthleteSetLocal(
+                              exercise,
+                              row.set_number,
+                              "weight",
+                              e.target.value,
+                            )
+                          }
+                          onBlur={(e) =>
+                            saveAthleteSetField(
+                              exercise,
+                              row.set_number,
+                              "weight",
+                              e.target.value,
+                            )
+                          }
+                          onKeyDown={handleAthleteSetArrowNavigation}
+                          placeholder="100"
+                          inputMode="decimal"
+                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
+                        />
 
                         <input
                           data-athlete-set-input="true"
@@ -5357,14 +6080,15 @@ const trimmedBlob = new Blob([fixedOutputData], {
                           }
                           onKeyDown={handleAthleteSetArrowNavigation}
                           placeholder="8"
-                          className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black"
+                          inputMode="decimal"
+                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
                         />
 
                         <button
                           type="button"
                           onClick={() => copyAthleteSetToNextRow(exercise, row)}
                           disabled={row.set_number >= setRows.length}
-                          className={`h-10 rounded-xl text-lg font-bold transition ${
+                          className={`h-9 rounded-xl text-base font-bold transition md:h-10 md:text-lg ${
                             row.set_number >= setRows.length
                               ? "bg-gray-200 text-gray-400 cursor-not-allowed"
                               : "bg-black text-white hover:opacity-80"
@@ -5385,6 +6109,15 @@ const trimmedBlob = new Blob([fixedOutputData], {
                               controls
                               className="w-full max-h-[220px] rounded-xl bg-black"
                             />
+                            {getAthleteSetVideo(exercise.id, row.set_number)
+                              ?.caption?.trim() && (
+                              <p className="mt-2 rounded-xl bg-gray-50 px-3 py-2 text-sm text-gray-700 whitespace-pre-wrap">
+                                {
+                                  getAthleteSetVideo(exercise.id, row.set_number)
+                                    ?.caption
+                                }
+                              </p>
+                            )}
                             <button
                               type="button"
                               onClick={() =>
@@ -5400,181 +6133,357 @@ const trimmedBlob = new Blob([fixedOutputData], {
                     ))}
                   </div>
                 )}
+                </div>
               </section>
             </div>
           );
         })()}
 
-      {videoRecorderOpen && (
-        <div className="fixed inset-0 z-[999] flex items-center justify-center bg-black/80 p-3">
-          <div className="flex max-h-[95vh] w-full max-w-xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-gray-200 p-4">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  Video toevoegen
-                </p>
-                <h2 className="text-lg font-black text-black">
-                  {videoRecorderTarget
-                    ? `${capitalizeExerciseName(videoRecorderTarget.exercise.name)} - set ${videoRecorderTarget.setNumber}`
-                    : "Video opnemen"}
-                </h2>
-              </div>
-
-              <button
-                type="button"
-                onClick={closeVideoRecorder}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl font-black text-black hover:bg-gray-200"
+      {videoRecorderOpen &&
+        typeof document !== "undefined" &&
+        createPortal(
+          <div className="fixed inset-0 z-[9999] overscroll-none bg-black text-white">
+            {!recordedVideoUrl && (
+              <div
+                className="relative h-[100dvh] w-full touch-none overflow-hidden bg-black"
+                onTouchMove={(e) => e.preventDefault()}
               >
-                ×
-              </button>
-            </div>
+                <video
+                  ref={cameraVideoRef}
+                  autoPlay
+                  muted
+                  playsInline
+                  className="absolute inset-0 h-full w-full bg-black object-cover"
+                />
 
-            <div className="flex-1 space-y-4 overflow-y-auto p-4">
-              {!recordedVideoUrl && (
-                <div className="space-y-3">
-                  <div className="relative overflow-hidden rounded-3xl bg-black">
-                    <video
-                      ref={cameraVideoRef}
-                      autoPlay
-                      muted
-                      playsInline
-                      className="aspect-video w-full bg-black object-cover"
-                    />
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/95 to-transparent" />
 
-                    {isRecordingVideo && (
-                      <div className="absolute left-3 top-3 rounded-full bg-red-600 px-3 py-1 text-xs font-black text-white">
-                        REC
-                      </div>
-                    )}
+                <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] flex items-center justify-between">
+                  <button
+                    type="button"
+                    onClick={closeVideoRecorder}
+                    className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-3xl font-light text-white backdrop-blur active:scale-95"
+                    aria-label="Sluiten"
+                  >
+                    ×
+                  </button>
 
-                    {!cameraReady && !cameraError && (
-                      <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-white">
-                        Camera laden...
-                      </div>
-                    )}
+                  <div className="rounded-full bg-black/45 px-4 py-2 text-center backdrop-blur">
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/60">
+                      Video
+                    </p>
+                    <p className="max-w-[190px] truncate text-xs font-bold text-white">
+                      {videoRecorderTarget
+                        ? `${capitalizeExerciseName(videoRecorderTarget.exercise.name)} · set ${videoRecorderTarget.setNumber}`
+                        : "Video opnemen"}
+                    </p>
                   </div>
 
-                  {cameraError && (
-                    <div className="rounded-2xl bg-red-50 p-3 text-sm font-bold text-red-700">
-                      {cameraError}
+                  <button
+                    type="button"
+                    onClick={toggleFlash}
+                    disabled={isRecordingVideo}
+                    className={`flex h-11 w-11 items-center justify-center rounded-full text-lg backdrop-blur active:scale-95 disabled:opacity-30 ${
+                      flashOn ? "bg-white text-black" : "bg-black/45 text-white"
+                    }`}
+                    aria-label="Flits"
+                  >
+                    ⚡
+                  </button>
+                </div>
+
+                {cameraError && (
+                  <div className="absolute left-5 right-5 top-28 rounded-3xl bg-red-500/90 p-4 text-center text-sm font-bold text-white shadow-2xl">
+                    {cameraError}
+                  </div>
+                )}
+
+                {isRecordingVideo && (
+                  <div className="absolute left-1/2 top-[max(86px,calc(env(safe-area-inset-top)+70px))] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-black text-white backdrop-blur">
+                    <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
+                    {formatVideoTime(recordingSeconds)}
+                  </div>
+                )}
+
+                <div className="absolute bottom-[max(26px,env(safe-area-inset-bottom))] left-0 right-0 px-6">
+                  {galleryOpen && galleryFiles.length > 0 && (
+                    <div className="mb-5 max-h-44 overflow-y-auto rounded-3xl border border-white/15 bg-black/60 p-3 shadow-2xl backdrop-blur">
+                      <div className="mb-2 flex items-center justify-between">
+                        <p className="text-xs font-black uppercase tracking-[0.16em] text-white/70">
+                          Camerarol
+                        </p>
+                        <button
+                          type="button"
+                          onClick={() => setGalleryOpen(false)}
+                          className="text-xs font-bold text-white/60"
+                        >
+                          Sluit
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-3 gap-2">
+                        {galleryFiles.map((file, index) => (
+                          <button
+                            key={`${file.name}-${file.lastModified}-${index}`}
+                            type="button"
+                            onClick={() => chooseGalleryFile(file)}
+                            className="relative aspect-[9/16] overflow-hidden rounded-2xl border border-white/10 bg-white/10"
+                          >
+                            <video
+                              src={URL.createObjectURL(file)}
+                              muted
+                              playsInline
+                              preload="metadata"
+                              className="h-full w-full object-cover"
+                            />
+                            <span className="absolute bottom-1 left-1 right-1 truncate rounded-full bg-black/55 px-2 py-1 text-[10px] font-bold text-white">
+                              Video {index + 1}
+                            </span>
+                          </button>
+                        ))}
+                      </div>
                     </div>
                   )}
 
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setCameraFacingMode((current) =>
-                          current === "environment" ? "user" : "environment",
-                        )
-                      }
-                      disabled={isRecordingVideo}
-                      className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-black text-black disabled:opacity-40"
-                    >
-                      Camera wisselen
-                    </button>
-
-                    {!isRecordingVideo ? (
-                      <button
-                        type="button"
-                        onClick={startVideoRecording}
-                        disabled={!cameraReady}
-                        className="rounded-2xl bg-red-600 px-4 py-3 text-sm font-black text-white disabled:opacity-40"
-                      >
-                        Opnemen
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        onClick={stopVideoRecording}
-                        className="rounded-2xl bg-black px-4 py-3 text-sm font-black text-white"
-                      >
-                        Stop
-                      </button>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {recordedVideoUrl && (
-                <div className="space-y-4">
-                  <video
-                    ref={previewVideoRef}
-                    src={recordedVideoUrl}
-                    controls
-                    playsInline
-                    onLoadedMetadata={handlePreviewLoadedMetadata}
-                    className="aspect-video w-full rounded-3xl bg-black object-contain"
+                  <input
+                    ref={galleryInputRef}
+                    type="file"
+                    accept="video/*"
+                    multiple
+                    onChange={(e) => handleGalleryFiles(e.target.files)}
+                    className="hidden"
                   />
 
-                  <div className="rounded-3xl border border-gray-200 bg-gray-50 p-4">
-                    <div className="mb-3 flex items-center justify-between">
-                      <p className="text-sm font-black text-black">Video knippen</p>
-                      <p className="text-xs font-bold text-gray-500">
-                        {formatVideoTime(trimStart)} - {formatVideoTime(trimEnd || videoDuration)}
-                      </p>
+                  <div className="grid grid-cols-3 items-center">
+                    <button
+                      type="button"
+                      onClick={() => galleryInputRef.current?.click()}
+                      disabled={isRecordingVideo}
+                      className="flex h-12 w-12 items-center justify-center justify-self-start rounded-2xl bg-black/45 text-xl text-white backdrop-blur active:scale-95 disabled:opacity-30"
+                      aria-label="Camerarol"
+                    >
+                      ▣
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleRecordButtonClick}
+                      disabled={!cameraReady && !isRecordingVideo}
+                      className={`relative flex h-20 w-20 items-center justify-center justify-self-center rounded-full border-[5px] border-white bg-white/15 shadow-2xl active:scale-95 disabled:opacity-50 ${
+                        isRecordingVideo ? "border-red-500" : ""
+                      }`}
+                      aria-label={isRecordingVideo ? "Stop opname" : "Start opname"}
+                    >
+                      <span
+                        className={`block transition-all ${
+                          isRecordingVideo
+                            ? "h-8 w-8 rounded-lg bg-red-500"
+                            : "h-14 w-14 rounded-full bg-red-500"
+                        }`}
+                      />
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={switchCameraFacingMode}
+                      disabled={isRecordingVideo}
+                      className="flex h-12 w-12 items-center justify-center justify-self-end rounded-full bg-black/45 text-xl text-white backdrop-blur active:scale-95 disabled:opacity-30"
+                      aria-label="Draai camera"
+                    >
+                      ↻
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-center text-xs font-black uppercase tracking-[0.22em] text-red-400">
+                    Video
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {recordedVideoUrl && (
+              <div className="relative flex min-h-[100dvh] w-full flex-col overflow-y-auto overscroll-contain bg-black pb-52">
+                <video
+                  ref={previewVideoRef}
+                  src={recordedVideoUrl}
+                  playsInline
+                  muted={muteVideoAudio}
+                  onLoadedMetadata={handlePreviewLoadedMetadata}
+                  className="absolute inset-0 h-full w-full bg-black object-contain"
+                />
+
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-gradient-to-b from-black/85 to-transparent" />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-96 bg-gradient-to-t from-black/95 to-transparent" />
+
+                <div className="absolute left-4 right-4 top-[max(10px,env(safe-area-inset-top))]">
+                  <div className="rounded-3xl border border-white/15 bg-black/40 p-3 shadow-2xl backdrop-blur">
+                    <div
+                      ref={trimSliderRef}
+                      onPointerDown={(e) => {
+                        const currentEnd = trimEnd || videoDuration;
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        const nextTime =
+                          ((e.clientX - rect.left) / rect.width) * (videoDuration || 0);
+                        const handle =
+                          Math.abs(nextTime - trimStart) <= Math.abs(nextTime - currentEnd)
+                            ? "start"
+                            : "end";
+                        setActiveTrimHandle(handle);
+                        e.currentTarget.setPointerCapture(e.pointerId);
+                        updateTrimFromClientX(e.clientX, handle);
+                      }}
+                      onPointerMove={(e) => {
+                        if (!activeTrimHandle) return;
+                        updateTrimFromClientX(e.clientX, activeTrimHandle);
+                      }}
+                      onPointerUp={(e) => {
+                        setActiveTrimHandle(null);
+                        e.currentTarget.releasePointerCapture(e.pointerId);
+                      }}
+                      onPointerCancel={() => setActiveTrimHandle(null)}
+                      className="relative h-14 touch-none overflow-hidden rounded-2xl border border-white/20 bg-white/10"
+                    >
+                      <div className="absolute inset-0 flex">
+                        {Array.from({ length: 28 }).map((_, index) => (
+                          <div
+                            key={index}
+                            className="mx-[1px] flex-1 rounded-sm bg-white/30"
+                            style={{ opacity: index % 2 === 0 ? 0.9 : 0.45 }}
+                          />
+                        ))}
+                      </div>
+
+                      <div
+                        className="absolute top-0 h-full bg-black/55"
+                        style={{
+                          left: 0,
+                          width: `${videoDuration ? (trimStart / videoDuration) * 100 : 0}%`,
+                        }}
+                      />
+
+                      <div
+                        className="absolute top-0 h-full bg-black/55"
+                        style={{
+                          right: 0,
+                          width: `${
+                            videoDuration
+                              ? ((videoDuration - (trimEnd || videoDuration)) / videoDuration) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+
+                      <div
+                        className="absolute top-0 h-full rounded-2xl border-2 border-white shadow-[0_0_18px_rgba(255,255,255,0.22)]"
+                        style={{
+                          left: `${videoDuration ? (trimStart / videoDuration) * 100 : 0}%`,
+                          right: `${
+                            videoDuration
+                              ? ((videoDuration - (trimEnd || videoDuration)) / videoDuration) *
+                                100
+                              : 0
+                          }%`,
+                        }}
+                      />
+
+                      <div
+                        className="absolute top-1/2 z-10 h-12 w-4 -translate-y-1/2 rounded-full bg-white shadow-xl"
+                        style={{
+                          left: `calc(${videoDuration ? (trimStart / videoDuration) * 100 : 0}% - 8px)`,
+                        }}
+                      />
+
+                      <div
+                        className="absolute top-1/2 z-10 h-12 w-4 -translate-y-1/2 rounded-full bg-white shadow-xl"
+                        style={{
+                          left: `calc(${videoDuration ? ((trimEnd || videoDuration) / videoDuration) * 100 : 100}% - 8px)`,
+                        }}
+                      />
                     </div>
 
-                    <label className="mb-2 block text-xs font-bold text-gray-500">
-                      Start
-                    </label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={videoDuration || 0}
-                      step={0.1}
-                      value={trimStart}
-                      onChange={(e) => {
-                        const nextValue = Number(e.target.value);
-                        setTrimStart(Math.min(nextValue, Math.max(0, trimEnd - 0.2)));
-                      }}
-                      className="w-full accent-black"
-                    />
+                    <p className="mt-2 text-center text-[11px] font-bold text-white/65">
+                      {formatVideoTime(trimStart)} - {formatVideoTime(trimEnd || videoDuration)}
+                    </p>
+                  </div>
+                </div>
 
-                    <label className="mb-2 mt-4 block text-xs font-bold text-gray-500">
-                      Eind
-                    </label>
-                    <input
-                      type="range"
-                      min={0}
-                      max={videoDuration || 0}
-                      step={0.1}
-                      value={trimEnd || videoDuration}
-                      onChange={(e) => {
-                        const nextValue = Number(e.target.value);
-                        setTrimEnd(Math.max(nextValue, trimStart + 0.2));
-                      }}
-                      className="w-full accent-black"
+                <button
+                  type="button"
+                  onClick={togglePreviewMute}
+                  className="absolute right-4 top-[max(92px,calc(env(safe-area-inset-top)+84px))] flex h-10 w-10 items-center justify-center rounded-full bg-black/45 text-lg text-white backdrop-blur active:scale-95"
+                  aria-label="Geluid aan of uit"
+                >
+                  {muteVideoAudio ? "🔇" : "🔊"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (!previewVideoRef.current) return;
+                    if (previewVideoRef.current.paused) {
+                      previewVideoRef.current.play();
+                    } else {
+                      previewVideoRef.current.pause();
+                    }
+                  }}
+                  className="absolute left-1/2 top-1/2 flex h-12 w-12 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-black shadow-2xl backdrop-blur active:scale-95"
+                  aria-label="Video afspelen of pauzeren"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                    className="ml-0.5 h-5 w-5"
+                    aria-hidden="true"
+                  >
+                    <path d="M8 5.5v13l10-6.5-10-6.5Z" />
+                  </svg>
+                </button>
+
+                <div className="absolute bottom-[max(24px,env(safe-area-inset-bottom))] left-0 right-0 z-10 px-4">
+                  <div className="mx-auto mb-3 w-full max-w-sm">
+                    <textarea
+                      value={videoCaption}
+                      onChange={(e) => setVideoCaption(e.target.value)}
+                      onFocus={(e) => scrollMobileFieldIntoView(e.currentTarget)}
+                      placeholder="Voeg een bijschrift toe..."
+                      rows={2}
+                      maxLength={500}
+                      className="max-h-24 w-full resize-none rounded-3xl border border-white/15 bg-black/45 px-4 py-3 text-base text-white placeholder:text-white/45 outline-none backdrop-blur focus:border-white/30"
                     />
                   </div>
 
-                  <div className="grid grid-cols-2 gap-2">
+                  <div className="mx-auto grid w-full max-w-sm grid-cols-3 items-center">
                     <button
                       type="button"
                       onClick={resetRecordedVideo}
                       disabled={trimmingVideo || !!uploadingVideoSetKey}
-                      className="rounded-2xl border border-gray-300 bg-white px-4 py-3 text-sm font-black text-black disabled:opacity-40"
+                      className="flex h-12 w-12 items-center justify-center justify-self-start rounded-full bg-white/10 text-2xl font-light text-white backdrop-blur active:scale-95 disabled:opacity-40"
+                      aria-label="Opnieuw"
                     >
-                      Opnieuw opnemen
+                      ×
                     </button>
+
+                    <div />
 
                     <button
                       type="button"
                       onClick={saveRecordedVideo}
                       disabled={trimmingVideo || !!uploadingVideoSetKey}
-                      className="rounded-2xl bg-black px-4 py-3 text-sm font-black text-white disabled:opacity-40"
+                      className="flex h-12 w-12 items-center justify-center justify-self-end rounded-full bg-white text-2xl font-black text-black shadow-xl active:scale-95 disabled:opacity-40"
+                      aria-label="Gebruik video"
                     >
-                      {trimmingVideo || uploadingVideoSetKey
-                        ? "Bezig..."
-                        : "Knippen & opslaan"}
+                      {trimmingVideo || uploadingVideoSetKey ? "…" : "✓"}
                     </button>
                   </div>
                 </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+              </div>
+            )}
+          </div>,
+          document.body,
+        )}
+
     </main>
+    </div>
   );
 }

@@ -4,6 +4,8 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
+import ChatAvatar from "@/components/chat/ChatAvatar";
+import { updateProfileAvatar, uploadAvatar } from "@/lib/chatAvatars";
 
 export default function ProfilePage() {
   const [userId, setUserId] = useState("");
@@ -17,6 +19,7 @@ export default function ProfilePage() {
   const [editedPassword, setEditedPassword] = useState("");
   const [editedLidnummer, setEditedLidnummer] = useState("");
   const [editedGeboortedatum, setEditedGeboortedatum] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -49,6 +52,7 @@ export default function ProfilePage() {
         setEditedLidnummer(data.lidnummer || "");
         setGeboortedatum(data.geboortedatum || "");
         setEditedGeboortedatum(data.geboortedatum || "");
+        setAvatarUrl(data.avatar_url || null);
       }
     }
 
@@ -107,11 +111,53 @@ export default function ProfilePage() {
     setMessage("Profiel opgeslagen.");
   }
 
+  async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    if (!file || !userId) return;
+
+    setSaving(true);
+    const { url, error } = await uploadAvatar(userId, file, "profile");
+
+    if (error || !url) {
+      setSaving(false);
+      setMessage(error?.message || "Profielfoto uploaden mislukt.");
+      return;
+    }
+
+    const { error: updateError } = await updateProfileAvatar(userId, url);
+    setSaving(false);
+
+    if (updateError) {
+      setMessage(updateError.message);
+      return;
+    }
+
+    setAvatarUrl(url);
+    setMessage("Profielfoto opgeslagen.");
+  }
+
   return (
     <AppShell contentClassName="flex-1 p-6 space-y-6">
       <div className="bg-white rounded-3xl shadow-xl p-8 max-w-3xl">
         <h2 className="text-3xl font-bold mb-2">Profiel aanpassen</h2>
         <p className="text-gray-500 mb-8">Pas hier je persoonlijke gegevens aan.</p>
+
+        <div className="mb-8 flex items-center gap-4">
+          <ChatAvatar
+            name={editedFullName}
+            imageUrl={avatarUrl}
+            className="h-20 w-20 text-2xl"
+          />
+          <label className="cursor-pointer rounded-2xl bg-gray-100 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-200">
+            Profielfoto wijzigen
+            <input
+              type="file"
+              accept="image/*"
+              onChange={(event) => void handleAvatarUpload(event)}
+              className="hidden"
+            />
+          </label>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>

@@ -1761,11 +1761,8 @@ export default function RawDataPage() {
   const selectedRightWeek = viewMode === "week" ? getSelectedWeek(rightSelection) : null;
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <div className="flex min-h-screen">
-        <AppSidebar />
-
-        <section className="flex-1 p-8">
+    <main className="min-h-[100dvh] bg-gray-100">
+      <section className="flex-1 p-8 pb-24">
           <div className="flex items-end justify-between gap-4 mb-6">
             <div>
               <h1 className="text-3xl font-bold text-black">Raw Data</h1>
@@ -1910,7 +1907,7 @@ export default function RawDataPage() {
             </>
           )}
         </section>
-      </div>
+      <AppSidebar />
     </main>
   );
 }

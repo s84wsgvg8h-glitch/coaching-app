@@ -36,10 +36,6 @@ export default function DashboardPage() {
     <AppShell>
       <div className="bg-white rounded-3xl shadow-xl p-10 min-h-[400px]">
         <h2 className="text-4xl font-bold mb-3">{fullName}</h2>
-
-        <p className="text-gray-500 text-lg">
-          Hover met je muis over de linkerkolom om het menu uit te klappen.
-        </p>
       </div>
     </AppShell>
   );

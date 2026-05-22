@@ -32,6 +32,7 @@ type AthleteVideo = {
   week_order: number;
   day_order: number;
   exercise_order: number;
+  updated_at?: string | null;
 };
 
 type ProgramExerciseInfo = {
@@ -425,10 +426,24 @@ export default function VideoGalleryPage() {
     }) as AthleteVideo[];
 
     videosWithDetails.sort((a, b) => {
-      if ((b.block_order || 0) !== (a.block_order || 0)) return (b.block_order || 0) - (a.block_order || 0);
-      if ((b.week_order || 0) !== (a.week_order || 0)) return (b.week_order || 0) - (a.week_order || 0);
-      if ((b.day_order || 0) !== (a.day_order || 0)) return (b.day_order || 0) - (a.day_order || 0);
-      if ((a.exercise_order || 999) !== (b.exercise_order || 999)) return (a.exercise_order || 999) - (b.exercise_order || 999);
+      const uploadDiff =
+        new Date(b.updated_at || 0).getTime() -
+        new Date(a.updated_at || 0).getTime();
+
+      if (uploadDiff !== 0) return uploadDiff;
+
+      if ((b.block_order || 0) !== (a.block_order || 0)) {
+        return (b.block_order || 0) - (a.block_order || 0);
+      }
+      if ((b.week_order || 0) !== (a.week_order || 0)) {
+        return (b.week_order || 0) - (a.week_order || 0);
+      }
+      if ((b.day_order || 0) !== (a.day_order || 0)) {
+        return (b.day_order || 0) - (a.day_order || 0);
+      }
+      if ((a.exercise_order || 999) !== (b.exercise_order || 999)) {
+        return (a.exercise_order || 999) - (b.exercise_order || 999);
+      }
       return (a.set_number || 1) - (b.set_number || 1);
     });
 
@@ -930,11 +945,8 @@ export default function VideoGalleryPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
-      <div className="flex min-h-screen">
-        <AppSidebar />
-
-        <section className="min-w-0 flex-1 p-6">
+    <main className="min-h-[100dvh] bg-gray-100">
+      <section className="min-w-0 flex-1 p-6 pb-24">
           <div className="mb-6 rounded-3xl bg-white p-6 shadow-xl">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
               <h1 className="text-4xl font-bold text-black">Video galerij</h1>
@@ -1057,7 +1069,7 @@ export default function VideoGalleryPage() {
             </div>
           )}
         </section>
-      </div>
+      <AppSidebar />
 
       {fullscreenVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4">
