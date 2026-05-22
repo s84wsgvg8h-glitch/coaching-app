@@ -22,6 +22,7 @@ export default function UserProfilePage() {
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [viewerId, setViewerId] = useState("");
   const [viewerRole, setViewerRole] = useState("");
   const [chatBackHref, setChatBackHref] = useState("/chat");
 
@@ -44,6 +45,7 @@ export default function UserProfilePage() {
         .eq("id", user.id)
         .single();
 
+      setViewerId(user.id);
       setViewerRole(viewerProfile?.role || "");
 
       const { data, error } = await supabase
@@ -129,7 +131,12 @@ export default function UserProfilePage() {
           </div>
         )}
 
-        {!loading && profile && <BodyAreaDiagram />}
+        {!loading && profile && (
+          <BodyAreaDiagram
+            athleteId={profile.id}
+            canEdit={viewerId === profile.id || viewerRole === "coach"}
+          />
+        )}
       </div>
     </AppShell>
   );

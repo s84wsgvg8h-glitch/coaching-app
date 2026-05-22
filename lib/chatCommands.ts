@@ -4,6 +4,77 @@ const BW_PREFIX = "/bw";
 const DATA_PREFIX = "/data";
 const INJURIES_PREFIX = "/injuries";
 
+export type ChatSlashCommand = {
+  command: string;
+  label: string;
+  description: string;
+  coachOnly?: boolean;
+  requiresDirectChat?: boolean;
+};
+
+export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
+  {
+    command: TOOLS_PREFIX,
+    label: "Tools",
+    description: "Zoek pagina's, chats en programma's",
+  },
+  {
+    command: PROGRAM_PREFIX,
+    label: "Programma",
+    description: "Programma van atleet bekijken",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+  {
+    command: BW_PREFIX,
+    label: "BW",
+    description: "Lichaamsgewicht grafiek",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+  {
+    command: DATA_PREFIX,
+    label: "Data",
+    description: "Ruwe atleetdata bekijken",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+  {
+    command: INJURIES_PREFIX,
+    label: "Blessures",
+    description: "Blessures en spierkaart",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+];
+
+export function filterChatSlashCommands(
+  input: string,
+  options: {
+    userRole: string;
+    hasDirectChat: boolean;
+    hasConversation: boolean;
+  },
+) {
+  const normalized = normalizeChatCommand(input).toLowerCase();
+
+  if (!normalized.startsWith("/")) {
+    return [] as ChatSlashCommand[];
+  }
+
+  return CHAT_SLASH_COMMANDS.filter((item) => {
+    if (item.coachOnly && options.userRole !== "coach") return false;
+    if (item.requiresDirectChat && !options.hasDirectChat) return false;
+    if (!options.hasConversation) return false;
+    return item.command.startsWith(normalized);
+  });
+}
+
+export function shouldShowSlashCommandMenu(message: string) {
+  const normalized = normalizeChatCommand(message);
+  return normalized.startsWith("/") && !normalized.slice(1).includes(" ");
+}
+
 function normalizeChatCommand(message: string) {
   return message.trim().replace(/^\/\s+/, "/");
 }

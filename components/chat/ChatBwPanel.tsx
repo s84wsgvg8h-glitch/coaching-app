@@ -16,6 +16,7 @@ import {
   buildBwWeekOptions,
   filterBwPointsByDateRange,
   formatBwNumber,
+  formatBwWeekOptionLabel,
   formatShortDate,
   loadAthleteDailyBwData,
   resolveBwDateRangeFromWeeks,
@@ -118,9 +119,6 @@ export default function ChatBwPanel({
     values.length > 0 ? Math.ceil(Math.max(...values) + 3) : 100;
 
   const hasWeekFilter = Boolean(beginWeekId || endWeekId);
-  const hasCustomDateRange =
-    points.length > 0 &&
-    (startDate !== points[0]?.date || endDate !== points[points.length - 1]?.date);
 
   function applyWeekSelection(nextBeginWeekId: string, nextEndWeekId: string) {
     const range = resolveBwDateRangeFromWeeks(
@@ -143,24 +141,6 @@ export default function ChatBwPanel({
 
   function handleEndWeekChange(weekKey: string) {
     applyWeekSelection(beginWeekId, weekKey);
-  }
-
-  function handleStartDateChange(value: string) {
-    setBeginWeekId("");
-    setEndWeekId("");
-    setStartDate(value);
-    if (endDate && value > endDate) {
-      setEndDate(value);
-    }
-  }
-
-  function handleEndDateChange(value: string) {
-    setBeginWeekId("");
-    setEndWeekId("");
-    setEndDate(value);
-    if (startDate && value < startDate) {
-      setStartDate(value);
-    }
   }
 
   return (
@@ -187,7 +167,7 @@ export default function ChatBwPanel({
               Lichaamsgewicht
             </p>
             <h4 className="text-lg font-black text-black">
-              {hasWeekFilter || hasCustomDateRange ? "Gefilterde periode" : "Alle dagen"}
+              {hasWeekFilter ? "Gefilterde periode" : "Alle dagen"}
             </h4>
           </div>
 
@@ -225,7 +205,7 @@ export default function ChatBwPanel({
                 <option value="">Alle weken</option>
                 {weekOptions.map((week) => (
                   <option key={`begin-${week.id}`} value={week.id}>
-                    {week.blockTitle} · {week.weekTitle}
+                    {formatBwWeekOptionLabel(week)}
                   </option>
                 ))}
               </select>
@@ -243,35 +223,10 @@ export default function ChatBwPanel({
                 <option value="">Alle weken</option>
                 {weekOptions.map((week) => (
                   <option key={`end-${week.id}`} value={week.id}>
-                    {week.blockTitle} · {week.weekTitle}
+                    {formatBwWeekOptionLabel(week)}
                   </option>
                 ))}
               </select>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                  Begin
-                </label>
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(event) => handleStartDateChange(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-black outline-none"
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-                  Eind
-                </label>
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(event) => handleEndDateChange(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm text-black outline-none"
-                />
-              </div>
             </div>
           </div>
         )}

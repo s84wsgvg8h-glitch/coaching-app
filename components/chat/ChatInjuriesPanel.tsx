@@ -1,15 +1,17 @@
 "use client";
 
 import { X } from "lucide-react";
-import MuscleBodyMap from "@/components/MuscleBodyMap";
+import InjuriesSection from "@/components/InjuriesSection";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
 
 type ChatInjuriesPanelProps = {
+  athleteId: string;
   athleteName: string;
   onClose: () => void;
 };
 
 export default function ChatInjuriesPanel({
+  athleteId,
   athleteName,
   onClose,
 }: ChatInjuriesPanelProps) {
@@ -31,7 +33,7 @@ export default function ChatInjuriesPanel({
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-[#eceff3] p-4">
-        <MuscleBodyMap compact showLabel />
+        <InjuriesSection athleteId={athleteId} canEdit compact />
       </div>
     </aside>
   );

@@ -255,6 +255,10 @@ export const BACK_MUSCLE_AREAS: MuscleArea[] = [
 
 export const ALL_MUSCLE_AREAS = [...FRONT_MUSCLE_AREAS, ...BACK_MUSCLE_AREAS];
 
+export function getMuscleAreaById(areaId: string) {
+  return ALL_MUSCLE_AREAS.find((area) => area.id === areaId);
+}
+
 export const BODY_MAP_IMAGE = {
   src: "/body-map.png",
   width: 656,

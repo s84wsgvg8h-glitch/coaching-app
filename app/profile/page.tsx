@@ -193,7 +193,7 @@ export default function ProfilePage() {
         </button>
       </div>
 
-      <BodyAreaDiagram />
+      <BodyAreaDiagram athleteId={userId} />
     </AppShell>
   );
 }

@@ -67,6 +67,14 @@ export function formatBwNumber(value: number | null) {
     : String(rounded).replace(".", ",");
 }
 
+export function formatBwWeekOptionLabel(week: BwWeekOption) {
+  const start = formatShortDate(week.firstFilledDate);
+  const end = formatShortDate(week.lastFilledDate);
+  const dateRange = start === end ? start : `${start} – ${end}`;
+
+  return `${week.blockTitle} · ${week.weekTitle} (${dateRange})`;
+}
+
 export function buildBwWeekOptions(points: DailyBwPoint[]): BwWeekOption[] {
   const grouped = new Map<string, DailyBwPoint[]>();
 

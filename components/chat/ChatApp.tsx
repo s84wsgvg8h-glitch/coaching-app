@@ -89,12 +89,15 @@ import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
+import ChatSlashCommandMenu from "@/components/chat/ChatSlashCommandMenu";
 import {
+  filterChatSlashCommands,
   parseBwCommand,
   parseDataCommand,
   parseInjuriesCommand,
   parseProgramCommand,
   parseToolsCommand,
+  shouldShowSlashCommandMenu,
 } from "@/lib/chatCommands";
 import {
   type ChatToolItem,
@@ -169,6 +172,7 @@ export default function ChatApp() {
   const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [slashCommandActiveIndex, setSlashCommandActiveIndex] = useState(0);
   const [conversationSettings, setConversationSettings] = useState<
     Record<string, ChatConversationSettings>
   >({});
@@ -1685,6 +1689,30 @@ export default function ChatApp() {
     );
   }, [activeUserId, contacts]);
   const slashPanelOpen = toolsPanelOpen || sidePanelOpen;
+  const slashCommandSuggestions = useMemo(
+    () =>
+      filterChatSlashCommands(message, {
+        userRole,
+        hasDirectChat: Boolean(activeUserId) && !activeGroupId,
+        hasConversation: Boolean(activeUserId || activeGroupId),
+      }),
+    [message, userRole, activeUserId, activeGroupId],
+  );
+  const slashCommandMenuOpen =
+    shouldShowSlashCommandMenu(message) &&
+    !slashPanelOpen &&
+    slashCommandSuggestions.length > 0 &&
+    Boolean(activeUserId || activeGroupId);
+
+  useEffect(() => {
+    setSlashCommandActiveIndex(0);
+  }, [message, slashCommandSuggestions.length]);
+
+  function selectSlashCommand(command: string) {
+    setMessage(command);
+    setSlashCommandActiveIndex(0);
+    inputRef.current?.focus();
+  }
 
   useEffect(() => {
     if (!toolsPanelOpen || !userId) return;
@@ -1905,6 +1933,7 @@ export default function ChatApp() {
 
         {injuriesPanelOpen && activeUserId && (
           <ChatInjuriesPanel
+            athleteId={activeUserId}
             athleteName={activeAthleteName}
             onClose={closeInjuriesPanel}
           />
@@ -2308,6 +2337,14 @@ export default function ChatApp() {
 
               <footer className="shrink-0 border-t border-gray-200 bg-white px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] md:px-4 md:py-3">
                 <div className="relative flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
+                  {slashCommandMenuOpen && (
+                    <ChatSlashCommandMenu
+                      commands={slashCommandSuggestions}
+                      activeIndex={slashCommandActiveIndex}
+                      onSelect={selectSlashCommand}
+                      onHover={setSlashCommandActiveIndex}
+                    />
+                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -2367,24 +2404,63 @@ export default function ChatApp() {
                     value={message}
                     onChange={(event) => setMessage(event.target.value)}
                     onKeyDown={(event) => {
-                      if (event.key === "Escape" && slashPanelOpen) {
-                        event.preventDefault();
-                        if (programPanelOpen) {
-                          closeProgramPanel();
-                        } else if (bwPanelOpen) {
-                          closeBwPanel();
-                        } else if (dataPanelOpen) {
-                          closeDataPanel();
-                        } else if (injuriesPanelOpen) {
-                          closeInjuriesPanel();
-                        } else {
-                          closeToolsPanel();
+                      if (slashCommandMenuOpen) {
+                        if (event.key === "ArrowDown") {
+                          event.preventDefault();
+                          setSlashCommandActiveIndex(
+                            (current) =>
+                              (current + 1) % slashCommandSuggestions.length,
+                          );
+                          return;
                         }
-                        return;
+
+                        if (event.key === "ArrowUp") {
+                          event.preventDefault();
+                          setSlashCommandActiveIndex(
+                            (current) =>
+                              (current - 1 + slashCommandSuggestions.length) %
+                              slashCommandSuggestions.length,
+                          );
+                          return;
+                        }
+
+                        if (event.key === "Tab" || event.key === "Enter") {
+                          event.preventDefault();
+                          const selected =
+                            slashCommandSuggestions[slashCommandActiveIndex];
+                          if (selected) {
+                            selectSlashCommand(selected.command);
+                          }
+                          return;
+                        }
+                      }
+
+                      if (event.key === "Escape") {
+                        if (slashCommandMenuOpen && message.startsWith("/")) {
+                          event.preventDefault();
+                          setMessage("");
+                          return;
+                        }
+
+                        if (slashPanelOpen) {
+                          event.preventDefault();
+                          if (programPanelOpen) {
+                            closeProgramPanel();
+                          } else if (bwPanelOpen) {
+                            closeBwPanel();
+                          } else if (dataPanelOpen) {
+                            closeDataPanel();
+                          } else if (injuriesPanelOpen) {
+                            closeInjuriesPanel();
+                          } else {
+                            closeToolsPanel();
+                          }
+                          return;
+                        }
                       }
 
                       if (event.key === "Enter" && !event.shiftKey) {
-                        if (slashPanelOpen) {
+                        if (slashPanelOpen || slashCommandMenuOpen) {
                           event.preventDefault();
                           return;
                         }
@@ -2412,7 +2488,7 @@ export default function ChatApp() {
                     className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
                   />
 
-                  {message.trim() && !slashPanelOpen ? (
+                  {message.trim() && !slashPanelOpen && !slashCommandMenuOpen ? (
                     <button
                       type="button"
                       onClick={sendMessage}
@@ -2422,7 +2498,7 @@ export default function ChatApp() {
                     >
                       <SendHorizontal className="h-4 w-4" />
                     </button>
-                  ) : !slashPanelOpen ? (
+                  ) : !slashPanelOpen && !slashCommandMenuOpen ? (
                     <ChatVoiceRecorder
                       disabled={!canSendMessages || uploadingMedia}
                       onSend={(blob, mimeType) => {
