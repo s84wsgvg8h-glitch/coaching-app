@@ -89,6 +89,7 @@ import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
 import ChatVolumePanel from "@/components/chat/ChatVolumePanel";
+import ChatPrPanel from "@/components/chat/ChatPrPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
 import ChatSlashCommandMenu from "@/components/chat/ChatSlashCommandMenu";
@@ -98,6 +99,7 @@ import {
   parseDataCommand,
   parseExternalsCommand,
   parseInjuriesCommand,
+  parsePrCommand,
   parseProgramCommand,
   parseToolsCommand,
   parseVolumeCommand,
@@ -753,6 +755,10 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/volume") ? "" : current));
   }
 
+  function closePrPanel() {
+    setMessage((current) => (current.startsWith("/pr") ? "" : current));
+  }
+
   function closeDataPanel() {
     setMessage((current) => {
       const normalized = current.trim();
@@ -800,6 +806,7 @@ export default function ChatApp() {
     if (parseBwCommand(message).active) return;
     if (parseExternalsCommand(message).active) return;
     if (parseVolumeCommand(message).active) return;
+    if (parsePrCommand(message).active) return;
     if (parseDataCommand(message).active) return;
     if (parseInjuriesCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
@@ -1671,6 +1678,7 @@ export default function ChatApp() {
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
   const externalsCommand = useMemo(() => parseExternalsCommand(message), [message]);
   const volumeCommand = useMemo(() => parseVolumeCommand(message), [message]);
+  const prCommand = useMemo(() => parsePrCommand(message), [message]);
   const dataCommand = useMemo(() => parseDataCommand(message), [message]);
   const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
   const toolsPanelOpen =
@@ -1695,6 +1703,11 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
+  const prPanelOpen =
+    prCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
   const dataPanelOpen =
     dataCommand.active &&
     userRole === "coach" &&
@@ -1710,6 +1723,7 @@ export default function ChatApp() {
     bwPanelOpen ||
     externalsPanelOpen ||
     volumePanelOpen ||
+    prPanelOpen ||
     dataPanelOpen ||
     injuriesPanelOpen;
   const activeAthleteName = useMemo(() => {
@@ -1975,6 +1989,14 @@ export default function ChatApp() {
             athleteId={activeUserId}
             athleteName={activeAthleteName}
             onClose={closeVolumePanel}
+          />
+        )}
+
+        {prPanelOpen && activeUserId && (
+          <ChatPrPanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closePrPanel}
           />
         )}
 
@@ -2508,6 +2530,8 @@ export default function ChatApp() {
                             closeExternalsPanel();
                           } else if (volumePanelOpen) {
                             closeVolumePanel();
+                          } else if (prPanelOpen) {
+                            closePrPanel();
                           } else if (dataPanelOpen) {
                             closeDataPanel();
                           } else if (injuriesPanelOpen) {
@@ -2540,7 +2564,9 @@ export default function ChatApp() {
                               ? "Externals geopend..."
                               : volumePanelOpen
                                 ? "Volume geopend..."
-                                : dataPanelOpen
+                                : prPanelOpen
+                                  ? "PR geopend..."
+                                  : dataPanelOpen
                             ? "Data geopend..."
                             : injuriesPanelOpen
                               ? "Blessures geopend..."

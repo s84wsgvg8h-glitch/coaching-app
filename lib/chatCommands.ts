@@ -3,6 +3,7 @@ const PROGRAM_PREFIX = "/program";
 const BW_PREFIX = "/bw";
 const EXTERNALS_PREFIX = "/externals";
 const VOLUME_PREFIX = "/volume";
+const PR_PREFIX = "/pr";
 const DATA_PREFIX = "/data";
 const INJURIES_PREFIX = "/injuries";
 
@@ -45,6 +46,13 @@ export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
     command: VOLUME_PREFIX,
     label: "Volume",
     description: "SBD sets en reps",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+  {
+    command: PR_PREFIX,
+    label: "PR",
+    description: "PR-lijst SBD",
     coachOnly: true,
     requiresDirectChat: true,
   },
@@ -118,6 +126,7 @@ function isOtherSlashCommand(message: string, prefix: string) {
     (prefix !== BW_PREFIX && normalized.startsWith(BW_PREFIX)) ||
     (prefix !== EXTERNALS_PREFIX && normalized.startsWith(EXTERNALS_PREFIX)) ||
     (prefix !== VOLUME_PREFIX && normalized.startsWith(VOLUME_PREFIX)) ||
+    (prefix !== PR_PREFIX && normalized.startsWith(PR_PREFIX)) ||
     (prefix !== DATA_PREFIX &&
       (isDataCommand(normalized) || isLegacyRawDataCommand(normalized))) ||
     (prefix !== INJURIES_PREFIX && normalized.startsWith(INJURIES_PREFIX))
@@ -189,6 +198,22 @@ export function parseVolumeCommand(message: string) {
   }
 
   const rest = normalized.slice(VOLUME_PREFIX.length);
+  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+
+  return { active: true, query };
+}
+
+export function parsePrCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+
+  if (
+    !normalized.startsWith(PR_PREFIX) ||
+    isOtherSlashCommand(normalized, PR_PREFIX)
+  ) {
+    return { active: false, query: "" };
+  }
+
+  const rest = normalized.slice(PR_PREFIX.length);
   const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
 
   return { active: true, query };
