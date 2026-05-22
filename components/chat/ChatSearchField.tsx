@@ -37,18 +37,16 @@ export default function ChatSearchField({
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className={`min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-gray-400 ${
-          hasValue ? "pr-1" : ""
-        }`}
+        className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-gray-400"
       />
       {hasValue && (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gray-200 text-gray-700 transition hover:bg-gray-300 hover:text-black"
+          className="shrink-0 p-0.5 text-gray-400 transition hover:text-gray-700"
           aria-label="Zoekopdracht wissen"
         >
-          <X className="h-4 w-4 stroke-[2.5]" />
+          <X className="h-3.5 w-3.5 stroke-[2]" />
         </button>
       )}
     </div>

@@ -8,6 +8,8 @@ type ChatVoiceRecorderProps = {
   onSend: (blob: Blob, mimeType: string) => void;
 };
 
+const BAR_COUNT = 24;
+
 function getSupportedAudioMimeType() {
   if (typeof MediaRecorder === "undefined") return "";
 
@@ -28,31 +30,72 @@ function formatRecordingTime(seconds: number) {
   return `${mins}:${String(secs).padStart(2, "0")}`;
 }
 
+function VoiceLevelBars({
+  levels,
+  paused,
+}: {
+  levels: number[];
+  paused: boolean;
+}) {
+  return (
+    <div className="flex h-8 items-end justify-center gap-[3px] px-1">
+      {levels.map((level, index) => (
+        <span
+          key={index}
+          className={`w-[3px] rounded-full transition-[height] duration-75 ${
+            paused ? "bg-amber-300" : "bg-emerald-400"
+          }`}
+          style={{
+            height: `${Math.max(4, Math.round(level * 28))}px`,
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
 export default function ChatVoiceRecorder({
   disabled = false,
   onSend,
 }: ChatVoiceRecorderProps) {
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const analyserRef = useRef<AnalyserNode | null>(null);
+  const animationRef = useRef<number | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<number | null>(null);
   const cancelledRef = useRef(false);
   const sendOnStopRef = useRef(false);
   const mimeTypeRef = useRef("");
   const recordingRef = useRef(false);
+  const pausedRef = useRef(false);
 
   const [active, setActive] = useState(false);
   const [paused, setPaused] = useState(false);
   const [seconds, setSeconds] = useState(0);
+  const [levels, setLevels] = useState<number[]>(() =>
+    Array.from({ length: BAR_COUNT }, () => 0.12),
+  );
+  const levelsRef = useRef<number[]>(
+    Array.from({ length: BAR_COUNT }, () => 0.12),
+  );
 
   useEffect(() => {
     recordingRef.current = active;
   }, [active]);
 
   useEffect(() => {
+    pausedRef.current = paused;
+  }, [paused]);
+
+  useEffect(() => {
     return () => {
       stopTimer();
+      stopAnalyserLoop();
       stopStream();
+      void audioContextRef.current?.close();
+      audioContextRef.current = null;
     };
   }, []);
 
@@ -63,16 +106,59 @@ export default function ChatVoiceRecorder({
     }
   }
 
+  function stopAnalyserLoop() {
+    if (animationRef.current) {
+      window.cancelAnimationFrame(animationRef.current);
+      animationRef.current = null;
+    }
+  }
+
   function stopStream() {
     streamRef.current?.getTracks().forEach((track) => track.stop());
     streamRef.current = null;
+    analyserRef.current = null;
   }
 
   function resetUi() {
     setActive(false);
     setPaused(false);
     setSeconds(0);
+    setLevels(Array.from({ length: BAR_COUNT }, () => 0.12));
+    levelsRef.current = Array.from({ length: BAR_COUNT }, () => 0.12);
     recordingRef.current = false;
+    pausedRef.current = false;
+  }
+
+  function startAnalyserLoop() {
+    stopAnalyserLoop();
+
+    const analyser = analyserRef.current;
+    if (!analyser) return;
+
+    const buffer = new Uint8Array(analyser.fftSize);
+
+    const tick = () => {
+      if (!analyserRef.current) return;
+
+      analyser.getByteTimeDomainData(buffer);
+
+      const nextLevels = Array.from({ length: BAR_COUNT }, (_, index) => {
+        const sampleIndex = Math.floor((index / BAR_COUNT) * buffer.length);
+        const sample = buffer[sampleIndex] ?? 128;
+        const amplitude = Math.abs(sample - 128) / 128;
+        const previous = levelsRef.current[index] ?? 0.12;
+        const target = pausedRef.current
+          ? 0.12
+          : Math.min(1, 0.12 + amplitude * 2.4);
+        return previous * 0.55 + target * 0.45;
+      });
+
+      levelsRef.current = nextLevels;
+      setLevels(nextLevels);
+      animationRef.current = window.requestAnimationFrame(tick);
+    };
+
+    animationRef.current = window.requestAnimationFrame(tick);
   }
 
   async function startRecording() {
@@ -101,6 +187,20 @@ export default function ChatVoiceRecorder({
       cancelledRef.current = false;
       sendOnStopRef.current = false;
 
+      const audioContext = new AudioContext();
+      const source = audioContext.createMediaStreamSource(stream);
+      const analyser = audioContext.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.65;
+      source.connect(analyser);
+
+      audioContextRef.current = audioContext;
+      analyserRef.current = analyser;
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
       const mimeType = getSupportedAudioMimeType();
       mimeTypeRef.current = mimeType;
       const recorder = new MediaRecorder(
@@ -123,8 +223,11 @@ export default function ChatVoiceRecorder({
           type: type.startsWith("audio/") ? type : "audio/mp4",
         });
 
+        stopAnalyserLoop();
         stopStream();
         stopTimer();
+        void audioContextRef.current?.close();
+        audioContextRef.current = null;
         resetUi();
         mediaRecorderRef.current = null;
 
@@ -147,6 +250,7 @@ export default function ChatVoiceRecorder({
       timerRef.current = window.setInterval(() => {
         setSeconds((current) => current + 1);
       }, 1000);
+      startAnalyserLoop();
     } catch {
       alert("Microfoon kon niet worden geopend. Geef toestemming in je browser.");
     }
@@ -157,8 +261,11 @@ export default function ChatVoiceRecorder({
     const recorder = mediaRecorderRef.current;
 
     if (!recorder) {
+      stopAnalyserLoop();
       stopStream();
       stopTimer();
+      void audioContextRef.current?.close();
+      audioContextRef.current = null;
       resetUi();
       return;
     }
@@ -172,8 +279,11 @@ export default function ChatVoiceRecorder({
       return;
     }
 
+    stopAnalyserLoop();
     stopStream();
     stopTimer();
+    void audioContextRef.current?.close();
+    audioContextRef.current = null;
     resetUi();
   }
 
@@ -229,18 +339,19 @@ export default function ChatVoiceRecorder({
           </button>
 
           <div className="flex min-w-0 flex-1 flex-col items-center gap-1">
+            <VoiceLevelBars levels={levels} paused={paused} />
             <div className="flex items-center gap-2">
               <span
-                className={`h-2.5 w-2.5 rounded-full ${
+                className={`h-2 w-2 rounded-full ${
                   paused ? "bg-amber-400" : "bg-red-500 animate-pulse"
                 }`}
               />
-              <p className="text-lg font-semibold tabular-nums">
+              <p className="text-base font-semibold tabular-nums">
                 {formatRecordingTime(seconds)}
               </p>
             </div>
-            <p className="text-xs text-white/70">
-              {paused ? "Gepauzeerd" : "Opnemen..."}
+            <p className="text-[11px] text-white/70">
+              {paused ? "Gepauzeerd" : "Geluid wordt opgenomen"}
             </p>
           </div>
 

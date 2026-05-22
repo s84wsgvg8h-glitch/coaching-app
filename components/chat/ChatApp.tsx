@@ -321,6 +321,29 @@ export default function ChatApp() {
     return key ? conversationSettings[key] : undefined;
   }
 
+  function patchCurrentConversationSettings(
+    patch: Partial<ChatConversationSettings>,
+  ) {
+    const key = getConversationSettingsKey();
+    if (!key || !userId) return;
+
+    setConversationSettings((current) => ({
+      ...current,
+      [key]: {
+        id: current[key]?.id || "",
+        user_id: userId,
+        peer_user_id: activeUserId,
+        group_id: activeGroupId,
+        pinned: current[key]?.pinned ?? false,
+        muted: current[key]?.muted ?? false,
+        cleared_at: current[key]?.cleared_at ?? null,
+        hidden_at: current[key]?.hidden_at ?? null,
+        pinned_message_id: current[key]?.pinned_message_id ?? null,
+        ...patch,
+      },
+    }));
+  }
+
   async function refreshConversationSettings() {
     if (!userId) return;
 
@@ -968,7 +991,9 @@ export default function ChatApp() {
     if (!target || !userId) return;
 
     const current = getCurrentConversationSettings();
-    await pinConversation(userId, target, !current?.pinned);
+    const nextPinned = !current?.pinned;
+    patchCurrentConversationSettings({ pinned: nextPinned });
+    await pinConversation(userId, target, nextPinned);
     await refreshConversationSettings();
   }
 
@@ -977,7 +1002,9 @@ export default function ChatApp() {
     if (!target || !userId) return;
 
     const current = getCurrentConversationSettings();
-    await muteConversation(userId, target, !current?.muted);
+    const nextMuted = !current?.muted;
+    patchCurrentConversationSettings({ muted: nextMuted });
+    await muteConversation(userId, target, nextMuted);
     await refreshConversationSettings();
   }
 
@@ -1209,6 +1236,7 @@ export default function ChatApp() {
 
     const current = getCurrentConversationSettings();
     const nextId = current?.pinned_message_id === msg.id ? null : msg.id;
+    patchCurrentConversationSettings({ pinned_message_id: nextId });
     await pinConversationMessage(userId, target, nextId);
     await refreshConversationSettings();
   }
@@ -1294,7 +1322,7 @@ export default function ChatApp() {
     return (
       <div
         key={`${highlightQuery ? "search-chat-" : ""}${entry.kind}-${entry.id}`}
-        className={`flex w-full items-center gap-2 border-b border-gray-100 px-2 py-2 transition hover:bg-gray-50 ${
+        className={`group flex w-full items-stretch border-b border-gray-100 px-2 py-2 transition hover:bg-gray-50 ${
           isActive ? "bg-gray-100" : ""
         }`}
       >
@@ -1322,7 +1350,7 @@ export default function ChatApp() {
           </ChatAvatar>
 
           <div className="min-w-0 flex-1">
-            <div className="flex items-center justify-between gap-2">
+            <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 items-center gap-1.5">
                 {isPinned && (
                   <Pin className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
@@ -1347,13 +1375,28 @@ export default function ChatApp() {
                   )}
                 </p>
               </div>
-              <span
-                className={`shrink-0 text-xs ${
-                  hasUnread ? "font-semibold text-black" : "text-gray-400"
-                }`}
-              >
-                {formatChatListTime(entry.lastMessageTime)}
-              </span>
+
+              <div className="flex shrink-0 flex-col items-end gap-0.5">
+                <span
+                  className={`text-xs ${
+                    hasUnread ? "font-semibold text-black" : "text-gray-400"
+                  }`}
+                >
+                  {formatChatListTime(entry.lastMessageTime)}
+                </span>
+                <button
+                  type="button"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+                    openListMenu(entry);
+                  }}
+                  className="flex h-4 w-4 items-center justify-center text-gray-400 opacity-0 transition-opacity hover:text-black group-hover:opacity-100 max-md:hidden"
+                  aria-label="Chatopties"
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </button>
+              </div>
             </div>
 
             <div className="mt-1 flex items-center justify-between gap-3">
@@ -1374,18 +1417,6 @@ export default function ChatApp() {
               )}
             </div>
           </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={(event) => {
-            event.stopPropagation();
-            openListMenu(entry);
-          }}
-          className="mr-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-gray-500 hover:bg-gray-200 hover:text-black"
-          aria-label="Chatopties"
-        >
-          <MoreVertical className="h-5 w-5" />
         </button>
       </div>
     );
@@ -1794,7 +1825,7 @@ export default function ChatApp() {
                 <button
                   type="button"
                   onClick={() => scrollToMessage(pinnedMessage.id)}
-                  className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-4 py-2.5 text-left hover:bg-gray-50"
+                  className="sticky top-0 z-10 flex shrink-0 items-center gap-3 border-b border-emerald-200 bg-emerald-50 px-4 py-2.5 text-left hover:bg-emerald-100/80"
                 >
                   <Pin className="h-4 w-4 shrink-0 text-emerald-600" />
                   <div className="min-w-0 flex-1">
@@ -1846,7 +1877,11 @@ export default function ChatApp() {
                       )}
 
                       <div
-                        className={`mb-1 flex ${isMine ? "justify-end" : "justify-start"}`}
+                        className={`mb-1 flex w-full ${isMine ? "justify-end" : "justify-start"}`}
+                        onDoubleClick={(event) => {
+                          event.stopPropagation();
+                          handleReply(msg);
+                        }}
                       >
                         <div
                           className={`flex max-w-[82%] flex-col md:max-w-[65%] ${
@@ -1862,12 +1897,7 @@ export default function ChatApp() {
                           )}
 
                           <div
-                            onClick={(event) => openMessageMenu(msg, event)}
-                            onDoubleClick={(event) => {
-                              event.stopPropagation();
-                              handleReply(msg);
-                            }}
-                            className={`group relative cursor-pointer px-4 py-3 shadow-sm ${
+                            className={`group relative px-4 py-3 shadow-sm ${
                               isMine
                                 ? "rounded-2xl rounded-br-md bg-black text-white"
                                 : "rounded-2xl rounded-bl-md bg-white text-black"
