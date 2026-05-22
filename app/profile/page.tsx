@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
 import ChatAvatar from "@/components/chat/ChatAvatar";
 import { updateProfileAvatar, uploadAvatar } from "@/lib/chatAvatars";
@@ -11,14 +12,12 @@ export default function ProfilePage() {
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
-  const [lidnummer, setLidnummer] = useState("");
   const [geboortedatum, setGeboortedatum] = useState("");
+  const [lidnummer, setLidnummer] = useState("");
 
   const [editedFullName, setEditedFullName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
   const [editedPassword, setEditedPassword] = useState("");
-  const [editedLidnummer, setEditedLidnummer] = useState("");
-  const [editedGeboortedatum, setEditedGeboortedatum] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
 
   const [saving, setSaving] = useState(false);
@@ -49,9 +48,7 @@ export default function ProfilePage() {
         setEditedFullName(data.full_name || "");
         setRole(data.role || "");
         setLidnummer(data.lidnummer || "");
-        setEditedLidnummer(data.lidnummer || "");
         setGeboortedatum(data.geboortedatum || "");
-        setEditedGeboortedatum(data.geboortedatum || "");
         setAvatarUrl(data.avatar_url || null);
       }
     }
@@ -72,8 +69,6 @@ export default function ProfilePage() {
       .from("profiles")
       .update({
         full_name: editedFullName.trim(),
-        lidnummer: editedLidnummer.trim(),
-        geboortedatum: editedGeboortedatum || null,
       })
       .eq("id", userId);
 
@@ -104,8 +99,6 @@ export default function ProfilePage() {
     }
 
     setEmail(editedEmail.trim());
-    setLidnummer(editedLidnummer.trim());
-    setGeboortedatum(editedGeboortedatum);
     setEditedPassword("");
     setSaving(false);
     setMessage("Profiel opgeslagen.");
@@ -173,14 +166,6 @@ export default function ProfilePage() {
             <input type="password" value={editedPassword} onChange={(e) => setEditedPassword(e.target.value)} placeholder="Laat leeg als je niks wilt wijzigen" className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
           </div>
           <div>
-            <label className="block text-sm font-semibold mb-2">Geboortedatum</label>
-            <input type="date" value={editedGeboortedatum} onChange={(e) => setEditedGeboortedatum(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Lidnummer</label>
-            <input type="text" value={editedLidnummer} onChange={(e) => setEditedLidnummer(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
-          </div>
-          <div>
             <label className="block text-sm font-semibold mb-2">Rol</label>
             <div className="w-full bg-gray-100 rounded-2xl px-4 py-3 text-gray-600 capitalize">{role}</div>
           </div>
@@ -192,6 +177,28 @@ export default function ProfilePage() {
           {saving ? "Opslaan..." : "Profiel opslaan"}
         </button>
       </div>
+
+      {userId && (
+        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-3xl">
+          <AthleteProfileSection
+            athleteId={userId}
+            initialGeboortedatum={geboortedatum}
+            initialLidnummer={lidnummer}
+            onSaved={async () => {
+              const { data } = await supabase
+                .from("profiles")
+                .select("geboortedatum, lidnummer")
+                .eq("id", userId)
+                .single();
+
+              if (data) {
+                setGeboortedatum(data.geboortedatum || "");
+                setLidnummer(data.lidnummer || "");
+              }
+            }}
+          />
+        </div>
+      )}
 
       <BodyAreaDiagram athleteId={userId} />
     </AppShell>

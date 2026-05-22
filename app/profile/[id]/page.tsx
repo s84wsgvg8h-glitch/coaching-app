@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
 import { getChatReturnRoute } from "@/lib/chatNavigation";
 
@@ -26,45 +27,45 @@ export default function UserProfilePage() {
   const [viewerRole, setViewerRole] = useState("");
   const [chatBackHref, setChatBackHref] = useState("/chat");
 
-  useEffect(() => {
-    async function loadProfile() {
-      setLoading(true);
+  async function loadProfile() {
+    setLoading(true);
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
 
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const { data: viewerProfile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      setViewerId(user.id);
-      setViewerRole(viewerProfile?.role || "");
-
-      const { data, error } = await supabase
-        .from("profiles")
-        .select("id, full_name, role, lidnummer, geboortedatum")
-        .eq("id", profileId)
-        .single();
-
-      if (error || !data) {
-        setProfile(null);
-        setLoading(false);
-        return;
-      }
-
-      setProfile(data);
-      setLoading(false);
+    if (!user) {
+      window.location.href = "/login";
+      return;
     }
 
-    loadProfile();
+    const { data: viewerProfile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single();
+
+    setViewerId(user.id);
+    setViewerRole(viewerProfile?.role || "");
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id, full_name, role, lidnummer, geboortedatum")
+      .eq("id", profileId)
+      .single();
+
+    if (error || !data) {
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    setProfile(data);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    void loadProfile();
     setChatBackHref(getChatReturnRoute());
   }, [profileId]);
 
@@ -74,6 +75,8 @@ export default function UserProfilePage() {
       : profile?.role === "atleet"
         ? "Atleet"
         : profile?.role || "Gebruiker";
+
+  const canEdit = Boolean(profile && (viewerId === profile.id || viewerRole === "coach"));
 
   return (
     <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6">
@@ -107,26 +110,14 @@ export default function UserProfilePage() {
             </h1>
             <p className="mt-2 text-gray-500">{roleLabel}</p>
 
-            <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-2">
-              {profile.geboortedatum && (
-                <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                    Geboortedatum
-                  </p>
-                  <p className="mt-1 font-semibold text-black">
-                    {new Date(profile.geboortedatum).toLocaleDateString("nl-NL")}
-                  </p>
-                </div>
-              )}
-
-              {viewerRole === "coach" && profile.lidnummer && (
-                <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                    Lidnummer
-                  </p>
-                  <p className="mt-1 font-semibold text-black">{profile.lidnummer}</p>
-                </div>
-              )}
+            <div className="mt-8 border-t border-gray-100 pt-8">
+              <AthleteProfileSection
+                athleteId={profile.id}
+                canEdit={canEdit}
+                initialGeboortedatum={profile.geboortedatum}
+                initialLidnummer={profile.lidnummer}
+                onSaved={() => void loadProfile()}
+              />
             </div>
           </div>
         )}
@@ -134,7 +125,7 @@ export default function UserProfilePage() {
         {!loading && profile && (
           <BodyAreaDiagram
             athleteId={profile.id}
-            canEdit={viewerId === profile.id || viewerRole === "coach"}
+            canEdit={canEdit}
           />
         )}
       </div>
