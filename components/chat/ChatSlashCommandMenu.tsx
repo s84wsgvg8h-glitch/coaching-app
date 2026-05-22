@@ -18,13 +18,8 @@ export default function ChatSlashCommandMenu({
   if (commands.length === 0) return null;
 
   return (
-    <div className="absolute bottom-full left-0 right-0 z-30 mb-2 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
-      <div className="border-b border-gray-100 px-3 py-2">
-        <p className="text-[10px] font-bold uppercase tracking-wide text-gray-400">
-          Commando&apos;s
-        </p>
-      </div>
-      <ul className="max-h-56 overflow-y-auto overscroll-contain py-1">
+    <div className="absolute bottom-full left-0 z-30 mb-1.5 w-full overflow-hidden rounded-xl border border-gray-200 bg-white shadow-md">
+      <ul className="max-h-36 overflow-y-auto overscroll-contain py-0.5">
         {commands.map((item, index) => {
           const isActive = index === activeIndex;
 
@@ -34,20 +29,15 @@ export default function ChatSlashCommandMenu({
                 type="button"
                 onMouseEnter={() => onHover(index)}
                 onClick={() => onSelect(item.command)}
-                className={`flex w-full items-start gap-3 px-3 py-2.5 text-left transition ${
+                className={`flex w-full items-center gap-2 px-2 py-1.5 text-left transition ${
                   isActive ? "bg-gray-100" : "hover:bg-gray-50"
                 }`}
               >
-                <span className="shrink-0 font-mono text-sm font-bold text-black">
+                <span className="shrink-0 font-mono text-[11px] font-bold text-black">
                   {item.command}
                 </span>
-                <span className="min-w-0">
-                  <span className="block text-sm font-semibold text-black">
-                    {item.label}
-                  </span>
-                  <span className="block text-xs text-gray-500">
-                    {item.description}
-                  </span>
+                <span className="min-w-0 truncate text-[11px] font-semibold text-gray-700">
+                  {item.label}
                 </span>
               </button>
             </li>

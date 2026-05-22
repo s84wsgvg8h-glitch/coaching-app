@@ -1299,15 +1299,27 @@ function RawDataPageContent() {
 
     const progressionRows = buildProgressionRows(rawBlock);
     const weeks = rawBlock.weeks;
+    const compact = embeddedInChat;
+    const exerciseColumnWidth = compact ? 88 : 320;
+    const weekColumnWidth = compact ? 52 : 240;
+    const gridMinWidth = exerciseColumnWidth + weeks.length * weekColumnWidth;
 
     return (
-      <div className="space-y-5">
-        <div className="bg-white rounded-2xl border border-gray-200 shadow p-4">
-          <p className="text-xs font-black text-gray-500 uppercase mb-2">
+      <div className={compact ? "space-y-3" : "space-y-5"}>
+        <div
+          className={`bg-white rounded-2xl border border-gray-200 shadow ${
+            compact ? "p-2.5" : "p-4"
+          }`}
+        >
+          <p
+            className={`font-black text-gray-500 uppercase ${
+              compact ? "mb-1.5 text-[10px]" : "mb-2 text-xs"
+            }`}
+          >
             Kies block
           </p>
 
-          <div className="flex flex-wrap gap-2">
+          <div className={`flex flex-wrap ${compact ? "gap-1.5" : "gap-2"}`}>
             {filteredRawBlocks.map((blockItem) => {
               const active = blockItem.block.id === rawBlock.block.id;
 
@@ -1316,7 +1328,9 @@ function RawDataPageContent() {
                   key={blockItem.block.id}
                   type="button"
                   onClick={() => setSelectedProgressionBlockId(blockItem.block.id)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold border transition ${
+                  className={`rounded-xl font-bold border transition ${
+                    compact ? "px-2.5 py-1 text-[11px]" : "px-4 py-2 text-sm"
+                  } ${
                     active
                       ? "bg-black text-white border-black"
                       : "bg-gray-50 text-gray-700 border-gray-200 hover:border-black"
@@ -1330,12 +1344,20 @@ function RawDataPageContent() {
         </div>
 
         <div className="bg-white rounded-3xl border border-gray-200 shadow overflow-hidden">
-          <div className="p-5 border-b border-gray-200">
-            <h2 className="text-2xl font-black text-black">
+          <div
+            className={`border-b border-gray-200 ${compact ? "p-3" : "p-5"}`}
+          >
+            <h2
+              className={`font-black text-black ${
+                compact ? "text-base" : "text-2xl"
+              }`}
+            >
               {rawBlock.block.title || "Block"}
             </h2>
 
-            <p className="text-sm text-gray-500 mt-1">
+            <p
+              className={`text-gray-500 ${compact ? "mt-0.5 text-[11px]" : "mt-1 text-sm"}`}
+            >
               {rawBlock.athleteName}
               {rawBlock.block.start_date
                 ? ` · start ${formatDate(rawBlock.block.start_date)}`
@@ -1344,25 +1366,44 @@ function RawDataPageContent() {
           </div>
 
           {weeks.length === 0 || progressionRows.length === 0 ? (
-            <div className="p-5 text-sm text-gray-500">
+            <div
+              className={`text-gray-500 ${compact ? "p-3 text-xs" : "p-5 text-sm"}`}
+            >
               Geen progression data gevonden in dit block.
             </div>
           ) : (
-            <div className="overflow-auto max-h-[calc(100vh-320px)]">
+            <div
+              className={`overflow-auto ${
+                compact
+                  ? "max-h-[calc(100vh-210px)]"
+                  : "max-h-[calc(100vh-320px)]"
+              }`}
+            >
               <div
-                className="grid min-w-[1200px]"
+                className="grid"
                 style={{
-                  gridTemplateColumns: `320px repeat(${weeks.length}, minmax(240px, 1fr))`,
+                  minWidth: `${gridMinWidth}px`,
+                  gridTemplateColumns: `${exerciseColumnWidth}px repeat(${weeks.length}, minmax(${weekColumnWidth}px, 1fr))`,
                 }}
               >
-                <div className="sticky top-0 left-0 z-30 bg-gray-100 border-b border-r border-gray-300 p-3 text-xs font-black text-gray-600 uppercase">
+                <div
+                  className={`sticky top-0 left-0 z-30 bg-gray-100 border-b border-r border-gray-300 font-black text-gray-600 uppercase ${
+                    compact
+                      ? "px-1 py-1 text-[9px] leading-tight"
+                      : "p-3 text-xs"
+                  }`}
+                >
                   Oefening
                 </div>
 
                 {weeks.map((rawWeek) => (
                   <div
                     key={rawWeek.week.id}
-                    className="sticky top-0 z-20 bg-gray-100 border-b border-r border-gray-300 p-3 text-xs font-black text-gray-600 uppercase"
+                    className={`sticky top-0 z-20 bg-gray-100 border-b border-r border-gray-300 font-black text-gray-600 uppercase ${
+                      compact
+                        ? "px-1 py-1 text-[9px] leading-tight"
+                        : "p-3 text-xs"
+                    }`}
                   >
                     {rawWeek.week.title || `Week ${rawWeek.week.week_number}`}
                   </div>
@@ -1373,9 +1414,11 @@ function RawDataPageContent() {
                     <div
                       className={`sticky left-0 z-10 border-r border-b border-gray-200 border-l-4 ${getProgressionExerciseColorClass(
                         row.baseName,
-                      )} p-3 text-sm font-black text-black ${
-                        rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
-                      }`}
+                      )} font-black text-black ${
+                        compact
+                          ? "px-1 py-1 text-[10px] leading-tight"
+                          : "p-3 text-sm"
+                      } ${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
                     >
                       {row.name}
                     </div>
@@ -1386,7 +1429,11 @@ function RawDataPageContent() {
                       return (
                         <div
                           key={`${row.key}-${rawWeek.week.id}`}
-                          className={`border-r border-b border-gray-200 p-3 text-xs leading-tight whitespace-pre-wrap ${
+                          className={`border-r border-b border-gray-200 leading-tight whitespace-pre-wrap ${
+                            compact
+                              ? "px-1 py-1 text-[9px]"
+                              : "p-3 text-xs"
+                          } ${
                             rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
                           } ${rows.length === 0 ? "text-gray-400" : "text-black"}`}
                         >

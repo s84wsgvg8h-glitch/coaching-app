@@ -1920,6 +1920,10 @@ export default function ChatApp() {
             athleteId={activeUserId}
             athleteName={activeAthleteName}
             onClose={closeBwPanel}
+            canSendChart={canSendMessages && !uploadingMedia}
+            onSendChartToChat={(file, caption) => {
+              void sendMediaFile(file, caption);
+            }}
           />
         )}
 
@@ -2337,14 +2341,6 @@ export default function ChatApp() {
 
               <footer className="shrink-0 border-t border-gray-200 bg-white px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] md:px-4 md:py-3">
                 <div className="relative flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
-                  {slashCommandMenuOpen && (
-                    <ChatSlashCommandMenu
-                      commands={slashCommandSuggestions}
-                      activeIndex={slashCommandActiveIndex}
-                      onSelect={selectSlashCommand}
-                      onHover={setSlashCommandActiveIndex}
-                    />
-                  )}
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -2398,7 +2394,16 @@ export default function ChatApp() {
                     <Camera className="h-5 w-5" />
                   </button>
 
-                  <textarea
+                  <div className="relative min-w-0 flex-1">
+                    {slashCommandMenuOpen && (
+                      <ChatSlashCommandMenu
+                        commands={slashCommandSuggestions}
+                        activeIndex={slashCommandActiveIndex}
+                        onSelect={selectSlashCommand}
+                        onHover={setSlashCommandActiveIndex}
+                      />
+                    )}
+                    <textarea
                     ref={inputRef}
                     rows={1}
                     value={message}
@@ -2485,8 +2490,9 @@ export default function ChatApp() {
                                 : "Typ een bericht"
                     }
                     disabled={!canSendMessages || uploadingMedia}
-                    className="max-h-32 min-h-[24px] flex-1 resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
+                    className="max-h-32 min-h-[24px] w-full resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
                   />
+                  </div>
 
                   {message.trim() && !slashPanelOpen && !slashCommandMenuOpen ? (
                     <button

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { SendHorizontal } from "lucide-react";
 import {
   Area,
   AreaChart,
@@ -22,22 +23,29 @@ import {
   resolveBwDateRangeFromWeeks,
   type DailyBwPoint,
 } from "@/lib/chatBwData";
+import { captureElementAsPngFile } from "@/lib/captureChartAsPng";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
 
 type ChatBwPanelProps = {
   athleteId: string;
   athleteName: string;
   onClose: () => void;
+  onSendChartToChat?: (file: File, caption: string) => void;
+  canSendChart?: boolean;
 };
 
 export default function ChatBwPanel({
   athleteId,
   athleteName,
   onClose,
+  onSendChartToChat,
+  canSendChart = true,
 }: ChatBwPanelProps) {
+  const chartContainerRef = useRef<HTMLDivElement | null>(null);
   const [points, setPoints] = useState<DailyBwPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [sendingChart, setSendingChart] = useState(false);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [beginWeekId, setBeginWeekId] = useState("");
@@ -142,6 +150,40 @@ export default function ChatBwPanel({
   function handleEndWeekChange(weekKey: string) {
     applyWeekSelection(beginWeekId, weekKey);
   }
+
+  async function handleSendChartToChat() {
+    if (!onSendChartToChat || !chartContainerRef.current || sendingChart) return;
+
+    setSendingChart(true);
+
+    try {
+      const file = await captureElementAsPngFile(
+        chartContainerRef.current,
+        `bw-grafiek-${athleteId}.png`,
+      );
+      const periodLabel =
+        startDate && endDate
+          ? ` (${formatShortDate(startDate)} – ${formatShortDate(endDate)})`
+          : "";
+      const caption = `BW grafiek ${athleteName}${periodLabel}`;
+
+      onSendChartToChat(file, caption);
+    } catch (sendError) {
+      alert(
+        sendError instanceof Error
+          ? sendError.message
+          : "Grafiek kon niet worden verstuurd.",
+      );
+    } finally {
+      setSendingChart(false);
+    }
+  }
+
+  const showSendChartButton =
+    Boolean(onSendChartToChat) &&
+    !loading &&
+    !error &&
+    chartData.length > 0;
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
@@ -256,7 +298,10 @@ export default function ChatBwPanel({
         )}
 
         {!loading && !error && chartData.length > 0 && (
-          <div className="min-h-[320px] flex-1 rounded-3xl border border-gray-200 bg-white p-3 shadow-sm">
+          <div
+            ref={chartContainerRef}
+            className="min-h-[320px] flex-1 rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+          >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" />
@@ -296,6 +341,20 @@ export default function ChatBwPanel({
           </div>
         )}
       </div>
+
+      {showSendChartButton && (
+        <div className="shrink-0 border-t border-gray-200 p-3">
+          <button
+            type="button"
+            onClick={() => void handleSendChartToChat()}
+            disabled={!canSendChart || sendingChart}
+            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+          >
+            <SendHorizontal className="h-4 w-4" />
+            {sendingChart ? "Grafiek versturen..." : "Stuur grafiek in chat"}
+          </button>
+        </div>
+      )}
     </aside>
   );
 }
