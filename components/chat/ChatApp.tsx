@@ -88,10 +88,12 @@ import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
 import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
+import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
 import {
   parseBwCommand,
+  parseDataCommand,
+  parseInjuriesCommand,
   parseProgramCommand,
-  parseRawDataCommand,
   parseToolsCommand,
 } from "@/lib/chatCommands";
 import {
@@ -735,10 +737,22 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/bw") ? "" : current));
   }
 
-  function closeRawDataPanel() {
-    setMessage((current) =>
-      /^\/\s*raw\s*data/i.test(current.trim()) ? "" : current,
-    );
+  function closeDataPanel() {
+    setMessage((current) => {
+      const normalized = current.trim();
+      if (
+        normalized.startsWith("/data") ||
+        /^\/\s*raw\s*data/i.test(normalized) ||
+        /^\/rawdata/i.test(normalized)
+      ) {
+        return "";
+      }
+      return current;
+    });
+  }
+
+  function closeInjuriesPanel() {
+    setMessage((current) => (current.startsWith("/injuries") ? "" : current));
   }
 
   function handleToolsQueryChange(query: string) {
@@ -768,7 +782,8 @@ export default function ChatApp() {
     if (parseToolsCommand(message).active) return;
     if (parseProgramCommand(message).active) return;
     if (parseBwCommand(message).active) return;
-    if (parseRawDataCommand(message).active) return;
+    if (parseDataCommand(message).active) return;
+    if (parseInjuriesCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1636,7 +1651,8 @@ export default function ChatApp() {
   const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
   const programCommand = useMemo(() => parseProgramCommand(message), [message]);
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
-  const rawDataCommand = useMemo(() => parseRawDataCommand(message), [message]);
+  const dataCommand = useMemo(() => parseDataCommand(message), [message]);
+  const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
   const toolsPanelOpen =
     toolsCommand.active && Boolean(activeUserId || activeGroupId);
   const programPanelOpen =
@@ -1649,12 +1665,18 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
-  const rawDataPanelOpen =
-    rawDataCommand.active &&
+  const dataPanelOpen =
+    dataCommand.active &&
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
-  const sidePanelOpen = programPanelOpen || bwPanelOpen || rawDataPanelOpen;
+  const injuriesPanelOpen =
+    injuriesCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
+  const sidePanelOpen =
+    programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen;
   const activeAthleteName = useMemo(() => {
     if (!activeUserId) return "Atleet";
     return (
@@ -1743,12 +1765,12 @@ export default function ChatApp() {
     >
       <div
         className={`flex h-full min-h-0 w-full overflow-hidden bg-gray-100 ${
-          programPanelOpen || bwPanelOpen || rawDataPanelOpen ? "flex-row" : ""
+          programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen ? "flex-row" : ""
         }`}
       >
         <aside
           className={`flex h-full min-h-0 w-full flex-col border-r border-gray-200 bg-white md:w-[420px] md:max-w-[40%] ${
-            programPanelOpen || bwPanelOpen || rawDataPanelOpen
+            programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen
               ? "hidden"
               : showConversationOnMobile
                 ? "hidden md:flex"
@@ -1873,11 +1895,18 @@ export default function ChatApp() {
           />
         )}
 
-        {rawDataPanelOpen && activeUserId && (
+        {dataPanelOpen && activeUserId && (
           <ChatRawDataPanel
             athleteId={activeUserId}
             athleteName={activeAthleteName}
-            onClose={closeRawDataPanel}
+            onClose={closeDataPanel}
+          />
+        )}
+
+        {injuriesPanelOpen && activeUserId && (
+          <ChatInjuriesPanel
+            athleteName={activeAthleteName}
+            onClose={closeInjuriesPanel}
           />
         )}
 
@@ -2344,8 +2373,10 @@ export default function ChatApp() {
                           closeProgramPanel();
                         } else if (bwPanelOpen) {
                           closeBwPanel();
-                        } else if (rawDataPanelOpen) {
-                          closeRawDataPanel();
+                        } else if (dataPanelOpen) {
+                          closeDataPanel();
+                        } else if (injuriesPanelOpen) {
+                          closeInjuriesPanel();
                         } else {
                           closeToolsPanel();
                         }
@@ -2369,8 +2400,10 @@ export default function ChatApp() {
                           ? "Programma geopend..."
                           : bwPanelOpen
                             ? "BW geopend..."
-                            : rawDataPanelOpen
-                              ? "Raw data geopend..."
+                            : dataPanelOpen
+                            ? "Data geopend..."
+                            : injuriesPanelOpen
+                              ? "Blessures geopend..."
                               : toolsPanelOpen
                                 ? "Zoek in tools..."
                                 : "Typ een bericht"

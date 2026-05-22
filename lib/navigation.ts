@@ -52,7 +52,7 @@ export function getNavLinks(
     {
       href: "/raw-data",
       icon: "🧾",
-      title: "Raw Data",
+      title: "Data",
       description: "Bekijk ruwe data.",
     },
     {
