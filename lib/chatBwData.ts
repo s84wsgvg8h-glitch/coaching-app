@@ -5,6 +5,22 @@ export type DailyBwPoint = {
   value: number;
   label: string;
   dayTitle: string;
+  blockId: string;
+  blockTitle: string;
+  weekId: string;
+  weekTitle: string;
+  weekNumber: number;
+};
+
+export type BwWeekOption = {
+  id: string;
+  blockId: string;
+  weekId: string;
+  blockTitle: string;
+  weekTitle: string;
+  weekNumber: number;
+  firstFilledDate: string;
+  lastFilledDate: string;
 };
 
 function parseNumber(value: string | null | undefined) {
@@ -49,6 +65,51 @@ export function formatBwNumber(value: number | null) {
   return Number.isInteger(rounded)
     ? String(rounded)
     : String(rounded).replace(".", ",");
+}
+
+export function buildBwWeekOptions(points: DailyBwPoint[]): BwWeekOption[] {
+  const grouped = new Map<string, DailyBwPoint[]>();
+
+  for (const point of points) {
+    const key = `${point.blockId}:${point.weekId}`;
+    const existing = grouped.get(key) || [];
+    existing.push(point);
+    grouped.set(key, existing);
+  }
+
+  return Array.from(grouped.entries())
+    .map(([id, weekPoints]) => {
+      const sorted = [...weekPoints].sort((a, b) => a.date.localeCompare(b.date));
+      const first = sorted[0];
+
+      return {
+        id,
+        blockId: first.blockId,
+        weekId: first.weekId,
+        blockTitle: first.blockTitle,
+        weekTitle: first.weekTitle,
+        weekNumber: first.weekNumber,
+        firstFilledDate: sorted[0].date,
+        lastFilledDate: sorted[sorted.length - 1].date,
+      };
+    })
+    .sort((a, b) => {
+      const blockCompare = a.blockTitle.localeCompare(b.blockTitle);
+      if (blockCompare !== 0) return blockCompare;
+      return a.weekNumber - b.weekNumber;
+    });
+}
+
+export function filterBwPointsByDateRange(
+  points: DailyBwPoint[],
+  startDate: string,
+  endDate: string,
+) {
+  return points.filter((point) => {
+    if (startDate && point.date < startDate) return false;
+    if (endDate && point.date > endDate) return false;
+    return true;
+  });
 }
 
 export async function loadAthleteDailyBwData(athleteId: string) {
@@ -140,6 +201,11 @@ export async function loadAthleteDailyBwData(athleteId: string) {
       value: bw,
       label: `${block.title || "Block"} · ${week.title || `Week ${week.week_number}`} · ${day.title}`,
       dayTitle: day.title,
+      blockId: block.id,
+      blockTitle: block.title || "Block",
+      weekId: week.id,
+      weekTitle: week.title || `Week ${week.week_number}`,
+      weekNumber: week.week_number,
     });
   }
 
