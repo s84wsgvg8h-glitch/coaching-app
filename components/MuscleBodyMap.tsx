@@ -4,14 +4,14 @@ import { useState } from "react";
 import {
   BACK_BODY_SILHOUETTE,
   BACK_MUSCLE_AREAS,
-  BODY_MAP_IMAGE,
+  BODY_MAP_CANVAS,
   BODY_MAP_LAYOUT,
   FRONT_BODY_SILHOUETTE,
   FRONT_MUSCLE_AREAS,
   getMuscleAreaById,
   type MuscleArea,
 } from "@/lib/muscleAreas";
-import type { AthleteInjury, InjuryUrgency } from "@/lib/injuries";
+import type { InjuryUrgency } from "@/lib/injuries";
 
 type MuscleBodyMapProps = {
   showLabel?: boolean;
@@ -66,7 +66,7 @@ function MuscleSideOverlay({
 
         let fill = "transparent";
         let fillOpacity = 0;
-        let stroke = "#94a3b8";
+        let stroke = "#64748b";
         let strokeWidth = 1.2;
 
         if (isInjured && injuryUrgency) {
@@ -113,6 +113,29 @@ function MuscleSideOverlay({
   );
 }
 
+function BodySilhouette({
+  path,
+  layout,
+}: {
+  path: string;
+  layout: { translateX: number; translateY: number; scale: number };
+}) {
+  return (
+    <g
+      transform={`translate(${layout.translateX} ${layout.translateY}) scale(${layout.scale})`}
+    >
+      <path
+        d={path}
+        fill="none"
+        stroke="#94a3b8"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+        pointerEvents="none"
+      />
+    </g>
+  );
+}
+
 export default function MuscleBodyMap({
   showLabel = true,
   compact = false,
@@ -126,73 +149,58 @@ export default function MuscleBodyMap({
   const selectedArea = selectedAreaId ? getMuscleAreaById(selectedAreaId) : null;
   const labelArea = hoveredArea || selectedArea;
 
+  const maxWidth = compact ? 420 : 532;
+
   return (
     <div className={className}>
       <div
         className={`relative mx-auto w-full rounded-3xl border border-gray-200 bg-white ${
-          compact ? "max-w-[420px]" : "max-w-[656px]"
+          compact ? "max-w-[420px]" : "max-w-[532px]"
         }`}
-        style={{ aspectRatio: `${BODY_MAP_IMAGE.width} / ${BODY_MAP_IMAGE.height}` }}
+        style={{
+          aspectRatio: `${BODY_MAP_CANVAS.width} / ${BODY_MAP_CANVAS.height}`,
+          maxWidth,
+        }}
       >
         <svg
           className="h-full w-full"
-          viewBox={`0 0 ${BODY_MAP_IMAGE.width} ${BODY_MAP_IMAGE.height}`}
+          viewBox={`0 0 ${BODY_MAP_CANVAS.width} ${BODY_MAP_CANVAS.height}`}
           aria-hidden="true"
         >
           <rect
             x="0"
             y="0"
-            width={BODY_MAP_IMAGE.width}
-            height={BODY_MAP_IMAGE.height}
+            width={BODY_MAP_CANVAS.width}
+            height={BODY_MAP_CANVAS.height}
             fill="#f8fafc"
             rx="24"
           />
           <text
-            x={BODY_MAP_IMAGE.width * 0.25}
-            y="16"
+            x={BODY_MAP_CANVAS.width * 0.25}
+            y="14"
             textAnchor="middle"
             className="fill-gray-400 text-[11px] font-bold uppercase tracking-wide"
           >
             Voorkant
           </text>
           <text
-            x={BODY_MAP_IMAGE.width * 0.75}
-            y="16"
+            x={BODY_MAP_CANVAS.width * 0.75}
+            y="14"
             textAnchor="middle"
             className="fill-gray-400 text-[11px] font-bold uppercase tracking-wide"
           >
             Achterkant
           </text>
           <line
-            x1={BODY_MAP_IMAGE.width / 2}
-            y1="24"
-            x2={BODY_MAP_IMAGE.width / 2}
-            y2={BODY_MAP_IMAGE.height - 12}
+            x1={BODY_MAP_CANVAS.width / 2}
+            y1={BODY_MAP_CANVAS.labelHeight}
+            x2={BODY_MAP_CANVAS.width / 2}
+            y2={BODY_MAP_CANVAS.height - 8}
             stroke="#e2e8f0"
             strokeDasharray="4 4"
           />
-          <g
-            transform={`translate(${BODY_MAP_LAYOUT.front.translateX} ${BODY_MAP_LAYOUT.front.translateY}) scale(${BODY_MAP_LAYOUT.front.scale})`}
-          >
-            <path
-              d={FRONT_BODY_SILHOUETTE}
-              fill="none"
-              stroke="#cbd5e1"
-              strokeWidth={1.5}
-              pointerEvents="none"
-            />
-          </g>
-          <g
-            transform={`translate(${BODY_MAP_LAYOUT.back.translateX} ${BODY_MAP_LAYOUT.back.translateY}) scale(${BODY_MAP_LAYOUT.back.scale})`}
-          >
-            <path
-              d={BACK_BODY_SILHOUETTE}
-              fill="none"
-              stroke="#cbd5e1"
-              strokeWidth={1.5}
-              pointerEvents="none"
-            />
-          </g>
+          <BodySilhouette path={FRONT_BODY_SILHOUETTE} layout={BODY_MAP_LAYOUT.front} />
+          <BodySilhouette path={BACK_BODY_SILHOUETTE} layout={BODY_MAP_LAYOUT.back} />
           <MuscleSideOverlay
             areas={FRONT_MUSCLE_AREAS}
             layout={BODY_MAP_LAYOUT.front}
@@ -219,7 +227,7 @@ export default function MuscleBodyMap({
       {showLabel && (
         <div
           className={`mx-auto flex min-h-[44px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2 text-center shadow-sm ${
-            compact ? "mt-3 max-w-[420px] text-xs" : "mt-6 max-w-md text-sm"
+            compact ? "mt-3 max-w-[420px] text-xs" : "mt-6 max-w-[532px] text-sm"
           }`}
         >
           <p className="font-bold text-black">

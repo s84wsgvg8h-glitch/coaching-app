@@ -59,41 +59,12 @@ export default function ChatWeekRangeFilters({
       <div className="grid grid-cols-2 gap-2">
         <div>
           <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            Van datum
-          </label>
-          <input
-            type="date"
-            value={startDate}
-            min={minDate}
-            max={maxDate}
-            onChange={(event) => handleStartDateChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-2 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
-            Tot datum
-          </label>
-          <input
-            type="date"
-            value={endDate}
-            min={minDate}
-            max={maxDate}
-            onChange={(event) => handleEndDateChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-2 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
-          />
-        </div>
-      </div>
-
-      <div className="grid grid-cols-2 gap-2">
-        <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
             Begin week
           </label>
           <select
             value={beginWeekId}
             onChange={(event) => handleBeginWeekChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2.5 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
           >
             <option value="">Alle weken</option>
             {weekOptions.map((week) => (
@@ -110,7 +81,7 @@ export default function ChatWeekRangeFilters({
           <select
             value={endWeekId}
             onChange={(event) => handleEndWeekChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2.5 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
           >
             <option value="">Alle weken</option>
             {weekOptions.map((week) => (
@@ -119,6 +90,35 @@ export default function ChatWeekRangeFilters({
               </option>
             ))}
           </select>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Van datum
+          </label>
+          <input
+            type="date"
+            value={startDate}
+            min={minDate}
+            max={maxDate}
+            onChange={(event) => handleStartDateChange(event.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+          />
+        </div>
+        <div>
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+            Tot datum
+          </label>
+          <input
+            type="date"
+            value={endDate}
+            min={minDate}
+            max={maxDate}
+            onChange={(event) => handleEndDateChange(event.target.value)}
+            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+          />
         </div>
       </div>
 

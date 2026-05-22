@@ -137,7 +137,7 @@ export default function InjuriesSection({
       {canEdit && selectedArea && (
         <div
           className={`mx-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-sm ${
-            compact ? "mt-4 max-w-[420px]" : "mt-6 max-w-[656px]"
+            compact ? "mt-4 max-w-[420px]" : "mt-6 max-w-[532px]"
           }`}
         >
           <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
