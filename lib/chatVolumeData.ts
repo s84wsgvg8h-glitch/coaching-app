@@ -10,6 +10,7 @@ export type SbdLift = "squat" | "bench" | "deadlift";
 export type LiftVolume = {
   sets: number;
   reps: number;
+  tonnage: number;
 };
 
 export type WeeklyVolumeRow = {
@@ -52,7 +53,7 @@ function parseNumber(value: string | null | undefined) {
 }
 
 function emptyLiftVolume(): LiftVolume {
-  return { sets: 0, reps: 0 };
+  return { sets: 0, reps: 0, tonnage: 0 };
 }
 
 export function classifySbdLift(exerciseName: string): SbdLift | null {
@@ -160,9 +161,27 @@ export function sumLiftVolume(rows: WeeklyVolumeRow[], lift: SbdLift): LiftVolum
     (total, row) => ({
       sets: total.sets + row[lift].sets,
       reps: total.reps + row[lift].reps,
+      tonnage: total.tonnage + row[lift].tonnage,
     }),
     emptyLiftVolume(),
   );
+}
+
+export function formatTonnage(value: number) {
+  if (value >= 1000) {
+    return `${(value / 1000).toFixed(1).replace(/\.0$/, "")}t`;
+  }
+  return `${Math.round(value)}kg`;
+}
+
+export function buildTonnageChartData(rows: WeeklyVolumeRow[]) {
+  return rows.map((row) => ({
+    id: row.id,
+    label: row.weekTitle,
+    squat: row.squat.tonnage,
+    bench: row.bench.tonnage,
+    deadlift: row.deadlift.tonnage,
+  }));
 }
 
 export function sumAllLiftVolume(rows: WeeklyVolumeRow[]) {
@@ -229,7 +248,7 @@ export async function loadAthleteSbdVolumeData(athleteId: string) {
 
   const { data: exercises, error: exercisesError } = await supabase
     .from("program_exercises")
-    .select("id, name, program_day_id")
+    .select("id, name, program_day_id, load, reps")
     .in("program_day_id", dayIds);
 
   if (exercisesError) {
@@ -247,7 +266,7 @@ export async function loadAthleteSbdVolumeData(athleteId: string) {
 
   const { data: setRows, error: setRowsError } = await supabase
     .from("athlete_exercise_sets")
-    .select("program_exercise_id, athlete_id, reps")
+    .select("program_exercise_id, athlete_id, reps, weight")
     .eq("athlete_id", athleteId)
     .in("program_exercise_id", exerciseIds);
 
@@ -298,9 +317,15 @@ export async function loadAthleteSbdVolumeData(athleteId: string) {
 
     existing[lift].sets += 1;
 
-    const reps = parseNumber(setRow.reps);
+    const reps =
+      parseNumber(setRow.reps) ?? parseNumber(exercise.reps);
     if (reps !== null) {
       existing[lift].reps += reps;
+    }
+
+    const weight = parseNumber(setRow.weight);
+    if (weight !== null && reps !== null && weight > 0 && reps > 0) {
+      existing[lift].tonnage += weight * reps;
     }
 
     volumeByWeek.set(weekKey, existing);

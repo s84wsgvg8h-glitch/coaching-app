@@ -89,6 +89,7 @@ import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
 import ChatVolumePanel from "@/components/chat/ChatVolumePanel";
+import ChatIntensityPanel from "@/components/chat/ChatIntensityPanel";
 import ChatMaxPanel from "@/components/chat/ChatMaxPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
@@ -99,6 +100,7 @@ import {
   parseDataCommand,
   parseExternalsCommand,
   parseInjuriesCommand,
+  parseIntensityCommand,
   parseMaxCommand,
   parseProgramCommand,
   parseToolsCommand,
@@ -755,6 +757,10 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/volume") ? "" : current));
   }
 
+  function closeIntensityPanel() {
+    setMessage((current) => (current.startsWith("/intensity") ? "" : current));
+  }
+
   function closeMaxPanel() {
     setMessage((current) => {
       const normalized = current.trim();
@@ -815,6 +821,7 @@ export default function ChatApp() {
     if (parseBwCommand(message).active) return;
     if (parseExternalsCommand(message).active) return;
     if (parseVolumeCommand(message).active) return;
+    if (parseIntensityCommand(message).active) return;
     if (parseMaxCommand(message).active) return;
     if (parseDataCommand(message).active) return;
     if (parseInjuriesCommand(message).active) return;
@@ -1687,6 +1694,7 @@ export default function ChatApp() {
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
   const externalsCommand = useMemo(() => parseExternalsCommand(message), [message]);
   const volumeCommand = useMemo(() => parseVolumeCommand(message), [message]);
+  const intensityCommand = useMemo(() => parseIntensityCommand(message), [message]);
   const maxCommand = useMemo(() => parseMaxCommand(message), [message]);
   const dataCommand = useMemo(() => parseDataCommand(message), [message]);
   const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
@@ -1712,6 +1720,11 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
+  const intensityPanelOpen =
+    intensityCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
   const maxPanelOpen =
     maxCommand.active &&
     userRole === "coach" &&
@@ -1732,6 +1745,7 @@ export default function ChatApp() {
     bwPanelOpen ||
     externalsPanelOpen ||
     volumePanelOpen ||
+    intensityPanelOpen ||
     maxPanelOpen ||
     dataPanelOpen ||
     injuriesPanelOpen;
@@ -1998,6 +2012,14 @@ export default function ChatApp() {
             athleteId={activeUserId}
             athleteName={activeAthleteName}
             onClose={closeVolumePanel}
+          />
+        )}
+
+        {intensityPanelOpen && activeUserId && (
+          <ChatIntensityPanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeIntensityPanel}
           />
         )}
 
@@ -2539,6 +2561,8 @@ export default function ChatApp() {
                             closeExternalsPanel();
                           } else if (volumePanelOpen) {
                             closeVolumePanel();
+                          } else if (intensityPanelOpen) {
+                            closeIntensityPanel();
                           } else if (maxPanelOpen) {
                             closeMaxPanel();
                           } else if (dataPanelOpen) {
@@ -2573,7 +2597,9 @@ export default function ChatApp() {
                               ? "Externals geopend..."
                               : volumePanelOpen
                                 ? "Volume geopend..."
-                                : maxPanelOpen
+                                : intensityPanelOpen
+                                  ? "Intensiteit geopend..."
+                                  : maxPanelOpen
                                   ? "Max geopend..."
                                   : dataPanelOpen
                             ? "Data geopend..."

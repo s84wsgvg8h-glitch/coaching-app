@@ -2,11 +2,23 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
+import {
+  Bar,
+  BarChart,
+  CartesianGrid,
+  Legend,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import { formatShortDate } from "@/lib/chatBwData";
 import {
+  buildTonnageChartData,
   buildVolumeWeekOptions,
   filterVolumeRowsByDateRange,
   formatLiftLabel,
+  formatTonnage,
   formatVolumeWeekOptionLabel,
   loadAthleteSbdVolumeData,
   resolveVolumeDateRangeFromWeeks,
@@ -23,6 +35,12 @@ type ChatVolumePanelProps = {
 };
 
 const SBD_LIFTS: SbdLift[] = ["squat", "bench", "deadlift"];
+
+const LIFT_COLORS: Record<SbdLift, string> = {
+  squat: "#111827",
+  bench: "#6b7280",
+  deadlift: "#9ca3af",
+};
 
 export default function ChatVolumePanel({
   athleteId,
@@ -86,6 +104,13 @@ export default function ChatVolumePanel({
   );
 
   const totals = useMemo(() => sumAllLiftVolume(filteredRows), [filteredRows]);
+  const tonnageChartData = useMemo(
+    () => buildTonnageChartData(filteredRows),
+    [filteredRows],
+  );
+  const hasTonnageData = tonnageChartData.some(
+    (row) => row.squat > 0 || row.bench > 0 || row.deadlift > 0,
+  );
   const hasWeekFilter = Boolean(beginWeekId || endWeekId);
 
   function applyWeekSelection(nextBeginWeekId: string, nextEndWeekId: string) {
@@ -226,9 +251,62 @@ export default function ChatVolumePanel({
                   <p className="text-[10px] font-bold uppercase text-gray-500">
                     reps
                   </p>
+                  <p className="mt-2 text-sm font-black text-black">
+                    {formatTonnage(totals[lift].tonnage)}
+                  </p>
+                  <p className="text-[10px] font-bold uppercase text-gray-500">
+                    tonnage
+                  </p>
                 </div>
               ))}
             </div>
+
+            {hasTonnageData && (
+              <div className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm">
+                <div className="mb-3 px-1">
+                  <p className="text-xs font-black uppercase text-gray-500">
+                    Tonnage per week
+                  </p>
+                  <h5 className="text-sm font-black text-black">
+                    Gewicht × reps per lift
+                  </h5>
+                </div>
+                <div className="h-[240px]">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={tonnageChartData}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis
+                        dataKey="label"
+                        tick={{ fontSize: 10 }}
+                        minTickGap={16}
+                      />
+                      <YAxis
+                        tick={{ fontSize: 10 }}
+                        tickFormatter={(value) => formatTonnage(Number(value))}
+                      />
+                      <Tooltip
+                        formatter={(value, name) => [
+                          formatTonnage(Number(value)),
+                          formatLiftLabel(name as SbdLift),
+                        ]}
+                      />
+                      <Legend
+                        formatter={(value) => formatLiftLabel(value as SbdLift)}
+                      />
+                      {SBD_LIFTS.map((lift) => (
+                        <Bar
+                          key={lift}
+                          dataKey={lift}
+                          name={lift}
+                          fill={LIFT_COLORS[lift]}
+                          radius={[4, 4, 0, 0]}
+                        />
+                      ))}
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
 
             <div className="overflow-hidden rounded-2xl border border-gray-200">
               <table className="w-full text-left text-sm">
@@ -257,6 +335,11 @@ export default function ChatVolumePanel({
                           <p className="text-xs text-gray-500">
                             {row[lift].reps} reps
                           </p>
+                          {row[lift].tonnage > 0 && (
+                            <p className="text-xs text-gray-400">
+                              {formatTonnage(row[lift].tonnage)}
+                            </p>
+                          )}
                         </td>
                       ))}
                     </tr>

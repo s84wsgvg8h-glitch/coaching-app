@@ -41,12 +41,18 @@ type ExternalMetricChartProps = {
   metric: ExternalMetric;
   filteredPoints: DailyExternalPoint[];
   chartRef: (element: HTMLDivElement | null) => void;
+  canSendChart?: boolean;
+  sendingChart?: boolean;
+  onSendChart?: () => void;
 };
 
 function ExternalMetricChart({
   metric,
   filteredPoints,
   chartRef,
+  canSendChart = false,
+  sendingChart = false,
+  onSendChart,
 }: ExternalMetricChartProps) {
   const chartData = useMemo(
     () =>
@@ -143,6 +149,18 @@ function ExternalMetricChart({
           </LineChart>
         </ResponsiveContainer>
       </div>
+
+      {onSendChart && (
+        <button
+          type="button"
+          onClick={onSendChart}
+          disabled={!canSendChart || sendingChart}
+          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+        >
+          <SendHorizontal className="h-4 w-4" />
+          {sendingChart ? "Versturen..." : "Stuur in chat"}
+        </button>
+      )}
     </div>
   );
 }
@@ -160,7 +178,7 @@ export default function ChatExternalsPanel({
   const [points, setPoints] = useState<DailyExternalPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-  const [sendingChart, setSendingChart] = useState(false);
+  const [sendingMetric, setSendingMetric] = useState<ExternalMetric | null>(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [beginWeekId, setBeginWeekId] = useState("");
@@ -242,16 +260,13 @@ export default function ChatExternalsPanel({
     setEndDate(range.endDate);
   }
 
-  async function handleSendChartToChat() {
-    if (!onSendChartToChat || sendingChart) return;
+  async function handleSendMetricToChat(metric: ExternalMetric) {
+    if (!onSendChartToChat || sendingMetric) return;
 
-    const metricsToSend = METRIC_OPTIONS.filter(
-      (metric) => chartContainerRefs.current[metric],
-    );
+    const container = chartContainerRefs.current[metric];
+    if (!container) return;
 
-    if (metricsToSend.length === 0) return;
-
-    setSendingChart(true);
+    setSendingMetric(metric);
 
     const periodLabel =
       startDate && endDate
@@ -259,18 +274,13 @@ export default function ChatExternalsPanel({
         : "";
 
     try {
-      for (const metric of metricsToSend) {
-        const container = chartContainerRefs.current[metric];
-        if (!container) continue;
+      const file = await captureElementAsPngFile(
+        container,
+        `externals-${metric}-${athleteId}.png`,
+      );
+      const caption = `${formatExternalMetricLabel(metric)} grafiek ${athleteName}${periodLabel}`;
 
-        const file = await captureElementAsPngFile(
-          container,
-          `externals-${metric}-${athleteId}.png`,
-        );
-        const caption = `${formatExternalMetricLabel(metric)} grafiek ${athleteName}${periodLabel}`;
-
-        onSendChartToChat(file, caption);
-      }
+      onSendChartToChat(file, caption);
     } catch (sendError) {
       alert(
         sendError instanceof Error
@@ -278,11 +288,11 @@ export default function ChatExternalsPanel({
           : "Grafiek kon niet worden verstuurd.",
       );
     } finally {
-      setSendingChart(false);
+      setSendingMetric(null);
     }
   }
 
-  const showSendChartButton =
+  const canSendCharts =
     Boolean(onSendChartToChat) && !loading && !error && hasAnyChartData;
 
   return (
@@ -382,33 +392,32 @@ export default function ChatExternalsPanel({
 
         {!loading && !error && points.length > 0 && (
           <div className="space-y-4">
-            {METRIC_OPTIONS.map((metric) => (
-              <ExternalMetricChart
-                key={metric}
-                metric={metric}
-                filteredPoints={filteredPoints}
-                chartRef={(element) => {
-                  chartContainerRefs.current[metric] = element;
-                }}
-              />
-            ))}
+            {METRIC_OPTIONS.map((metric) => {
+              const hasData = filteredPoints.some(
+                (point) => getExternalMetricValue(point, metric) !== null,
+              );
+
+              return (
+                <ExternalMetricChart
+                  key={metric}
+                  metric={metric}
+                  filteredPoints={filteredPoints}
+                  chartRef={(element) => {
+                    chartContainerRefs.current[metric] = element;
+                  }}
+                  canSendChart={canSendChart && hasData}
+                  sendingChart={sendingMetric === metric}
+                  onSendChart={
+                    canSendCharts && hasData
+                      ? () => void handleSendMetricToChat(metric)
+                      : undefined
+                  }
+                />
+              );
+            })}
           </div>
         )}
       </div>
-
-      {showSendChartButton && (
-        <div className="shrink-0 border-t border-gray-200 p-3">
-          <button
-            type="button"
-            onClick={() => void handleSendChartToChat()}
-            disabled={!canSendChart || sendingChart}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
-          >
-            <SendHorizontal className="h-4 w-4" />
-            {sendingChart ? "Grafieken versturen..." : "Stuur grafieken in chat"}
-          </button>
-        </div>
-      )}
     </aside>
   );
 }
