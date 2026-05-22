@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import AppShell from "@/components/AppShell";
 
 type Athlete = {
   id: string;
@@ -20,20 +21,6 @@ type LeaderboardRow = {
   openipf_name: string;
 };
 
-function makeOpenIpfSlug(name: string) {
-  return name
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "")
-    .replace(/#\d+/g, "")
-    .replace(/[^a-z0-9]/g, "");
-}
-
-function parseCsvLine(line: string) {
-  return line.split(",");
-}
-
-
 async function getBestOpenIpfResult(fullName: string) {
   const response = await fetch(
     `/api/openipf-lifter?name=${encodeURIComponent(fullName)}`
@@ -45,6 +32,7 @@ async function getBestOpenIpfResult(fullName: string) {
 
   return data.result;
 }
+
 export default function LeaderboardPage() {
   const [rows, setRows] = useState<LeaderboardRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +82,7 @@ export default function LeaderboardPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100 p-8">
+    <AppShell contentClassName="flex-1 p-8">
       <div className="max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -187,6 +175,6 @@ export default function LeaderboardPage() {
           </div>
         )}
       </div>
-    </main>
+    </AppShell>
   );
 }

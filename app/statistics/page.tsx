@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import AppSidebar from "@/components/AppSidebar";
 import {
   LineChart,
   Line,
@@ -106,10 +106,6 @@ type BwChartRow = {
 type LiftType = "squat" | "bench" | "deadlift";
 
 export default function StatisticsPage() {
-  const router = useRouter();
-
-  const [role, setRole] = useState("");
-  const [fullName, setFullName] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [rows, setRows] = useState<ChartRow[]>([]);
@@ -552,9 +548,6 @@ export default function StatisticsPage() {
       return;
     }
 
-    setRole(profile?.role || "");
-    setFullName(profile?.full_name || "");
-
     const isCoach = profile?.role === "coach";
 
     const { data: blocksData, error: blocksError } = isCoach
@@ -777,11 +770,6 @@ export default function StatisticsPage() {
     setRows(builtRows);
     setBwRows(builtBwRows);
     setLoading(false);
-  }
-
-  async function logout() {
-    await supabase.auth.signOut();
-    window.location.href = "/login";
   }
 
   function renderLiftChart(title: string, lift: LiftType) {
@@ -1013,80 +1001,7 @@ export default function StatisticsPage() {
   return (
     <main className="min-h-screen bg-gray-100">
       <div className="flex min-h-screen">
-        <aside className="group sticky top-0 h-screen self-start relative w-20 hover:w-64 min-w-[80px] max-w-[80px] hover:max-w-[256px] bg-white shadow-xl p-3 flex flex-col transition-all duration-150 overflow-hidden z-30">
-          <div className="flex items-center justify-center group-hover:justify-between mb-5 transition-all duration-150">
-            <button
-              type="button"
-              onClick={() => router.push("/profile")}
-              className="flex items-center gap-3 bg-gray-100 hover:bg-gray-200 transition rounded-xl px-2 py-2 w-full text-left"
-            >
-              <div className="w-9 h-9 min-w-9 rounded-lg bg-white shadow flex items-center justify-center text-lg">
-                👤
-              </div>
-
-              <div className="opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap overflow-hidden">
-                <p className="font-semibold text-sm">{fullName}</p>
-                <p className="text-xs text-gray-400 capitalize">
-                  Ingelogd als {role}
-                </p>
-              </div>
-            </button>
-          </div>
-
-          <nav className="flex flex-col gap-2 flex-1 overflow-y-auto">
-            <button
-              type="button"
-              onClick={() => router.push("/dashboard")}
-              className="relative p-3 rounded-xl transition-all duration-150 flex items-center gap-3 text-left bg-gray-100 hover:bg-gray-200"
-            >
-              <div className="w-9 h-9 min-w-9 rounded-lg shadow flex items-center justify-center text-lg bg-white">
-                🏠
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap overflow-hidden">
-                <h3 className="font-semibold text-sm">Dashboard</h3>
-                <p className="text-xs text-gray-500">Ga terug.</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/raw-data")}
-              className="relative p-3 rounded-xl transition-all duration-150 flex items-center gap-3 text-left bg-gray-100 hover:bg-gray-200"
-            >
-              <div className="w-9 h-9 min-w-9 rounded-lg shadow flex items-center justify-center text-lg bg-white">
-                🧾
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap overflow-hidden">
-                <h3 className="font-semibold text-sm">Raw Data</h3>
-                <p className="text-xs text-gray-500">Bekijk ruwe data.</p>
-              </div>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => router.push("/statistics")}
-              className="relative p-3 rounded-xl transition-all duration-150 flex items-center gap-3 text-left bg-black text-white"
-            >
-              <div className="w-9 h-9 min-w-9 rounded-lg shadow flex items-center justify-center text-lg bg-white text-black">
-                📈
-              </div>
-              <div className="opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap overflow-hidden">
-                <h3 className="font-semibold text-sm">Statistics</h3>
-                <p className="text-xs text-gray-300">SBD e1RM grafieken.</p>
-              </div>
-            </button>
-          </nav>
-
-          <button
-            onClick={logout}
-            className="bg-black text-white px-3 py-2 rounded-xl mt-5 flex items-center gap-3 hover:opacity-90 transition"
-          >
-            <span className="w-9 min-w-9 text-lg">🚪</span>
-            <span className="opacity-0 group-hover:opacity-100 transition-all duration-150 whitespace-nowrap overflow-hidden text-sm">
-              Uitloggen
-            </span>
-          </button>
-        </aside>
+        <AppSidebar />
 
         <section className="flex-1 p-8">
           <div className="flex items-end justify-between gap-4 mb-6">

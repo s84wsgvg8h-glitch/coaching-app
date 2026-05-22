@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import AppShell from "@/components/AppShell";
 
 type Profile = {
   id: string;
@@ -175,7 +176,7 @@ export default function ChatPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-100">
+    <AppShell contentClassName="flex-1 p-0">
       <div className="max-w-3xl mx-auto bg-white min-h-screen">
         <div className="p-6 border-b flex items-center justify-between">
           <div>
@@ -195,9 +196,7 @@ export default function ChatPage() {
 
         <div>
           {users.length === 0 && (
-            <div className="p-6 text-gray-500">
-              Je hebt nog geen chats.
-            </div>
+            <div className="p-6 text-gray-500">Je hebt nog geen chats.</div>
           )}
 
           {users.map((user) => (
@@ -243,6 +242,6 @@ export default function ChatPage() {
           ))}
         </div>
       </div>
-    </main>
+    </AppShell>
   );
 }

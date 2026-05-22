@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { useParams } from "next/navigation";
+import AppSidebar from "@/components/AppSidebar";
 
 type Message = {
   id: string;
@@ -267,17 +268,12 @@ export default function ChatConversationPage() {
 
   return (
     <main className="h-screen bg-gray-100 flex">
+      <AppSidebar />
+      <div className="flex flex-1 min-w-0">
       {userRole === "coach" && sidebarOpen && (
         <aside className="w-80 bg-white border-r flex flex-col">
           <div className="p-6 border-b">
-            <div className="flex items-center justify-between">
-              <a
-                href="/dashboard"
-                className="text-sm text-gray-500 hover:text-black"
-              >
-                ← Dashboard
-              </a>
-
+            <div className="flex items-center justify-end">
               <button
                 onClick={() => setSidebarOpen(false)}
                 className="bg-gray-100 px-3 py-1 rounded-lg text-sm"
@@ -346,14 +342,6 @@ export default function ChatConversationPage() {
           >
             ☰
           </button>
-
-          <a
-            href="/dashboard"
-            className="text-xl"
-            title="Terug naar dashboard"
-          >
-            ←
-          </a>
         </div>
       )}
 
@@ -465,6 +453,7 @@ export default function ChatConversationPage() {
           </button>
         </div>
       </section>
+      </div>
     </main>
   );
 }
