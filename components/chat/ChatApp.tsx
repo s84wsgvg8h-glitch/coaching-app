@@ -87,6 +87,8 @@ import HighlightedText from "@/components/chat/HighlightedText";
 import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
 import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
+import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
+import ChatVolumePanel from "@/components/chat/ChatVolumePanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
 import ChatSlashCommandMenu from "@/components/chat/ChatSlashCommandMenu";
@@ -94,9 +96,11 @@ import {
   filterChatSlashCommands,
   parseBwCommand,
   parseDataCommand,
+  parseExternalsCommand,
   parseInjuriesCommand,
   parseProgramCommand,
   parseToolsCommand,
+  parseVolumeCommand,
   shouldShowSlashCommandMenu,
 } from "@/lib/chatCommands";
 import {
@@ -741,6 +745,14 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/bw") ? "" : current));
   }
 
+  function closeExternalsPanel() {
+    setMessage((current) => (current.startsWith("/externals") ? "" : current));
+  }
+
+  function closeVolumePanel() {
+    setMessage((current) => (current.startsWith("/volume") ? "" : current));
+  }
+
   function closeDataPanel() {
     setMessage((current) => {
       const normalized = current.trim();
@@ -786,6 +798,8 @@ export default function ChatApp() {
     if (parseToolsCommand(message).active) return;
     if (parseProgramCommand(message).active) return;
     if (parseBwCommand(message).active) return;
+    if (parseExternalsCommand(message).active) return;
+    if (parseVolumeCommand(message).active) return;
     if (parseDataCommand(message).active) return;
     if (parseInjuriesCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
@@ -1655,6 +1669,8 @@ export default function ChatApp() {
   const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
   const programCommand = useMemo(() => parseProgramCommand(message), [message]);
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
+  const externalsCommand = useMemo(() => parseExternalsCommand(message), [message]);
+  const volumeCommand = useMemo(() => parseVolumeCommand(message), [message]);
   const dataCommand = useMemo(() => parseDataCommand(message), [message]);
   const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
   const toolsPanelOpen =
@@ -1669,6 +1685,16 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
+  const externalsPanelOpen =
+    externalsCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
+  const volumePanelOpen =
+    volumeCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
   const dataPanelOpen =
     dataCommand.active &&
     userRole === "coach" &&
@@ -1680,7 +1706,12 @@ export default function ChatApp() {
     Boolean(activeUserId) &&
     !activeGroupId;
   const sidePanelOpen =
-    programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen;
+    programPanelOpen ||
+    bwPanelOpen ||
+    externalsPanelOpen ||
+    volumePanelOpen ||
+    dataPanelOpen ||
+    injuriesPanelOpen;
   const activeAthleteName = useMemo(() => {
     if (!activeUserId) return "Atleet";
     return (
@@ -1793,12 +1824,12 @@ export default function ChatApp() {
     >
       <div
         className={`flex h-full min-h-0 w-full overflow-hidden bg-gray-100 ${
-          programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen ? "flex-row" : ""
+          sidePanelOpen ? "flex-row" : ""
         }`}
       >
         <aside
           className={`flex h-full min-h-0 w-full flex-col border-r border-gray-200 bg-white md:w-[420px] md:max-w-[40%] ${
-            programPanelOpen || bwPanelOpen || dataPanelOpen || injuriesPanelOpen
+            sidePanelOpen
               ? "hidden"
               : showConversationOnMobile
                 ? "hidden md:flex"
@@ -1924,6 +1955,26 @@ export default function ChatApp() {
             onSendChartToChat={(file, caption) => {
               void sendMediaFile(file, caption);
             }}
+          />
+        )}
+
+        {externalsPanelOpen && activeUserId && (
+          <ChatExternalsPanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeExternalsPanel}
+            canSendChart={canSendMessages && !uploadingMedia}
+            onSendChartToChat={(file, caption) => {
+              void sendMediaFile(file, caption);
+            }}
+          />
+        )}
+
+        {volumePanelOpen && activeUserId && (
+          <ChatVolumePanel
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeVolumePanel}
           />
         )}
 
@@ -2453,6 +2504,10 @@ export default function ChatApp() {
                             closeProgramPanel();
                           } else if (bwPanelOpen) {
                             closeBwPanel();
+                          } else if (externalsPanelOpen) {
+                            closeExternalsPanel();
+                          } else if (volumePanelOpen) {
+                            closeVolumePanel();
                           } else if (dataPanelOpen) {
                             closeDataPanel();
                           } else if (injuriesPanelOpen) {
@@ -2481,7 +2536,11 @@ export default function ChatApp() {
                           ? "Programma geopend..."
                           : bwPanelOpen
                             ? "BW geopend..."
-                            : dataPanelOpen
+                            : externalsPanelOpen
+                              ? "Externals geopend..."
+                              : volumePanelOpen
+                                ? "Volume geopend..."
+                                : dataPanelOpen
                             ? "Data geopend..."
                             : injuriesPanelOpen
                               ? "Blessures geopend..."
