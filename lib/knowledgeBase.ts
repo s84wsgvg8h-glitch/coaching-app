@@ -12,7 +12,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Kennisbank bekijken",
     category: "Navigatie",
     content:
-      "Pagina /kennisbank: overzicht van alle curated AI-kennis chunks (titel, categorie, inhoud, keywords). Filter en zoek door de kennisbank. Alleen deze curated chunks + optionele lokale ESS PDF (dev) voeden de dashboard-AI voor coaching-antwoorden.",
+      "De kennisbank is de pagina /kennisbank waar je alle curated AI-kennis chunks kunt bekijken. Elke chunk bevat een titel, categorie, volledige inhoud en keywords voor zoeken. Je kunt filteren en zoeken om specifieke coaching- of app-informatie te vinden. Alleen deze curated chunks voeden de dashboard-AI voor coaching-antwoorden; in development kan optioneel een lokale ESS PDF extra context toevoegen via npm run ingest:ess. Gebruik de kennisbank wanneer je wilt controleren welke kennis de AI heeft, of wanneer je als coach snel coaching-inhoud wilt opzoeken zonder de chat te gebruiken.",
     keywords: [
       "kennisbank",
       "knowledge base",
@@ -20,6 +20,10 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "bekijken",
       "overzicht",
       "/kennisbank",
+      "curated",
+      "zoeken",
+      "filter",
+      "coaching kennis",
     ],
   },
   {
@@ -27,31 +31,62 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Wat is deze app?",
     category: "App",
     content:
-      "Coaching-app voor powerlifting coaches en atleten. Coaches beheren programma's, chatten met atleten, bekijken data (BW, volume, intensiteit, maxes), blessures en wedstrijden. Atleten volgen hun programma en chatten met de coach.",
-    keywords: ["app", "coaching", "powerlifting", "overzicht", "wat", "doet"],
+      "Deze app is een coaching-platform voor powerlifting coaches en atleten. Coaches beheren trainingsschema's, communiceren via chat, volgen atleetdata zoals lichaamsgewicht, volume, intensiteit en rep maxes, registreren blessures en plannen wedstrijden. Atleten volgen hun toegewezen programma, loggen sets en check-ins, en chatten met hun coach. De app verbindt programma-opbouw, data-analyse en communicatie in één omgeving zodat coaching beslissingen op echte trainingsdata kunnen steunen.",
+    keywords: [
+      "app",
+      "coaching",
+      "powerlifting",
+      "overzicht",
+      "wat",
+      "doet",
+      "platform",
+      "atleten",
+      "coaches",
+      "programma",
+      "data",
+    ],
   },
   {
     id: "dashboard",
     title: "Dashboard",
     category: "Navigatie",
     content:
-      "Het dashboard toont een welkomstbericht, totale inkomsten (som van atleetprijzen per maand), aantal betalende atleten, en een zoekbalk met AI-assistent. Alleen coaches zien inkomsten.",
-    keywords: ["dashboard", "inkomsten", "omzet", "totaal", "home", "start"],
+      "Het dashboard is de startpagina na inloggen. Het toont een welkomstbericht, het totaal aantal betalende atleten en een zoekbalk met AI-assistent voor snelle vragen. Alleen coaches zien daarnaast totale inkomsten: dat is de som van alle maandelijkse atleetprijzen die in Atleten profielen zijn ingesteld. Gebruik het dashboard als centraal overzicht van je coachingpraktijk en als snelle ingang naar de AI-assistent.",
+    keywords: [
+      "dashboard",
+      "inkomsten",
+      "omzet",
+      "totaal",
+      "home",
+      "start",
+      "welkom",
+      "ai assistent",
+      "zoekbalk",
+    ],
   },
   {
     id: "atleten-beheren",
     title: "Atleten beheren",
     category: "Navigatie",
     content:
-      "Pagina /athletes: accepteer pending aanmeldingen en verwijder accounts. Betaling en profielgegevens staan niet hier maar bij Atleten profielen (/athlete-profiles).",
-    keywords: ["atleten", "beheren", "accepteer", "pending", "aanmelding"],
+      "De pagina /athletes is bedoeld voor accountbeheer van atleten. Hier accepteer je pending aanmeldingen zodat nieuwe atleten toegang krijgen, en kun je accounts verwijderen. Betalingsgegevens en uitgebreide profielinformatie staan niet op deze pagina maar op Atleten profielen (/athlete-profiles). Gebruik deze pagina als eerste stap wanneer een nieuwe atleet zich heeft aangemeld en je zijn account wilt activeren.",
+    keywords: [
+      "atleten",
+      "beheren",
+      "accepteer",
+      "pending",
+      "aanmelding",
+      "/athletes",
+      "account",
+      "verwijderen",
+    ],
   },
   {
     id: "atleten-profielen",
     title: "Atleten profielen",
     category: "Navigatie",
     content:
-      "Pagina /athlete-profiles: kies een atleet om geboortedatum, lidnummer, opkomende wedstrijden, betaling (prijs + betaaldag per maand) en blessures te beheren. Wijzigingen worden automatisch opgeslagen.",
+      "De pagina /athlete-profiles is waar je per atleet administratieve en medische gegevens beheert. Kies een atleet om geboortedatum, lidnummer, opkomende wedstrijden, betaling (maandprijs en betaaldag) en blessures in te stellen. Wijzigingen worden automatisch opgeslagen. Dit is de centrale plek voor alles wat bij een individuele atleet hoort buiten het trainingsprogramma zelf.",
     keywords: [
       "profiel",
       "profielen",
@@ -61,6 +96,9 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "betaling",
       "betaaldag",
       "prijs",
+      "/athlete-profiles",
+      "wedstrijd",
+      "blessure",
     ],
   },
   {
@@ -68,199 +106,437 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Betaling per atleet",
     category: "Data",
     content:
-      "Per atleet kan een maandprijs (EUR) en betaaldag (dag 1-31 van de maand) worden ingesteld. Totale inkomsten op het dashboard is de som van alle atleetprijzen. Instellen via Atleten profielen → atleet openen → sectie Betaling.",
-    keywords: ["betaling", "prijs", "betaaldag", "inkomsten", "euro", "maand"],
+      "Per atleet kun je een maandprijs in euro's en een betaaldag instellen (dag 1 tot 31 van de maand). De totale inkomsten op het dashboard zijn de som van alle ingestelde atleetprijzen. Je stelt betaling in via Atleten profielen: open de atleet en ga naar de sectie Betaling. Deze data helpt coaches hun maandelijkse omzet te overzien zonder aparte administratiesoftware.",
+    keywords: [
+      "betaling",
+      "prijs",
+      "betaaldag",
+      "inkomsten",
+      "euro",
+      "maand",
+      "omzet",
+      "atleetprijs",
+    ],
   },
   {
     id: "programmas",
     title: "Programma's",
     category: "Navigatie",
     content:
-      "Pagina /programs: trainingsschema's met blocks, weken en dagen. Atleten loggen sets, reps, gewicht en check-ins (herstel, fatigue). Coaches maken en bekijken programma's.",
-    keywords: ["programma", "training", "schema", "block", "week", "dag"],
+      "De pagina /programs toont trainingsschema's opgebouwd uit blocks, weken en dagen. Atleten loggen hier hun sets, reps, gewicht en RPE, plus check-ins voor herstel en fatigue. Coaches maken programma's aan en bekijken wat atleten hebben gelogd. Dit is de kern van de trainingsdata waar slash commands zoals /volume en /intensity op steunen.",
+    keywords: [
+      "programma",
+      "training",
+      "schema",
+      "block",
+      "week",
+      "dag",
+      "/programs",
+      "sets",
+      "reps",
+      "check-in",
+      "herstel",
+      "fatigue",
+    ],
   },
   {
     id: "chat",
     title: "Chat",
     category: "Navigatie",
     content:
-      "Pagina /chat: WhatsApp-achtige chat met atleten (direct) of groepen. Coaches kunnen slash commands gebruiken in direct chat met een atleet om panelen te openen.",
-    keywords: ["chat", "bericht", "groep", "whatsapp"],
+      "De pagina /chat biedt WhatsApp-achtige communicatie met atleten in directe gesprekken of groepschats. Coaches kunnen in een direct gesprek met een atleet slash commands typen (zoals /bw of /program) om zijpanelen met data of het programma te openen zonder de pagina te verlaten. Chat is de primaire communicatielaag waar coaching en data-analyse samenkomen.",
+    keywords: [
+      "chat",
+      "bericht",
+      "groep",
+      "whatsapp",
+      "/chat",
+      "direct chat",
+      "slash commands",
+      "communicatie",
+    ],
   },
   {
     id: "cmd-tools",
     title: "/tools command",
     category: "Commands",
     content:
-      "Typ /tools in chat om pagina's, chats en programma's te zoeken en te openen.",
-    keywords: ["/tools", "tools", "zoeken", "command"],
+      "Typ /tools in de chat om pagina's, chats en programma's te zoeken en direct te openen. Dit command is handig wanneer je snel naar een specifieke atleet, programma of app-pagina wilt navigeren zonder het menu te gebruiken. Alleen beschikbaar voor coaches in de chat.",
+    keywords: [
+      "/tools",
+      "tools",
+      "zoeken",
+      "command",
+      "navigatie",
+      "pagina openen",
+      "programma zoeken",
+    ],
   },
   {
     id: "cmd-program",
     title: "/program command",
     category: "Commands",
     content:
-      "Typ /program in een direct coach-atleet chat om het programma van die atleet in een zijpaneel te bekijken (~45% scherm). Alleen voor coaches in direct chat.",
-    keywords: ["/program", "programma", "paneel"],
+      "Typ /program in een direct coach-atleet chat om het trainingsprogramma van die atleet in een zijpaneel te bekijken. Het paneel neemt ongeveer 45% van het scherm in. Gebruik dit wanneer je tijdens een gesprek snel sets, reps of geplande oefeningen wilt controleren. Alleen voor coaches in direct chat met een atleet.",
+    keywords: [
+      "/program",
+      "programma",
+      "paneel",
+      "zijpaneel",
+      "trainingsschema",
+      "direct chat",
+      "coach",
+    ],
   },
   {
     id: "cmd-bw",
     title: "/bw command",
     category: "Commands",
     content:
-      "Typ /bw voor een lichaamsgewicht grafiek per dag met begin- en eindweek filters. Grafiek kan naar chat worden gestuurd. Coach-only, direct chat.",
-    keywords: ["/bw", "bw", "gewicht", "lichaamsgewicht", "bodyweight"],
+      "Typ /bw in direct chat om een lichaamsgewicht-grafiek per dag te openen met filters voor begin- en eindweek. Je kunt de grafiek naar de chat sturen zodat de atleet de trend ziet. Gebruik dit om gewichtsverandering te monitoren rond meetprep of bij caloriebeleid. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/bw",
+      "bw",
+      "gewicht",
+      "lichaamsgewicht",
+      "bodyweight",
+      "grafiek",
+      "gewichtstrend",
+      "meetprep",
+    ],
   },
   {
     id: "cmd-externals",
     title: "/externals command",
     category: "Commands",
     content:
-      "Typ /externals voor check-in grafieken (Herstel en Fatigue) uit het atleetprogramma. Begin- en eindweek filters. Coach-only, direct chat.",
-    keywords: ["/externals", "externals", "herstel", "fatigue", "check-in"],
+      "Typ /externals om check-in grafieken te openen voor Herstel en Fatigue uit het atleetprogramma, met begin- en eindweek filters. Gebruik dit om te beoordelen of een atleet voldoende herstelt voordat je volume of intensiteit verhoogt. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/externals",
+      "externals",
+      "herstel",
+      "fatigue",
+      "check-in",
+      "recovery",
+      "vermoeidheid",
+      "grafiek",
+    ],
   },
   {
     id: "cmd-volume",
     title: "/volume command",
     category: "Commands",
     content:
-      "Typ /volume voor SBD (squat, bench, deadlift) sets en reps plus tonnage grafieken per lift. Coach-only, direct chat.",
-    keywords: ["/volume", "volume", "sets", "reps", "tonnage", "sbd"],
+      "Typ /volume om grafieken te openen met SBD volume (squat, bench, deadlift): sets, reps en tonnage per lift. Gebruik dit om te controleren of geplande en gelogde trainingsvolume overeenkomen en om trends per lift te zien. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/volume",
+      "volume",
+      "sets",
+      "reps",
+      "tonnage",
+      "sbd",
+      "squat",
+      "bench",
+      "deadlift",
+      "grafiek",
+    ],
   },
   {
     id: "cmd-intensity",
     title: "/intensity command",
     category: "Commands",
     content:
-      "Typ /intensity voor gemiddelde intensiteit, piek intensiteit, piek load en grafieken per lift. Coach-only, direct chat.",
-    keywords: ["/intensity", "intensiteit", "piek", "load", "procent"],
+      "Typ /intensity om gemiddelde intensiteit, piek intensiteit, piek load en grafieken per lift te bekijken. Gebruik dit om te controleren of RPE en percentages kloppen met het blockdoel, bijvoorbeeld in een strength- of peaking-block. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/intensity",
+      "intensiteit",
+      "piek",
+      "load",
+      "procent",
+      "rpe",
+      "1rm percentage",
+      "grafiek",
+    ],
   },
   {
     id: "cmd-max",
     title: "/max command",
     category: "Commands",
     content:
-      "Typ /max (alias /pr) voor SBD rep maxes: hoogste gewicht per rep range (1RM t/m 20RM) alleen voor pure squat, bench en deadlift. Coach-only, direct chat.",
-    keywords: ["/max", "/pr", "max", "pr", "1rm", "rep max"],
+      "Typ /max (alias /pr) om SBD rep maxes te zien: het hoogste gewicht per rep range van 1RM tot 20RM, alleen voor pure squat, bench press en deadlift. Gebruik dit om progressie en estimated maxes te volgen zonder handmatig door logs te zoeken. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/max",
+      "/pr",
+      "max",
+      "pr",
+      "1rm",
+      "rep max",
+      "personal record",
+      "squat",
+      "bench",
+      "deadlift",
+    ],
   },
   {
     id: "cmd-data",
     title: "/data command",
     category: "Commands",
     content:
-      "Typ /data (alias /raw data) voor ruwe atleetdata in een zijpaneel, inclusief progression view. Coach-only, direct chat.",
-    keywords: ["/data", "data", "raw", "ruwe data", "progression"],
+      "Typ /data (alias /raw data) om ruwe atleetdata in een zijpaneel te openen, inclusief progression view. Gebruik dit wanneer je diep in individuele sets wilt duiken of progressie over meerdere variabelen tegelijk wilt vergelijken. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/data",
+      "data",
+      "raw",
+      "ruwe data",
+      "progression",
+      "zijpaneel",
+      "sets",
+      "logs",
+    ],
   },
   {
     id: "cmd-injuries",
     title: "/injuries command",
     category: "Commands",
     content:
-      "Typ /injuries voor blessurebeheer met spierkaart. Klik spiergebied, vul naam, datum en urgentie (laag/medium/hoog) in. Coach-only, direct chat.",
-    keywords: ["/injuries", "injuries", "blessure", "blessures", "spier"],
+      "Typ /injuries om blessurebeheer te openen met een interactieve spierkaart. Klik op een spiergebied, vul naam, datum en urgentie in (laag, medium of hoog). Gebruik dit tijdens chat om blessures direct te registreren of te bespreken. Alleen voor coaches in direct chat.",
+    keywords: [
+      "/injuries",
+      "injuries",
+      "blessure",
+      "blessures",
+      "spier",
+      "spierkaart",
+      "urgentie",
+      "registreren",
+    ],
   },
   {
     id: "blessures-profiel",
     title: "Blessures op profiel",
     category: "Features",
     content:
-      "Op atleetprofielen staat een spierkaart (SVG) om blessures te registreren per spiergebied met naam, datum en urgentie. Ook bereikbaar via /injuries in chat.",
-    keywords: ["blessure", "injury", "spierkaart", "urgentie"],
+      "Op atleetprofielen staat een SVG spierkaart waarmee je blessures per spiergebied registreert met naam, startdatum en urgentie. Dezelfde functionaliteit is ook bereikbaar via /injuries in chat. Gebruik dit om blessurehistorie vast te leggen zodat programma-aanpassingen op actuele klachten kunnen steunen.",
+    keywords: [
+      "blessure",
+      "injury",
+      "spierkaart",
+      "urgentie",
+      "profiel",
+      "registreren",
+      "klacht",
+    ],
   },
   {
     id: "wedstrijdkalender",
     title: "Wedstrijdkalender",
     category: "Navigatie",
     content:
-      "Pagina /wedstrijd-kalender: bekijk en beheer wedstrijden met start- en einddatum. Atleten kunnen opkomende wedstrijden selecteren op hun profiel.",
-    keywords: ["wedstrijd", "kalender", "competitie", "nk", "meet"],
+      "De pagina /wedstrijd-kalender toont en beheert wedstrijden met start- en einddatum. Atleten kunnen opkomende wedstrijden selecteren op hun profiel zodat de coach weet wanneer meetprep moet pieken. Gebruik de kalender om macrocyclus-planning rond competities te structureren.",
+    keywords: [
+      "wedstrijd",
+      "kalender",
+      "competitie",
+      "nk",
+      "meet",
+      "/wedstrijd-kalender",
+      "meetprep",
+      "macrocyclus",
+    ],
   },
   {
     id: "rpe",
     title: "RPE tabel pagina",
     category: "Coaching",
     content:
-      "Pagina /rpe-tabel: Modernized Load/RIR chart. Kies links RPE/RIR, bovenaan het aantal reps — de cel toont het load-percentage (% van estimated max). Formule gebaseerd op average rep capacity (reps + RIR).",
-    keywords: ["rpe", "rir", "load", "intensiteit", "tabel", "rpe-tabel", "percentage"],
+      "De pagina /rpe-tabel toont een Modernized Load/RIR chart voor intensiteitsplanning. Kies links RPE of RIR en bovenaan het aantal reps; de cel toont dan het load-percentage als percentage van estimated max. De formule is gebaseerd op average rep capacity (reps plus RIR). Gebruik deze tabel wanneer je van RPE naar percentage wilt omrekenen of wanneer je atleten uitlegt welk gewicht bij een bepaalde RPE hoort.",
+    keywords: [
+      "rpe",
+      "rir",
+      "load",
+      "intensiteit",
+      "tabel",
+      "rpe-tabel",
+      "percentage",
+      "/rpe-tabel",
+      "estimated max",
+      "rep capacity",
+    ],
   },
   {
     id: "rpe-schaal",
     title: "RPE naar RIR schaal",
     category: "Coaching",
     content:
-      "RPE (Rate of Perceived Exertion) = hoe zwaar een set voelt. RIR (Reps In Reserve) = hoeveel reps je nog had kunnen doen. RPE 10 = failure (0 RIR). RPE 9 = 1 RIR. RPE 8 = 2 RIR. RPE 7 = 3 RIR. Lagere RPE = meer reps over.",
-    keywords: ["rpe", "rir", "schaal", "uitleg", "wat", "betekent", "reps in reserve"],
+      "RPE (Rate of Perceived Exertion) beschrijft hoe zwaar een set subjectief voelt. RIR (Reps In Reserve) beschrijft hoeveel herhalingen je nog had kunnen doen met goede techniek. RPE 10 betekent failure: nul RIR. RPE 9 betekent één RIR. RPE 8 betekent twee RIR. RPE 7 betekent drie RIR. Een lagere RPE betekent altijd meer reps in reserve. Deze schaal maakt autoregulatie mogelijk wanneer dagelijkse readiness varieert door slaap, stress of voeding.",
+    keywords: [
+      "rpe",
+      "rir",
+      "schaal",
+      "uitleg",
+      "wat",
+      "betekent",
+      "reps in reserve",
+      "failure",
+      "autoregulatie",
+      "subjectief",
+    ],
   },
   {
     id: "rpe-hoog",
     title: "RPE hoog intensief (8.5–10)",
     category: "Coaching",
     content:
-      "Hoge intensiteit: RPE 10 = geen reps of load meer mogelijk (absolute failure). RPE 9.5 = geen reps meer, maar nog iets meer load mogelijk. RPE 9 = nog 1 herhaling in reserve. RPE 8.5 = nog 1 herhaling, mogelijk 2. Gebruik voor zware strength work en peaking.",
-    keywords: ["rpe 10", "rpe 9", "rpe 8", "hoog", "zwaar", "failure", "maximaal", "9.5", "8.5"],
+      "Probleem: bij strength work en peaking moet de atleet dicht bij maximale inspanning trainen zonder elke set blind tot failure te gaan. Technische aanpassing: plan sets op RPE 8.5 tot 10 afhankelijk van blockfase. RPE 10 betekent geen extra reps of load meer mogelijk (absolute failure). RPE 9.5 betekent geen extra reps, maar nog iets meer load mogelijk. RPE 9 betekent nog één herhaling in reserve. RPE 8.5 betekent nog één herhaling, mogelijk twee. Waarom dit werkt: hoge RPE verhoogt motor unit recruitment en neural specificity richting 1RM. Programming: gebruik voor zware compounds in strength- en peaking-blocks. Aandachtspunt: te veel RPE 9–10 verhoogt systemische fatigue en joint stress; spreid over de week.",
+    keywords: [
+      "rpe 10",
+      "rpe 9",
+      "rpe 8",
+      "hoog",
+      "zwaar",
+      "failure",
+      "maximaal",
+      "9.5",
+      "8.5",
+      "peaking",
+      "strength",
+      "motor unit",
+    ],
   },
   {
     id: "rpe-matig",
     title: "RPE matig-hoog (7–8)",
     category: "Coaching",
     content:
-      "Matig tot hoog: RPE 8 = nog 2 herhalingen mogelijk. RPE 7.5 = nog 2 herhalingen, mogelijk 3. RPE 7 = nog 3 herhalingen mogelijk. Typisch voor hoofdwerk in een block — zwaar genoeg voor progressie, niet elke set tot failure.",
-    keywords: ["rpe 8", "rpe 7", "matig", "hoofdwerk", "7.5", "twee reps", "drie reps"],
+      "Probleem: hoofdwerk moet zwaar genoeg zijn voor progressie, maar niet elke set tot failure. Technische aanpassing: plan hoofdlifts op RPE 7 tot 8. RPE 8 betekent nog twee herhalingen mogelijk. RPE 7.5 betekent nog twee herhalingen, mogelijk drie. RPE 7 betekent nog drie herhalingen mogelijk. Waarom dit werkt: matig-hoge RPE levert voldoende mechanical tension en neural stimulus voor kracht en hypertrofie met minder accumulatie van fatigue dan RPE 9–10. Programming: typisch voor hoofdwerk in een gewone training block. Aandachtspunt: atleten onderschatten RPE vaak; coach controleert via /intensity of loads kloppen.",
+    keywords: [
+      "rpe 8",
+      "rpe 7",
+      "matig",
+      "hoofdwerk",
+      "7.5",
+      "twee reps",
+      "drie reps",
+      "mechanical tension",
+      "hoofdlift",
+      "block",
+    ],
   },
   {
     id: "rpe-licht",
     title: "RPE licht (1–6)",
     category: "Coaching",
     content:
-      "Licht tot matig: RPE 5–6 = nog 4–6 herhalingen mogelijk (techniek, volume, accessory). RPE 1–4 = zeer licht tot weinig inspanning (warm-up, rehab, mobiliteit). Niet gebruiken voor zware SBD hoofdlifts behalve opwarmen.",
-    keywords: ["rpe 5", "rpe 6", "licht", "warmup", "opwarmen", "accessory", "rpe 4", "laag"],
+      "Probleem: niet elke sessie mag zware SBD-stimulus geven; opwarmen, techniek en accessory work vragen lagere intensiteit. Technische aanpassing: plan RPE 1–6 voor opwarmsets, techniekwerk en accessories. RPE 5–6 betekent nog vier tot zes herhalingen mogelijk. RPE 1–4 betekent zeer licht tot weinig inspanning. Waarom dit werkt: lage RPE verlaagt gewrichts- en systemische belasting terwijl beweging en volume nog mogelijk blijven. Programming: gebruik voor warm-up, rehab, mobiliteit en accessory volume. Aandachtspunt: gebruik lichte RPE niet voor zware SBD-hoofdlifts behalve als opwarmen; hoofdwerk hoort meestal RPE 7+.",
+    keywords: [
+      "rpe 5",
+      "rpe 6",
+      "licht",
+      "warmup",
+      "opwarmen",
+      "accessory",
+      "rpe 4",
+      "laag",
+      "techniek",
+      "rehab",
+      "mobiliteit",
+    ],
   },
   {
     id: "rpe-gebruik",
     title: "RPE in de praktijk",
     category: "Coaching",
     content:
-      "Atleten loggen RPE bij sets in het programma. Coach kijkt via /intensity en data of loads kloppen. Dagelijkse variatie (slaap, stress) maakt RPE betrouwbaarder dan vast percentage. Bij twijfel: iets lager starten en opbouwen binnen de rep range.",
-    keywords: ["rpe", "loggen", "programma", "intensiteit", "dag", "variabel", "coach"],
+      "Probleem: vaste percentages houden geen rekening met dagelijkse variatie in slaap, stress en readiness. Technische aanpassing: atleten loggen RPE bij elke set in het programma; de coach controleert via /intensity en /data of de gelogde loads passen bij het blockdoel. Waarom dit werkt: RPE autoreguleert intensiteit op basis van werkelijke inspanning, wat betrouwbaarder is dan een vast percentage op een slechte dag. Programming: bij twijfel start iets lager en bouw binnen de rep range op. Aandachtspunt: RPE vereist oefening; beginners hebben tijd nodig om RPE accuraat te schatten.",
+    keywords: [
+      "rpe",
+      "loggen",
+      "programma",
+      "intensiteit",
+      "dag",
+      "variabel",
+      "coach",
+      "autoregulatie",
+      "readiness",
+      "slaap",
+      "stress",
+    ],
   },
   {
     id: "statistics",
     title: "Statistics",
     category: "Navigatie",
     content:
-      "Pagina /statistics: statistieken en grafieken over training en voortgang.",
-    keywords: ["statistics", "statistieken", "voortgang", "grafiek"],
+      "De pagina /statistics toont statistieken en grafieken over training en voortgang op aggregaatniveau. Gebruik deze pagina wanneer je trends wilt zien die breder zijn dan één atleet in chat, of wanneer je een overzicht wilt van trainingsdata over meerdere variabelen.",
+    keywords: [
+      "statistics",
+      "statistieken",
+      "voortgang",
+      "grafiek",
+      "/statistics",
+      "trends",
+      "training data",
+    ],
   },
   {
     id: "raw-data-page",
     title: "Data pagina",
     category: "Navigatie",
     content:
-      "Pagina /raw-data (menu: Data): volledige ruwe data en progression view van atleten. In chat ook via /data command.",
-    keywords: ["raw", "data", "ruwe", "progression"],
+      "De pagina /raw-data (menu: Data) toont volledige ruwe trainingsdata en progression view van atleten. In chat kun je dezelfde data openen via het /data command. Gebruik deze pagina wanneer je diep in individuele logs wilt duiken buiten de chatomgeving.",
+    keywords: [
+      "raw",
+      "data",
+      "ruwe",
+      "progression",
+      "/raw-data",
+      "logs",
+      "sets",
+    ],
   },
   {
     id: "coaching-workflow",
     title: "Coach workflow",
     category: "Coaching",
     content:
-      "Typische coach flow: accepteer atleet → vul profiel en betaling in → wijs programma toe → monitor via chat commands (/bw, /volume, /externals) → bij blessure /injuries gebruiken.",
-    keywords: ["workflow", "coach", "hoe", "begin", "stappen"],
+      "Een typische coach workflow in deze app verloopt als volgt: accepteer een nieuwe atleet op /athletes, vul profiel en betaling in op /athlete-profiles, wijs een programma toe op /programs, monitor voortgang via chat commands (/bw, /volume, /externals, /intensity), en registreer blessures via /injuries of het atleetprofiel. Deze volgorde zorgt dat administratie, training en monitoring op elkaar aansluiten voordat je programma-aanpassingen maakt.",
+    keywords: [
+      "workflow",
+      "coach",
+      "hoe",
+      "begin",
+      "stappen",
+      "onboarding",
+      "monitoring",
+      "programma",
+      "blessure",
+    ],
   },
   {
     id: "bench-arch-overzicht",
     title: "Bench arch: hardware vs software",
     category: "Coaching",
     content:
-      "Een goede bench arch bestaat uit 2 delen. Hardware = fysieke mogelijkheden: mobiliteit, spierlengte, extensie, stabiliteit. Software = hoe goed je die mogelijkheden gebruikt tijdens het benchen. Beide zijn nodig; mobiliteit alleen is niet genoeg zonder techniek.",
-    keywords: ["bench", "arch", "bankdrukken", "setup", "hardware", "software", "techniek"],
+      "Probleem: veel atleten willen een grotere bench arch voor kortere ROM en betere schouderpositie, maar verbeteren alleen mobiliteit zonder techniek. Technische aanpassing: splits bench arch in hardware (fysieke mogelijkheden) en software (hoe je die mogelijkheden gebruikt tijdens setup). Hardware omvat mobiliteit, spierlengte, extensiecapaciteit en stabiliteit. Software omvat de volgorde en druk van schouders, rib cage, nek, handen en benen. Waarom dit werkt biomechanisch: een grotere thoracic extensie en schouderdepressie verkort de hefboom van schouder tot bar, maar alleen als je die posities actief vasthoudt onder load. Programming: train hardware apart via mobiliteit; train software via setup drills en submax sets. Aandachtspunt: mobiliteit alleen is niet genoeg zonder techniek; techniek alleen faalt als ROM of extensie ontbreekt.",
+    keywords: [
+      "bench",
+      "arch",
+      "bankdrukken",
+      "setup",
+      "hardware",
+      "software",
+      "techniek",
+      "mobiliteit",
+      "thoracic extensie",
+      "rom",
+    ],
   },
   {
     id: "bench-arch-hardware",
     title: "Bench arch hardware (lichaam)",
     category: "Coaching",
     content:
-      "Belangrijke fysieke onderdelen voor een grote arch: anterior pelvic tilt, lumbar extensie, rib cage extensie/flare, shoulder depression, lichte shoulder retraction, nek contact met de bank, lichte interne rotatie van de polsen. Doel bij bekken/lumbale wervelkolom: niet extreem anterior of posterior, maar controle in beide richtingen.",
+      "Probleem: zonder voldoende extensie en schoudercontrole kan de atleet geen stabiele, grote arch creëren. Technische aanpassing: ontwikkel anterior pelvic tilt controle, lumbar extensie, rib cage extensie of flare, shoulder depression, lichte shoulder retraction, nekcontact met de bank en lichte interne rotatie van de polsen. Waarom dit werkt biomechanisch: thoracic en rib cage extensie tilt het borstbeen omhoog zodat de bar korter hoeft te reizen; shoulder depression stabiliseert het schoudergordelplatform zonder schouderbladen te ver naar achteren te trekken. Programming: beoordel bekken en lumbale wervelkolom op controle in anterior én posterior richting, niet op extreme posities. Aandachtspunt: te veel anterior of posterior tilt zonder controle leidt tot instabiele setup onder zware load.",
     keywords: [
       "bench arch",
       "mobiliteit",
@@ -271,6 +547,9 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "nek",
       "pols",
       "extensie",
+      "shoulder depression",
+      "anterior pelvic tilt",
+      "thoracic",
     ],
   },
   {
@@ -278,7 +557,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench arch oefeningen bekken & onderrug",
     category: "Coaching",
     content:
-      "90/90 hip lift: brengt bekken richting neutraal en geeft controle over bekken en onderrug. Voor meer lumbar extensie: foam roller extensies, seal stretch, thoracic/rib cage mobiliteit — maken stijve tissues losser en meer extensie mogelijk.",
+      "Probleem: stijf bekken en beperkte lumbar extensie beperken hoe ver de rib cage kan flaren tijdens bench setup. Technische aanpassing: gebruik 90/90 hip lift om het bekken richting neutraal te brengen en controle over bekken en onderrug te trainen. Voor meer lumbar en thoracic extensie: foam roller extensies, seal stretch en rib cage mobiliteit. Waarom dit werkt biomechanisch: een mobieler bekken en thoracic segment laten meer extensie toe zonder compensatie in de nek of schouders, waardoor de arch hoger kan zonder pijn. Programming: plan deze oefeningen als eigen mobiliteitsblock, niet alleen als korte warmup. Aandachtspunt: mobiliteit zonder setup-oefening levert geen automatisch betere bench; koppel altijd aan techniektraining.",
     keywords: [
       "90/90",
       "hip lift",
@@ -288,6 +567,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "mobiliteit",
       "onderrug",
       "bekken",
+      "lumbar extensie",
+      "rib cage mobiliteit",
     ],
   },
   {
@@ -295,7 +576,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench arch schouderbladen & nek",
     category: "Coaching",
     content:
-      "Veel atleten hebben te veel retractie of te veel protractie — eerst terug naar neutraal. Oefeningen: thread the needle, alternating dumbbell bench press, protraction/reaching drills. Niet maximaal retracten: shoulder depression is belangrijker dan maximale retractie. Nek: stevig contact met de bank voelen; te veel extensie of vlakke nek / strakke traps/scalenes kunnen problemen geven.",
+      "Probleem: veel atleten retracten te veel of te weinig, waardoor schouderpositie en bar path instabiel worden. Technische aanpassing: breng schouderbladen eerst naar neutraal via thread the needle, alternating dumbbell bench press en protraction/reaching drills. Cue shoulder depression in plaats van maximale retractie. Houd stevig nekcontact met de bank. Waarom dit werkt biomechanisch: shoulder depression creëert een stabiel shelf voor de bar zonder de schoudergordel te ver naar achteren te duwen; te veel retractie beperkt ruimte onderin en verslechtert schouderpositie. Programming: oefen setup met submax sets en focus op nek- en schouderpositie. Aandachtspunt: te veel nekextensie of een vlakke nek met strakke traps en scalenes kan nek- en schouderklachten geven.",
     keywords: [
       "retractie",
       "protractie",
@@ -305,6 +586,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "traps",
       "thread the needle",
       "setup schouder",
+      "shoulders down",
+      "nekcontact",
     ],
   },
   {
@@ -312,7 +595,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench arch techniek volgorde",
     category: "Coaching",
     content:
-      "Software = techniek. Volgorde van belangrijkheid: 1) shoulder position, 2) rib cage position, 3) neck pressure, 4) hand pressure, 5) legs. Shoulders zo laag mogelijk, traps ontspannen, minimale nodige retractie. Rib cage verbindt benen en schouders — goede leg drive + ontspannen schouders tilt rib cage in extensie.",
+      "Probleem: atleten focussen op benen of handen terwijl schouder- en rib cage-positie de arch bepalen. Technische aanpassing: volg deze volgorde bij setup: (1) shoulder position, (2) rib cage position, (3) neck pressure, (4) hand pressure, (5) legs. Cue schouders zo laag mogelijk, traps ontspannen, minimale nodige retractie. Waarom dit werkt biomechanisch: de rib cage verbindt benen en schouders; goede leg drive met ontspannen schouders tilt de rib cage in extensie en vergroot de arch. Programming: oefen elke setup-stap apart in warmup voordat je zware sets doet. Aandachtspunt: benen eerst activeren zonder schouderpositie leidt tot instabiele arch die onder load inzakt.",
     keywords: [
       "techniek",
       "volgorde",
@@ -321,6 +604,9 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "neck pressure",
       "hand pressure",
       "legs",
+      "setup volgorde",
+      "leg drive",
+      "bench setup",
     ],
   },
   {
@@ -328,7 +614,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench arch techniek details",
     category: "Coaching",
     content:
-      "Neck pressure: nek stevig tegen bank — arch voelt stabiel en grippy; zonder nekcontact verlies je stabiliteit. Hand pressure: handen zijn ankerpunt tegen stang; zonder druk verankeren schouders niet. Leg drive: twee richtingen — verticaal (heupen omhoog, vermijden) vs horizontaal (kracht in arch/extensie). Duw jezelf richting het rack, niet omhoog.",
+      "Probleem: arch voelt instabiel of schouders verankeren niet onder de bar. Technische aanpassing: druk nek stevig tegen de bank (neck pressure), druk handen actief in de stang (hand pressure), en gebruik horizontale leg drive richting het rack in plaats van verticale heuplift. Waarom dit werkt biomechanisch: nekcontact geeft een stabiel ankerpunt; handdruk verankert schouders via de stang; horizontale leg drive duwt het lichaam in thoracic extensie terwijl verticale heuplift de arch kan breken. Programming: cue push richting rack bij zware sets. Aandachtspunt: verticale leg drive (heupen omhoog) vermindert arch-effect en kan schouderpositie destabiliseren.",
     keywords: [
       "leg drive",
       "hand pressure",
@@ -338,6 +624,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "verticaal",
       "heupen",
       "anker",
+      "bench techniek",
+      "stang als anker",
     ],
   },
   {
@@ -345,7 +633,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench arch veelgemaakte fouten",
     category: "Coaching",
     content:
-      "Belangrijkste punten: shoulders down not back; gebruik stang als ankerpunt; voel nek tegen bank; push richting rack; focus niet alleen mobiliteit maar ook techniek; te veel retractie is vaak een fout (beperkt ruimte onderin, verslechtert schouderpositie); horizontale leg drive werkt beter voor grotere arch dan verticale leg drive.",
+      "Probleem: atleten grinden mobiliteit terwijl techniekfouten de arch beperken. Veelgemaakte fouten: te veel schouderretractie (beperkt ruimte onderin en verslechtert schouderpositie), geen nekcontact (verliest stabiliteit), verticale in plaats van horizontale leg drive, en focus op mobiliteit zonder setup-cues. Technische aanpassing: cue shoulders down not back, gebruik de stang als ankerpunt, voel nek tegen bank, push richting rack. Waarom dit werkt biomechanisch: horizontale leg drive en shoulder depression vergroten thoracic extensie; te veel retractie verkleint effectieve schouderdepressie. Programming: review video op sticking region en setup. Aandachtspunt: mobiliteit is ondersteunend; techniek bepaalt of die mobiliteit op het platform zichtbaar wordt.",
     keywords: [
       "fouten",
       "tips",
@@ -354,6 +642,9 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "shoulders down",
       "bench tips",
       "bankdrukken setup",
+      "leg drive",
+      "nekcontact",
+      "mobiliteit vs techniek",
     ],
   },
   {
@@ -361,7 +652,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Squat varianten: traditioneel vs powerlifting vs box",
     category: "Coaching",
     content:
-      "Onderzoek (12 powerlifters, 30/50/70% 1RM): traditionele squat, powerlifting squat en box squat hebben duidelijk verschillende biomechanica. Traditioneel = smalle stance (~48 cm). Powerlifting squat en box squat = vergelijkbare brede stance (~90 cm). Kies variant op basis van gewenst kinematic/kinetic profiel en trainingsdoel.",
+      "Probleem: niet elke squat variant belast heup, knie, enkel en rug hetzelfde; de verkeerde variant kan blessurerisico of ineffectieve training geven. Technische aanpassing: kies tussen traditionele squat (smalle stance ~48 cm), powerlifting squat (brede stance ~90 cm) en box squat (brede stance, gecontroleerde diepte). Waarom dit werkt biomechanisch: onderzoek bij 12 powerlifters op 30/50/70% 1RM toont dat stance en diepte het center of mass en gewrichtsmomenten veranderen. Programming: selecteer variant op trainingsdoel en atleetbeperkingen. Aandachtspunt: variant wisselen zonder doel levert inconsistente stimulus.",
     keywords: [
       "squat",
       "powerlifting squat",
@@ -371,6 +662,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "stance",
       "breed",
       "smal",
+      "biomechanica",
+      "center of mass",
     ],
   },
   {
@@ -378,7 +671,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Squat: kniepositie en center of mass",
     category: "Coaching",
     content:
-      "Traditionele squat (excentrisch): knie reist voorbij tenen → anterior verplaatsing van system center of mass (COM). Powerlifting squat en box squat: verticalere scheen, posterior COM-verplaatsing. Dit verschil beïnvloedt piekmomenten in heup, knie, enkel en wervelkolom.",
+      "Probleem: kniepositie bepaalt waar het zwaartepunt van lifter plus bar (center of mass, COM) zich verplaatst tijdens de squat. Technische aanpassing: traditionele squat laat knieën voorbij tenen reizen; powerlifting squat en box squat houden scheen verticaler. Waarom dit werkt biomechanisch: knieën voorbij tenen verplaatsen COM anterior (voorwaarts), wat piekmomenten in heup, knie, enkel en wervelkolom verandert. Verticalere scheen bij brede stance verplaatst COM posterior (achterwaarts). Programming: match stance aan gewenst heup- versus knie-dominant profiel. Aandachtspunt: COM-verschuiving verklaart waarom dezelfde load anders voelt per variant.",
     keywords: [
       "knie",
       "tenen",
@@ -388,6 +681,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "excentrisch",
       "squat techniek",
       "voorwaarts",
+      "posterior",
+      "moment arm",
     ],
   },
   {
@@ -395,7 +690,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Squat piekmomenten per variant",
     category: "Coaching",
     content:
-      "Wervelkolom & enkel: grootste piekmoment bij traditionele squat, daarna powerlifting squat, dan box squat (laagste). Heup: grootste momenten in alle 3 vlakken bij powerlifting squat. Box squat = minste belasting op rug/enkel; powerlifting squat = meeste heupbelasting; traditioneel = meeste rug/enkel stress.",
+      "Probleem: coaches kiezen soms een squat variant zonder te weten welk gewricht het meest belast wordt. Technische aanpassing: vergelijk piekmomenten per variant. Traditionele squat: grootste wervelkolom- en enkelmoment. Powerlifting squat: grootste heupmoment in alle vlakken. Box squat: laagste rug- en enkelbelasting. Waarom dit werkt biomechanisch: moment arm op een gewricht bepaalt hoeveel kracht de spieren rond dat gewricht moeten produceren; variant-keuze stuurt stress naar heup, knie of rug. Programming: box squat bij rugklachten of deload; powerlifting squat voor heup-dominante competitie-specificiteit. Aandachtspunt: traditionele squat geeft hoogste rug- en enkelstress — monitor bij kwetsbare atleten.",
     keywords: [
       "moment",
       "heup",
@@ -406,6 +701,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "box squat",
       "powerlifting squat",
       "blessure",
+      "piekmoment",
+      "wervelkolom",
     ],
   },
   {
@@ -413,7 +710,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Welke squat kiezen?",
     category: "Coaching",
     content:
-      "Coach/atleet: selecteer squat-variant naar trainingsdoel. Box squat: minder rug/enkel moment — nuttig bij rugklachten of deload. Powerlifting squat: brede stance, heup-dominant, competitie-specifiek. Traditionele squat: smalle stance, meer knie/COM voorwaarts, hogere rug/enkel belasting — typisch hypertrofie/general fitness context.",
+      "Probleem: one-size squat past niet bij elk doel of elke atleet. Technische aanpassing: kies box squat bij rug- of enkelklachten (laagste moment op rug en enkel), powerlifting squat voor brede-stance competitie-specificiteit met heup-dominante belasting, traditionele squat voor smalle stance met meer knie- en rugstress (typisch hypertrofie of general fitness). Waarom dit werkt biomechanisch: elke variant verplaatst center of mass anders en verandert moment armen op heup, knie en wervelkolom. Programming: wissel variant bewust per blockdoel, niet willekeurig. Aandachtspunt: bij blessure altijd variant kiezen die het pijnlijke gewricht ontlast.",
     keywords: [
       "welke squat",
       "kiezen",
@@ -423,6 +720,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hypertrofie",
       "powerlifting",
       "programmeren",
+      "box squat",
+      "traditioneel",
     ],
   },
   {
@@ -430,7 +729,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Repetition continuum (klassiek model)",
     category: "Coaching",
     content:
-      "Klassiek model: 1-5 reps = maximale kracht, 8-12 = hypertrofie, 15+ = muscular endurance. Huidige literatuur: dit model is te simplistisch, vooral voor hypertrofie. Effort en proximity to failure zijn belangrijker dan exact rep aantal.",
+      "Probleem: coaches plannen soms te rigide op rep ranges (1–5 kracht, 8–12 hypertrofie, 15+ endurance) zonder effort mee te nemen. Technische aanpassing: gebruik het klassieke repetition continuum als startpunt, niet als harde regel. Waarom dit werkt biomechanisch: zware loads (>85% 1RM) geven hogere neural stimulus; moderate loads geven mechanical tension met minder joint stress; lichte loads vereisen proximity to failure voor volledige motor unit recruitment. Programming: effort (RPE/RIR) en proximity to failure zijn belangrijker dan exact rep aantal, vooral voor hypertrofie. Aandachtspunt: het klassieke model is te simplistisch voor hypertrofie volgens huidige literatuur.",
     keywords: [
       "repetition continuum",
       "rep range",
@@ -440,6 +739,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "endurance",
       "8-12",
       "1-5",
+      "effort",
+      "proximity to failure",
     ],
   },
   {
@@ -447,7 +748,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Rep ranges en kracht",
     category: "Coaching",
     content:
-      "Zware loads superieur voor 1RM kracht: hogere neuromusculaire adaptaties, betere motor unit recruitment, specificity naar squat/bench/deadlift. Specificity speelt grote rol — 1RM testen op dezelfde lifts als training. Beginners bouwen kracht ook met lichte loads (zelfs 20+ reps). Gevorderden hebben meer zware training nodig; hoe hoger niveau, hoe belangrijker specificity. Praktisch: zware compounds essentieel; lichte loads voor extra volume en fatigue management.",
+      "Probleem: krachtwinst richting 1RM vereist neural en mechanische specificiteit die lichte loads alleen bij beginners leveren. Technische aanpassing: plan zware compounds op lage rep ranges met hoge RPE voor gevorderden; beginners mogen ook kracht bouwen met lichte loads tot 20+ reps. Waarom dit werkt biomechanisch: zware loads verhogen motor unit recruitment, rate coding en intermuscular coördinatie; specificity naar squat, bench en deadlift speelt een grote rol. Programming: zware compounds zijn essentieel voor gevorderden; lichte loads voor extra volume en fatigue management. Aandachtspunt: hoe hoger het niveau, hoe belangrijker zware, lift-specifieke training wordt.",
     keywords: [
       "kracht",
       "strength",
@@ -457,6 +758,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "powerlifting",
       "beginners",
       "gevorderd",
+      "motor unit",
+      "neural",
     ],
   },
   {
@@ -464,7 +767,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Rep ranges en hypertrofie",
     category: "Coaching",
     content:
-      "Hypertrofie mogelijk over bijna alle rep ranges — waarschijnlijk geen echte 'hypertrophy zone'. Zware, moderate en lichte loads kunnen vergelijkbare spiergroei geven als effort hoog genoeg is en sets dicht bij failure komen. Bij lichte loads is proximity to failure cruciaal: ver van failure = minder hypertrofie; dicht bij failure = vergelijkbaar aan zware loads. Dicht bij failure rekruteer je meer motor units, inclusief high-threshold.",
+      "Probleem: de mythe van een smalle hypertrophy zone (8–12 reps) beperkt programming onnodig. Technische aanpassing: plan hypertrofie over zware, moderate en lichte rep ranges zolang effort hoog genoeg is. Waarom dit werkt biomechanisch: hypertrofie reageert op mechanical tension en motor unit recruitment; bij lichte loads is proximity to failure cruciaal omdat ver van failure minder high-threshold units activeert. Programming: moderate reps zijn vaak het meest praktisch; lichte loads voor volume met hoge RPE; zware loads voor combinatie kracht en hypertrofie. Aandachtspunt: lichte sets ver van failure geven waarschijnlijk minder hypertrofie dan zware sets.",
     keywords: [
       "hypertrofie",
       "spiergroei",
@@ -473,6 +776,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "motor units",
       "lichte loads",
       "zware loads",
+      "mechanical tension",
+      "high-threshold",
     ],
   },
   {
@@ -480,7 +785,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Lichte vs zware vs moderate reps",
     category: "Coaching",
     content:
-      "Lichte loads: minder gewrichtsstress, goede hypertrofie mogelijk; nadelen = discomfort, metabolische stress, tijdsintensief, hoge RPE. Zware loads: hoge specificity, efficiënt voor kracht; nadelen = joint stress, systemische fatigue, moeilijk veel volume, overreaching risico. Moderate reps = vaak meest praktisch: voldoende mechanical tension, minder discomfort, efficiënter, beter herstel, relatief weinig joint stress.",
+      "Probleem: elke rep range heeft andere trade-offs in joint stress, fatigue en tijdsefficiëntie. Technische aanpassing: lichte loads (veel reps, hoge RPE) voor volume met minder gewicht; zware loads voor kracht en specificity; moderate reps als default voor efficiënte hypertrofie. Waarom dit werkt biomechanisch: zware loads geven hoge neural en mechanical stimulus maar ook hoge gewrichtsstress; lichte loads verlagen joint stress maar vereisen meer reps en hogere metabolische kosten; moderate loads balanceren mechanical tension en herstel. Programming: mix zware compounds, moderate hoofdwerk en hogere reps voor accessories. Aandachtspunt: zware loads hebben overreaching-risico bij te veel volume.",
     keywords: [
       "moderate",
       "licht",
@@ -490,6 +795,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "mechanical tension",
       "RPE",
       "herstel",
+      "fatigue",
+      "overreaching",
     ],
   },
   {
@@ -497,7 +804,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Failure, fiber types & minimum load",
     category: "Coaching",
     content:
-      "Voor hypertrofie: proximity to failure belangrijker dan exact rep aantal. Weinig bewijs dat hoge reps alleen type I fibers trainen of lage reps alleen type II — effort en volledige motor unit recruitment lijken belangrijker. Minimum effectieve load: ~30% 1RM nog effectief; extreem licht (<20-30% 1RM) waarschijnlijk minder optimaal. Muscular endurance: hogere reps kunnen helpen maar bewijs inconsistent; relevanter lower body dan upper body.",
+      "Probleem: coaches denken soms dat hoge reps alleen type I fibers trainen en lage reps alleen type II. Technische aanpassing: plan op proximity to failure, niet op fiber-type mythes. Waarom dit werkt biomechanisch: volledige motor unit recruitment bij failure activeert high-threshold units ongeacht rep range; minimum effectieve load ligt rond 30% 1RM, extreem licht (<20–30%) is waarschijnlijk minder optimaal. Programming: voor hypertrofie, breng sets dicht bij failure ongeacht reps. Aandachtspunt: muscular endurance via hoge reps heeft inconsistent bewijs en is relevanter voor lower body dan upper body.",
     keywords: [
       "failure",
       "proximity to failure",
@@ -507,6 +814,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "30%",
       "1rm",
       "muscular endurance",
+      "motor unit recruitment",
+      "minimum load",
     ],
   },
   {
@@ -514,7 +823,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Rep ranges in programming",
     category: "Coaching",
     content:
-      "Kracht: focus zware compounds, specificity, regelmatig zware loads. Hypertrofie: vrijwel alle rep ranges werken; failure belangrijker dan exacte reps; moderate reps vaak meest praktisch. Optimale mix: zware loads voor strength/specificity + moderate voor efficiënte hypertrofie + hogere reps voor volume, herstel en joint management. Takeaway: hypertrofie flexibeler dan gedacht; strength blijft specifiek aan zware training.",
+      "Probleem: alleen één rep range gebruiken mist de voordelen van verschillende stimuli. Technische aanpassing: kracht-blocks met zware compounds en regelmatige hoge intensiteit; hypertrofie-blocks met flexibele rep ranges en failure-nabij werk; combineer zware loads voor strength, moderate voor efficiënte hypertrofie, hogere reps voor volume en joint management. Waarom dit werkt biomechanisch: zware loads geven neural specificity; moderate loads geven mechanical tension met beter herstel; hogere reps verlagen gewrichtsstress per set. Programming: optimale mix hangt af van blockdoel en atleetniveau. Aandachtspunt: hypertrofie is flexibeler dan gedacht; kracht blijft specifiek aan zware training.",
     keywords: [
       "programming",
       "programma",
@@ -524,6 +833,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "combinatie",
       "takeaway",
       "coaching",
+      "rep ranges",
+      "block",
     ],
   },
   {
@@ -531,7 +842,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — NSCA textbook referentie",
     category: "Referentie (ESS 4e)",
     content:
-      "Essentials of Strength Training and Conditioning, 4th Edition (NSCA / Human Kinetics, 2016). Editors: G. Gregory Haff, N. Travis Triplett. Standaard CSCS-leerboek: anatomie/fysiologie, biomechanica, bio-energetics, adaptaties, testen, oefentechniek, program design, periodisering, revalidatie en facility management. In deze app: committed chunks = hoofdstukindex + coaching-samenvattingen; volledige tekst alleen lokaal via npm run ingest:ess (niet in git).",
+      "Essentials of Strength Training and Conditioning, 4th Edition (NSCA / Human Kinetics, 2016) is het standaard CSCS-leerboek van editors G. Gregory Haff en N. Travis Triplett. Het behandelt anatomie, fysiologie, biomechanica, bio-energetics, adaptaties, testen, oefentechniek, program design, periodisering, revalidatie en facility management. In deze app zijn committed chunks een hoofdstukindex plus coaching-samenvattingen; de volledige boektekst is alleen lokaal beschikbaar via npm run ingest:ess en staat niet in git. Gebruik ESS-chunks als referentie wanneer de AI wetenschappelijke achtergrond nodig heeft bij coaching-vragen.",
     keywords: [
       "ess",
       "nsca",
@@ -545,6 +856,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "triplett",
       "4th edition",
       "4e",
+      "referentie",
     ],
   },
   {
@@ -552,7 +864,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Hoofdstukken 1–6 (wetenschap & adaptaties)",
     category: "Referentie (ESS 4e)",
     content:
-      "Ch1 Structure and Function of Body Systems (musculoskeletal, neuromuscular, cardiovascular, respiratory). Ch2 Biomechanics of Resistance Exercise (kracht, power, weerstand, gewricht biomechanica). Ch3 Bioenergetics of Exercise and Training (ATP-PC, glycolytic, oxidative, metabolic specificity). Ch4 Endocrine Responses to Resistance Exercise. Ch5 Adaptations to Anaerobic Training (neural, muscular, connective tissue, overtraining, detraining). Ch6 Adaptations to Aerobic Endurance Training.",
+      "Hoofdstuk 1 behandelt Structure and Function of Body Systems (musculoskeletal, neuromuscular, cardiovascular, respiratory). Hoofdstuk 2 behandelt Biomechanics of Resistance Exercise (kracht, power, weerstand, gewricht biomechanica). Hoofdstuk 3 behandelt Bioenergetics of Exercise and Training (ATP-PC, glycolytic, oxidative, metabolic specificity). Hoofdstuk 4 behandelt Endocrine Responses to Resistance Exercise. Hoofdstuk 5 behandelt Adaptations to Anaerobic Training (neural, muscular, connective tissue, overtraining, detraining). Hoofdstuk 6 behandelt Adaptations to Aerobic Endurance Training. Deze hoofdstukken vormen de wetenschappelijke basis voor SBD-techniek en programming in deze kennisbank.",
     keywords: [
       "ess",
       "biomechanics",
@@ -567,6 +879,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hoofdstuk 4",
       "hoofdstuk 5",
       "hoofdstuk 6",
+      "neural",
+      "muscular",
     ],
   },
   {
@@ -574,7 +888,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Hoofdstukken 7–11 (atleet & voeding)",
     category: "Referentie (ESS 4e)",
     content:
-      "Ch7 Age- and Sex-Related Differences (children, female athletes, older adults). Ch8 Psychology of Athletic Preparation and Performance (arousal, anxiety, motivation, focus). Ch9 Basic Nutrition Factors in Health. Ch10 Nutrition Strategies for Maximizing Performance (pre/during/post, body composition). Ch11 Performance-Enhancing Substances and Methods.",
+      "Hoofdstuk 7 behandelt Age- and Sex-Related Differences (children, female athletes, older adults). Hoofdstuk 8 behandelt Psychology of Athletic Preparation and Performance (arousal, anxiety, motivation, focus). Hoofdstuk 9 behandelt Basic Nutrition Factors in Health. Hoofdstuk 10 behandelt Nutrition Strategies for Maximizing Performance (pre/during/post, body composition). Hoofdstuk 11 behandelt Performance-Enhancing Substances and Methods. Gebruik deze hoofdstukken wanneer coaching-vragen gaan over atleet-populatie, mentale voorbereiding of voeding rond training en wedstrijd.",
     keywords: [
       "ess",
       "nutrition",
@@ -589,6 +903,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hoofdstuk 9",
       "hoofdstuk 10",
       "hoofdstuk 11",
+      "body composition",
     ],
   },
   {
@@ -596,7 +911,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Hoofdstukken 12–16 (testen & techniek)",
     category: "Referentie (ESS 4e)",
     content:
-      "Ch12 Principles of Test Selection and Administration. Ch13 Administration, Scoring, and Interpretation of Selected Tests. Ch14 Warm-Up and Flexibility Training. Ch15 Exercise Technique for Free Weight and Machine Training (fundamentals, spotting, SBD/accessories). Ch16 Exercise Technique for Alternative Modes and Nontraditional Implement Training (bodyweight, core, bands/chains, unilateral).",
+      "Hoofdstuk 12 behandelt Principles of Test Selection and Administration. Hoofdstuk 13 behandelt Administration, Scoring, and Interpretation of Selected Tests. Hoofdstuk 14 behandelt Warm-Up and Flexibility Training. Hoofdstuk 15 behandelt Exercise Technique for Free Weight and Machine Training (fundamentals, spotting, SBD en accessories). Hoofdstuk 16 behandelt Exercise Technique for Alternative Modes and Nontraditional Implement Training (bodyweight, core, bands/chains, unilateral). Deze hoofdstukken zijn relevant voor techniekvragen en testprotocol naast bench-arch en squat-biomechanics chunks in deze app.",
     keywords: [
       "ess",
       "testing",
@@ -612,6 +927,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hoofdstuk 14",
       "hoofdstuk 15",
       "hoofdstuk 16",
+      "sbd",
     ],
   },
   {
@@ -619,7 +935,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Hoofdstukken 17–22 (programmeren & revalidatie)",
     category: "Referentie (ESS 4e)",
     content:
-      "Ch17 Program Design for Resistance Training (7-stappen model). Ch18 Plyometric Training. Ch19 Speed and Agility Training. Ch20 Aerobic Endurance Training. Ch21 Periodization. Ch22 Rehabilitation and Reconditioning.",
+      "Hoofdstuk 17 behandelt Program Design for Resistance Training (7-stappen model). Hoofdstuk 18 behandelt Plyometric Training. Hoofdstuk 19 behandelt Speed and Agility Training. Hoofdstuk 20 behandelt Aerobic Endurance Training. Hoofdstuk 21 behandelt Periodization. Hoofdstuk 22 behandelt Rehabilitation and Reconditioning. Gebruik deze hoofdstukken voor program design, periodisering en revalidatie-vragen; ze sluiten aan bij RPE-, rep-range- en periodization-chunks in deze kennisbank.",
     keywords: [
       "ess",
       "program design",
@@ -643,7 +959,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Program design (7 stappen)",
     category: "Coaching",
     content:
-      "NSCA resistance program design (ESS ch.17): 1) Needs analysis (doel, atleet, testdata). 2) Exercise selection (competition lifts, assistance, remedial). 3) Training frequency (ervaring, volume, herstel). 4) Exercise order (compound → isolation, power voor strength). 5) Training load & reps (percentage/RPE, doel-afhankelijk). 6) Volume (sets × reps × load). 7) Rest periods (kracht = lang, hypertrofie/endurance = korter). Sluit aan bij RPE- en rep-range coaching in deze app.",
+      "Probleem: willekeurige oefeningkeuze en volume leiden tot suboptimale adaptatie. Technische aanpassing: volg het NSCA 7-stappen model uit ESS hoofdstuk 17: (1) needs analysis (doel, atleet, testdata), (2) exercise selection (competition lifts, assistance, remedial), (3) training frequency (ervaring, volume, herstel), (4) exercise order (compound voor isolation, power voor strength), (5) training load en reps (percentage/RPE, doel-afhankelijk), (6) volume (sets × reps × load), (7) rest periods (lang voor kracht, korter voor hypertrofie/endurance). Waarom dit werkt: gestructureerde program design koppelt stimulus aan doel en recovery capacity. Programming: sluit aan bij RPE- en rep-range coaching in deze app. Aandachtspunt: sla geen needs analysis over — programma moet passen bij atleet en meetdatum.",
     keywords: [
       "program design",
       "programmeren",
@@ -657,6 +973,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "nsca",
       "hoofdstuk 17",
       "7 stappen",
+      "rpe",
     ],
   },
   {
@@ -664,7 +981,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Periodization",
     category: "Coaching",
     content:
-      "Periodization (ESS ch.21): trainingsstress systematisch verdelen over macrocyclus, mesocyclus en microcyclus. Doelen: piekperformance rond wedstrijd, overtraining vermijden, adaptatie sturen. Modellen: linear (progressieve load) vs undulating/nonlinear (frequente variatie in volume/intensiteit). Koppel macrocyclus aan competitieseizoen; mesocycli voor hypertrofie-, strength- of peaking-blocks.",
+      "Probleem: constante training zonder variatie in volume en intensiteit leidt tot stagnatie of overtraining. Technische aanpassing: verdeel trainingsstress systematisch over macrocyclus, mesocyclus en microcyclus via periodization (ESS hoofdstuk 21). Waarom dit werkt: periodisering stuurt adaptatie richting piekperformance rond wedstrijd en voorkomt overtraining door planned variation. Programming: linear periodization (progressieve load) of undulating/nonlinear (frequente variatie in volume/intensiteit); koppel macrocyclus aan competitieseizoen en mesocycli aan hypertrofie-, strength- of peaking-blocks. Aandachtspunt: periodisering is geen vervanging voor voldoende totale volume.",
     keywords: [
       "periodization",
       "periodisering",
@@ -676,6 +993,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "ess",
       "hoofdstuk 21",
       "block",
+      "meetprep",
+      "overtraining",
     ],
   },
   {
@@ -683,7 +1002,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Biomechanica & kracht",
     category: "Coaching",
     content:
-      "Biomechanics of Resistance Exercise (ESS ch.2): kracht = interactie spier-tendon-been; power = work/time. Weerstand: zwaartekracht, inertia, hydraulisch/elastisch. Joint biomechanics bepalen veilig ROM en belasting (knie/heup/schouder). Relevant voor SBD-techniek en squat-variant keuzes in deze kennisbank — kies oefeningen op basis van gewenste momenten en atleetbeperkingen.",
+      "Probleem: techniek- en oefeningkeuzes zonder biomechanisch inzicht kunnen verkeerde gewrichtsbelasting geven. Technische aanpassing: pas ESS hoofdstuk 2 toe — kracht is interactie tussen spier, pees en bot; power is work gedeeld door time; weerstand komt van zwaartekracht, inertia of elastische/hydraulische bronnen. Waarom dit werkt biomechanisch: joint biomechanics bepalen veilig ROM en belasting op knie, heup en schouder; moment armen verklaren waar stress landt. Programming: kies squat-varianten en deadlift stance op basis van gewenste momenten en atleetbeperkingen. Aandachtspunt: biomechanica verklaart waarom cues werken, niet alleen welke cue je zegt.",
     keywords: [
       "biomechanics",
       "biomechanica",
@@ -697,6 +1016,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "squat",
       "bench",
       "deadlift",
+      "moment arm",
     ],
   },
   {
@@ -704,7 +1024,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Anaerobic adaptaties",
     category: "Coaching",
     content:
-      "Adaptations to Anaerobic Training (ESS ch.5): neural (motor unit recruitment, rate coding, intermuscular coördinatie), muscular (hypertrofie, fiber type), connective tissue. Ook endocrine responses, acute cardio/respiratory responses, compatibility van aerobic + anaerobic work, overtraining en detraining. Coach: monitor fatigue (/externals), volume en intensiteit balanceren.",
+      "Probleem: coaches verhogen volume of intensiteit zonder te begrijpen welke adaptaties optreden of wanneer overtraining dreigt. Technische aanpassing: gebruik ESS hoofdstuk 5 — anaerobic adaptaties omvatten neural (motor unit recruitment, rate coding, intermuscular coördinatie), muscular (hypertrofie, fiber type), connective tissue, endocrine responses, en compatibiliteit van aerobic plus anaerobic work. Waarom dit werkt: krachtwinst komt deels via neural adaptatie, hypertrofie via muscular; overtraining en detraining beïnvloeden beide. Programming: monitor fatigue via /externals, balanceer volume en intensiteit. Aandachtspunt: meer stimulus is niet altijd meer adaptatie — recovery bepaalt of training effect heeft.",
     keywords: [
       "anaerobic",
       "adaptations",
@@ -716,6 +1036,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "ess",
       "hoofdstuk 5",
       "fatigue",
+      "connective tissue",
+      "endocrine",
     ],
   },
   {
@@ -723,7 +1045,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "ESS 4e — Oefentechniek SBD",
     category: "Coaching",
     content:
-      "Exercise Technique for Free Weight and Machine Training (ESS ch.15): techniek-fundamentals, spotting, en uitvoering van squat, bench, deadlift en varianten. Alternatieve modes (ch.16): bodyweight, core stability, bands/chains, unilateral work. Gebruik voor techniekvragen naast bench-arch en squat-biomechanics chunks in deze app.",
+      "Probleem: techniekfouten in SBD verhogen blessurerisico en verminderen krachtoverdracht. Technische aanpassing: gebruik ESS hoofdstuk 15 voor techniek-fundamentals, spotting en uitvoering van squat, bench, deadlift en varianten; hoofdstuk 16 voor bodyweight, core stability, bands/chains en unilateral work. Waarom dit werkt biomechanisch: correcte joint alignment en bar path minimaliseren ongunstige moment armen. Programming: combineer ESS techniek met bench-arch en squat-biomechanics chunks in deze app voor complete coaching-antwoorden. Aandachtspunt: spotting-protocol en techniek horen bij elkaar — onveilige setup vereist aanpassing vóór load verhoging.",
     keywords: [
       "exercise technique",
       "techniek",
@@ -736,6 +1058,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hoofdstuk 15",
       "hoofdstuk 16",
       "sbd",
+      "bar path",
+      "varianten",
     ],
   },
   {
@@ -743,7 +1067,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Lichaamsbouw is een variabele",
     category: "Coaching",
     content:
-      "Body structure is een variabele — geen excuus, wel data. Bepaalde builds creëren echte mechanische nadelen in squat, bench en deadlift. Squat: lange femurs / korte torso. Bench: lange armen / platte rug (geen arch). Deadlift: lange torso / korte armen. Zodra je weet wat tegen je werkt, programmeer en cue je eromheen in plaats van harder tegen de muur te grinden.",
+      "Probleem: coaches passen universele techniek toe terwijl lichaamsbouw mechanische voor- en nadelen creëert in squat, bench en deadlift. Technische aanpassing: behandel body structure als een variabele — geen excuus, wel data. Lange femurs met korte torso bemoeilijken squat; lange armen met platte rug bemoeilijken bench; lange torso met korte armen bemoeilijken deadlift vanaf de vloer. Waarom dit werkt biomechanisch: segmentlengtes veranderen moment armen en ROM zonder dat kracht of inzet anders is. Programming: zodra je weet wat tegen de atleet werkt, programmeer en cue je eromheen in plaats van harder tegen dezelfde muur te grinden. Aandachtspunt: anatomie is fixed; techniek en programming zijn aanpasbaar.",
     keywords: [
       "body structure",
       "lichaamsbouw",
@@ -757,6 +1081,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "femur",
       "torso",
       "arm length",
+      "individueel",
     ],
   },
   {
@@ -764,7 +1089,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Build breakdown — waar je lichaam tegenwerkt",
     category: "Coaching",
     content:
-      "Squat (lange femurs, korte torso): meer forward lean om balans te houden; depth moeilijker door langere heup-flexie en knie-travel. Bench (lange armen, platte rug): langere ROM per rep; geen arch = geen ROM-shortcut. Deadlift (lange torso, korte armen): bar start verder van heupen (grotere moment arm); setup position moeilijker; lockout langer en zwaarder voor glutes en spinal erectors.",
+      "Probleem: atleten begrijpen niet waarom dezelfde cue bij hen anders werkt dan bij een andere lifter. Technische aanpassing: map build naar SBD-limitaties. Squat met lange femurs en korte torso: meer forward lean voor balans, moeilijkere diepte door langere heupflexie en knie-travel. Bench met lange armen en platte rug: langere ROM per rep zonder arch-shortcut. Deadlift met lange torso en korte armen: bar start verder van heupen (grotere moment arm), moeilijkere setup, zwaardere lockout voor glutes en spinal erectors. Waarom dit werkt biomechanisch: langere segmenten vergroten de hefboom en verplaatsen belasting naar specifieke spiergroepen. Programming: kies varianten en accessories op basis van deze weak points.",
     keywords: [
       "build breakdown",
       "long femurs",
@@ -776,6 +1101,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "rom",
       "moment arm",
       "hip bar gap",
+      "forward lean",
+      "lockout",
     ],
   },
   {
@@ -783,7 +1110,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Squat probleem — lange femurs / korte torso",
     category: "Coaching",
     content:
-      "Mechanische nadelen bij lange femurs + korte torso: (1) Excessive forward lean — lange femurs duwen heupen naar achter, torso komt forward; kortere torso verergert dit. (2) Depth moeilijker — femurlengte bepaalt knie-travel en heup-flexie; parallel vereist meer enkel-, heup- en thoracic mobility dan de meeste lifters van nature hebben. (3) Lagere rug neemt meer load — forward lean verschuift moment arm weg van quads, meer stress op lumbar extensors elke rep.",
+      "Probleem: atleten met lange femurs en korte torso hebben moeite om diep te squatten zonder excessieve forward lean en rugstress. Technische beperking: lange femurs duwen de heupen naar achter tijdens descent, waardoor de torso forward moet komen om het center of mass boven de voeten te houden; een korte torso verergert deze forward lean. Diepte vereist meer enkel-, heup- en thoracic mobiliteit dan veel lifters van nature hebben. Waarom dit werkt biomechanisch: forward lean verschuift de moment arm weg van de quadriceps naar de lumbar extensors, waardoor de onderrug elke rep zwaarder belast wordt. Programming: herken dit patroon vóór je alleen 'dieper squatten' cue't. Aandachtspunt: diepte-forcing zonder aanpassing verhoogt lumbar stress.",
     keywords: [
       "squat",
       "long femurs",
@@ -794,6 +1121,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "depth",
       "lumbar",
       "onder de stang",
+      "moment arm",
+      "quadriceps",
     ],
   },
   {
@@ -801,7 +1130,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Squat fix — techniek & programming",
     category: "Coaching",
     content:
-      "Techniek: bredere stance + tenen geflared (kortere effectieve femur-displacement, betere heup-clearance op depth); heel elevation (lifting shoes/wedges, shin angle forward, depth zonder torso collapse); high bar i.p.v. low bar (upright torso, minder lumbar stress); harder en vroeger bracen (beperkt forward travel in descent). Programming: paused squats (positie op depth); heel-elevated goblet squats als warmup/accessory; box squats (controlled sit-back, depth confidence); enkel + hip flexor mobility als eigen block — niet alleen warmup.",
+      "Probleem: lange femurs en korte torso maken diepe squat met upright torso moeilijk. Technische aanpassing: bredere stance met tenen geflared (kortere effectieve femur-displacement en betere heup-clearance op depth), heel elevation via lifting shoes of wedges (forward shin angle zonder torso collapse), high bar i.p.v. low bar (upright torso, minder lumbar stress), en harder en vroeger bracen (beperkt forward travel in descent). Waarom dit werkt biomechanisch: bredere stance en heel elevation veranderen knie- en enkelhoeken zodat diepte haalbaar wordt met minder forward lean. Programming: paused squats voor positie op depth; heel-elevated goblet squats als warmup/accessory; box squats voor controlled sit-back en depth confidence; enkel- en hip flexor mobiliteit als eigen block. Aandachtspunt: mobiliteit alleen in warmup is vaak onvoldoende.",
     keywords: [
       "squat fix",
       "squat techniek",
@@ -813,6 +1142,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "goblet squat",
       "mobility",
       "programmeren",
+      "lange femurs",
+      "bracing",
     ],
   },
   {
@@ -820,7 +1151,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench probleem — lange armen / platte rug",
     category: "Coaching",
     content:
-      "Mechanische nadelen bij lange armen + platte rug: (1) Langere ROM elke rep — bar reist verder naar borst en terug; bij volume accumuleert fatigue in pecs en schouders. (2) Geen arch = geen ROM-reductie — flat back lifters kunnen geen mechanisch voordeel van arch gebruiken; full ROM elke rep. (3) Bar path control moeilijker — langere hefbomen = meer schouder-stabiliteit en lat engagement nodig om bar tracking te houden.",
+      "Probleem: atleten met lange armen en platte rug hebben een langere bench ROM en meer schouder- en pec-fatigue per set. Technische beperking: de bar reist verder naar borst en terug omdat armlengte de hefboom vergroot; zonder bench arch is er geen mechanische ROM-reductie mogelijk. Waarom dit werkt biomechanisch: langere hefbomen vereisen meer schouderstabiliteit en lat engagement om bar path te controleren; bij volume accumuleert fatigue sneller in pecs en schouders. Programming: herken lange armen vóór je volume kopieert van een atleet met grote arch. Aandachtspunt: flat back is geen techniekfout — het is een structurele beperking die programming moet reflecteren.",
     keywords: [
       "bench",
       "long arms",
@@ -831,6 +1162,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "bar path",
       "schouder",
       "pecs",
+      "hefboom",
+      "fatigue",
     ],
   },
   {
@@ -838,7 +1171,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Bench fix — techniek & programming",
     category: "Coaching",
     content:
-      "Techniek: grip zo breed als regels toestaan (kortere ROM zonder extreme arch); scapulae hard retract + depress (stable shelf, chest up, kortere bar path); elbows ~45° tuck (minder schouderstress lange ROM, bar stacked over onderarmen); touch lower op borst/sternum (gunstigere press angle, meer triceps load). Programming: board/pin presses (lockout/mid-range zonder full ROM elke sessie); heavy triceps accessory (close grip bench, JM press — lockout is limiter); volume voorzichtig (meer ROM = meer schouder fatigue, minder high-intensity sets); pause bench als primary variation (geen stretch reflex, strength op de bodem).",
+      "Probleem: lange armen en platte rug geven langere bench ROM en maken lockout vaak de limiter. Technische aanpassing: grip zo breed als regels toestaan (kortere ROM zonder extreme arch), scapulae hard retract en depress (stable shelf, chest up, kortere bar path), elbows ~45° tuck (minder schouderstress over lange ROM, bar stacked over onderarmen), touch lower op borst/sternum (gunstigere press angle, meer triceps load). Waarom dit werkt biomechanisch: bredere grip en lower touch point verkorten de hefboom; elbow tuck stackt gewrichten voor efficiëntere krachtoverdracht. Programming: board/pin presses voor lockout/mid-range zonder full ROM elke sessie; heavy triceps accessory (close grip bench, JM press); voorzichtig volume (meer ROM = meer schouder fatigue); pause bench als primary variation (geen stretch reflex, strength op de bodem). Aandachtspunt: kopieer geen hoge intensiteit volume van korte-arm lifters.",
     keywords: [
       "bench fix",
       "bench techniek",
@@ -851,6 +1184,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "jm press",
       "pause bench",
       "triceps",
+      "lange armen",
+      "lockout",
     ],
   },
   {
@@ -858,7 +1193,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Deadlift probleem — lange torso / korte armen",
     category: "Coaching",
     content:
-      "Mechanische nadelen bij lange torso + korte armen vanaf de vloer: (1) Bar start verder van heupen — korte armen = bar lager t.o.v. heup bij setup; langere moment arm = meer lumbar stress vanaf eerste pull. (2) Setup position moeilijk — lange torso + korte armen dwingen horizontalere back angle; hips laag + neutrale spine tegelijk kost serieuze work. (3) Lockout langer en zwaarder — meer afstand in top half; glutes en spinal erectors werken langer en harder tot lockout.",
+      "Probleem: slimme lifters met lange torso en korte armen hebben vaak moeite om de bar dicht bij het zwaartepunt te houden vanaf de vloer. Technische beperking: korte armen plaatsen de bar lager ten opzichte van de heup bij setup; een lange torso dwingt een horizontalere back angle, waardoor hips laag houden met neutrale spine tegelijk serieuze work kost. Waarom dit werkt biomechanisch: grotere heup-bar afstand betekent grotere moment arm op de onderrug vanaf de eerste pull; lockout vereist dat glutes en spinal erectors langer en harder werken in de top half. Programming: herken dit patroon vóór je conventional cues van korte-torso lifters kopieert. Aandachtspunt: setup die bij een andere build werkt, kan bij lange torso direct lumbar stress verhogen.",
     keywords: [
       "deadlift",
       "long torso",
@@ -870,6 +1205,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "moment arm",
       "lumbar",
       "vanaf de vloer",
+      "hip bar gap",
+      "zwaartepunt",
     ],
   },
   {
@@ -877,7 +1214,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Deadlift fix — techniek & programming",
     category: "Coaching",
     content:
-      "Techniek: sumo stance indien fed het toelaat (kortere bar-heup afstand, kleinere moment arm); hips iets hoger starten (neutralere rug zonder bar van lichaam te duwen); bar over mid-foot altijd (forward drift kost extra bij lange torso); aggressive hip drive cue op lockout. Programming: deficit deadlifts voorzichtig (kracht vanuit diepere start — waar deze build worstelt, niet overgebruiken); RDL als main accessory (hamstring/posterior chain hinge); block/rack pulls mid-shin (lockout overload); glute work buiten main lift (hip thrusts → lockout op meetdag).",
+      "Probleem: lange torso en korte armen vergroten moment arm op de onderrug vanaf de vloer. Technische aanpassing: sumo stance indien de federatie het toelaat (heup-bar afstand kleiner wordt en moment arm op onderrug afneemt), hips iets hoger starten (neutralere rug zonder bar van lichaam te duwen), bar over mid-foot altijd (forward drift kost extra bij lange torso), aggressive hip drive cue op lockout. Waarom dit werkt biomechanisch: sumo verkort de horizontale afstand tussen heup en bar; mid-foot bar placement minimaliseert onnodige moment arm; hip drive sluit de heupen in lockout. Programming: deficit deadlifts voorzichtig (diepere start waar deze build worstelt); RDL als main accessory (hamstring/posterior chain hinge); block/rack pulls mid-shin (lockout overload); glute work buiten main lift (hip thrusts voor lockout op meetdag). Aandachtspunt: deficit work overgebruiken verergert setup-problemen.",
     keywords: [
       "deadlift fix",
       "deadlift techniek",
@@ -891,6 +1228,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "block pull",
       "hip thrust",
       "programmeren",
+      "lange torso",
+      "moment arm",
     ],
   },
   {
@@ -898,7 +1237,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Program for the lifter in front of you",
     category: "Coaching",
     content:
-      "Geen universele techniek. Geen one-size program. Beste coaching begint met het lichaam op het platform begrijpen, dan techniek en programming bouwen rond wat dat lichaam nodig heeft. Drie stappen: (1) Identificeer de structurele variabele — femurlengte, armlengte, torso, arch-mogelijkheid. (2) Pas techniek aan om het nadeel te verkleinen — stance, grip, bar path, bracing. (3) Programmeer accessories op de weak point — niet generiek grinden, maar gericht (paused squat, triceps volume, RDL/rack pulls). Bron: @erick_shw / @gamfithq body structure carousel.",
+      "Probleem: universele techniek en one-size programma's falen omdat segmentlengtes SBD-mechanica veranderen. Technische aanpassing: volg drie stappen — (1) identificeer de structurele variabele (femurlengte, armlengte, torso, arch-mogelijkheid), (2) pas techniek aan om het nadeel te verkleinen (stance, grip, bar path, bracing), (3) programmeer accessories op de weak point (paused squat, triceps volume, RDL/rack pulls). Waarom dit werkt biomechanisch: elke aanpassing richt zich op een specifieke moment arm of ROM-limitatie in plaats van generiek harder trainen. Programming: geen universele techniek; bouw rond het lichaam op het platform. Aandachtspunt: bron @erick_shw / @gamfithq body structure carousel — individuele beoordeling blijft leidend.",
     keywords: [
       "program for the lifter",
       "individueel",
@@ -910,6 +1249,10 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "coaching model",
       "erick_shw",
       "gamfithq",
+      "lichaamsbouw",
+      "squat",
+      "bench",
+      "deadlift",
     ],
   },
   {
@@ -917,7 +1260,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "RT dose, dosing & dosage — definities",
     category: "Coaching",
     content:
-      "Drie niveaus van trainingsstimulus (Lyristakis et al., meta-analyse 2025): (1) RT dose = volume (sets × reps × oefeningen) × intensiteit (%1RM) — één sessie. (2) RT dosing = dose × frequentie — per week. (3) RT dosage = dosing × programmaduur — totale stimulus over het programma. Relative dosage = arbitrary units (au) via %1RM zonder absolute kg. Absolute dosage = totaal kg gelift (geschat via %1RM × baseline strength). Alleen external-load oefeningen tellen mee. Voor coaches: dosage is holistische metric — niet los volume of intensiteit optimaliseren zonder totale au te zien.",
+      "Probleem: coaches optimaliseren los volume of intensiteit zonder totale trainingsstimulus te overzien. Technische aanpassing: gebruik drie niveaus (Lyristakis et al., meta-analyse 2025). RT dose = volume (sets × reps × oefeningen) × intensiteit (%1RM) per sessie. RT dosing = dose × frequentie per week. RT dosage = dosing × programmaduur over het hele programma. Relative dosage = arbitrary units (au) via %1RM zonder absolute kg. Absolute dosage = totaal kg gelift (geschat via %1RM × baseline strength). Waarom dit werkt: dosage is een holistische metric die volume, intensiteit, frequentie en duration combineert. Programming: alleen external-load oefeningen tellen mee. Aandachtspunt: optimaliseer niet één variabele zonder totale au te bekijken.",
     keywords: [
       "dosage",
       "dose",
@@ -932,6 +1275,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "relative dosage",
       "absolute dosage",
       "lyristakis",
+      "trainingsstimulus",
     ],
   },
   {
@@ -939,7 +1283,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Dosage dose–response & plateau kracht",
     category: "Coaching",
     content:
-      "Systematic review + meta-regressie (157 studies, chest + quadriceps, voornamelijk untrained): significante dose–response voor spierkracht (p<0.01). Non-lineair: krachtwinst versnelt met hogere dosage tot plateau. Relative dosage plateau: ~887.000 au chest, ~773.000 au quadriceps — daarboven geen extra benefit op rate of strength development. Eerste vertraging (slope flattens): ~108.000 au chest, ~45.000 au quadriceps. Absolute dosage: geen betrouwbare effective/plateau waarden (brede CI). Relative ~0,23–0,31 kg per au-unit chest/quads; absolute ~0,96–1,10 kg per unit — interpretatie vooral untrained.",
+      "Probleem: meer training is niet altijd meer krachtwinst; er is een plateau in dose–response. Technische aanpassing: gebruik relative dosage (au) om totale stimulus te monitoren. Systematic review + meta-regressie (157 studies, chest + quadriceps, voornamelijk untrained) toont significante non-lineaire dose–response voor spierkracht (p<0.01). Relative dosage plateau: ~887.000 au chest, ~773.000 au quadriceps — daarboven geen extra benefit op rate of strength development. Eerste vertraging (slope flattens): ~108.000 au chest, ~45.000 au quadriceps. Waarom dit werkt: adaptatie versnelt met hogere dosage tot een punt waar recovery of neural/muscular capacity het plateau bepaalt. Programming: plan variation vóór plateau. Aandachtspunt: absolute dosage heeft brede CI; relative ~0,23–0,31 kg per au chest/quads — interpretatie vooral untrained.",
     keywords: [
       "dose response",
       "plateau",
@@ -954,6 +1298,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "non-linear",
       "relative chest",
       "relative quadriceps",
+      "au",
     ],
   },
   {
@@ -961,7 +1306,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Welke variabelen voorspellen kracht?",
     category: "Coaching",
     content:
-      "Per spiergroep verschillend — geen enkele variabele domineert overal. Relative chest strength: volume + intensiteit significant (non-linear); volume belangrijk in variable-importance. Relative quadriceps: duration significant; bij absolute quadriceps ook duration + dosage + age. Intensiteit: significant in regressies maar minder 'important' in VI-scores dan volume/duration — volume en duration kunnen lagere intensiteit compenseren. Frequentie (2–3 dagen) modulateert vooral absolute quadriceps. Sex: beperkte invloed op relative strength. Age: meer invloed op chest (relative + absolute). Coach: programmeer holistisch; chest = volume/intensity prioriteren; quads = duration + totale exposure niet onderschatten.",
+      "Probleem: coaches prioriteren soms alleen intensiteit terwijl andere variabelen per spiergroep domineren. Technische aanpassing: programmeer holistisch per spiergroep. Relative chest strength: volume + intensiteit significant (non-linear); volume belangrijk in variable-importance. Relative quadriceps: duration significant; bij absolute quadriceps ook duration + dosage + age. Intensiteit is significant in regressies maar minder important in VI-scores dan volume/duration — volume en duration kunnen lagere intensiteit compenseren. Waarom dit werkt: totale exposure (volume × duration) drijft adaptatie naast intensiteit. Programming: chest = volume/intensity prioriteren; quads = duration + totale exposure niet onderschatten. Aandachtspunt: frequentie (2–3 dagen) modulateert vooral absolute quadriceps; sex heeft beperkte invloed op relative strength.",
     keywords: [
       "volume",
       "intensity",
@@ -975,6 +1320,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "sex",
       "age",
       "holistic",
+      "dosage",
     ],
   },
   {
@@ -982,7 +1328,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Dosage — praktische rekenvoorbeelden",
     category: "Coaching",
     content:
-      "Session dose voorbeelden: (a) 1×12 × 7 oef × 60% = 5040 au vs (b) 3×8 × 7 oef × 75% = 12.600 au. Over 16 weken: (a) 241.920 au vs (b) 806.400 au bij 3–4×/week. Optimal-range (~16 wk, ~773–887k au) — vergelijkbare effecten: 5×5 × 7 oef × 80% × 4×/week = 896.000 au ≈ 4×15 × 8 oef × 55% × 2×/week = 844.800 au. Minimum eligible (4 wk): 50.400 au = 3×7 × 4 oef × 75% × 2×/week. Les: zeer verschillende sets/reps/intensiteit/frequentie kunnen dezelfde dosage raken — kies wat de atleet volhoudt en recovert van.",
+      "Probleem: abstracte dosage-cijfers zijn moeilijk te vertalen naar concrete programma's. Technische aanpassing: reken session dose en weekly dosing uit. Voorbeeld session dose: (a) 1×12 × 7 oefeningen × 60% = 5040 au versus (b) 3×8 × 7 oefeningen × 75% = 12.600 au. Over 16 weken bij 3–4×/week: (a) 241.920 au versus (b) 806.400 au. Optimal-range (~16 wk, ~773–887k au) — vergelijkbare effecten: 5×5 × 7 oef × 80% × 4×/week = 896.000 au ≈ 4×15 × 8 oef × 55% × 2×/week = 844.800 au. Waarom dit werkt: verschillende sets/reps/intensiteit/frequentie kunnen dezelfde dosage raken. Programming: kies wat de atleet volhoudt en recovert van. Aandachtspunt: minimum eligible (4 wk): 50.400 au = 3×7 × 4 oef × 75% × 2×/week.",
     keywords: [
       "5040",
       "12600",
@@ -995,6 +1341,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "4 weeks",
       "compliance",
       "programmeren",
+      "au",
+      "dosage",
     ],
   },
   {
@@ -1002,7 +1350,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Dosage toepassing voor powerlifting coach",
     category: "Coaching",
     content:
-      "Praktisch: (1) Gebruik relative dosage (au) voor vergelijking tussen upper/lower — vergelijkbare optimal regions. (2) Streef effective range vóór plateau; plan variation vóór je ~770–890k au bereikt over programmaduur — anders risk: stagnatie, overreaching, geen extra rate of gain. (3) Manipuleer volume, intensiteit én duration bewust; dosage is composite — hogere intensiteit ≠ altijd hogere dosage als volume/frequentie/duration dalen. (4) Individuele compliance > theoretisch max dosage. (5) Plateau in programma ≠ automatisch meer volume — eerder variabelen roteren (oefening, intensiteit, block length). ACSM 3–4×/week, 1–3×8–12 @60–70% is te breed; dosage-metric maakt verschil tussen 5040 en 12.600 au per sessie concreet.",
+      "Probleem: theoretisch optimale dosage heeft geen effect zonder compliance en recovery. Technische aanpassing: (1) gebruik relative dosage (au) voor vergelijking upper/lower, (2) streef effective range vóór plateau (~770–890k au over programmaduur), (3) manipuleer volume, intensiteit én duration bewust — hogere intensiteit ≠ hogere dosage als volume/frequentie/duration dalen, (4) plan variation vóór stagnatie, (5) individuele compliance > theoretisch max dosage. Waarom dit werkt: dosage is composite; stagnatie bij plateau wijst op variation-behoefte, niet automatisch meer volume. Programming: ACSM 3–4×/week, 1–3×8–12 @60–70% is te breed — dosage maakt verschil tussen 5040 en 12.600 au per sessie concreet. Aandachtspunt: plateau in programma ≠ automatisch meer volume.",
     keywords: [
       "powerlifting coach",
       "program design",
@@ -1016,6 +1364,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "effective dosage",
       "770000",
       "890000",
+      "au",
     ],
   },
   {
@@ -1023,7 +1372,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Dosage-onderzoek — beperkingen voor gevorderden",
     category: "Coaching",
     content:
-      "Belangrijke caveats voor powerlifters: data voornamelijk untrained/kort-termijn (≥4 wk); absolute strength in trained populations niet duidelijk bepaald. Slechts 5 chest + 12 quadriceps studies met trained + volledige dosage-data. Geen eccentric emphasis, plyometrics, velocity-based training in metric. Dosage neemt aan additieve/proportionele relaties — geen mechanistisch causaal model. Chest/quads proxy — niet direct SBD mapping. Reporting gaps: niet alle oefeningen hebben 1RM-tests. Voor gevorderde lifters: dosage-plateau (~773–887k au) is richting, geen harde cap — monitor fatigue (/externals), RPE, performance; absolute kg dosage onbetrouwbaar als target. Relative trends + individual response blijven leidend.",
+      "Probleem: dosage-plateau-cijfers komen uit untrained/kort-termijn data en zijn niet direct toepasbaar op gevorderde powerlifters. Technische beperking: data voornamelijk untrained (≥4 wk); slechts 5 chest + 12 quadriceps studies met trained + volledige dosage-data. Geen eccentric emphasis, plyometrics of velocity-based training in metric. Dosage neemt additieve relaties aan — geen mechanistisch causaal model. Chest/quads proxy — geen directe SBD mapping. Waarom dit relevant is: absolute kg dosage is onbetrouwbaar als target voor trained lifters. Programming: relative trends + individual response blijven leidend; monitor fatigue (/externals), RPE en performance. Aandachtspunt: ~773–887k au plateau is richting, geen harde cap voor gevorderden.",
     keywords: [
       "trained",
       "gevorderd",
@@ -1037,6 +1386,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "sbd",
       "externals",
       "fatigue",
+      "dosage plateau",
     ],
   },
   {
@@ -1044,7 +1394,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "RT frequentie — meta-analyse hoofdbevindingen",
     category: "Coaching",
     content:
-      "Systematic review + three-level meta-analyse (47 studies, 1665 deelnemers, t/m okt 2024): vergelijking hogere vs lagere RT-frequentie (bijv. 3 vs 2 sessies/week). Spierkracht: significant meer progressie bij hogere frequentie (Hedges g ≈ 0,17; I² = 0%; p < 0,0001) — klein maar consistent effect. Spiermassa: geen significant verschil (g ≈ 0,13; I² = 77%; p = 0,34). Functionele performance: geen effect (p = 0,18). Athletic performance: geen effect (p = 0,69). Conclusie: frequentie voorspelt onafhankelijk krachtwinst, niet hypertrofie of sport-/functionele performance. Let op: effect sizes klein; volume per sessie/week moet in studies vergelijkbaar zijn — frequentie is niet los te zien van totale stimulus.",
+      "Probleem: coaches verhogen frequentie zonder te weten of dat kracht, hypertrofie of performance verbetert. Technische aanpassing: baseer frequentie-keuze op doel — systematic review + three-level meta-analyse (47 studies, 1665 deelnemers, t/m okt 2024) vergelijkt hogere vs lagere RT-frequentie (bijv. 3 vs 2 sessies/week). Spierkracht: significant meer progressie bij hogere frequentie (Hedges g ≈ 0,17; I² = 0%; p < 0,0001) — klein maar consistent effect. Spiermassa: geen significant verschil (g ≈ 0,13; p = 0,34). Functionele en athletic performance: geen effect. Waarom dit werkt: extra sessies geven meer kansen voor neural practice en strength stimulus, maar hypertrofie reageert vooral op totale volume. Programming: frequentie voorspelt onafhankelijk krachtwinst, niet hypertrofie. Aandachtspunt: volume per sessie/week moet in studies vergelijkbaar zijn — frequentie is niet los te zien van totale stimulus.",
     keywords: [
       "frequency",
       "frequentie",
@@ -1067,7 +1417,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "RT frequentie — moderators kracht vs massa",
     category: "Coaching",
     content:
-      "Krachtwinst (hogere vs lagere frequentie) wordt gemodereerd door: trainingsprotocol (o.a. volume, targeted body part / specificity), deelnemerkenmerken (RT-ervaring, populatie, gender) en study design. Geen enkele moderator domineert — context telt. Spiermassa: alleen interventieduur modereert significant — ≥6 weken nodig om veranderingen te zien; frequentie op zich niet. Geen moderators voor functionele of athletic performance. Coach: voor kracht kan extra sessie/week helpen als recovery het toelaat; voor hypertrofie telt totale volume/duration/specificity harder dan +1 dag; performance-outcomes (sprong, sprint, etc.) worden niet verbeterd door frequentie alleen.",
+      "Probleem: frequentie-effect varieert per context; één regel voor alle atleten werkt niet. Technische aanpassing: weeg moderators mee. Krachtwinst (hogere vs lagere frequentie) wordt gemodereerd door trainingsprotocol (volume, targeted body part/specificity), deelnemerkenmerken (RT-ervaring, populatie, gender) en study design. Spiermassa: alleen interventieduur modereert significant — minimaal zes weken nodig om veranderingen te zien; frequentie op zich niet. Waarom dit werkt: hypertrofie vereist cumulatieve volume over tijd; kracht profiteert extra van frequente exposure aan zware loads. Programming: extra sessie/week kan kracht helpen als recovery het toelaat; hypertrofie telt total volume/duration harder dan +1 dag. Aandachtspunt: geen moderators voor functionele of athletic performance — frequentie manipuleren verbetert sprint/spring niet automatisch.",
     keywords: [
       "moderator",
       "moderators",
@@ -1081,6 +1431,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hypertrophy",
       "functional performance",
       "athletic performance",
+      "frequentie",
     ],
   },
   {
@@ -1088,7 +1439,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "RT frequentie — praktisch voor powerlifting",
     category: "Coaching",
     content:
-      "Powerlifting-praktijk: (1) Kracht: hogere frequentie (bijv. SBD 3× vs 2×/week per lift of totaal) kan kleine extra strength gains geven — nuttig in strength blocks als fatigue beheersbaar (/externals, RPE). (2) Hypertrofie-block: frequentie verhogen is geen vervanger voor volume; massa reageert op total work + ≥6 wk duration + specificity — 2×/week met genoeg sets kan volstaan. (3) Performance: frequentie manipuleren verwacht geen transfer naar sprint/spring — apart trainen. (4) Gevorderden: extra frequentie heeft diminishing returns; recovery en quality of reps > extra junk sessies. (5) Combineer met dosage-logica: frequentie verhoogt dosing/dosage — maar apart meta-analytisch effect op kracht blijft, los van alleen volume vergelijken. Kies frequentie op compliance, recovery en meetdatum — niet dogma 6×/week.",
+      "Probleem: dogmatische frequentie (bijv. altijd 6×/week) negeert recovery en blockdoel. Technische aanpassing: (1) kracht — hogere frequentie (SBD 3× vs 2×/week) kan kleine extra strength gains geven als fatigue beheersbaar is via /externals en RPE, (2) hypertrofie — frequentie verhogen is geen vervanger voor volume; 2×/week met genoeg sets kan volstaan, (3) performance — frequentie manipuleren verwacht geen transfer naar sprint/spring, (4) gevorderden — diminishing returns; quality of reps > junk sessies, (5) combineer met dosage-logica — frequentie verhoogt dosing/dosage. Waarom dit werkt: kracht reageert op frequente neural en mechanical stimulus; hypertrofie op totale weekly sets. Programming: kies frequentie op compliance, recovery en meetdatum. Aandachtspunt: apart meta-analytisch effect op kracht blijft, los van alleen volume vergelijken.",
     keywords: [
       "powerlifting",
       "sbd",
@@ -1110,7 +1461,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Direct vs indirect sets — fractional volume",
     category: "Coaching",
     content:
-      "Meta-regressie (67 studies, 2058 deelnemers): sets worden geclassificeerd als direct vs indirect t.o.v. de hypertrofie/kracht-meting. Drie manieren om indirect volume te tellen: total (indirect = 1 set), fractional (indirect = 0,5 set), direct (alleen specifieke sets = 1; indirect = 0). Bayesian analyse: fractional quantification had sterkste relative evidence → primair model. Les voor coach: niet elke accessory set telt even zwaar mee voor SBD-adaptatie — close grip bench telt fractional voor bench strength; random isolation minder. Programmeer volume met specificity in gedachten, niet alleen raw set count.",
+      "Probleem: coaches tellen alle sets gelijk terwijl indirect volume minder specifieke adaptatie geeft. Technische aanpassing: classificeer sets als direct vs indirect t.o.v. de hypertrofie/kracht-meting — meta-regressie (67 studies, 2058 deelnemers). Drie manieren: total (indirect = 1 set), fractional (indirect = 0,5 set), direct (alleen specifieke sets = 1; indirect = 0). Bayesian analyse: fractional quantification had sterkste relative evidence. Waarom dit werkt: close grip bench telt fractional voor bench strength; random isolation telt minder mee voor SBD-adaptatie. Programming: programmeer volume met specificity in gedachten, niet alleen raw set count. Aandachtspunt: competition lifts + close variants = volle waarde; ver verwijderde accessories deels.",
     keywords: [
       "direct sets",
       "indirect sets",
@@ -1123,6 +1474,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "67 studies",
       "bayesian",
       "meta-regression",
+      "accessories",
     ],
   },
   {
@@ -1130,7 +1482,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Weekly volume dose–response — hypertrofie vs kracht",
     category: "Coaching",
     content:
-      "Fractional weekly set volume (meta-regressie, adjusted voor duration + training status): posterior probability dat marginaal slope > 0 = 100% voor zowel hypertrofie als kracht — meer volume → meer gains. Beide tonen diminishing returns; bij kracht veel sterker uitgesproken dan bij hypertrofie. Praktisch: hypertrofie tolerates more weekly sets before ROI daalt; strength blocks hebben eerder een volume ceiling — extra sets geven minder kracht per set. Niet one-size weekly set target; strength peaking = minder junk volume, hypertrofie meso = hogere set counts mogelijk als recovery OK.",
+      "Probleem: weekly set targets worden vaak one-size toegepast voor hypertrofie en kracht. Technische aanpassing: gebruik fractional weekly set volume (meta-regressie, adjusted voor duration + training status). Posterior probability dat marginaal slope > 0 = 100% voor hypertrofie én kracht — meer volume levert meer gains. Beide tonen diminishing returns; bij kracht veel sterker uitgesproken dan bij hypertrofie. Waarom dit werkt: extra sets verhogen mechanical tension en practice, maar kracht heeft een eerder volume ceiling waar extra sets minder kracht per set opleveren. Programming: hypertrofie tolerates more weekly sets before ROI daalt; strength/peaking = minder junk volume, prioritise quality heavy work. Aandachtspunt: geen one-size weekly set target.",
     keywords: [
       "weekly volume",
       "sets per week",
@@ -1141,6 +1493,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "volume ceiling",
       "posterior probability",
       "marginal slope",
+      "fractional",
     ],
   },
   {
@@ -1148,7 +1501,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Weekly frequency dose–response (fractional model)",
     category: "Coaching",
     content:
-      "Zelfde meta-analyse, fractional set counting: frequentie-effect op hypertrofie — posterior P(slope > 0) < 100% → compatibel met verwaarloosbaar effect als volume gecontroleerd. Frequentie-effect op kracht — posterior P(slope > 0) = 100% → kracht stijgt met hogere weekly frequency, met diminishing returns. Hypertrofie en kracht reageren dus anders op frequentie: kracht profiteert consistenter van extra sessies; hypertrofie vooral via total volume (sets/week), niet per se +1 dag. Align met eerdere frequentie-meta (klein effect kracht) maar nu in Bayesian dose–response met direct/indirect correction.",
+      "Probleem: hypertrofie en kracht reageren anders op frequentie-verhoging bij gelijk volume. Technische aanpassing: zelfde meta-analyse met fractional set counting — frequentie-effect op hypertrofie heeft posterior P(slope > 0) < 100%, compatibel met verwaarloosbaar effect als volume gecontroleerd is. Frequentie-effect op kracht heeft posterior P(slope > 0) = 100% — kracht stijgt met hogere weekly frequency, met diminishing returns. Waarom dit werkt: hypertrofie reageert vooral op total weekly sets; kracht op frequente exposure aan zware, specifieke work. Programming: hypertrofie via volume; kracht via extra sessies als recovery OK. Aandachtspunt: align met eerdere frequentie-meta (klein effect kracht) in Bayesian dose–response met direct/indirect correction.",
     keywords: [
       "weekly frequency",
       "frequency dose response",
@@ -1158,6 +1511,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "bayesian",
       "negligible",
       "sessions per week",
+      "volume gecontroleerd",
     ],
   },
   {
@@ -1165,7 +1519,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Volume & frequentie — coach syntheses",
     category: "Coaching",
     content:
-      "Syntheses voor powerlifting programming: (1) Tel volume met specificity — fractional denken: competition lifts + close variants = volle waarde; ver verwijderde accessories deels. (2) Hypertrofie-block: push weekly sets; frequentie secundair (2–3×/week met genoeg sets kan volstaan). (3) Strength/peaking block: frequency kan helpen (skill + neural), maar volume heeft sterkere diminishing returns — prioritise quality heavy work over set accumulation. (4) Adjust voor training status + block duration in vergelijkingen tussen atleten. (5) Conflicteert niet met dosage-plateau (~773–887k au) — verschillende metrics; beide wijzen: meer is niet altijd beter voor kracht. Monitor /externals en performance bij volume/frequentie verhoging.",
+      "Probleem: volume en frequentie worden los geoptimaliseerd terwijl ze samen de totale stimulus bepalen. Technische syntheses voor powerlifting: (1) tel volume met specificity — fractional denken, (2) hypertrofie-block: push weekly sets; frequentie secundair (2–3×/week met genoeg sets kan volstaan), (3) strength/peaking block: frequency kan helpen (skill + neural), maar volume heeft sterkere diminishing returns — prioritise quality heavy work, (4) adjust voor training status + block duration, (5) conflicteert niet met dosage-plateau (~773–887k au) — beide wijzen dat meer niet altijd beter is voor kracht. Waarom dit werkt: verschillende metrics (weekly sets, frequency, au) convergeren op hetzelfde principe van optimal range. Programming: monitor /externals en performance bij volume/frequentie verhoging. Aandachtspunt: ver verwijderde accessories tellen deels mee.",
     keywords: [
       "programming",
       "powerlifting coach",
@@ -1177,6 +1531,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "weekly sets",
       "synthesis",
       "volume frequency",
+      "dosage",
     ],
   },
   {
@@ -1184,7 +1539,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "SBD biomechanica — intensiteit & fatigue (review)",
     category: "Coaching",
     content:
-      "Systematic review (22 studies, 293 deelnemers, experienced lifters, t/m jun 2024): effect van load en fatigue op kinetiek/kinematica van back squat, bench press en deadlift. Powerlifting = max single-rep load SBD onder gestandaardiseerde condities. Trained lifters tonen stabielere patterns dan novices, maar biomechanische respons op intensiteit/fatigue blijft complex en variabel tussen individuen. Deadlift onderbelicht: slechts 2 studies. Narratieve synthese; reporting varieert tussen studies. Coach/clinician: monitor velocity, power en joint mechanics bij zwaardere blocks en accumulated fatigue.",
+      "Probleem: coaches weten niet hoe load en fatigue SBD-biomechanica veranderen bij experienced lifters. Technische aanpassing: gebruik systematic review (22 studies, 293 deelnemers, experienced lifters, t/m jun 2024) over effect van load en fatigue op kinetiek/kinematica van back squat, bench press en deadlift. Powerlifting is max single-rep load SBD onder gestandaardiseerde condities. Trained lifters tonen stabielere patterns dan novices, maar biomechanische respons op intensiteit/fatigue blijft complex en variabel tussen individuen. Waarom dit relevant is: deadlift is onderbelicht (slechts 2 studies); reporting varieert tussen studies. Programming: monitor velocity, power en joint mechanics bij zwaardere blocks en accumulated fatigue. Aandachtspunt: narrative synthese — geen one-size cue voor alle atleten.",
     keywords: [
       "biomechanics",
       "biomechanica",
@@ -1197,6 +1552,9 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "kinematics",
       "293",
       "22 studies",
+      "squat",
+      "bench",
+      "deadlift",
     ],
   },
   {
@@ -1204,7 +1562,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Hogere intensiteit — bar speed & joint mechanics",
     category: "Coaching",
     content:
-      "Consistent bij hogere load/intensiteit: lagere mean en peak barbell velocity; lagere power; hogere force production; langere concentric duration; meer joint variability — vooral in acceleration phase en sticking region. Near sticking point kunnen lifters verschillende mechanische strategieën kiezen (between-individual variability). Implicatie coach: RPE/RIR en bar speed dalen verwacht bij zware singles; techniekcue focus op sticking/acceleration zones; één atleet ≠ andere — monitor individueel, geen universal fix. Combineer met velocity-based monitoring waar mogelijk.",
+      "Probleem: atleten en coaches interpreteren langzamere reps soms als techniekfout terwijl het een normale respons op hoge load is. Technische aanpassing: verwacht bij hogere load/intensiteit lagere mean en peak barbell velocity, lagere power, hogere force production, langere concentric duration en meer joint variability — vooral in acceleration phase en sticking region. Near sticking point kunnen lifters verschillende mechanische strategieën kiezen (between-individual variability). Waarom dit werkt biomechanisch: zwaardere load vereist meer force maar produceert minder velocity; sticking region is waar moment armen het grootst zijn. Programming: RPE/RIR en bar speed dalen verwacht bij zware singles; cue focus op sticking/acceleration zones. Aandachtspunt: monitor individueel — één atleet is niet de andere; combineer met velocity-based monitoring waar mogelijk.",
     keywords: [
       "bar velocity",
       "bar speed",
@@ -1218,6 +1576,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "heavy singles",
       "load",
       "%1rm",
+      "intensiteit",
     ],
   },
   {
@@ -1225,7 +1584,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Fatigue — velocity, power & force",
     category: "Coaching",
     content:
-      "Fatigue (accumulated training): vergelijkbare reductie in velocity en power als bij hogere intensiteit. Force production: inconsistent tussen studies — niet betrouwbaar als enige fatigue-marker. Coach: velocity/power drop signaleren fatigue vóór missed reps; /externals + session RPE complementair. In peaking/high-intensity blocks verwacht bar speed decay over sessie of week — programmeer volume/intensity zodat technische breakdown in sticking region niet chronic wordt. Technische interventies timing: wanneer velocity ↓ en variability ↑ in acceleration/sticking.",
+      "Probleem: accumulated fatigue wordt soms te laat herkend, waardoor technische breakdown in sticking region chronic wordt. Technische aanpassing: verwacht bij fatigue vergelijkbare reductie in velocity en power als bij hogere intensiteit. Force production is inconsistent tussen studies — niet betrouwbaar als enige fatigue-marker. Waarom dit werkt biomechanisch: fatigue vermindert neural drive en velocity output vóór absolute force faalt. Programming: velocity/power drop signaleren fatigue vóór missed reps; /externals + session RPE complementair. In peaking/high-intensity blocks verwacht bar speed decay over sessie of week — programmeer volume/intensity zodat technische breakdown niet chronic wordt. Aandachtspunt: technische interventies plannen wanneer velocity daalt en variability stijgt in acceleration/sticking.",
     keywords: [
       "fatigue",
       "accumulated fatigue",
@@ -1237,6 +1596,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "technical breakdown",
       "sticking",
       "session fatigue",
+      "bar speed",
     ],
   },
   {
@@ -1244,7 +1604,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "SBD biomechanica — praktisch voor coach",
     category: "Coaching",
     content:
-      "Praktische takeaways: (1) Verwacht voorspelbare velocity/power daling bij ↑ intensiteit en fatigue — normaal, geen paniek tenzij form collapse. (2) Sticking + acceleration phases = hoogste joint variability; target cues en video review daar. (3) Individual strategies differ — coach op basis van atleetdata (/intensity, /volume, video), niet gemiddelde literatuur. (4) Deadlift evidence dun — voorzichtig generaliseren van squat/bench bevindingen. (5) Programming: plan deload als velocity trends + variability consistent slechter; injury risk context — measurable kinetic/kinematic shifts kunnen performance én risico beïnvloeden. Future gap: within-individual variability tracking in app-data.",
+      "Probleem: coaches generaliseren gemiddelde literatuur naar individuele atleten zonder data. Praktische takeaways: (1) verwacht voorspelbare velocity/power daling bij stijgende intensiteit en fatigue — normaal, geen paniek tenzij form collapse, (2) sticking + acceleration phases hebben hoogste joint variability — target cues en video review daar, (3) individual strategies differ — coach op basis van atleetdata (/intensity, /volume, video), niet gemiddelde literatuur, (4) deadlift evidence is dun — voorzichtig generaliseren van squat/bench bevindingen, (5) plan deload als velocity trends + variability consistent slechter worden. Waarom dit werkt: meetbare kinetic/kinematic shifts kunnen performance én blessurerisico beïnvloeden. Programming: injury risk context meenemen bij zware blocks. Aandachtspunt: within-individual variability tracking in app-data is toekomstige gap.",
     keywords: [
       "coach",
       "programming",
@@ -1258,6 +1618,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "bench",
       "injury risk",
       "technical intervention",
+      "velocity",
     ],
   },
   {
@@ -1265,7 +1626,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Periodization meta-analyse — overzicht",
     category: "Coaching",
     content:
-      "Systematic review + meta-analyses (35 studies, PubMed/Scopus/SPORTDiscus): effect van periodization van volume en intensiteit op 1RM kracht en hypertrofie, volume geëquated pre-post tussen conditions. Vergelijkingen: non-periodized (NP) vs periodized; linear periodization (LP) vs undulating periodization (UP). Andere periodization models niet meta-analyzed (te weinig studies). Conclusie auteurs: periodization-voordeel voor kracht mogelijk via neurofysiologische adaptaties, niet via extra hypertrofie-mechanismen.",
+      "Probleem: coaches weten niet of periodization kracht of hypertrofie verbetert bij gelijk volume. Technische aanpassing: systematic review + meta-analyses (35 studies) vergelijken non-periodized (NP) vs periodized en linear periodization (LP) vs undulating periodization (UP), volume geëquated pre-post tussen conditions. Andere periodization models zijn niet meta-analyzed (te weinig studies). Conclusie auteurs: periodization-voordeel voor kracht komt mogelijk via neurofysiologische adaptaties, niet via extra hypertrofie-mechanismen. Waarom dit werkt: planned variation in intensiteit en volume stuurt neural adaptatie en fatigue management. Programming: periodisering is vooral relevant voor max strength, niet puur voor hypertrofie bij gelijk volume. Aandachtspunt: volume-equated vergelijkingen zijn essentieel voor interpretatie.",
     keywords: [
       "periodization",
       "periodisering",
@@ -1276,6 +1637,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hypertrophy",
       "non-periodized",
       "np",
+      "linear",
+      "undulating",
     ],
   },
   {
@@ -1283,7 +1646,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "NP vs periodized — kracht vs hypertrofie",
     category: "Coaching",
     content:
-      "Volume-equated NP vs periodized: 1RM kracht — significant voordeel periodized (ES 0,31; 95% CI 0,04–0,57; P = 0,02). Hypertrofie — geen verschil (ES 0,13; CI −0,10–0,36; P = 0,27). Coach: structuur in intensity/volume over tijd helpt max strength; voor puur hypertrofie-block maakt periodization model op zich niet uit als total volume gelijk blijft. Beginners kunnen simpeler NP schema draaien; periodization is geen vervanging voor voldoende volume.",
+      "Probleem: beginners krijgen soms onnodig complexe periodization terwijl NP volstaat, of gevorderden draaien NP terwijl periodization helpt. Technische aanpassing: bij volume-equated NP vs periodized — 1RM kracht significant voordeel periodized (ES 0,31; P = 0,02); hypertrofie geen verschil (ES 0,13; P = 0,27). Waarom dit werkt: structuur in intensity/volume over tijd helpt max strength via neural en skill adaptatie onder varied loads, niet via extra spiergroei. Programming: beginners kunnen simpeler NP schema draaien; periodization wordt belangrijker na trained status. Aandachtspunt: periodization is geen vervanging voor voldoende volume — voor puur hypertrofie-block maakt model op zich niet uit als total volume gelijk blijft.",
     keywords: [
       "non-periodized",
       "periodized training",
@@ -1294,6 +1657,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "0.31",
       "volume equated",
       "muscle mass",
+      "1rm",
+      "beginners",
     ],
   },
   {
@@ -1301,7 +1666,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Linear vs undulating periodization (UP/DUP)",
     category: "Coaching",
     content:
-      "Volume-equated LP vs UP: 1RM overall voordeel UP (ES 0,31; CI 0,02–0,61; P = 0,04). Hypertrofie: geen verschil LP vs UP (ES 0,05; P = 0,72). Subgroup trained: UP > LP voor 1RM (ES 0,61; P = 0,05). Subgroup untrained: geen verschil LP vs UP (ES 0,06; P = 0,67). Praktisch: gevorderde powerlifters profiteren waarschijnlijk van daily/weekly undulations in volume en intensiteit voor max strength; beginners niet per se. UP = frequentere wissel heavy/medium/light of volume binnen week/microcycle.",
+      "Probleem: coaches kiezen LP of UP zonder rekening te houden met trainingsstatus. Technische aanpassing: bij volume-equated LP vs UP — 1RM overall voordeel UP (ES 0,31; P = 0,04); hypertrofie geen verschil (ES 0,05; P = 0,72). Subgroup trained: UP > LP voor 1RM (ES 0,61; P = 0,05). Subgroup untrained: geen verschil (ES 0,06; P = 0,67). Waarom dit werkt: undulating variation (daily/weekly wissel heavy/medium/light of volume) geeft gevorderden meer neural practice onder varied loads. Programming: UP = frequentere wissel binnen week/microcycle; nuttig voor trained powerlifters. Aandachtspunt: beginners profiteren niet per se van UP — LP of simpel NP kan volstaan.",
     keywords: [
       "linear periodization",
       "undulating periodization",
@@ -1314,6 +1679,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "beginner",
       "1rm",
       "lp vs up",
+      "microcycle",
     ],
   },
   {
@@ -1321,7 +1687,7 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
     title: "Periodization — praktisch voor powerlifting",
     category: "Coaching",
     content:
-      "Powerlifting programming: (1) Meet prep / trained atleten: prefer UP of block periodization met undulating intensity binnen mesocycle — literature favours UP over LP voor 1RM when volume matched. (2) Hypertrofie meso: focus total weekly sets (fractional/direct) — LP vs UP maakt weinig uit voor massa. (3) NP kan werken voor novices of simpele compliance; periodization wordt belangrijker na trained status. (4) Neurofysiologie: krachtwinst door periodization ≠ meer hypertrofie — skill under varied loads, fatigue management, peaking timing. (5) Combineer met ESS periodization (macro/meso/micro) en dosage-plateau concept — undulate vóór stagnatie. Track /intensity en /volume per block.",
+      "Probleem: periodization wordt either over- of onder-toegepast in meet prep. Technische aanpassing: (1) meet prep / trained atleten — prefer UP of block periodization met undulating intensity binnen mesocycle; literature favours UP over LP for 1RM when volume matched, (2) hypertrofie meso — focus total weekly sets (fractional/direct); LP vs UP maakt weinig uit voor massa, (3) NP kan werken voor novices of simpele compliance, (4) neurofysiologie — krachtwinst door periodization is niet meer hypertrofie; skill under varied loads en fatigue management zijn key, (5) combineer met ESS periodization en dosage-plateau — undulate vóór stagnatie. Waarom dit werkt: planned variation voorkomt stagnatie en stuurt peaking timing. Programming: track /intensity en /volume per block. Aandachtspunt: periodization wordt belangrijker na trained status.",
     keywords: [
       "powerlifting",
       "meet prep",
@@ -1333,6 +1699,8 @@ export const APP_KNOWLEDGE: KnowledgeChunk[] = [
       "hypertrophy block",
       "strength block",
       "coaching",
+      "undulating",
+      "peaking",
     ],
   },
 ];
