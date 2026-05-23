@@ -265,7 +265,9 @@ export default function DashboardSearch({
                 <p className="text-sm text-red-600">{aiError}</p>
               ) : aiResult ? (
                 <div className="space-y-3">
-                  <p className="text-sm text-gray-700">{aiResult.answer}</p>
+                  <p className="whitespace-pre-line text-sm text-gray-700">
+                    {aiResult.answer}
+                  </p>
                   {aiResult.sources && aiResult.sources.length > 0 ? (
                     <p className="text-[11px] text-gray-400">
                       Bronnen: {aiResult.sources.join(" · ")}
