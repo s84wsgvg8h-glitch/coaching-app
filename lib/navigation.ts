@@ -19,6 +19,12 @@ export function getNavLinks(
       description: "Ga terug naar het dashboard.",
     },
     {
+      href: "/kennisbank",
+      icon: "📚",
+      title: "Kennisbank",
+      description: "Bekijk alle AI-kennis chunks.",
+    },
+    {
       href: "/athletes",
       icon: "👥",
       title: "Atleten beheren",

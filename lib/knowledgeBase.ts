@@ -8,6 +8,21 @@ export type KnowledgeChunk = {
 
 export const APP_KNOWLEDGE: KnowledgeChunk[] = [
   {
+    id: "kennisbank-page",
+    title: "Kennisbank bekijken",
+    category: "Navigatie",
+    content:
+      "Pagina /kennisbank: overzicht van alle curated AI-kennis chunks (titel, categorie, inhoud, keywords). Filter en zoek door de kennisbank. Alleen deze curated chunks + optionele lokale ESS PDF (dev) voeden de dashboard-AI voor coaching-antwoorden.",
+    keywords: [
+      "kennisbank",
+      "knowledge base",
+      "ai chunks",
+      "bekijken",
+      "overzicht",
+      "/kennisbank",
+    ],
+  },
+  {
     id: "app-overzicht",
     title: "Wat is deze app?",
     category: "App",
