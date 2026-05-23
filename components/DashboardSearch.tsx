@@ -9,12 +9,20 @@ import {
   type DashboardSearchItem,
 } from "@/lib/dashboardSearch";
 import type { CoachSnapshot } from "@/lib/knowledgeSearch";
+import {
+  buildTrainingSnapshot,
+  formatMissingAthletePrompt,
+  isTrainingDataQuestion,
+  resolveAthleteFromQuery,
+  type TrainingSnapshot,
+} from "@/lib/aiTrainingSnapshot";
 
 type DashboardSearchProps = {
   role: string;
   pendingCount?: number;
   athletes?: Array<{ id: string; full_name: string | null }>;
   coachSnapshot?: CoachSnapshot;
+  selfAthlete?: { id: string; name: string };
 };
 
 type AiResult = {
@@ -30,6 +38,7 @@ export default function DashboardSearch({
   pendingCount = 0,
   athletes = [],
   coachSnapshot,
+  selfAthlete,
 }: DashboardSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -111,7 +120,19 @@ export default function DashboardSearch({
     setAiResult(null);
     setOpen(true);
 
+    let trainingSnapshot: TrainingSnapshot | undefined;
+    let trainingContext: string | undefined;
+
     try {
+      if (isTrainingDataQuestion(question)) {
+        const athlete = resolveAthleteFromQuery(question, coachSnapshot, selfAthlete);
+        if (athlete) {
+          trainingSnapshot = await buildTrainingSnapshot(athlete, question);
+        } else if (role === "coach") {
+          trainingContext = formatMissingAthletePrompt(coachSnapshot);
+        }
+      }
+
       const response = await fetch("/api/dashboard-ai", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -119,6 +140,8 @@ export default function DashboardSearch({
           query: question,
           role,
           coachSnapshot,
+          trainingSnapshot,
+          trainingContext,
           ...aiContext,
         }),
       });
@@ -260,7 +283,11 @@ export default function DashboardSearch({
               </div>
 
               {aiLoading ? (
-                <p className="text-sm text-gray-500">AI denkt na...</p>
+                <p className="text-sm text-gray-500">
+                  {isTrainingDataQuestion(query.trim())
+                    ? "Trainingsdata laden en analyseren..."
+                    : "AI denkt na..."}
+                </p>
               ) : aiError ? (
                 <p className="text-sm text-red-600">{aiError}</p>
               ) : aiResult ? (

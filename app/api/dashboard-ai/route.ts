@@ -5,6 +5,10 @@ import {
   searchKnowledge,
   type CoachSnapshot,
 } from "@/lib/knowledgeSearch";
+import {
+  formatTrainingSnapshotForPrompt,
+  type TrainingSnapshot,
+} from "@/lib/aiTrainingSnapshot";
 
 type DashboardAiRequest = {
   query?: string;
@@ -13,6 +17,8 @@ type DashboardAiRequest = {
   athletes?: Array<{ name: string; href: string }>;
   commands?: Array<{ command: string; description: string; requiresChat?: boolean }>;
   coachSnapshot?: CoachSnapshot;
+  trainingSnapshot?: TrainingSnapshot;
+  trainingContext?: string;
 };
 
 type DashboardAiResponse = {
@@ -22,7 +28,11 @@ type DashboardAiResponse = {
   label?: string;
 };
 
-function buildSystemPrompt(body: DashboardAiRequest, knowledgeContext: string) {
+function buildSystemPrompt(
+  body: DashboardAiRequest,
+  knowledgeContext: string,
+  trainingContext: string,
+) {
   const pages = (body.pages || [])
     .map((page) => `- ${page.title} (${page.href}): ${page.description}`)
     .join("\n");
@@ -49,6 +59,9 @@ ${knowledgeContext}
 === LIVE COACH-DATA — alleen voor admin/financiën ===
 ${coachContext}
 
+=== TRAININGSDATA (raw data analyse) ===
+${trainingContext}
+
 === APP PAGINA'S (alleen bij expliciete navigatie-vraag) ===
 ${pages || "- geen"}
 
@@ -62,6 +75,9 @@ Regels:
 - Antwoord altijd in het Nederlands.
 - Formaat "answer": eerst 1 korte alinea, dan bulletpoints (regels die beginnen met "- ").
 - Baseer coaching-antwoorden uitsluitend op de kennisbank hierboven. Staat het er niet in: zeg expliciet dat je het niet weet — verzin niets.
+- Voor data-analyse (volume, intensiteit, BW, trends, PR's): baseer cijfers uitsluitend op TRAININGSDATA. Verzin geen sets, tonnage, %1RM of trends.
+- Combineer data-analyse met kennisbank alleen voor interpretatie (bijv. RPE, periodization, hypertrofie) — niet voor nieuwe cijfers.
+- Als TRAININGSDATA ontbreekt of geen atleet herkend is: zeg dat expliciet en vraag om een atleetnaam of periode.
 - Live coach-data alleen voor vragen over inkomsten, betalingen of atleetadministratie.
 - Stel geen href of command voor tenzij de gebruiker expliciet vraagt waar iets staat, hoe iets te openen, of naar een pagina/command wil.
 - Bij navigatie-vragen: href alleen als echte app-route uit bovenstaande lijsten; command alleen als slash command uit bovenstaande lijst.
@@ -104,6 +120,10 @@ export async function POST(request: Request) {
 
   const knowledgeChunks = searchKnowledge(query, 5);
   const knowledgeContext = formatKnowledgeForPrompt(knowledgeChunks);
+  const trainingContext =
+    body.trainingSnapshot
+      ? formatTrainingSnapshotForPrompt(body.trainingSnapshot)
+      : body.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -117,7 +137,10 @@ export async function POST(request: Request) {
         temperature: 0.2,
         response_format: { type: "json_object" },
         messages: [
-          { role: "system", content: buildSystemPrompt(body, knowledgeContext) },
+          {
+            role: "system",
+            content: buildSystemPrompt(body, knowledgeContext, trainingContext),
+          },
           {
             role: "user",
             content: `Rol gebruiker: ${body.role || "onbekend"}\nVraag: ${query}`,

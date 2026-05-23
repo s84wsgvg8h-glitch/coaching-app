@@ -21,6 +21,7 @@ type DashboardAthlete = {
 export default function DashboardPage() {
   const [fullName, setFullName] = useState("");
   const [role, setRole] = useState("");
+  const [userId, setUserId] = useState("");
   const [pendingCount, setPendingCount] = useState(0);
   const [totalIncome, setTotalIncome] = useState<number | null>(null);
   const [payingAthleteCount, setPayingAthleteCount] = useState(0);
@@ -37,6 +38,8 @@ export default function DashboardPage() {
         window.location.href = "/login";
         return;
       }
+
+      setUserId(user.id);
 
       const { data } = await supabase
         .from("profiles")
@@ -149,6 +152,11 @@ export default function DashboardPage() {
             pendingCount={pendingCount}
             athletes={athletes}
             coachSnapshot={coachSnapshot}
+            selfAthlete={
+              role === "atleet" && userId
+                ? { id: userId, name: fullName || "Atleet" }
+                : undefined
+            }
           />
         </div>
       </div>
