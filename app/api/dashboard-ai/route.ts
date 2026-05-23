@@ -1,14 +1,16 @@
 import { NextResponse } from "next/server";
 import {
+  formatTrainingSnapshotForPrompt,
+  isAdminDataQuestion,
+  isTrainingDataQuestion,
+  type TrainingSnapshot,
+} from "@/lib/aiTrainingSnapshot";
+import {
   formatCoachSnapshotForPrompt,
   formatKnowledgeForPrompt,
   searchKnowledge,
   type CoachSnapshot,
 } from "@/lib/knowledgeSearch";
-import {
-  formatTrainingSnapshotForPrompt,
-  type TrainingSnapshot,
-} from "@/lib/aiTrainingSnapshot";
 
 type DashboardAiRequest = {
   query?: string;
@@ -27,6 +29,9 @@ type DashboardAiResponse = {
   command?: string;
   label?: string;
 };
+
+const UNKNOWN_ANSWER =
+  "Dat staat niet in mijn kennisbank — daar kan ik geen antwoord op geven.\n\n- Herformuleer je vraag met termen uit de kennisbank, of voeg de info toe aan de kennisbank.";
 
 function buildSystemPrompt(
   body: DashboardAiRequest,
@@ -50,45 +55,64 @@ function buildSystemPrompt(
 
   const coachContext = formatCoachSnapshotForPrompt(body.coachSnapshot);
 
-  return `Je bent een powerlifting coach en kennisbank-assistent. Schrijf in het Nederlands: direct, zonder fluff.
-Technische termen (RPE, RIR, motor units, periodization, mechanical tension, specificity, enz.) zijn welkom.
+  return `Je bent een kennisbank-assistent voor deze coaching-app. Schrijf in het Nederlands: direct, zonder fluff.
 
-=== KENNISBANK (RAG) — primaire bron ===
+STRICT — GEEN EIGEN KENNIS:
+- Gebruik NOOIT algemene modelkennis, internetkennis of aannames.
+- Je enige toegestane bronnen staan hieronder in de secties.
+- Staat het antwoord niet in een toegestane sectie: antwoord exact met "Dat staat niet in mijn kennisbank" en leg kort uit wat ontbreekt. Geen gokken, geen aanvullen.
+
+Toegestane bronnen (en alleen deze):
+1. KENNISBANK — coaching, techniek, app-uitleg, theorie
+2. TRAININGSDATA — alleen cijfers/trends bij data-analysevragen
+3. LIVE COACH-DATA — alleen inkomsten, betalingen, atleetadministratie
+4. APP PAGINA'S / COMMANDS — alleen bij expliciete navigatie-vraag
+
+=== KENNISBANK ===
 ${knowledgeContext}
 
-=== LIVE COACH-DATA — alleen voor admin/financiën ===
+=== LIVE COACH-DATA ===
 ${coachContext}
 
-=== TRAININGSDATA (raw data analyse) ===
+=== TRAININGSDATA ===
 ${trainingContext}
 
-=== APP PAGINA'S (alleen bij expliciete navigatie-vraag) ===
+=== APP PAGINA'S (alleen navigatie) ===
 ${pages || "- geen"}
 
-=== ATLEET LINKS (alleen bij expliciete navigatie-vraag) ===
+=== ATLEET LINKS (alleen navigatie) ===
 ${athletes || "- geen"}
 
-=== CHAT COMMANDS (alleen bij expliciete navigatie-vraag) ===
+=== CHAT COMMANDS (alleen navigatie) ===
 ${commands || "- geen"}
 
 Regels:
-- Antwoord altijd in het Nederlands.
-- Formaat "answer": eerst 1 korte alinea, dan bulletpoints (regels die beginnen met "- ").
-- Baseer coaching-antwoorden uitsluitend op de kennisbank hierboven. Staat het er niet in: zeg expliciet dat je het niet weet — verzin niets.
-- Voor data-analyse (volume, intensiteit, BW, trends, PR's): baseer cijfers uitsluitend op TRAININGSDATA. Verzin geen sets, tonnage, %1RM of trends.
-- Combineer data-analyse met kennisbank alleen voor interpretatie (bijv. RPE, periodization, hypertrofie) — niet voor nieuwe cijfers.
-- Als TRAININGSDATA ontbreekt of geen atleet herkend is: zeg dat expliciet en vraag om een atleetnaam of periode.
-- Live coach-data alleen voor vragen over inkomsten, betalingen of atleetadministratie.
-- Stel geen href of command voor tenzij de gebruiker expliciet vraagt waar iets staat, hoe iets te openen, of naar een pagina/command wil.
-- Bij navigatie-vragen: href alleen als echte app-route uit bovenstaande lijsten; command alleen als slash command uit bovenstaande lijst.
-- JSON formaat:
+- Formaat "answer": 1 korte alinea + bulletpoints (regels met "- ").
+- Coaching/theorie/app: ALLEEN KENNISBANK. Geen enkel feit toevoegen dat niet in KENNISBANK staat.
+- Data-analyse: cijfers ALLEEN uit TRAININGSDATA; interpretatie ALLEEN als die interpretatie expliciet in KENNISBANK staat — anders alleen de cijfers rapporteren.
+- Admin/financiën: ALLEEN LIVE COACH-DATA.
+- Navigatie: alleen bij expliciete vraag; href/command alleen uit bovenstaande lijsten.
+- Bij twijfel of ontbrekende info: zeg dat je het niet weet. Liever "weer niet" dan verzinnen.
+- JSON:
 {
-  "answer": "Korte alinea met de kern.\\n\\n- Bullet 1\\n- Bullet 2",
+  "answer": "...",
   "href": null,
   "command": null,
   "label": null
 }
-Alleen JSON. Gebruik \\n voor regeleinden in "answer"; geen markdown buiten "- " bullets.`;
+Alleen JSON. Gebruik \\n in "answer".`;
+}
+
+function hasAllowedNonKnowledgeContext(body: DashboardAiRequest, query: string) {
+  if (isTrainingDataQuestion(query)) {
+    return Boolean(body.trainingSnapshot || body.trainingContext);
+  }
+
+  if (isAdminDataQuestion(query)) {
+    return Boolean(body.coachSnapshot);
+  }
+
+  return false;
 }
 
 export async function POST(request: Request) {
@@ -118,12 +142,21 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Vul een vraag in." }, { status: 400 });
   }
 
-  const knowledgeChunks = searchKnowledge(query, 5);
+  const knowledgeChunks = searchKnowledge(query, 8);
   const knowledgeContext = formatKnowledgeForPrompt(knowledgeChunks);
-  const trainingContext =
-    body.trainingSnapshot
-      ? formatTrainingSnapshotForPrompt(body.trainingSnapshot)
-      : body.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
+  const trainingContext = body.trainingSnapshot
+    ? formatTrainingSnapshotForPrompt(body.trainingSnapshot)
+    : body.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
+
+  if (knowledgeChunks.length === 0 && !hasAllowedNonKnowledgeContext(body, query)) {
+    return NextResponse.json({
+      answer: UNKNOWN_ANSWER,
+      href: null,
+      command: null,
+      label: null,
+      sources: [],
+    });
+  }
 
   try {
     const response = await fetch("https://api.openai.com/v1/chat/completions", {
@@ -134,7 +167,7 @@ export async function POST(request: Request) {
       },
       body: JSON.stringify({
         model: "gpt-4o-mini",
-        temperature: 0.2,
+        temperature: 0,
         response_format: { type: "json_object" },
         messages: [
           {
@@ -174,7 +207,7 @@ export async function POST(request: Request) {
     const parsed = JSON.parse(content) as DashboardAiResponse;
 
     return NextResponse.json({
-      answer: parsed.answer || "Ik heb een suggestie voor je.",
+      answer: parsed.answer || UNKNOWN_ANSWER,
       href: parsed.href || null,
       command: parsed.command || null,
       label: parsed.label || null,

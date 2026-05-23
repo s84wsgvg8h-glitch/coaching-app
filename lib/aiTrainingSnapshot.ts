@@ -48,6 +48,12 @@ export function isTrainingDataQuestion(query: string) {
   return DATA_KEYWORDS.test(query);
 }
 
+export function isAdminDataQuestion(query: string) {
+  return /\b(inkomsten|betaling|betaaldag|betaald|prijs|pending|omzet|lidnummer|atleetadministratie)\b/i.test(
+    query,
+  );
+}
+
 function normalizeText(value: string) {
   return value
     .toLowerCase()
