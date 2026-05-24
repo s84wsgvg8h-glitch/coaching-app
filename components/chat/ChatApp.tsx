@@ -17,6 +17,7 @@ import {
   SendHorizontal,
   Users,
   X,
+  BarChart2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
@@ -64,6 +65,7 @@ import {
   shouldShowDateDivider,
 } from "@/lib/chatUtils";
 import ExerciseVideoMessage from "@/components/chat/ExerciseVideoMessage";
+import PollMessage from "@/components/chat/PollMessage";
 import ChatMediaCapture from "@/components/chat/ChatMediaCapture";
 import ChatMediaComposer from "@/components/chat/ChatMediaComposer";
 import GroupInfoPanel from "@/components/chat/GroupInfoPanel";
@@ -111,6 +113,14 @@ import {
   type ChatToolItem,
   type ProgramBlockTool,
 } from "@/lib/chatTools";
+import {
+  buildPollMessageBody,
+  castPollVote,
+  createPollOptionId,
+  loadPollVotes,
+  parsePollMessage,
+  type PollVote,
+} from "@/lib/chatPolls";
 
 type ChatListEntry =
   | (ChatProfile & { kind: "direct" })
@@ -199,6 +209,12 @@ export default function ChatApp() {
     message: ChatMessage;
     anchorRect: DOMRect | null;
   } | null>(null);
+  const [pollVotes, setPollVotes] = useState<PollVote[]>([]);
+  const [pollCreateOpen, setPollCreateOpen] = useState(false);
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState(["", ""]);
+  const [creatingPoll, setCreatingPoll] = useState(false);
+  const [votingPollId, setVotingPollId] = useState("");
   const [toolPrograms, setToolPrograms] = useState<ProgramBlockTool[]>([]);
   const [toolProgramsLoading, setToolProgramsLoading] = useState(false);
   const conversationPanelRef = useRef<HTMLDivElement | null>(null);
@@ -1380,10 +1396,101 @@ export default function ChatApp() {
     message: ChatMessage,
     exerciseVideo: ReturnType<typeof parseExerciseVideoMessage>,
   ) {
-    if (exerciseVideo || message.file_url) return false;
+    if (exerciseVideo || parsePollMessage(message.body) || message.file_url) {
+      return false;
+    }
     if (!message.body) return false;
     if (message.body.includes("\n")) return false;
     return message.body.length <= 48;
+  }
+
+  async function sendPoll() {
+    if (!activeGroupId || !userId || !canSendMessages) return;
+
+    const question = pollQuestion.trim();
+    const options = pollOptions
+      .map((text, index) => ({
+        id: createPollOptionId(index),
+        text: text.trim(),
+      }))
+      .filter((option) => option.text);
+
+    if (!question) {
+      alert("Vul een vraag in.");
+      return;
+    }
+
+    if (options.length < 2) {
+      alert("Voeg minimaal 2 opties toe.");
+      return;
+    }
+
+    if (options.length > 6) {
+      alert("Maximaal 6 opties toegestaan.");
+      return;
+    }
+
+    setCreatingPoll(true);
+
+    const body = buildPollMessageBody(question, options, userId);
+    const { data, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: userId,
+        group_id: activeGroupId,
+        body,
+        read_at: null,
+      })
+      .select("*")
+      .single();
+
+    setCreatingPoll(false);
+
+    if (error || !data) {
+      alert(error?.message || "Poll kon niet worden aangemaakt.");
+      return;
+    }
+
+    const createdMessage = data as ChatMessage;
+    setMessages((current) => [...current, createdMessage]);
+    setPollCreateOpen(false);
+    setPollQuestion("");
+    setPollOptions(["", ""]);
+    setAttachMenuOpen(false);
+
+    setGroups((current) =>
+      current.map((group) =>
+        group.id === activeGroupId
+          ? {
+              ...group,
+              lastMessage: question,
+              lastMessageSender: "Jij",
+              lastMessageTime: createdMessage.created_at,
+              unreadCount: 0,
+            }
+          : group,
+      ),
+    );
+
+    forceScrollToBottom();
+  }
+
+  async function handlePollVote(pollMessageId: string, optionId: string) {
+    if (!userId) return;
+
+    setVotingPollId(pollMessageId);
+
+    const { error } = await castPollVote(pollMessageId, userId, optionId);
+
+    setVotingPollId("");
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const votes = await loadPollVotes(pollMessageIds);
+    setPollVotes(votes);
   }
 
   function openListMenu(entry: ChatListEntry) {
@@ -1775,6 +1882,52 @@ export default function ChatApp() {
   useEffect(() => {
     setSlashCommandActiveIndex(0);
   }, [message, slashCommandSuggestions.length]);
+
+  const pollMessageIds = useMemo(
+    () =>
+      messages
+        .filter((item) => parsePollMessage(item.body))
+        .map((item) => item.id),
+    [messages],
+  );
+
+  useEffect(() => {
+    if (!activeGroupId || pollMessageIds.length === 0) {
+      setPollVotes([]);
+      return;
+    }
+
+    let cancelled = false;
+
+    async function refreshPollVotes() {
+      const votes = await loadPollVotes(pollMessageIds);
+      if (!cancelled) {
+        setPollVotes(votes);
+      }
+    }
+
+    void refreshPollVotes();
+
+    const channel = supabase
+      .channel(`poll-votes-${activeGroupId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "chat_poll_votes",
+        },
+        () => {
+          void refreshPollVotes();
+        },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      void supabase.removeChannel(channel);
+    };
+  }, [activeGroupId, pollMessageIds.join("|")]);
 
   function selectSlashCommand(command: string) {
     setMessage(command);
@@ -2234,6 +2387,7 @@ export default function ChatApp() {
                   const previous = visibleMessages[index - 1];
                   const showDate = shouldShowDateDivider(msg, previous);
                   const exerciseVideo = parseExerciseVideoMessage(msg.body);
+                  const pollMessage = parsePollMessage(msg.body);
                   const inlineTimestamp = shouldUseInlineTimestamp(msg, exerciseVideo);
 
                   return (
@@ -2352,7 +2506,24 @@ export default function ChatApp() {
                             </div>
                           )}
 
-                          {msg.body && !exerciseVideo && (
+                          {pollMessage && (
+                            <div onClick={(event) => event.stopPropagation()}>
+                              <PollMessage
+                                messageId={msg.id}
+                                payload={pollMessage}
+                                userId={userId}
+                                isMine={isMine}
+                                votes={pollVotes}
+                                memberCount={Object.keys(groupMemberNames).length}
+                                onVote={(optionId) =>
+                                  void handlePollVote(msg.id, optionId)
+                                }
+                                voting={votingPollId === msg.id}
+                              />
+                            </div>
+                          )}
+
+                          {msg.body && !exerciseVideo && !pollMessage && (
                             inlineTimestamp ? (
                               <div
                                 className={`flex flex-wrap items-end gap-x-2 gap-y-1 ${
@@ -2483,6 +2654,18 @@ export default function ChatApp() {
                           >
                             Foto of video
                           </button>
+                          {activeGroupId && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setAttachMenuOpen(false);
+                                setPollCreateOpen(true);
+                              }}
+                              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+                            >
+                              Poll
+                            </button>
+                          )}
                         </div>
                       </>
                     )}
@@ -2497,6 +2680,18 @@ export default function ChatApp() {
                   >
                     <Camera className="h-5 w-5" />
                   </button>
+
+                  {activeGroupId && (
+                    <button
+                      type="button"
+                      onClick={() => setPollCreateOpen(true)}
+                      disabled={!canSendMessages || uploadingMedia}
+                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
+                      aria-label="Poll maken"
+                    >
+                      <BarChart2 className="h-5 w-5" />
+                    </button>
+                  )}
 
                   <div className="relative min-w-0 flex-1">
                     {slashCommandMenuOpen && (
@@ -2725,6 +2920,87 @@ export default function ChatApp() {
               className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-50"
             >
               {creatingGroup ? "Groep maken..." : "Groep aanmaken"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pollCreateOpen && (
+        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-4 md:items-center">
+          <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+            <div className="mb-4 flex items-center justify-between">
+              <h2 className="text-xl font-bold text-black">Poll maken</h2>
+              <button
+                type="button"
+                onClick={() => setPollCreateOpen(false)}
+                className="rounded-full p-2 hover:bg-gray-100"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <input
+              value={pollQuestion}
+              onChange={(event) => setPollQuestion(event.target.value)}
+              placeholder="Stel je vraag..."
+              className="mb-4 w-full rounded-2xl border border-gray-200 px-4 py-3 text-black outline-none focus:ring-2 focus:ring-black"
+            />
+
+            <div className="mb-4 space-y-2">
+              {pollOptions.map((option, index) => (
+                <div key={`poll-option-${index}`} className="flex gap-2">
+                  <input
+                    value={option}
+                    onChange={(event) =>
+                      setPollOptions((current) =>
+                        current.map((value, optionIndex) =>
+                          optionIndex === index
+                            ? event.target.value
+                            : value,
+                        ),
+                      )
+                    }
+                    placeholder={`Optie ${index + 1}`}
+                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-black outline-none focus:ring-2 focus:ring-black"
+                  />
+                  {pollOptions.length > 2 && (
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPollOptions((current) =>
+                          current.filter((_, optionIndex) => optionIndex !== index),
+                        )
+                      }
+                      className="rounded-2xl border border-gray-200 px-3 text-sm font-semibold"
+                    >
+                      ×
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {pollOptions.length < 6 && (
+              <button
+                type="button"
+                onClick={() =>
+                  setPollOptions((current) =>
+                    current.length < 6 ? [...current, ""] : current,
+                  )
+                }
+                className="mb-4 text-sm font-semibold text-black underline"
+              >
+                Optie toevoegen
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={() => void sendPoll()}
+              disabled={creatingPoll}
+              className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-50"
+            >
+              {creatingPoll ? "Poll plaatsen..." : "Poll plaatsen"}
             </button>
           </div>
         </div>

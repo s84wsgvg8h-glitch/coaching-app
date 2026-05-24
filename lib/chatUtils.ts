@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { getPollPreviewText, parsePollMessage } from "@/lib/chatPolls";
 
 export type ChatMessage = {
   id: string;
@@ -116,6 +117,10 @@ export function getMessagePreview(
 
   const sender = message.sender_id === selfId ? "Jij" : senderName;
 
+  if (parsePollMessage(message.body)) {
+    return { text: getPollPreviewText(message.body), sender };
+  }
+
   if (parseExerciseVideoMessage(message.body)) {
     return { text: "Video", sender };
   }
@@ -140,6 +145,10 @@ export function getMessagePreview(
 }
 
 export function getReplyText(message: ChatMessage) {
+  if (parsePollMessage(message.body)) {
+    return getPollPreviewText(message.body);
+  }
+
   if (parseExerciseVideoMessage(message.body)) {
     return "Video";
   }

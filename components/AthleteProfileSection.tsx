@@ -16,6 +16,14 @@ import {
   parsePaymentDayInput,
   saveAthletePayment,
 } from "@/lib/athletePayments";
+import {
+  formatCoachingStartDate,
+  formatStartingPr,
+  loadAthleteStartingPrs,
+  parsePrInput,
+  saveAthleteStartingPrs,
+  type AthleteStartingPrs,
+} from "@/lib/athleteStartingPrs";
 import { supabase } from "@/lib/supabaseClient";
 
 type AthleteProfileSectionProps = {
@@ -44,6 +52,18 @@ export default function AthleteProfileSection({
   const [paymentMigrationRequired, setPaymentMigrationRequired] = useState(false);
   const [upcomingCompetitions, setUpcomingCompetitions] = useState<Competition[]>([]);
   const [selectedCompetitionIds, setSelectedCompetitionIds] = useState<string[]>([]);
+  const [startingPrs, setStartingPrs] = useState<AthleteStartingPrs>({
+    coaching_start_date: null,
+    starting_pr_squat: null,
+    starting_pr_bench: null,
+    starting_pr_deadlift: null,
+  });
+  const [startingPrInputs, setStartingPrInputs] = useState({
+    coaching_start_date: "",
+    starting_pr_squat: "",
+    starting_pr_bench: "",
+    starting_pr_deadlift: "",
+  });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
@@ -66,13 +86,15 @@ export default function AthleteProfileSection({
         ReturnType<typeof loadUpcomingCompetitions>,
         ReturnType<typeof loadAthleteCompetitionIds>,
         ReturnType<typeof loadAthletePayment> | Promise<null>,
+        ReturnType<typeof loadAthleteStartingPrs>,
       ] = [
         loadUpcomingCompetitions(),
         loadAthleteCompetitionIds(athleteId),
         canEditPayment ? loadAthletePayment(athleteId) : Promise.resolve(null),
+        loadAthleteStartingPrs(athleteId),
       ];
 
-      const [competitionsResult, selectedResult, paymentResult] =
+      const [competitionsResult, selectedResult, paymentResult, prsResult] =
         await Promise.all(requests);
 
       if (cancelled) return;
@@ -93,6 +115,23 @@ export default function AthleteProfileSection({
         );
         setPaymentMigrationRequired(paymentResult.migrationRequired);
       }
+
+      setStartingPrs(prsResult);
+      setStartingPrInputs({
+        coaching_start_date: prsResult.coaching_start_date || "",
+        starting_pr_squat:
+          prsResult.starting_pr_squat !== null
+            ? String(prsResult.starting_pr_squat)
+            : "",
+        starting_pr_bench:
+          prsResult.starting_pr_bench !== null
+            ? String(prsResult.starting_pr_bench)
+            : "",
+        starting_pr_deadlift:
+          prsResult.starting_pr_deadlift !== null
+            ? String(prsResult.starting_pr_deadlift)
+            : "",
+      });
 
       setLoading(false);
     }
@@ -130,6 +169,7 @@ export default function AthleteProfileSection({
     betalingPrijs,
     betalingDag,
     selectedCompetitionIds,
+    startingPrInputs,
     canEdit,
     canEditPayment,
     athleteId,
@@ -209,6 +249,28 @@ export default function AthleteProfileSection({
         setMessage("Betaling opslaan mislukt.");
         return;
       }
+    }
+
+    if (canEdit) {
+      const nextStartingPrs = {
+        coaching_start_date: startingPrInputs.coaching_start_date || null,
+        starting_pr_squat: parsePrInput(startingPrInputs.starting_pr_squat),
+        starting_pr_bench: parsePrInput(startingPrInputs.starting_pr_bench),
+        starting_pr_deadlift: parsePrInput(startingPrInputs.starting_pr_deadlift),
+      };
+
+      const { error: prsError } = await saveAthleteStartingPrs(
+        athleteId,
+        nextStartingPrs,
+      );
+
+      if (prsError) {
+        setSaving(false);
+        setMessage("Start-PR's opslaan mislukt.");
+        return;
+      }
+
+      setStartingPrs(nextStartingPrs);
     }
 
     const { error: competitionsError } = await saveAthleteCompetitions(
@@ -368,6 +430,120 @@ export default function AthleteProfileSection({
           )}
         </div>
       )}
+
+      <div>
+        <h3 className="text-lg font-bold text-black">Coaching & start-PR&apos;s</h3>
+        <p className="mt-1 text-sm text-gray-500">
+          Startdatum bij coach en beginwaarden voor squat, bench en deadlift.
+        </p>
+
+        {canEdit ? (
+          <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Startdatum coaching
+              </label>
+              <input
+                type="date"
+                value={startingPrInputs.coaching_start_date}
+                onChange={(event) =>
+                  setStartingPrInputs((current) => ({
+                    ...current,
+                    coaching_start_date: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Start-PR squat (kg)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={startingPrInputs.starting_pr_squat}
+                onChange={(event) =>
+                  setStartingPrInputs((current) => ({
+                    ...current,
+                    starting_pr_squat: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Start-PR bench (kg)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={startingPrInputs.starting_pr_bench}
+                onChange={(event) =>
+                  setStartingPrInputs((current) => ({
+                    ...current,
+                    starting_pr_bench: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-semibold">
+                Start-PR deadlift (kg)
+              </label>
+              <input
+                type="text"
+                inputMode="decimal"
+                value={startingPrInputs.starting_pr_deadlift}
+                onChange={(event) =>
+                  setStartingPrInputs((current) => ({
+                    ...current,
+                    starting_pr_deadlift: event.target.value,
+                  }))
+                }
+                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
+            <div className="rounded-2xl bg-gray-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                Startdatum coaching
+              </p>
+              <p className="mt-1 font-semibold text-black">
+                {formatCoachingStartDate(startingPrs.coaching_start_date)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                Start-PR squat
+              </p>
+              <p className="mt-1 font-semibold text-black">
+                {formatStartingPr(startingPrs.starting_pr_squat)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                Start-PR bench
+              </p>
+              <p className="mt-1 font-semibold text-black">
+                {formatStartingPr(startingPrs.starting_pr_bench)}
+              </p>
+            </div>
+            <div className="rounded-2xl bg-gray-50 px-4 py-3">
+              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                Start-PR deadlift
+              </p>
+              <p className="mt-1 font-semibold text-black">
+                {formatStartingPr(startingPrs.starting_pr_deadlift)}
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
 
       <div>
         <h3 className="text-lg font-bold text-black">Opkomende wedstrijden</h3>

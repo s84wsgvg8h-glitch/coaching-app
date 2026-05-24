@@ -7,6 +7,7 @@ import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
+import IntakeAnswersSection from "@/components/IntakeAnswersSection";
 import { getChatReturnRoute } from "@/lib/chatNavigation";
 
 type Profile = {
@@ -126,6 +127,12 @@ export default function UserProfilePage() {
                 onSaved={() => void loadProfile()}
               />
             </div>
+
+            {viewerRole === "coach" && profile.role === "atleet" && (
+              <div className="mt-8 border-t border-gray-100 pt-8">
+                <IntakeAnswersSection athleteId={profile.id} />
+              </div>
+            )}
           </div>
         )}
 

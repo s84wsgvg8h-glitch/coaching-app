@@ -92,6 +92,12 @@ export function getNavLinks(
       title: "Leaderboard",
       description: "Bekijk rankings en prestaties.",
     },
+    {
+      href: "/settings/intake-form",
+      icon: "📝",
+      title: "Intakeformulier",
+      description: "Beheer het intakeformulier voor atleten.",
+    },
   ];
 
   const athleteLinks: NavLink[] = [

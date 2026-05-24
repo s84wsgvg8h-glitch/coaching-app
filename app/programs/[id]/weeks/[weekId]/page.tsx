@@ -9,6 +9,15 @@ import AppSidebar from "@/components/AppSidebar";
 import { supabase } from "@/lib/supabaseClient";
 import { sendExerciseVideoMessageToCoach } from "@/lib/chatUtils";
 import { captureVideoThumbnail } from "@/lib/videoThumbnail";
+import {
+  isDayPast,
+  isEmptyCheckinBw,
+  isEmptyCheckinFatigue,
+  isEmptyCheckinRecovery,
+  isEmptySetField,
+  OVERDUE_BUTTON_GROUP_CLASS,
+  withOverdueInputClass,
+} from "@/lib/programDayValidation";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 
@@ -4377,6 +4386,11 @@ export default function ProgramWeekPage() {
 
     const checkin = getAthleteDayCheckin(day.id);
     const options = [0, 2, 4, 6];
+    const dayIsPast = isDayPast(getDayDateObject(day.day_number));
+    const bwOverdue = dayIsPast && isEmptyCheckinBw(checkin.bw);
+    const recoveryOverdue =
+      dayIsPast && isEmptyCheckinRecovery(checkin.recovery);
+    const fatigueOverdue = dayIsPast && isEmptyCheckinFatigue(checkin.fatigue);
 
     return (
       <div className="mb-0.5 rounded-xl border border-gray-200 bg-gray-50 p-2.5 shadow-sm">
@@ -4404,7 +4418,10 @@ export default function ProgramWeekPage() {
               }
               placeholder="BW"
               inputMode="decimal"
-              className="w-full h-[38px] rounded-xl border border-gray-200 bg-white px-1.5 text-base font-bold text-black outline-none focus:border-black md:text-[11px]"
+              className={withOverdueInputClass(
+                "w-full h-[38px] rounded-xl border border-gray-200 bg-white px-1.5 text-base font-bold text-black outline-none focus:border-black md:text-[11px]",
+                bwOverdue,
+              )}
             />
           </div>
 
@@ -4413,7 +4430,11 @@ export default function ProgramWeekPage() {
               Herstel
             </p>
 
-            <div className="flex h-[38px] gap-0.5 md:gap-1">
+            <div
+              className={`flex h-[38px] gap-0.5 md:gap-1 ${
+                recoveryOverdue ? OVERDUE_BUTTON_GROUP_CLASS : ""
+              }`}
+            >
               {options.map((option) => (
                 <button
                   key={option}
@@ -4426,7 +4447,9 @@ export default function ProgramWeekPage() {
                   className={`flex flex-1 items-center justify-center rounded-xl text-xs font-black transition md:text-sm ${
                     checkin.recovery === option
                       ? "bg-emerald-600 text-white"
-                      : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
+                      : recoveryOverdue
+                        ? "bg-red-50 text-red-800 hover:bg-red-100 border border-red-300"
+                        : "bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                   }`}
                 >
                   {option}
@@ -4440,7 +4463,11 @@ export default function ProgramWeekPage() {
               Fatigue
             </p>
 
-            <div className="flex h-[38px] gap-0.5 md:gap-1">
+            <div
+              className={`flex h-[38px] gap-0.5 md:gap-1 ${
+                fatigueOverdue ? OVERDUE_BUTTON_GROUP_CLASS : ""
+              }`}
+            >
               {options.map((option) => (
                 <button
                   key={option}
@@ -4453,7 +4480,9 @@ export default function ProgramWeekPage() {
                   className={`flex flex-1 items-center justify-center rounded-xl text-xs font-black transition md:text-sm ${
                     checkin.fatigue === option
                       ? "bg-orange-600 text-white"
-                      : "bg-orange-50 text-orange-800 hover:bg-orange-100"
+                      : fatigueOverdue
+                        ? "bg-red-50 text-red-800 hover:bg-red-100 border border-red-300"
+                        : "bg-orange-50 text-orange-800 hover:bg-orange-100"
                   }`}
                 >
                   {option}
@@ -5731,6 +5760,7 @@ export default function ProgramWeekPage() {
 
           const { day, exercise } = selected;
           const setRows = getSetRowsForExercise(exercise);
+          const dayIsPast = isDayPast(getDayDateObject(day.day_number));
 
           return (
             <div className="fixed inset-0 z-40">
@@ -6048,7 +6078,10 @@ export default function ProgramWeekPage() {
                           onKeyDown={handleAthleteSetArrowNavigation}
                           placeholder="8"
                           inputMode="numeric"
-                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
+                          className={withOverdueInputClass(
+                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            dayIsPast && isEmptySetField(row.reps),
+                          )}
                         />
 
                         <input
@@ -6075,7 +6108,10 @@ export default function ProgramWeekPage() {
                           onKeyDown={handleAthleteSetArrowNavigation}
                           placeholder="100"
                           inputMode="decimal"
-                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
+                          className={withOverdueInputClass(
+                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            dayIsPast && isEmptySetField(row.weight),
+                          )}
                         />
 
                         <input
@@ -6102,7 +6138,10 @@ export default function ProgramWeekPage() {
                           onKeyDown={handleAthleteSetArrowNavigation}
                           placeholder="8"
                           inputMode="decimal"
-                          className="w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm"
+                          className={withOverdueInputClass(
+                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            dayIsPast && isEmptySetField(row.rpe),
+                          )}
                         />
 
                         <button

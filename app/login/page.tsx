@@ -22,6 +22,23 @@ export default function LoginPage() {
       return;
     }
 
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, intake_completed_at")
+        .eq("id", user.id)
+        .single();
+
+      if (profile?.role === "atleet" && !profile.intake_completed_at) {
+        window.location.href = "/intake";
+        return;
+      }
+    }
+
     window.location.href = "/dashboard";
   }
 
