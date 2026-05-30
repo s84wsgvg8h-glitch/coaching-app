@@ -17,6 +17,7 @@ import {
   SendHorizontal,
   Users,
   X,
+  Sparkles,
   BarChart2,
 } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
@@ -25,6 +26,7 @@ import {
   createChatGroup,
   getGroupUnreadCount,
   loadChatGroupMemberNames,
+  loadChatGroupMemberProfiles,
   loadUserChatGroups,
   markGroupAsRead,
   type ChatGroupListItem,
@@ -51,6 +53,7 @@ import {
 import {
   getUnreadCountForConversation,
   markConversationAsRead,
+  notifyChatUnreadChanged,
 } from "@/lib/chatUnread";
 import {
   type ChatMessage,
@@ -73,6 +76,12 @@ import ChatAvatar from "@/components/chat/ChatAvatar";
 import ChatConversationMenu from "@/components/chat/ChatConversationMenu";
 import ChatVoiceMessage from "@/components/chat/ChatVoiceMessage";
 import ChatVoiceRecorder from "@/components/chat/ChatVoiceRecorder";
+import { loadAthleteProgramPosition } from "@/lib/athleteProgramContext";
+import { isAdminRole, isCoachLikeRole } from "@/lib/authRoles";
+import {
+  loadDirectMessagePreviews,
+  loadGroupMessagePreviews,
+} from "@/lib/chatConversationPreviews";
 import { saveChatReturnRoute } from "@/lib/chatNavigation";
 import {
   searchMessagesGlobally,
@@ -95,9 +104,38 @@ import ChatIntensityPanel from "@/components/chat/ChatIntensityPanel";
 import ChatMaxPanel from "@/components/chat/ChatMaxPanel";
 import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
+import ChatAiPanel from "@/components/chat/ChatAiPanel";
+import ChatTodoPanel from "@/components/chat/ChatTodoPanel";
+import ChatAgendaPanel from "@/components/chat/ChatAgendaPanel";
+import ChatAiMessage from "@/components/chat/ChatAiMessage";
+import ChatBroadcastModal from "@/components/chat/ChatBroadcastModal";
+import ChatMessageReactions from "@/components/chat/ChatMessageReactions";
+import {
+  loadMessageReactions,
+  toggleMessageReaction,
+  type MessageReaction,
+} from "@/lib/chatReactions";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import {
+  broadcastTyping,
+  getConversationTypingKey,
+  subscribeToTyping,
+  type TypingPayload,
+} from "@/lib/chatTyping";
+import {
+  isMessageReadByPeer,
+  loadPeerReadState,
+} from "@/lib/chatReadState";
 import ChatSlashCommandMenu from "@/components/chat/ChatSlashCommandMenu";
 import {
+  buildAiAssistantMessageBody,
+  getAiAssistantPreviewText,
+  parseAiAssistantMessage,
+} from "@/lib/chatAi";
+import {
   filterChatSlashCommands,
+  parseAiCommand,
   parseBwCommand,
   parseDataCommand,
   parseExternalsCommand,
@@ -105,6 +143,8 @@ import {
   parseIntensityCommand,
   parseMaxCommand,
   parseProgramCommand,
+  parseTodoCommand,
+  parseAgendaCommand,
   parseToolsCommand,
   parseVolumeCommand,
   shouldShowSlashCommandMenu,
@@ -119,8 +159,10 @@ import {
   createPollOptionId,
   loadPollVotes,
   parsePollMessage,
+  type PollMessagePayload,
   type PollVote,
 } from "@/lib/chatPolls";
+import PollDetailsPanel from "@/components/chat/PollDetailsPanel";
 
 type ChatListEntry =
   | (ChatProfile & { kind: "direct" })
@@ -186,10 +228,16 @@ export default function ChatApp() {
   const [groupMemberNames, setGroupMemberNames] = useState<Record<string, string>>(
     {},
   );
+  const [groupMemberProfiles, setGroupMemberProfiles] = useState<
+    Record<string, { name: string; avatar_url: string | null }>
+  >({});
   const [mediaCaptureOpen, setMediaCaptureOpen] = useState(false);
   const [pendingMediaFile, setPendingMediaFile] = useState<File | null>(null);
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
+  const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [typingIndicator, setTypingIndicator] = useState<TypingPayload | null>(null);
+  const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
   const [slashCommandActiveIndex, setSlashCommandActiveIndex] = useState(0);
   const [conversationSettings, setConversationSettings] = useState<
     Record<string, ChatConversationSettings>
@@ -209,12 +257,20 @@ export default function ChatApp() {
     message: ChatMessage;
     anchorRect: DOMRect | null;
   } | null>(null);
+  const [messageReactions, setMessageReactions] = useState<
+    Record<string, MessageReaction[]>
+  >({});
   const [pollVotes, setPollVotes] = useState<PollVote[]>([]);
   const [pollCreateOpen, setPollCreateOpen] = useState(false);
+  const [athleteProgramLabel, setAthleteProgramLabel] = useState("");
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState(["", ""]);
   const [creatingPoll, setCreatingPoll] = useState(false);
   const [votingPollId, setVotingPollId] = useState("");
+  const [activePollDetails, setActivePollDetails] = useState<{
+    messageId: string;
+    payload: PollMessagePayload;
+  } | null>(null);
   const [toolPrograms, setToolPrograms] = useState<ProgramBlockTool[]>([]);
   const [toolProgramsLoading, setToolProgramsLoading] = useState(false);
   const conversationPanelRef = useRef<HTMLDivElement | null>(null);
@@ -259,6 +315,35 @@ export default function ChatApp() {
   }, [messages]);
 
   useEffect(() => {
+    if (!userId || (!activeUserId && !activeGroupId)) {
+      setTypingIndicator(null);
+      return;
+    }
+
+    const key = getConversationTypingKey(
+      userId,
+      activeUserId || null,
+      activeGroupId || null,
+    );
+    if (!key) return;
+
+    return subscribeToTyping(key, userId, userName, setTypingIndicator);
+  }, [userId, userName, activeUserId, activeGroupId]);
+
+  useEffect(() => {
+    if (!activeUserId || !userId) {
+      setPeerLastReadAt(null);
+      return;
+    }
+
+    const interval = window.setInterval(() => {
+      void loadPeerReadState(activeUserId, userId).then(setPeerLastReadAt);
+    }, 8000);
+
+    return () => window.clearInterval(interval);
+  }, [activeUserId, userId]);
+
+  useEffect(() => {
     if (activeUserId) {
       saveChatReturnRoute(`/chat/${activeUserId}`);
       void unhideConversation(userId, { peerUserId: activeUserId });
@@ -274,6 +359,27 @@ export default function ChatApp() {
       void unhideConversation(userId, { groupId: activeGroupId });
     }
   }, [activeUserId, activeGroupId, activeRoute.type, userId]);
+
+  useEffect(() => {
+    if (userRole !== "coach" || !activeUserId) {
+      setAthleteProgramLabel("");
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadAthleteProgram() {
+      const position = await loadAthleteProgramPosition(activeUserId);
+      if (cancelled) return;
+      setAthleteProgramLabel(position?.label || "");
+    }
+
+    void loadAthleteProgram();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [activeUserId, userRole]);
 
   useEffect(() => {
     const inConversation = Boolean(activeUserId || activeGroupId);
@@ -471,6 +577,35 @@ export default function ChatApp() {
     setBootstrapping(false);
   }
 
+  async function syncMessageReactions(loadedMessages: ChatMessage[]) {
+    if (loadedMessages.length === 0) {
+      setMessageReactions({});
+      return;
+    }
+
+    setMessageReactions(
+      await loadMessageReactions(loadedMessages.map((item) => item.id)),
+    );
+  }
+
+  async function handleMessageReaction(messageId: string, emoji: string) {
+    const { error } = await toggleMessageReaction(messageId, emoji);
+    if (error) return;
+
+    const updated = await loadMessageReactions([messageId]);
+    setMessageReactions((current) => ({ ...current, ...updated }));
+  }
+
+  function resolveReactionUserName(reactionUserId: string) {
+    if (reactionUserId === userId) return "Jij";
+    return (
+      groupMemberNames[reactionUserId] ||
+      activeContact?.full_name ||
+      contacts.find((contact) => contact.id === reactionUserId)?.full_name ||
+      "Gebruiker"
+    );
+  }
+
   async function loadContacts(
     currentUserId: string,
     role: string,
@@ -478,28 +613,28 @@ export default function ChatApp() {
   ) {
     let contactQuery = supabase.from("profiles").select("*");
 
-    if (role === "coach") {
-      contactQuery = contactQuery.eq("role", "atleet").order("full_name", {
-        ascending: true,
-      });
+    if (isCoachLikeRole(role)) {
+      if (isAdminRole(role)) {
+        contactQuery = contactQuery
+          .eq("role", "coach")
+          .neq("id", currentUserId)
+          .order("full_name", { ascending: true });
+      } else {
+        contactQuery = contactQuery.eq("role", "atleet").order("full_name", {
+          ascending: true,
+        });
+        contactQuery = contactQuery.eq("coach_id", currentUserId);
+      }
     } else {
       contactQuery = contactQuery.eq("role", "coach").limit(1);
     }
 
     const { data: profiles } = await contactQuery;
+    const previews = await loadDirectMessagePreviews(currentUserId);
 
     return Promise.all(
       (profiles || []).map(async (contact) => {
-        const { data: lastMessages } = await supabase
-          .from("messages")
-          .select("*")
-          .or(
-            `and(sender_id.eq.${currentUserId},receiver_id.eq.${contact.id}),and(sender_id.eq.${contact.id},receiver_id.eq.${currentUserId})`,
-          )
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        const lastMessage = lastMessages?.[0] as ChatMessage | undefined;
+        const lastMessage = previews.get(contact.id);
         const preview = getMessagePreview(lastMessage, currentUserId);
         const muted = Boolean(
           settingsMap[getSettingsKey({ peerUserId: contact.id })]?.muted,
@@ -532,28 +667,44 @@ export default function ChatApp() {
     settingsMap: Record<string, ChatConversationSettings> = {},
   ) {
     const baseGroups = await loadUserChatGroups(currentUserId);
+    const previews = await loadGroupMessagePreviews(
+      baseGroups.map((group) => group.id),
+    );
+
+    const senderIds = Array.from(
+      new Set(
+        baseGroups
+          .map((group) => previews.get(group.id)?.sender_id)
+          .filter(
+            (senderId): senderId is string =>
+              Boolean(senderId) && senderId !== currentUserId,
+          ),
+      ),
+    );
+
+    let senderNames: Record<string, string> = {};
+
+    if (senderIds.length > 0) {
+      const { data: senderProfiles } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .in("id", senderIds);
+
+      senderNames = Object.fromEntries(
+        (senderProfiles || []).map((profile) => [
+          profile.id,
+          profile.full_name || "Onbekend",
+        ]),
+      );
+    }
 
     return Promise.all(
       baseGroups.map(async (group) => {
-        const { data: lastMessages } = await supabase
-          .from("messages")
-          .select("*")
-          .eq("group_id", group.id)
-          .order("created_at", { ascending: false })
-          .limit(1);
-
-        const lastMessage = lastMessages?.[0] as ChatMessage | undefined;
-        let senderName = "";
-
-        if (lastMessage && lastMessage.sender_id !== currentUserId) {
-          const { data: senderProfile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("id", lastMessage.sender_id)
-            .maybeSingle();
-
-          senderName = senderProfile?.full_name || "Onbekend";
-        }
+        const lastMessage = previews.get(group.id);
+        const senderName =
+          lastMessage && lastMessage.sender_id !== currentUserId
+            ? senderNames[lastMessage.sender_id] || "Onbekend"
+            : "";
 
         const preview = getMessagePreview(
           lastMessage,
@@ -611,8 +762,10 @@ export default function ChatApp() {
         setActiveContact(null);
         setActiveGroup(null);
         setGroupMemberNames({});
+        setGroupMemberProfiles({});
         setGroupMemberRoles({});
         setMessages([]);
+        setMessageReactions({});
         return;
       }
 
@@ -627,6 +780,7 @@ export default function ChatApp() {
         setActiveContact(contact);
         setActiveGroup(null);
         setGroupMemberNames({});
+        setGroupMemberProfiles({});
         setGroupMemberRoles({});
 
         setContacts((current) =>
@@ -636,11 +790,13 @@ export default function ChatApp() {
         );
 
         await markConversationAsRead(userId, route.id);
+        setPeerLastReadAt(await loadPeerReadState(route.id, userId));
         const loadedMessages = filterMessagesByClearedAt(
           await loadDirectMessages(userId, route.id),
           clearedAt,
         );
         setMessages(loadedMessages);
+        await syncMessageReactions(loadedMessages);
         isInitialScrollRef.current = true;
         return;
       }
@@ -656,7 +812,16 @@ export default function ChatApp() {
         null;
       setActiveGroup(group);
       setActiveContact(null);
-      setGroupMemberNames(await loadChatGroupMemberNames(route.id));
+      const memberProfiles = await loadChatGroupMemberProfiles(route.id);
+      setGroupMemberProfiles(memberProfiles);
+      setGroupMemberNames(
+        Object.fromEntries(
+          Object.entries(memberProfiles).map(([id, profile]) => [
+            id,
+            profile.name,
+          ]),
+        ),
+      );
 
       const { data: memberRows } = await supabase
         .from("chat_group_members")
@@ -684,6 +849,7 @@ export default function ChatApp() {
             clearedAt,
           );
           setMessages(loadedMessages);
+          await syncMessageReactions(loadedMessages);
         }
         return;
       }
@@ -693,6 +859,7 @@ export default function ChatApp() {
         clearedAt,
       );
       setMessages(loadedMessages);
+      await syncMessageReactions(loadedMessages);
       isInitialScrollRef.current = true;
     } catch (error) {
       if (error instanceof Error) {
@@ -808,6 +975,66 @@ export default function ChatApp() {
     setMessage((current) => (current.startsWith("/injuries") ? "" : current));
   }
 
+  function closeAiPanel() {
+    setMessage((current) => (current.startsWith("/ai") ? "" : current));
+  }
+
+  function closeTodoPanel() {
+    setMessage((current) => (current.startsWith("/todo") ? "" : current));
+  }
+
+  function closeAgendaPanel() {
+    setMessage((current) => (current.startsWith("/agenda") ? "" : current));
+  }
+
+  async function shareAiAnswerToChat(question: string, answer: string) {
+    if (!userId || !activeUserId || activeGroupId) return;
+
+    const body = buildAiAssistantMessageBody(question, answer);
+    const optimisticMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      sender_id: userId,
+      receiver_id: activeUserId,
+      group_id: null,
+      body,
+      file_url: null,
+      file_type: null,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      reply_to_body: null,
+      reply_to_file_type: null,
+      reply_to_sender_id: null,
+    };
+
+    const { error } = await supabase.from("messages").insert({
+      sender_id: userId,
+      receiver_id: activeUserId,
+      body,
+      read_at: null,
+    });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setMessages((current) => [...current, optimisticMessage]);
+    setContacts((current) =>
+      current.map((contact) =>
+        contact.id === activeUserId
+          ? {
+              ...contact,
+              lastMessage: getAiAssistantPreviewText(body),
+              lastMessageSender: "Jij",
+              lastMessageTime: optimisticMessage.created_at,
+              unreadCount: 0,
+            }
+          : contact,
+      ),
+    );
+    forceScrollToBottom();
+  }
+
   function handleToolsQueryChange(query: string) {
     setMessage(query ? `/tools ${query}` : "/tools");
   }
@@ -841,6 +1068,9 @@ export default function ChatApp() {
     if (parseMaxCommand(message).active) return;
     if (parseDataCommand(message).active) return;
     if (parseInjuriesCommand(message).active) return;
+    if (parseAiCommand(message).active) return;
+    if (parseTodoCommand(message).active) return;
+    if (parseAgendaCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1767,6 +1997,12 @@ export default function ChatApp() {
   const conversationTitle =
     activeGroup?.name || activeContact?.full_name || "Chat";
   const profileLink = activeUserId ? `/profile/${activeUserId}` : "";
+
+  function isOutgoingMessageRead(msg: ChatMessage) {
+    if (msg.read_at) return true;
+    if (!activeUserId || activeGroupId) return false;
+    return isMessageReadByPeer(msg.created_at, peerLastReadAt);
+  }
   const currentConversationSettings = getCurrentConversationSettings();
   const canSendMessages = useMemo(() => {
     if (!activeUserId && !activeGroupId) return false;
@@ -1805,6 +2041,9 @@ export default function ChatApp() {
   const maxCommand = useMemo(() => parseMaxCommand(message), [message]);
   const dataCommand = useMemo(() => parseDataCommand(message), [message]);
   const injuriesCommand = useMemo(() => parseInjuriesCommand(message), [message]);
+  const aiCommand = useMemo(() => parseAiCommand(message), [message]);
+  const todoCommand = useMemo(() => parseTodoCommand(message), [message]);
+  const agendaCommand = useMemo(() => parseAgendaCommand(message), [message]);
   const toolsPanelOpen =
     toolsCommand.active && Boolean(activeUserId || activeGroupId);
   const programPanelOpen =
@@ -1847,6 +2086,17 @@ export default function ChatApp() {
     userRole === "coach" &&
     Boolean(activeUserId) &&
     !activeGroupId;
+  const aiPanelOpen =
+    aiCommand.active && Boolean(activeUserId) && !activeGroupId;
+  const todoPanelOpen =
+    todoCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId || activeGroupId);
+  const agendaPanelOpen =
+    agendaCommand.active &&
+    userRole === "coach" &&
+    Boolean(activeUserId) &&
+    !activeGroupId;
   const sidePanelOpen =
     programPanelOpen ||
     bwPanelOpen ||
@@ -1855,7 +2105,10 @@ export default function ChatApp() {
     intensityPanelOpen ||
     maxPanelOpen ||
     dataPanelOpen ||
-    injuriesPanelOpen;
+    injuriesPanelOpen ||
+    aiPanelOpen ||
+    todoPanelOpen ||
+    agendaPanelOpen;
   const activeAthleteName = useMemo(() => {
     if (!activeUserId) return "Atleet";
     return (
@@ -1929,6 +2182,162 @@ export default function ChatApp() {
     };
   }, [activeGroupId, pollMessageIds.join("|")]);
 
+  useEffect(() => {
+    if (!userId) return;
+
+    const channel = supabase
+      .channel(`messages-live-${userId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const incoming = payload.new as ChatMessage;
+
+          const isDirectForUser =
+            !incoming.group_id &&
+            (incoming.sender_id === userId ||
+              incoming.receiver_id === userId);
+
+          const isGroupForUser = Boolean(
+            incoming.group_id &&
+              groups.some((group) => group.id === incoming.group_id),
+          );
+
+          if (!isDirectForUser && !isGroupForUser) return;
+
+          const isActiveDirect =
+            Boolean(activeUserId) &&
+            !incoming.group_id &&
+            ((incoming.sender_id === userId &&
+              incoming.receiver_id === activeUserId) ||
+              (incoming.sender_id === activeUserId &&
+                incoming.receiver_id === userId));
+
+          const isActiveGroup =
+            Boolean(activeGroupId) && incoming.group_id === activeGroupId;
+
+          if (isActiveDirect || isActiveGroup) {
+            const settingsKey = activeUserId
+              ? getSettingsKey({ peerUserId: activeUserId })
+              : getSettingsKey({ groupId: activeGroupId! });
+            const clearedAt = conversationSettings[settingsKey]?.cleared_at;
+
+            setMessages((current) => {
+              if (current.some((item) => item.id === incoming.id)) {
+                return current;
+              }
+
+              return filterMessagesByClearedAt(
+                [...current, incoming],
+                clearedAt,
+              );
+            });
+          }
+
+          if (!incoming.group_id) {
+            const peerId =
+              incoming.sender_id === userId
+                ? incoming.receiver_id
+                : incoming.sender_id;
+
+            if (!peerId) return;
+
+            const preview = getMessagePreview(incoming, userId);
+            const isActive = peerId === activeUserId;
+            const fromSelf = incoming.sender_id === userId;
+
+            setContacts((current) =>
+              current.map((contact) => {
+                if (contact.id !== peerId) return contact;
+
+                return {
+                  ...contact,
+                  lastMessage: preview.text,
+                  lastMessageSender:
+                    preview.sender ||
+                    (fromSelf ? "Jij" : contact.full_name),
+                  lastMessageTime: incoming.created_at,
+                  unreadCount: isActive || fromSelf
+                    ? contact.unreadCount || 0
+                    : Math.max(contact.unreadCount || 0, 1),
+                };
+              }),
+            );
+
+            if (!isActive && !fromSelf) {
+              notifyChatUnreadChanged();
+            }
+
+            return;
+          }
+
+          const preview = getMessagePreview(
+            incoming,
+            userId,
+            groupMemberNames[incoming.sender_id] || "",
+          );
+          const isActive = incoming.group_id === activeGroupId;
+          const fromSelf = incoming.sender_id === userId;
+
+          setGroups((current) =>
+            current.map((group) => {
+              if (group.id !== incoming.group_id) return group;
+
+              return {
+                ...group,
+                lastMessage: preview.text,
+                lastMessageSender:
+                  preview.sender ||
+                  groupMemberNames[incoming.sender_id] ||
+                  group.lastMessageSender ||
+                  "Groep",
+                lastMessageTime: incoming.created_at,
+                unreadCount: isActive || fromSelf
+                  ? group.unreadCount || 0
+                  : Math.max(group.unreadCount || 0, 1),
+              };
+            }),
+          );
+
+          if (!isActive && !fromSelf) {
+            notifyChatUnreadChanged();
+          }
+        },
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "DELETE",
+          schema: "public",
+          table: "messages",
+        },
+        (payload) => {
+          const removed = payload.old as { id?: string };
+          if (!removed.id) return;
+
+          setMessages((current) =>
+            current.filter((item) => item.id !== removed.id),
+          );
+        },
+      )
+      .subscribe();
+
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [
+    activeUserId,
+    activeGroupId,
+    userId,
+    conversationSettings,
+    groupMemberNames,
+    groups,
+  ]);
+
   function selectSlashCommand(command: string) {
     setMessage(command);
     setSlashCommandActiveIndex(0);
@@ -1948,7 +2357,7 @@ export default function ChatApp() {
         .select("id, title, athlete_id")
         .order("title", { ascending: true });
 
-      if (userRole !== "coach") {
+      if (!isCoachLikeRole(userRole)) {
         blocksQuery = blocksQuery.eq("athlete_id", userId);
       }
 
@@ -2030,15 +2439,24 @@ export default function ChatApp() {
             <div className="mb-4 flex items-center justify-between gap-3">
               <h1 className="text-2xl font-bold text-black">Chats</h1>
               <div className="flex items-center gap-2">
-                {userRole === "coach" && (
-                  <button
-                    type="button"
-                    onClick={() => setCreateGroupOpen(true)}
-                    className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-black transition hover:bg-gray-200"
-                    aria-label="Nieuwe groep"
-                  >
-                    <Users className="h-5 w-5" />
-                  </button>
+                {isCoachLikeRole(userRole) && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setBroadcastOpen(true)}
+                      className="app-focus-ring flex h-10 items-center rounded-full bg-brand-purple px-3 text-xs font-semibold text-white"
+                    >
+                      Broadcast
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setCreateGroupOpen(true)}
+                      className="app-focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-black transition hover:bg-gray-200"
+                      aria-label="Nieuwe groep"
+                    >
+                      <Users className="h-5 w-5" />
+                    </button>
+                  </>
                 )}
                 <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-sm font-semibold text-white">
                   {getInitials(userName)}
@@ -2055,7 +2473,9 @@ export default function ChatApp() {
 
           <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white">
             {bootstrapping && (
-              <p className="px-4 py-6 text-sm text-gray-500">Chats laden...</p>
+              <div className="px-4 py-4">
+                <SkeletonList rows={6} />
+              </div>
             )}
 
             {searchQuery.trim().length > 0 &&
@@ -2200,6 +2620,32 @@ export default function ChatApp() {
           />
         )}
 
+        {aiPanelOpen && activeUserId && (
+          <ChatAiPanel
+            userRole={userRole}
+            athleteId={userRole === "coach" ? activeUserId : userId}
+            athleteName={
+              userRole === "coach" ? activeAthleteName : userName || "Atleet"
+            }
+            initialQuery={aiCommand.query}
+            onClose={closeAiPanel}
+            onShareToChat={shareAiAnswerToChat}
+          />
+        )}
+
+        {todoPanelOpen && userId && (
+          <ChatTodoPanel coachId={userId} onClose={closeTodoPanel} />
+        )}
+
+        {agendaPanelOpen && userId && activeUserId && (
+          <ChatAgendaPanel
+            coachId={userId}
+            athleteId={activeUserId}
+            athleteName={activeAthleteName}
+            onClose={closeAgendaPanel}
+          />
+        )}
+
         <section
           ref={conversationPanelRef}
           className={`flex h-full min-h-0 flex-col overflow-hidden bg-gray-100 overscroll-x-none ${
@@ -2213,16 +2659,11 @@ export default function ChatApp() {
           }`}
         >
           {!activeUserId && !activeGroupId ? (
-            <div className="flex h-full flex-col items-center justify-center bg-white text-center">
-              <div className="mb-6 flex h-28 w-28 items-center justify-center rounded-full bg-gray-100">
-                <MessageCircle className="h-12 w-12 text-gray-400" />
-              </div>
-              <h2 className="text-2xl font-bold text-black">Limitless Chat</h2>
-              <p className="mt-3 max-w-sm text-sm text-gray-500">
-                Stuur berichten naar je coach, atleten of groepen. Selecteer een
-                chat links om te beginnen.
-              </p>
-            </div>
+            <EmptyState
+              icon="chat"
+              title="Limitless Chat"
+              description="Stuur berichten naar je coach, atleten of groepen. Selecteer een chat links om te beginnen."
+            />
           ) : showGroupInfo && activeGroupId ? (
             <GroupInfoPanel
               groupId={activeGroupId}
@@ -2289,7 +2730,19 @@ export default function ChatApp() {
                         {conversationTitle}
                       </h2>
                       <p className="text-sm text-gray-500">
-                        {userRole === "coach" ? "Atleet" : "Coach"}
+                        {userRole === "coach" ? (
+                          <>
+                            Atleet
+                            {athleteProgramLabel ? (
+                              <span className="text-gray-400">
+                                {" "}
+                                · {athleteProgramLabel}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          "Coach"
+                        )}
                       </p>
                     </div>
                   </Link>
@@ -2303,6 +2756,18 @@ export default function ChatApp() {
                 >
                   <Search className="h-5 w-5 text-black" />
                 </button>
+
+                {!activeGroupId && activeUserId ? (
+                  <button
+                    type="button"
+                    onClick={() => setMessage("/ai")}
+                    className="rounded-xl p-2 hover:bg-purple-50"
+                    aria-label="AI-assistent openen"
+                    title="AI-assistent"
+                  >
+                    <Sparkles className="h-5 w-5 text-purple-600" />
+                  </button>
+                ) : null}
 
                 <ChatConversationMenu
                   pinned={Boolean(currentConversationSettings?.pinned)}
@@ -2388,7 +2853,38 @@ export default function ChatApp() {
                   const showDate = shouldShowDateDivider(msg, previous);
                   const exerciseVideo = parseExerciseVideoMessage(msg.body);
                   const pollMessage = parsePollMessage(msg.body);
+                  const aiAssistantMessage = parseAiAssistantMessage(msg.body);
                   const inlineTimestamp = shouldUseInlineTimestamp(msg, exerciseVideo);
+
+                  if (aiAssistantMessage) {
+                    return (
+                      <div key={msg.id} id={`chat-message-${msg.id}`} className="mb-3">
+                        {showDate && (
+                          <div className="my-4 flex justify-center">
+                            <span className="rounded-xl bg-white px-3 py-1 text-xs font-semibold text-gray-500 shadow-sm">
+                              {formatDateDivider(msg.created_at)}
+                            </span>
+                          </div>
+                        )}
+                        <ChatAiMessage
+                          question={aiAssistantMessage.question}
+                          answer={aiAssistantMessage.answer}
+                        />
+                        <p className="mt-1 text-center text-[11px] text-gray-400">
+                          {formatMessageTime(msg.created_at)}
+                          {isMine && activeUserId && !activeGroupId ? (
+                            <span className="ml-1 inline-flex align-middle">
+                              {isOutgoingMessageRead(msg) ? (
+                                <CheckCheck className="h-3.5 w-3.5" />
+                              ) : (
+                                <Check className="h-3.5 w-3.5" />
+                              )}
+                            </span>
+                          ) : null}
+                        </p>
+                      </div>
+                    );
+                  }
 
                   return (
                     <div
@@ -2518,6 +3014,12 @@ export default function ChatApp() {
                                 onVote={(optionId) =>
                                   void handlePollVote(msg.id, optionId)
                                 }
+                                onOpenDetails={() =>
+                                  setActivePollDetails({
+                                    messageId: msg.id,
+                                    payload: pollMessage,
+                                  })
+                                }
                                 voting={votingPollId === msg.id}
                               />
                             </div>
@@ -2543,7 +3045,7 @@ export default function ChatApp() {
                                   </span>
                                   {isMine &&
                                     !activeGroupId &&
-                                    (msg.read_at ? (
+                                    (isOutgoingMessageRead(msg) ? (
                                       <CheckCheck className="h-3.5 w-3.5" />
                                     ) : (
                                       <Check className="h-3.5 w-3.5" />
@@ -2574,7 +3076,7 @@ export default function ChatApp() {
                             </span>
                             {isMine &&
                               !activeGroupId &&
-                              (msg.read_at ? (
+                              (isOutgoingMessageRead(msg) ? (
                                 <CheckCheck className="h-3.5 w-3.5" />
                               ) : (
                                 <Check className="h-3.5 w-3.5" />
@@ -2582,6 +3084,21 @@ export default function ChatApp() {
                           </div>
                           )}
                         </div>
+
+                          <ChatMessageReactions
+                            reactions={(messageReactions[msg.id] || []).map(
+                              (reaction) => ({
+                                ...reaction,
+                                user_name: resolveReactionUserName(
+                                  reaction.user_id,
+                                ),
+                              }),
+                            )}
+                            currentUserId={userId}
+                            onToggle={(emoji) =>
+                              void handleMessageReaction(msg.id, emoji)
+                            }
+                          />
                         </div>
                       </div>
                     </div>
@@ -2589,6 +3106,12 @@ export default function ChatApp() {
                 })}
                 <div ref={messagesEndRef} />
               </div>
+
+              {typingIndicator ? (
+                <p className="shrink-0 px-4 py-1 text-xs text-app-muted">
+                  {typingIndicator.userName} typt...
+                </p>
+              ) : null}
 
               {replyingTo && (
                 <div className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3">
@@ -2706,7 +3229,24 @@ export default function ChatApp() {
                     ref={inputRef}
                     rows={1}
                     value={message}
-                    onChange={(event) => setMessage(event.target.value)}
+                    onChange={(event) => {
+                      setMessage(event.target.value);
+                      if (
+                        userId &&
+                        (activeUserId || activeGroupId) &&
+                        event.target.value.trim()
+                      ) {
+                        broadcastTyping(
+                          getConversationTypingKey(
+                            userId,
+                            activeUserId || null,
+                            activeGroupId || null,
+                          ),
+                          userId,
+                          userName,
+                        );
+                      }
+                    }}
                     onKeyDown={(event) => {
                       if (slashCommandMenuOpen) {
                         if (event.key === "ArrowDown") {
@@ -2764,6 +3304,12 @@ export default function ChatApp() {
                             closeDataPanel();
                           } else if (injuriesPanelOpen) {
                             closeInjuriesPanel();
+                          } else if (aiPanelOpen) {
+                            closeAiPanel();
+                          } else if (todoPanelOpen) {
+                            closeTodoPanel();
+                          } else if (agendaPanelOpen) {
+                            closeAgendaPanel();
                           } else {
                             closeToolsPanel();
                           }
@@ -2800,6 +3346,10 @@ export default function ChatApp() {
                             ? "Data geopend..."
                             : injuriesPanelOpen
                               ? "Blessures geopend..."
+                              : todoPanelOpen
+                                ? "Todo geopend..."
+                                : agendaPanelOpen
+                                  ? "Agenda geopend..."
                               : toolsPanelOpen
                                 ? "Zoek in tools..."
                                 : "Typ een bericht"
@@ -3065,7 +3615,30 @@ export default function ChatApp() {
         onDelete={() => {
           if (messageMenu) void handleDeleteMessage(messageMenu.message);
         }}
+        onReact={(emoji) => {
+          if (messageMenu) void handleMessageReaction(messageMenu.message.id, emoji);
+        }}
       />
+
+      {activePollDetails && (
+        <PollDetailsPanel
+          open
+          onClose={() => setActivePollDetails(null)}
+          messageId={activePollDetails.messageId}
+          payload={activePollDetails.payload}
+          userId={userId}
+          votes={pollVotes}
+          memberProfiles={groupMemberProfiles}
+          memberCount={Object.keys(groupMemberNames).length}
+        />
+      )}
+
+      {broadcastOpen && userId ? (
+        <ChatBroadcastModal
+          coachId={userId}
+          onClose={() => setBroadcastOpen(false)}
+        />
+      ) : null}
     </AppShell>
   );
 }

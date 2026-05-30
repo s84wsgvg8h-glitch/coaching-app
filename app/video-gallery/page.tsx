@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import AppSidebar from "@/components/AppSidebar";
+import AppShell from "@/components/AppShell";
+import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
+import ExerciseVideoBadge from "@/components/ExerciseVideoBadge";
 import { supabase } from "@/lib/supabaseClient";
 
 type Athlete = {
@@ -19,6 +21,7 @@ type AthleteVideo = {
   video_path: string | null;
   file_name: string | null;
   exercise_name: string;
+  priority: string | null;
   reps_display: string;
   weight_display: string;
   rpe_display: string;
@@ -43,6 +46,7 @@ type ProgramExerciseInfo = {
   rpe: string | null;
   program_day_id: string;
   exercise_number: number | null;
+  priority: string | null;
 };
 
 type ProgramDayInfo = {
@@ -103,6 +107,8 @@ export default function VideoGalleryPage() {
   const [fullscreenVideo, setFullscreenVideo] = useState<AthleteVideo | null>(null);
 
   const [search, setSearch] = useState("");
+  const [priorityFilters, setPriorityFilters] = useState<string[]>([]);
+  const [liftFilters, setLiftFilters] = useState<string[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingVideos, setLoadingVideos] = useState(false);
 
@@ -137,7 +143,7 @@ export default function VideoGalleryPage() {
   }, [selectedAthleteId]);
 
   useEffect(() => {
-    videos.slice(0, 80).forEach((video) => {
+    videos.slice(0, 24).forEach((video) => {
       if (video.video_url && !thumbnailByVideoId[video.id]) {
         captureFirstFrame(video);
       }
@@ -269,7 +275,7 @@ export default function VideoGalleryPage() {
     if (exerciseIds.length > 0) {
       const { data: exerciseData, error: exerciseError } = await supabase
         .from("program_exercises")
-        .select("id, name, reps, load, rpe, program_day_id, exercise_number")
+        .select("id, name, reps, load, rpe, program_day_id, exercise_number, priority")
         .in("id", exerciseIds);
 
       if (exerciseError) {
@@ -409,6 +415,7 @@ export default function VideoGalleryPage() {
       return {
         ...video,
         exercise_name: exerciseName,
+        priority: exercise?.priority || null,
         reps_display: reps,
         weight_display: weight,
         rpe_display: rpe,
@@ -578,6 +585,34 @@ export default function VideoGalleryPage() {
     }
   }
 
+  function togglePriorityFilter(value: string) {
+    setPriorityFilters((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }
+
+  function toggleLiftFilter(value: string) {
+    setLiftFilters((current) =>
+      current.includes(value)
+        ? current.filter((item) => item !== value)
+        : [...current, value],
+    );
+  }
+
+  function matchesPriorityFilter(priority: string | null, filter: string) {
+    return (priority || "").trim().toLowerCase() === filter;
+  }
+
+  function matchesLiftFilter(exerciseName: string, filter: string) {
+    const clean = exerciseName.toLowerCase();
+    if (filter === "squat") return clean.includes("squat");
+    if (filter === "bench") return clean.includes("bench");
+    if (filter === "deadlift") return clean.includes("deadlift");
+    return false;
+  }
+
   function matchesSearch(video: AthleteVideo, query: string) {
     const cleanQuery = query.trim().toLowerCase();
     if (!cleanQuery) return true;
@@ -594,9 +629,27 @@ export default function VideoGalleryPage() {
       );
 
       if (!matchesSelectedWeek) return false;
-      return matchesSearch(video, search);
+      if (!matchesSearch(video, search)) return false;
+
+      if (
+        priorityFilters.length > 0 &&
+        !priorityFilters.some((filter) =>
+          matchesPriorityFilter(video.priority, filter),
+        )
+      ) {
+        return false;
+      }
+
+      if (
+        liftFilters.length > 0 &&
+        !liftFilters.some((filter) => matchesLiftFilter(video.exercise_name, filter))
+      ) {
+        return false;
+      }
+
+      return true;
     });
-  }, [videos, search, selectedWeekKeys, weekFilters]);
+  }, [videos, search, selectedWeekKeys, weekFilters, priorityFilters, liftFilters]);
 
   const compareVideosBySlot = [0, 1, 2, 3].map(
     (slot) => videos.find((video) => video.id === compareVideoIds[slot]) || null,
@@ -734,6 +787,11 @@ export default function VideoGalleryPage() {
         }`}
       >
         <div className={`${compact ? "aspect-video" : "aspect-[16/27]"} bg-black relative`}>
+          <ExerciseVideoBadge
+            exerciseName={video.exercise_name}
+            priority={video.priority}
+          />
+
           {thumbnail ? (
             <img src={thumbnail} alt="" className="h-full w-full bg-black object-cover" />
           ) : (
@@ -945,17 +1003,53 @@ export default function VideoGalleryPage() {
   }
 
   return (
-    <main className="min-h-[100dvh] bg-gray-100">
-      <section className="min-w-0 flex-1 p-6 pb-24">
-          <div className="mb-6 rounded-3xl bg-white p-6 shadow-xl">
+    <AppShell contentClassName="flex min-h-0 flex-1 flex-col p-4 pb-24 md:p-6 lg:pb-6">
+      <div className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
+        {!compareMode && (
+          <CollapsibleFilterSidebar title="Weeks">
+            <div className="mb-2 flex items-center justify-between px-1">
+              <span className="text-[10px] font-bold uppercase text-app-muted">
+                Block / week
+              </span>
+              <button
+                type="button"
+                onClick={toggleAllWeeks}
+                className="rounded bg-app-surface-muted px-2 py-1 text-[10px] font-bold"
+              >
+                {selectedWeekKeys.length === weekFilters.length
+                  ? "Uit"
+                  : "Alles"}
+              </button>
+            </div>
+            {weekFilters.map((filter) => (
+              <label
+                key={filter.key}
+                className="mb-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold hover:bg-app-surface-muted"
+              >
+                <input
+                  type="checkbox"
+                  checked={selectedWeekKeys.includes(filter.key)}
+                  onChange={() => toggleWeek(filter.key)}
+                  className="h-3.5 w-3.5 accent-brand-purple"
+                />
+                <span className="truncate">{filter.label}</span>
+              </label>
+            ))}
+          </CollapsibleFilterSidebar>
+        )}
+
+        <section className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
+          <div className="mb-6">
             <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <h1 className="text-4xl font-bold text-black">Video galerij</h1>
+              <h1 className="text-3xl font-bold text-app-text md:text-4xl">
+                Video galerij
+              </h1>
 
               <div className="flex flex-col gap-3 md:flex-row">
                 <select
                   value={selectedAthleteId}
                   onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="rounded-xl border bg-white p-3 text-black outline-none"
+                  className="rounded-xl border border-app-border bg-app-surface p-3 outline-none app-focus-ring"
                 >
                   {athletes.map((athlete) => (
                     <option key={athlete.id} value={athlete.id}>
@@ -966,19 +1060,21 @@ export default function VideoGalleryPage() {
 
                 <button
                   onClick={() => setCompareMode(!compareMode)}
-                  className="rounded-xl bg-black px-4 py-3 font-semibold text-white"
+                  className="app-btn-primary"
                 >
                   {compareMode ? "Normale view" : "Compare view"}
                 </button>
 
                 {compareMode && (
-                  <div className="flex rounded-xl bg-gray-100 p-1">
+                  <div className="flex rounded-xl bg-app-surface-muted p-1">
                     {[2, 3, 4].map((count) => (
                       <button
                         key={count}
                         onClick={() => setCompareCount(count as 2 | 3 | 4)}
                         className={`rounded-lg px-4 py-2 text-sm font-bold ${
-                          compareCount === count ? "bg-black text-white" : "text-black"
+                          compareCount === count
+                            ? "bg-brand-purple text-white"
+                            : "text-app-text"
                         }`}
                       >
                         {count} compare
@@ -990,56 +1086,67 @@ export default function VideoGalleryPage() {
             </div>
 
             {!compareMode && (
-              <div className="mt-5 grid grid-cols-1 gap-4 xl:grid-cols-[1fr_2fr]">
+              <div className="mt-5 space-y-4">
                 <div>
-                  <div className="mb-2 flex items-center justify-between">
-                    <label className="text-sm font-bold text-gray-700">Block / week filter</label>
-
-                    <button
-                      onClick={toggleAllWeeks}
-                      className="rounded-lg bg-gray-100 px-3 py-2 text-xs font-bold text-black hover:bg-gray-200"
-                    >
-                      {selectedWeekKeys.length === weekFilters.length ? "Alles uit" : "Alles aan"}
-                    </button>
-                  </div>
-
-                  <div className="max-h-[168px] overflow-y-auto rounded-2xl border bg-gray-50 p-3">
-                    {weekFilters.map((filter) => (
-                      <label
-                        key={filter.key}
-                        className="mb-2 flex cursor-pointer items-center gap-3 rounded-xl bg-white p-3 text-sm font-semibold text-black shadow-sm last:mb-0"
-                      >
-                        <input
-                          type="checkbox"
-                          checked={selectedWeekKeys.includes(filter.key)}
-                          onChange={() => toggleWeek(filter.key)}
-                          className="h-4 w-4 accent-black"
-                        />
-                        {filter.label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-gray-700">Zoeken</label>
-
+                  <label className="mb-2 block text-sm font-bold text-app-muted">
+                    Zoeken
+                  </label>
                   <div className="relative">
                     <input
                       value={search}
                       onChange={(e) => setSearch(e.target.value)}
                       placeholder="Zoek bijv. squat, rpe 7, 5 reps, 120 kg, block 1, b1w1"
-                      className="w-full rounded-2xl border bg-white px-4 py-3 pr-11 text-black outline-none"
+                      className="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 pr-11 outline-none app-focus-ring"
                     />
-
                     {search && (
                       <button
                         onClick={() => setSearch("")}
-                        className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600 hover:bg-gray-200"
+                        className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-app-surface-muted text-sm font-bold"
                       >
                         ×
                       </button>
                     )}
+                  </div>
+                </div>
+
+                <div>
+                  <p className="mb-2 text-sm font-bold text-app-muted">Filters</p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      { id: "primary", label: "Primary" },
+                      { id: "secondary", label: "Secondary" },
+                    ].map((filter) => (
+                      <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => togglePriorityFilter(filter.id)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                          priorityFilters.includes(filter.id)
+                            ? "bg-brand-purple text-white"
+                            : "bg-app-surface-muted text-app-text"
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
+                    {[
+                      { id: "squat", label: "Squat" },
+                      { id: "bench", label: "Bench" },
+                      { id: "deadlift", label: "Deadlift" },
+                    ].map((filter) => (
+                      <button
+                        key={filter.id}
+                        type="button"
+                        onClick={() => toggleLiftFilter(filter.id)}
+                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                          liftFilters.includes(filter.id)
+                            ? "bg-brand-purple text-white"
+                            : "bg-app-surface-muted text-app-text"
+                        }`}
+                      >
+                        {filter.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
               </div>
@@ -1069,7 +1176,7 @@ export default function VideoGalleryPage() {
             </div>
           )}
         </section>
-      <AppSidebar />
+      </div>
 
       {fullscreenVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4">
@@ -1108,6 +1215,6 @@ export default function VideoGalleryPage() {
           </div>
         </div>
       )}
-    </main>
+    </AppShell>
   );
 }

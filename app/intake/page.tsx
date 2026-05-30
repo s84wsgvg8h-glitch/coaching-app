@@ -171,11 +171,15 @@ export default function IntakePage() {
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-              Welkom
+              Limitless Coaching
             </p>
-            <h1 className="text-3xl font-bold text-black">Intakeformulier</h1>
+            <h1 className="text-3xl font-bold text-black">
+              Intakeformulier Limitless Coaching
+            </h1>
             <p className="mt-2 text-gray-600">
-              Vul dit formulier in voordat je de app kunt gebruiken.
+              Vul dit formulier zo volledig mogelijk in. Je antwoorden helpen
+              mij om je programma, planning en coaching beter op jou af te
+              stemmen.
             </p>
           </div>
           <button
@@ -202,6 +206,11 @@ export default function IntakePage() {
                   {field.label}
                   {field.required ? " *" : ""}
                 </label>
+                {field.description && (
+                  <p className="mb-2 text-sm leading-6 text-gray-600">
+                    {field.description}
+                  </p>
+                )}
                 {renderField(field)}
                 {errors[field.key] && (
                   <p className="mt-1 text-sm text-red-600">{errors[field.key]}</p>

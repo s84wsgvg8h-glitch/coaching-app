@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/AuthProvider";
 import { needsIntakeCompletion } from "@/lib/intakeForm";
 
 const ALLOWED_PATHS = ["/intake", "/login", "/signup"];
@@ -10,6 +10,7 @@ const ALLOWED_PATHS = ["/intake", "/login", "/signup"];
 export default function IntakeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
+  const { userId, role, loading: authLoading } = useAuth();
   const [checked, setChecked] = useState(false);
   const [blocked, setBlocked] = useState(false);
 
@@ -25,11 +26,9 @@ export default function IntakeGate({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+      if (authLoading) return;
 
-      if (!user) {
+      if (!userId) {
         if (!cancelled) {
           setBlocked(false);
           setChecked(true);
@@ -37,11 +36,11 @@ export default function IntakeGate({ children }: { children: React.ReactNode }) 
         return;
       }
 
-      const needsIntake = await needsIntakeCompletion(user.id);
+      const needsIntake = await needsIntakeCompletion(userId);
 
       if (cancelled) return;
 
-      if (needsIntake) {
+      if (needsIntake && role === "atleet") {
         setBlocked(true);
         router.replace("/intake");
       } else {
@@ -56,12 +55,12 @@ export default function IntakeGate({ children }: { children: React.ReactNode }) 
     return () => {
       cancelled = true;
     };
-  }, [pathname, router]);
+  }, [pathname, router, userId, role, authLoading]);
 
-  if (!checked || blocked) {
+  if (authLoading || !checked || blocked) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-gray-100">
-        <p className="text-sm text-gray-500">Laden...</p>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-app-bg">
+        <p className="text-sm text-app-muted">Laden...</p>
       </div>
     );
   }

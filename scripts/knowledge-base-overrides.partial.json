@@ -1,0 +1,67 @@
+{
+  "volume-intensity-case-studies-stalls": {
+    "title": "Volume naar intensiteit — casussen en stagnatie",
+    "category": "Coaching",
+    "content": "**Probleem**\n\nVeel coaches blijven het wekelijkse setvolume verhogen wanneer een gevorderde atleet maandenlang stagneert. De atleet traint harder, maar squat of bench beweegt niet meer. Het probleem is zelden puur 'te weinig volume'. Vaak is de hefboom verkeerd voor het trainingsniveau: wat een beginner vooruit hielp, remt een gevorderde lifter af.\n\n**Technische aanpassing**\n\nHerken stagnatie als twee tot drie maanden vlakke prestaties terwijl volume al hoog is. Verschuif dan naar een intensificatiefase: verhoog relatieve én absolute intensiteit, verhoog specificiteit richting wedstrijdlifts, en erken dat meer sets niet automatisch meer kracht opleveren.\n\nPatrick (intermediair naar gevorderd, ~93 kg) maakte eerst progressie via langzaam stijgend totaal aantal sets. Bij plateau hielp vier benchdagen per week niet — terug naar drie zwaardere dagen met meer topsets en straight sets rond RPE 7 in plaats van submaximale top-plus-back-off. Payton (beginner) trainde eerst maanden onder 80% met veel accessory-volume (+200 kg totaal in jaar 1), daarna minder variaties en meer wedstrijd-SBD.\n\n**Waarom biomechanisch**\n\nGevorderden hebben vaak al voldoende spiermassa. De bottleneck verschuift naar neurale output, techniek onder zware belasting en fatigue-management. Extra volume zonder hogere kwaliteit zware work verhoogt vooral vermoeidheid zonder extra krachttransfer.\n\n**Programmeren**\n\nBeginners: bouw techniek, spiermassa en werkcapaciteit. Gevorderden: maximaliseer neurale output van bestaande massa. Monitor via /volume en /intensity. Geen copy-paste frameworks — een duidelijke stagnatie vraagt om een andere hefboom.\n\n**Aandachtspunt**\n\nMeer volume is geen automatische fix bij plateau. Check eerst intensiteit, specificiteit en herstel voordat je sets toevoegt.",
+    "keywords": [
+      "stagnatie",
+      "plateau",
+      "intensificatie",
+      "volume",
+      "intensiteit",
+      "specificiteit",
+      "gevorderde lifter",
+      "topsets",
+      "straight sets",
+      "benchfrequentie",
+      "krachtwinst",
+      "programmeren",
+      "Powerlifting Now",
+      "monitoring"
+    ]
+  },
+  "volume-total-sets-programming-system": {
+    "title": "Volume meten — totaal sets en rep ranges (Powerlifting Now)",
+    "category": "Coaching",
+    "content": "**Probleem**\n\nVolume wordt wisselend gerekend via tonnage, reps of sets. Daardoor ontstaan te veel variabelen tegelijk en is onduidelijk wat in een block daadwerkelijk werkte. De coach verliest overzicht over welke verandering progressie dreef.\n\n**Technische aanpassing**\n\nIn de Powerlifting Now-praktijk is volume primair het totaal aantal sets per lift per week. Houd dat aantal week-op-week en block-op-block redelijk stabiel. Manipuleer vooral intensiteit; verander volume minder vaak.\n\nVoor wedstrijd-SBD: maximaal ~6 reps voor squat en deadlift, ~7–8 voor bench. Behandel elke rep als een mini-single met volledige bracing, setup en skill. Hogere reps (8–12) komen via accessoires: leg press, belt squat, dumbbell bench, isolatie.\n\n2×6 is niet hetzelfde als 6×2 op papier: de fatigue en skill-eis verschillen. Meten in sets voorkomt gokwerk.\n\n**Waarom biomechanisch**\n\nEen consistent set-aantal beperkt variabelen bij het interpreteren van progressie. Boven ~6 reps op hoofdlifts neemt skill-decay en techniekverlies toe terwijl de neural specificiteit afneemt.\n\n**Programmeren**\n\nTrack sets per squat, bench en deadlift plus accessory-categorieën. Pas reps block-op-block klein aan (±1–2), geen wilde swings.\n\n**Aandachtspunt**\n\nAndere coaches werken met tonnage of wave loading — dat kan in hun systeem geldig zijn. Koppel dit principe aan de chunk volume-intensity-framework.",
+    "keywords": [
+      "totaal sets",
+      "volume-metriek",
+      "sets per week",
+      "tonnage",
+      "workload",
+      "reps",
+      "wedstrijdlifts",
+      "accessoires",
+      "8-12 reps",
+      "zes reps",
+      "skill-oefening",
+      "variabelen beperken",
+      "wave loading",
+      "Powerlifting Now",
+      "volumeprogrammering"
+    ]
+  },
+  "volume-deload-block-length": {
+    "title": "Deload-timing en workload — geplande volumeverlaging",
+    "category": "Coaching",
+    "content": "**Probleem**\n\nWanneer het wekelijkse volume golft zonder geplande deload, is onduidelijk wanneer een atleet zijn piek bereikt. In week 5 kan hij nog doorgrindt terwijl de stimulus al maximaal was en herstel nodig is.\n\n**Technische aanpassing**\n\nGeplande deloads houden het aantal sets per week stabiel over een block. Zonder deload ontstaat wave loading: week 1 is lichter, daarna stijgt het volume tot een piek.\n\nGebruik een adaptatiemodel waarin kracht globaal lineair stijgt en daarna plateaut. Volg meerdere blocks om te zien wanneer de atleet piekt (vaak week 4–5) en daarna stagneert of zich 'slap' voelt. Plan de deload na die piekweek — niet automatisch na vier weken voor administratie.\n\nDeload-kader (workload ≈ sets × reps × gewicht): totale workload rond 55–62,5% van de vorige week voor squat, 70–80% bench, 40–55% deadlift, accessoires ~75%. Intensiteitsdeload: squat ~87,5–90%, bench ~90–95%, deadlift ~85–87,5% van het vorige gewicht. Bench soms minimale deload vanwege detrain-risico.\n\nFeedback na deload: fris en sterk = goed gedoseerd. Traagheid of verlies van explosiviteit = overdosed — pas volume- en intensiteitspercentages aan.\n\n**Waarom biomechanisch**\n\nEen deload reset opgebouwde fatigue zonder alle fitheid kwijt te raken. Het 'steelt' frisheid voor het volgende block; het is geen garantie voor directe PR's.\n\n**Programmeren**\n\nStuur deload-timing via /volume-trends en atleet-check-ins.\n\n**Aandachtspunt**\n\nRTS/ER met identiek weekprotocol is een extreme variant — dit systeem laat meer flexibiliteit toe met een deload als ankerpunt.",
+    "keywords": [
+      "deload",
+      "blocklengte",
+      "vijfweeksblock",
+      "wave loading",
+      "plateau",
+      "piekweek",
+      "fatigue-management",
+      "workload-percentage",
+      "Bompa",
+      "Emerging Strategies",
+      "RTS",
+      "herstel",
+      "Powerlifting Now",
+      "volume",
+      "vermoeidheid"
+    ]
+  }
+}

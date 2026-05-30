@@ -30,10 +30,98 @@ export default function WedstrijdKalenderPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editForm, setEditForm] = useState<EditForm>(emptyEditForm());
   const [opslaanLoading, setOpslaanLoading] = useState(false);
+  const [isCoach, setIsCoach] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<
+    "idle" | "syncing" | "done" | "error"
+  >("idle");
+  const [syncMessage, setSyncMessage] = useState("");
 
   useEffect(() => {
-    void haalWedstrijdenOp();
+    void initPage();
   }, []);
+
+  async function initPage() {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .single();
+
+      const coachViewer =
+        profile?.role === "coach" || profile?.role === "admin";
+      setIsCoach(coachViewer);
+
+      await haalWedstrijdenOp();
+
+      if (coachViewer) {
+        void syncKnkfCalendar(false);
+      }
+
+      return;
+    }
+
+    await haalWedstrijdenOp();
+  }
+
+  async function syncKnkfCalendar(force = false) {
+    const cacheKey = "knkf-calendar-sync-date";
+    const today = getTodayDateString();
+    const lastSync =
+      typeof window !== "undefined"
+        ? window.sessionStorage.getItem(cacheKey)
+        : null;
+
+    if (!force && lastSync === today) {
+      return;
+    }
+
+    setSyncStatus("syncing");
+    setSyncMessage("");
+
+    try {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+
+      const response = await fetch("/api/competition-calendar/sync", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${session?.access_token || ""}`,
+        },
+      });
+
+      const payload = (await response.json()) as {
+        inserted?: number;
+        skipped?: number;
+        fetched?: number;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(payload.error || "Synchronisatie mislukt.");
+      }
+
+      if (typeof window !== "undefined") {
+        window.sessionStorage.setItem(cacheKey, today);
+      }
+
+      setSyncStatus("done");
+      setSyncMessage(
+        `${payload.inserted || 0} nieuw, ${payload.skipped || 0} bestonden al (${payload.fetched || 0} gevonden op KNKF).`,
+      );
+      await haalWedstrijdenOp();
+    } catch (error) {
+      setSyncStatus("error");
+      setSyncMessage(
+        error instanceof Error ? error.message : "Synchronisatie mislukt.",
+      );
+    }
+  }
 
   async function haalWedstrijdenOp() {
     setLoading(true);
@@ -290,21 +378,46 @@ export default function WedstrijdKalenderPage() {
   return (
     <AppShell contentClassName="flex-1 p-8">
       <div className="max-w-6xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
+        <div className="flex justify-between items-center mb-8 gap-4">
           <div>
             <h1 className="text-3xl font-bold">Wedstrijd kalender</h1>
 
             <p className="text-gray-500">
               Bekijk en beheer aankomende wedstrijden.
             </p>
+            {isCoach && syncMessage ? (
+              <p
+                className={`mt-2 text-sm ${
+                  syncStatus === "error" ? "text-red-600" : "text-gray-600"
+                }`}
+              >
+                {syncStatus === "syncing"
+                  ? "KNKF-kalender synchroniseren..."
+                  : syncMessage}
+              </p>
+            ) : null}
           </div>
 
-          <a
-            href="/dashboard"
-            className="bg-black text-white px-4 py-2 rounded-lg"
-          >
-            Terug naar dashboard
-          </a>
+          <div className="flex flex-wrap items-center gap-2">
+            {isCoach ? (
+              <button
+                type="button"
+                onClick={() => void syncKnkfCalendar(true)}
+                disabled={syncStatus === "syncing"}
+                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50 disabled:opacity-60"
+              >
+                {syncStatus === "syncing"
+                  ? "Synchroniseren..."
+                  : "Sync KNKF-kalender"}
+              </button>
+            ) : null}
+            <a
+              href="/dashboard"
+              className="bg-black text-white px-4 py-2 rounded-lg"
+            >
+              Terug naar dashboard
+            </a>
+          </div>
         </div>
 
         <div className="bg-white rounded-2xl shadow p-6 mb-6">

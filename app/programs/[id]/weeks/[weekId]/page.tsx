@@ -2,11 +2,24 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition, useMemo } from "react";
 import { createPortal } from "react-dom";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
 import AppSidebar from "@/components/AppSidebar";
+import ExerciseLibraryPickerModal from "@/components/ExerciseLibraryPickerModal";
+import ExerciseLibraryVideoModal from "@/components/ExerciseLibraryVideoModal";
+import ProgramSearch from "@/components/ProgramSearch";
+import { SaveTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import { supabase } from "@/lib/supabaseClient";
+import {
+  loadExerciseLibraryItems,
+  type ExerciseLibraryItem,
+} from "@/lib/exerciseLibrary";
+import {
+  createProgramMacrocycle,
+  loadProgramMacrocycles,
+  type ProgramMacrocycle,
+} from "@/lib/programMacrocycles";
 import { sendExerciseVideoMessageToCoach } from "@/lib/chatUtils";
 import { captureVideoThumbnail } from "@/lib/videoThumbnail";
 import {
@@ -16,140 +29,33 @@ import {
   isEmptyCheckinRecovery,
   isEmptySetField,
   OVERDUE_BUTTON_GROUP_CLASS,
+  ATHLETE_PLACEHOLDER_INPUT_CLASS,
+  hasIncompleteSetField,
+  withOverdueCardBoxClass,
   withOverdueInputClass,
 } from "@/lib/programDayValidation";
+import { applyAthleteSetDefaults } from "@/lib/athleteSetDefaults";
+import { isCoachLikeRole } from "@/lib/authRoles";
+import {
+  capitalizeExerciseName,
+  getPriorityClass,
+  isPriorityExercise,
+} from "@/lib/programWeek/exerciseUtils";
+import {
+  priorityOptions,
+  type AthleteDayCheckin,
+  type AthleteExerciseNote,
+  type AthleteExerciseSet,
+  type AthleteExerciseVideo,
+  type PreviousWeekSetData,
+  type ProgramBlock,
+  type ProgramDay,
+  type ProgramExercise,
+  type ProgramWeek,
+  type VideoRecorderTarget,
+} from "@/lib/programWeek/types";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
-
-type ProgramBlock = {
-  id: string;
-  title: string;
-  description: string | null;
-  athlete_id: string | null;
-  start_date: string | null;
-};
-
-type ProgramWeek = {
-  id: string;
-  title: string;
-  week_number: number;
-  program_block_id: string;
-};
-
-type ProgramDay = {
-  id: string;
-  title: string;
-  day_number: number;
-  program_week_id: string;
-  notes: string | null;
-  warmup: string | null;
-};
-
-type ProgramExercise = {
-  id: string;
-  program_day_id: string;
-  name: string;
-  sets: string | null;
-  reps: string | null;
-  load: string | null;
-  rpe: string | null;
-  notes: string | null;
-  exercise_number: number | null;
-  priority?: string | null;
-};
-
-type AthleteExerciseSet = {
-  id?: string;
-  program_exercise_id: string;
-  athlete_id: string;
-  set_number: number;
-  reps: string | null;
-  weight: string | null;
-  rpe: string | null;
-};
-
-type AthleteExerciseNote = {
-  id?: string;
-  program_exercise_id: string;
-  athlete_id: string;
-  notes: string | null;
-};
-
-type AthleteExerciseVideo = {
-  id?: string;
-  program_exercise_id: string;
-  athlete_id: string;
-  set_number: number;
-  video_url: string | null;
-  video_path: string | null;
-  file_name: string | null;
-  caption: string | null;
-};
-
-type AthleteDayCheckin = {
-  id?: string;
-  program_day_id: string;
-  athlete_id: string;
-  bw: string | null;
-  recovery: number | null;
-  fatigue: number | null;
-  notes: string | null;
-};
-
-type PreviousWeekSetData = {
-  weekTitle: string;
-  dayTitle: string;
-  exerciseName: string;
-  rows: AthleteExerciseSet[];
-  athleteNote: string;
-};
-
-type VideoRecorderTarget = {
-  exercise: ProgramExercise;
-  setNumber: number;
-};
-
-const priorityOptions = [
-  "primary",
-  "secondary",
-  "tertiary",
-  "quaternary",
-  "quinary",
-  "senary",
-  "septenary",
-];
-
-
-function isPriorityExercise(name: string) {
-  const clean = name.toLowerCase();
-  return (
-    clean.includes("squat") ||
-    clean.includes("bench") ||
-    clean.includes("deadlift")
-  );
-}
-
-function capitalizeExerciseName(value: string | null | undefined) {
-  const cleanValue = (value || "").trim();
-
-  if (!cleanValue) return "";
-
-  return cleanValue.charAt(0).toUpperCase() + cleanValue.slice(1);
-}
-
-function getPriorityClass(priority: string | null | undefined) {
-  const value = priority || "primary";
-
-  if (value === "primary") return "bg-red-100 text-red-700 border-red-200";
-  if (value === "secondary") return "bg-orange-100 text-orange-700 border-orange-200";
-  if (value === "tertiary") return "bg-yellow-100 text-yellow-700 border-yellow-200";
-  if (value === "quaternary") return "bg-green-100 text-green-700 border-green-200";
-  if (value === "quinary") return "bg-blue-100 text-blue-700 border-blue-200";
-  if (value === "senary") return "bg-purple-100 text-purple-700 border-purple-200";
-  if (value === "septenary") return "bg-pink-100 text-pink-700 border-pink-200";
-
-  return "bg-gray-100 text-gray-700 border-gray-200";
-}
 
 export default function ProgramWeekPage() {
   const params = useParams();
@@ -169,10 +75,19 @@ export default function ProgramWeekPage() {
   const [days, setDays] = useState<ProgramDay[]>([]);
 
   const [navBlocks, setNavBlocks] = useState<ProgramBlock[]>([]);
+  const [navMacrocycles, setNavMacrocycles] = useState<ProgramMacrocycle[]>([]);
   const [weeksByBlock, setWeeksByBlock] = useState<
     Record<string, ProgramWeek[]>
   >({});
   const [openBlockIds, setOpenBlockIds] = useState<Record<string, boolean>>({});
+  const [openMacrocycleIds, setOpenMacrocycleIds] = useState<
+    Record<string, boolean>
+  >({});
+
+  const [creatingMacrocycle, setCreatingMacrocycle] = useState(false);
+  const [newMacrocycleTitle, setNewMacrocycleTitle] = useState("");
+  const [newBlockMacrocycleId, setNewBlockMacrocycleId] = useState("");
+  const [editingBlockMacrocycleId, setEditingBlockMacrocycleId] = useState("");
 
   const [creatingBlock, setCreatingBlock] = useState(false);
   const [newBlockTitle, setNewBlockTitle] = useState("");
@@ -185,6 +100,7 @@ export default function ProgramWeekPage() {
 
   const [creatingWeekBlockId, setCreatingWeekBlockId] = useState("");
   const [newWeekTitle, setNewWeekTitle] = useState("");
+  const [programAddMenuOpen, setProgramAddMenuOpen] = useState(false);
 
   const [editingWeekId, setEditingWeekId] = useState("");
   const [editingWeekTitle, setEditingWeekTitle] = useState("");
@@ -289,6 +205,16 @@ export default function ProgramWeekPage() {
   const [weekNavOpen, setWeekNavOpen] = useState(false);
   const blockNavRef = useRef<HTMLDivElement | null>(null);
   const weekNavRef = useRef<HTMLDivElement | null>(null);
+  const [uitlegMode, setUitlegMode] = useState(false);
+  const [libraryItems, setLibraryItems] = useState<ExerciseLibraryItem[]>([]);
+  const [libraryItemsById, setLibraryItemsById] = useState<
+    Record<string, ExerciseLibraryItem>
+  >({});
+  const [linkingExercise, setLinkingExercise] = useState<ProgramExercise | null>(
+    null,
+  );
+  const [previewLibraryItem, setPreviewLibraryItem] =
+    useState<ExerciseLibraryItem | null>(null);
 
   useEffect(() => {
     setNavigatingUrl("");
@@ -476,6 +402,12 @@ export default function ProgramWeekPage() {
       setRole(profile.role || "");
     }
 
+    const items = await loadExerciseLibraryItems(false);
+    setLibraryItems(items);
+    setLibraryItemsById(
+      Object.fromEntries(items.map((item) => [item.id, item])),
+    );
+
     const { data: blockData } = await supabase
       .from("program_blocks")
       .select("*")
@@ -520,6 +452,19 @@ export default function ProgramWeekPage() {
 
     const loadedBlocks = blocksData || [];
     setNavBlocks(loadedBlocks);
+
+    const macrocycles = await loadProgramMacrocycles(ownerAthleteId);
+    setNavMacrocycles(macrocycles);
+
+    const activeBlock = loadedBlocks.find((block) => block.id === blockId);
+    const openMacroState: Record<string, boolean> = {};
+    macrocycles.forEach((macrocycle) => {
+      openMacroState[macrocycle.id] =
+        macrocycle.id === activeBlock?.macrocycle_id ||
+        openMacrocycleIds[macrocycle.id] ||
+        false;
+    });
+    setOpenMacrocycleIds(openMacroState);
 
     const blockIds = loadedBlocks.map((block) => block.id);
 
@@ -603,6 +548,40 @@ export default function ProgramWeekPage() {
     });
 
     setExercisesByDay(grouped);
+  }
+
+  function getExerciseLibraryItem(exercise: ProgramExercise) {
+    if (!exercise.exercise_library_id) return null;
+    return libraryItemsById[exercise.exercise_library_id] || null;
+  }
+
+  async function saveExerciseLibraryLink(
+    exerciseId: string,
+    libraryId: string | null,
+  ) {
+    const { error } = await supabase
+      .from("program_exercises")
+      .update({ exercise_library_id: libraryId })
+      .eq("id", exerciseId);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setExercisesByDay((current) => {
+      const next = { ...current };
+
+      for (const dayId of Object.keys(next)) {
+        next[dayId] = next[dayId].map((exercise) =>
+          exercise.id === exerciseId
+            ? { ...exercise, exercise_library_id: libraryId }
+            : exercise,
+        );
+      }
+
+      return next;
+    });
   }
 
   function programUrl(targetBlockId: string, targetWeekId: string) {
@@ -803,29 +782,54 @@ export default function ProgramWeekPage() {
           </div>
         </div>
 
-        {role === "coach" && (
-          <div className="flex gap-2">
-            <button
-              type="button"
-              onClick={() => setCreatingBlock(true)}
-              className="rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95"
-            >
-              + Block
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setCreatingWeekBlockId(blockId);
-                setNewWeekTitle(`Week ${blockWeeks.length + 1}`);
-              }}
-              className="rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95"
-            >
-              + Week
-            </button>
+        {isCoachLikeRole(role) && (
+          <div className="flex flex-wrap gap-2">
+            {renderProgramAddMenu(
+              "rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95",
+            )}
+            <SaveTemplateButton
+              coachId={userId}
+              blockId={blockId}
+              actingUserId={userId}
+              actingRole={role}
+            />
           </div>
         )}
 
-        {role === "coach" && creatingBlock && (
+        {isCoachLikeRole(role) && creatingMacrocycle && (
+          <div className="rounded-2xl border border-purple-200 bg-white p-3 shadow-sm">
+            <input
+              value={newMacrocycleTitle}
+              onChange={(e) => setNewMacrocycleTitle(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") createMacrocycle();
+              }}
+              placeholder="Naam macrocycle"
+              className="mb-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+            />
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={createMacrocycle}
+                className="flex-1 rounded-xl bg-purple-700 px-3 py-2 text-sm text-white"
+              >
+                Opslaan
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setCreatingMacrocycle(false);
+                  setNewMacrocycleTitle("");
+                }}
+                className="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-sm text-black"
+              >
+                Annuleer
+              </button>
+            </div>
+          </div>
+        )}
+
+        {isCoachLikeRole(role) && creatingBlock && (
           <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <input
               value={newBlockTitle}
@@ -848,6 +852,20 @@ export default function ProgramWeekPage() {
               placeholder="Beschrijving"
               className="mb-2 min-h-[70px] w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
             />
+            {navMacrocycles.length > 0 && (
+              <select
+                value={newBlockMacrocycleId}
+                onChange={(e) => setNewBlockMacrocycleId(e.target.value)}
+                className="mb-2 w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-base text-black outline-none md:text-sm"
+              >
+                <option value="">Geen macrocycle</option>
+                {navMacrocycles.map((macrocycle) => (
+                  <option key={macrocycle.id} value={macrocycle.id}>
+                    {macrocycle.title}
+                  </option>
+                ))}
+              </select>
+            )}
             <div className="flex gap-2">
               <button
                 type="button"
@@ -863,6 +881,7 @@ export default function ProgramWeekPage() {
                   setNewBlockTitle("");
                   setNewBlockDescription("");
                   setNewBlockStartDate("");
+                  setNewBlockMacrocycleId("");
                 }}
                 className="flex-1 rounded-xl bg-gray-100 px-3 py-2 text-sm text-black"
               >
@@ -872,7 +891,7 @@ export default function ProgramWeekPage() {
           </div>
         )}
 
-        {role === "coach" && creatingWeekBlockId === blockId && (
+        {isCoachLikeRole(role) && creatingWeekBlockId === blockId && (
           <div className="rounded-2xl border border-gray-200 bg-white p-3 shadow-sm">
             <input
               value={newWeekTitle}
@@ -909,31 +928,99 @@ export default function ProgramWeekPage() {
   }
 
   function renderBlocksSidebar() {
+    const orderedSidebarBlocks = [
+      ...navMacrocycles.flatMap((macrocycle) =>
+        navBlocks.filter((block) => block.macrocycle_id === macrocycle.id),
+      ),
+      ...navBlocks.filter((block) => !block.macrocycle_id),
+    ];
+    const emptyMacrocycles = navMacrocycles.filter(
+      (macrocycle) =>
+        !navBlocks.some((block) => block.macrocycle_id === macrocycle.id),
+    );
+    const sidebarExpanded =
+      programAddMenuOpen ||
+      creatingMacrocycle ||
+      creatingBlock ||
+      Boolean(creatingWeekBlockId);
+
     return (
-              <aside className="group/blocks sticky top-0 hidden h-screen self-start w-[70px] min-w-[70px] overflow-y-auto border-r border-gray-200 bg-white p-3 z-20 transition-all duration-200 hover:w-[300px] hover:min-w-[300px] lg:block">
+              <aside
+                className={`group/blocks sticky top-0 hidden h-screen self-start overflow-y-auto border-r border-gray-200 bg-white p-3 z-20 transition-all duration-200 lg:block ${
+                  sidebarExpanded
+                    ? "w-[300px] min-w-[300px]"
+                    : "w-[70px] min-w-[70px] hover:w-[300px] hover:min-w-[300px]"
+                }`}
+              >
                 <div className="flex items-center justify-between mb-4">
-                  <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150 overflow-hidden whitespace-nowrap">
-                    <h2 className="text-lg font-bold">Blocks</h2>
-                    <p className="text-xs text-gray-500">Blocks en weken</p>
+                  <div
+                    className={`transition-all duration-150 overflow-hidden whitespace-nowrap ${
+                      sidebarExpanded
+                        ? "opacity-100"
+                        : "opacity-0 group-hover/blocks:opacity-100"
+                    }`}
+                  >
+                    <h2 className="text-lg font-bold">Programma</h2>
+                    <p className="text-xs text-gray-500">Macrocycles, blocks en weken</p>
                   </div>
       
-                  <div className="opacity-100 group-hover/blocks:opacity-0 absolute left-5 top-5 text-xl">
+                  <div
+                    className={`text-xl ${
+                      sidebarExpanded
+                        ? "hidden"
+                        : "opacity-100 group-hover/blocks:opacity-0 absolute left-5 top-5"
+                    }`}
+                  >
                     📚
                   </div>
       
-                  {role === "coach" && (
-                    <button
-                      type="button"
-                      onClick={() => setCreatingBlock(true)}
-                      className="w-9 h-9 min-w-9 rounded-xl bg-black text-white text-xl flex items-center justify-center"
-                    >
-                      +
-                    </button>
-                  )}
+                  {isCoachLikeRole(role) &&
+                    renderProgramAddMenu(
+                      "flex h-9 w-9 min-w-9 items-center justify-center rounded-xl bg-black text-xl text-white",
+                    )}
                 </div>
       
-                <div className="opacity-0 group-hover/blocks:opacity-100 transition-all duration-150">
-                  {role === "coach" && creatingBlock && (
+                <div
+                  className={`transition-all duration-150 ${
+                    sidebarExpanded
+                      ? "opacity-100"
+                      : "opacity-0 group-hover/blocks:opacity-100"
+                  }`}
+                >
+                  {isCoachLikeRole(role) && creatingMacrocycle && (
+                    <div className="bg-purple-50 rounded-2xl p-3 mb-4 border border-purple-100">
+                      <input
+                        value={newMacrocycleTitle}
+                        onChange={(e) => setNewMacrocycleTitle(e.target.value)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter") createMacrocycle();
+                        }}
+                        placeholder="Naam macrocycle"
+                        className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          type="button"
+                          onClick={createMacrocycle}
+                          className="flex-1 bg-purple-700 text-white rounded-xl px-3 py-2 text-sm"
+                        >
+                          Opslaan
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setCreatingMacrocycle(false);
+                            setNewMacrocycleTitle("");
+                          }}
+                          className="flex-1 bg-white text-black rounded-xl px-3 py-2 text-sm"
+                        >
+                          Annuleer
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {isCoachLikeRole(role) && creatingBlock && (
                     <div className="bg-gray-100 rounded-2xl p-3 mb-4">
                       <input
                         value={newBlockTitle}
@@ -967,6 +1054,21 @@ export default function ProgramWeekPage() {
                         placeholder="Beschrijving"
                         className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none resize-none min-h-[70px] text-black"
                       />
+
+                      {navMacrocycles.length > 0 && (
+                        <select
+                          value={newBlockMacrocycleId}
+                          onChange={(e) => setNewBlockMacrocycleId(e.target.value)}
+                          className="w-full bg-white border rounded-xl px-3 py-2 text-sm mb-2 outline-none text-black"
+                        >
+                          <option value="">Geen macrocycle</option>
+                          {navMacrocycles.map((macrocycle) => (
+                            <option key={macrocycle.id} value={macrocycle.id}>
+                              {macrocycle.title}
+                            </option>
+                          ))}
+                        </select>
+                      )}
       
                       <div className="flex gap-2">
                         <button
@@ -984,6 +1086,7 @@ export default function ProgramWeekPage() {
                             setNewBlockTitle("");
                             setNewBlockDescription("");
                             setNewBlockStartDate("");
+                            setNewBlockMacrocycleId("");
                           }}
                           className="flex-1 bg-white text-black rounded-xl px-3 py-2 text-sm"
                         >
@@ -992,17 +1095,58 @@ export default function ProgramWeekPage() {
                       </div>
                     </div>
                   )}
+
+                  {isCoachLikeRole(role) && emptyMacrocycles.length > 0 && (
+                    <div className="mb-4 space-y-2">
+                      {emptyMacrocycles.map((macrocycle) => (
+                        <div
+                          key={macrocycle.id}
+                          className="rounded-2xl border border-dashed border-purple-200 bg-purple-50 p-3"
+                        >
+                          <p className="text-[10px] font-bold uppercase tracking-wide text-purple-700">
+                            {macrocycle.title}
+                          </p>
+                          <p className="mt-1 text-xs text-purple-600">
+                            Nog geen blocks. Maak een block aan en kies deze
+                            macrocyclus.
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
       
                   <div className="space-y-3">
-                    {navBlocks.map((block) => {
+                    {orderedSidebarBlocks.map((block, index) => {
+                      const macrocycle = navMacrocycles.find(
+                        (item) => item.id === block.macrocycle_id,
+                      );
+                      const previousBlock = orderedSidebarBlocks[index - 1];
+                      const showMacrocycleHeader =
+                        macrocycle &&
+                        previousBlock?.macrocycle_id !== block.macrocycle_id;
+                      const showUnassignedHeader =
+                        !macrocycle &&
+                        navMacrocycles.length > 0 &&
+                        previousBlock?.macrocycle_id;
+
                       const isOpen = openBlockIds[block.id];
                       const activeBlock = block.id === blockId;
                       const blockWeeks = weeksByBlock[block.id] || [];
                       const isEditingBlock = editingBlockId === block.id;
       
                       return (
+                        <div key={block.id}>
+                          {showMacrocycleHeader && (
+                            <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-purple-700">
+                              {macrocycle.title}
+                            </p>
+                          )}
+                          {showUnassignedHeader && (
+                            <p className="mb-1 px-1 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+                              Losse blocks
+                            </p>
+                          )}
                         <div
-                          key={block.id}
                           className={`rounded-2xl border overflow-hidden ${
                             activeBlock ? "border-black" : "border-gray-200"
                           }`}
@@ -1040,7 +1184,7 @@ export default function ProgramWeekPage() {
                                 )}
                               </button>
       
-                              {role === "coach" && !isEditingBlock && (
+                              {isCoachLikeRole(role) && !isEditingBlock && (
                                 <div className="flex gap-1">
                                   <button
                                     type="button"
@@ -1051,6 +1195,9 @@ export default function ProgramWeekPage() {
                                       setEditingBlockTitle(block.title);
                                       setEditingBlockStartDate(
                                         block.start_date || "",
+                                      );
+                                      setEditingBlockMacrocycleId(
+                                        block.macrocycle_id || "",
                                       );
                                     }}
                                     className={`w-7 h-7 rounded-lg text-xs ${
@@ -1125,6 +1272,23 @@ export default function ProgramWeekPage() {
                                   }}
                                   className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
                                 />
+
+                                {navMacrocycles.length > 0 && (
+                                  <select
+                                    value={editingBlockMacrocycleId}
+                                    onChange={(e) =>
+                                      setEditingBlockMacrocycleId(e.target.value)
+                                    }
+                                    className="w-full rounded-xl px-3 py-2 text-sm text-black bg-white border border-gray-300 outline-none"
+                                  >
+                                    <option value="">Geen macrocycle</option>
+                                    {navMacrocycles.map((macrocycle) => (
+                                      <option key={macrocycle.id} value={macrocycle.id}>
+                                        {macrocycle.title}
+                                      </option>
+                                    ))}
+                                  </select>
+                                )}
       
                                 <div className="flex gap-2">
                                   <button
@@ -1141,6 +1305,7 @@ export default function ProgramWeekPage() {
                                       setEditingBlockId("");
                                       setEditingBlockTitle("");
                                       setEditingBlockStartDate("");
+                                      setEditingBlockMacrocycleId("");
                                     }}
                                     className="flex-1 bg-gray-200 text-black rounded-xl px-2 py-1 text-xs font-bold"
                                   >
@@ -1178,7 +1343,7 @@ export default function ProgramWeekPage() {
                                           {item.title}
                                         </button>
       
-                                        {role === "coach" && (
+                                        {isCoachLikeRole(role) && (
                                           <>
                                             <button
                                               type="button"
@@ -1275,7 +1440,7 @@ export default function ProgramWeekPage() {
                                 );
                               })}
       
-                              {role === "coach" &&
+                              {isCoachLikeRole(role) &&
                                 creatingWeekBlockId !== block.id && (
                                   <button
                                     type="button"
@@ -1291,7 +1456,7 @@ export default function ProgramWeekPage() {
                                   </button>
                                 )}
       
-                              {role === "coach" &&
+                              {isCoachLikeRole(role) &&
                                 creatingWeekBlockId === block.id && (
                                   <div className="bg-gray-100 rounded-xl p-2">
                                     <input
@@ -1331,6 +1496,7 @@ export default function ProgramWeekPage() {
                             </div>
                           )}
                         </div>
+                        </div>
                       );
                     })}
                   </div>
@@ -1369,6 +1535,7 @@ export default function ProgramWeekPage() {
         start_date: newBlockStartDate,
         created_by: userId,
         athlete_id: ownerAthleteId,
+        macrocycle_id: newBlockMacrocycleId || null,
       })
       .select("*")
       .single();
@@ -1396,6 +1563,108 @@ export default function ProgramWeekPage() {
     goToProgram(createdBlock.id, createdWeek.id);
   }
 
+  function startProgramAdd(type: "macrocycle" | "block" | "week") {
+    setProgramAddMenuOpen(false);
+
+    if (type === "macrocycle") {
+      setCreatingMacrocycle(true);
+      setCreatingBlock(false);
+      setCreatingWeekBlockId("");
+      return;
+    }
+
+    if (type === "block") {
+      setCreatingBlock(true);
+      setCreatingMacrocycle(false);
+      setCreatingWeekBlockId("");
+      return;
+    }
+
+    const currentBlockWeeks = weeksByBlock[blockId] || [];
+    setCreatingWeekBlockId(blockId);
+    setNewWeekTitle(`Week ${currentBlockWeeks.length + 1}`);
+    setCreatingMacrocycle(false);
+    setCreatingBlock(false);
+  }
+
+  function renderProgramAddMenu(buttonClassName: string) {
+    return (
+      <div className="relative">
+        <button
+          type="button"
+          onClick={() => setProgramAddMenuOpen((open) => !open)}
+          className={buttonClassName}
+          title="Toevoegen"
+        >
+          +
+        </button>
+
+        {programAddMenuOpen && (
+          <div className="absolute right-0 top-full z-40 mt-1 w-44 overflow-hidden rounded-xl border border-gray-200 bg-white py-1 shadow-lg">
+            <button
+              type="button"
+              onClick={() => startProgramAdd("macrocycle")}
+              className="block w-full px-3 py-2 text-left text-sm font-semibold text-purple-700 hover:bg-purple-50"
+            >
+              Macrocyclus
+            </button>
+            <button
+              type="button"
+              onClick={() => startProgramAdd("block")}
+              className="block w-full px-3 py-2 text-left text-sm font-semibold text-black hover:bg-gray-50"
+            >
+              Block
+            </button>
+            <button
+              type="button"
+              onClick={() => startProgramAdd("week")}
+              className="block w-full px-3 py-2 text-left text-sm font-semibold text-black hover:bg-gray-50"
+            >
+              Week
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  async function createMacrocycle() {
+    if (!newMacrocycleTitle.trim()) {
+      alert("Vul een naam in voor de macrocycle");
+      return;
+    }
+
+    const ownerAthleteId =
+      athleteId ||
+      currentBlock?.athlete_id ||
+      (role === "atleet" ? userId : "");
+
+    if (!ownerAthleteId) {
+      alert("Geen atleet gevonden voor deze macrocycle");
+      return;
+    }
+
+    const { data, error } = await createProgramMacrocycle(
+      ownerAthleteId,
+      newMacrocycleTitle,
+      userId,
+      navMacrocycles.length,
+    );
+
+    if (error || !data) {
+      alert(error?.message || "Macrocycle kon niet worden aangemaakt");
+      return;
+    }
+
+    setCreatingMacrocycle(false);
+    setNewMacrocycleTitle("");
+    setOpenMacrocycleIds((current) => ({
+      ...current,
+      [data.id]: true,
+    }));
+    await loadProgramNavigation(currentBlock, role, userId);
+  }
+
   async function renameBlock(blockIdToRename: string) {
     const cleanTitle = editingBlockTitle.trim();
 
@@ -1409,6 +1678,7 @@ export default function ProgramWeekPage() {
       .update({
         title: cleanTitle,
         start_date: editingBlockStartDate || null,
+        macrocycle_id: editingBlockMacrocycleId || null,
       })
       .eq("id", blockIdToRename)
       .select("*")
@@ -1435,6 +1705,7 @@ export default function ProgramWeekPage() {
     setEditingBlockId("");
     setEditingBlockTitle("");
     setEditingBlockStartDate("");
+    setEditingBlockMacrocycleId("");
     await loadProgramNavigation(data, role, userId);
   }
 
@@ -3954,6 +4225,7 @@ export default function ProgramWeekPage() {
           coachReps: exercise.reps || null,
           weight: setRow?.weight || null,
           rpe: setRow?.rpe || null,
+          priority: exercise.priority || null,
         });
 
         if (chatError) {
@@ -4150,7 +4422,7 @@ export default function ProgramWeekPage() {
         (item) => item.set_number === emptyRow.set_number,
       );
 
-      return existingRow || emptyRow;
+      return applyAthleteSetDefaults(exercise, existingRow || emptyRow);
     });
   }
 
@@ -4575,12 +4847,55 @@ export default function ProgramWeekPage() {
     return [summary.squat, summary.bench, summary.deadlift];
   }
 
+  const programSearchContext = useMemo(() => {
+    const blockWeeks = currentBlock ? weeksByBlock[currentBlock.id] || [] : [];
+
+    const exercises = days.flatMap((day) =>
+      (exercisesByDay[day.id] || []).map((exercise) => ({
+        id: exercise.id,
+        name: exercise.name,
+        dayTitle: day.title,
+        weekTitle: week?.title || "Week",
+      })),
+    );
+
+    const athleteProfileId =
+      athleteId || currentBlock?.athlete_id || undefined;
+
+    return {
+      athleteId: athleteProfileId,
+      block: currentBlock
+        ? { id: currentBlock.id, title: currentBlock.title }
+        : undefined,
+      week: week
+        ? {
+            id: week.id,
+            title: week.title,
+            weekNumber: week.week_number,
+          }
+        : undefined,
+      weeks: blockWeeks.map((item) => ({
+        id: item.id,
+        title: item.title,
+        weekNumber: item.week_number,
+      })),
+      exercises,
+    };
+  }, [
+    athleteId,
+    currentBlock,
+    days,
+    exercisesByDay,
+    week,
+    weeksByBlock,
+  ]);
+
   return (
     <div
       className={
         embeddedInChat
           ? "h-full min-h-0 bg-gray-100"
-          : "relative min-h-[100dvh] bg-gray-100 supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:min-h-screen"
+          : "relative min-h-[100dvh] bg-gray-100 supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden"
       }
     >
       {!embeddedInChat && <AppSidebar />}
@@ -4590,7 +4905,7 @@ export default function ProgramWeekPage() {
         className={
           embeddedInChat
             ? "h-full min-h-0 min-w-0 overflow-y-auto"
-            : "relative min-w-0 flex-1"
+            : "relative min-h-0 min-w-0 flex-1 overflow-y-auto mobile-scroll"
         }
       >
       {!embeddedInChat && (
@@ -4618,7 +4933,7 @@ export default function ProgramWeekPage() {
       </div>
       )}
 
-      {!embeddedInChat && (
+      {!embeddedInChat && isCoachLikeRole(role) && (
       <div className="fixed top-[max(1rem,env(safe-area-inset-top))] right-[max(1rem,env(safe-area-inset-right))] z-[998] hidden rounded-2xl border border-gray-200 bg-white/95 px-3 py-2 shadow-lg backdrop-blur lg:block lg:top-4 lg:right-4">
         <div className="flex items-center gap-3">
           {getShortSbdWeekSummary().map((item) => (
@@ -4639,7 +4954,7 @@ export default function ProgramWeekPage() {
         </div>
       )}
       <section
-        className={`min-w-0 overflow-hidden transition-opacity duration-200 ${
+        className={`min-h-0 min-w-0 overflow-x-hidden overflow-y-auto mobile-scroll transition-opacity duration-200 ${
           embeddedInChat ? "p-2 pb-4" : "p-3 pb-16 lg:p-8 lg:pb-8"
         } ${navigatingUrl ? "pointer-events-none opacity-60" : "opacity-100"}`}
       >
@@ -4662,6 +4977,7 @@ export default function ProgramWeekPage() {
                 {days.map((day) => {
                   const exercises = exercisesByDay[day.id] || [];
                   const athleteCheckin = renderAthleteDayCheckin(day);
+                  const dayIsPast = isDayPast(getDayDateObject(day.day_number));
 
                   return (
                     <div
@@ -4711,18 +5027,54 @@ export default function ProgramWeekPage() {
                         ) : (
                           <div className="flex flex-col gap-2">
                             {exercises.map((exercise) => {
+                              const setRows = getSetRowsForExercise(exercise);
+                              const weightOverdue =
+                                dayIsPast &&
+                                hasIncompleteSetField(setRows, "weight");
+                              const repsOverdue =
+                                dayIsPast &&
+                                hasIncompleteSetField(setRows, "reps");
+                              const rpeOverdue =
+                                dayIsPast &&
+                                hasIncompleteSetField(setRows, "rpe");
+                              const linkedLibraryItem =
+                                getExerciseLibraryItem(exercise);
+
                               return (
                                 <div
                                   key={exercise.id}
-                                  className={`w-full border rounded-xl p-3 transition ${getExerciseColorClass(
-                                    exercise.name,
-                                  )} ${
-                                    selectedAthleteExerciseId === exercise.id &&
-                                    athleteExercisePanelOpen
-                                      ? "ring-2 ring-black/20"
-                                      : ""
-                                  }`}
+                                  id={`exercise-${exercise.id}`}
+                                  className="flex items-stretch gap-1.5"
                                 >
+                                  {linkedLibraryItem && (
+                                    <button
+                                      type="button"
+                                      onClick={(event) => {
+                                        event.stopPropagation();
+                                        setPreviewLibraryItem(linkedLibraryItem);
+                                      }}
+                                      className="flex w-10 shrink-0 flex-col items-center justify-center rounded-lg border border-purple-200 bg-purple-50 px-1 text-purple-700 transition hover:bg-purple-100"
+                                      title={`Uitleg: ${linkedLibraryItem.name}`}
+                                    >
+                                      <span className="text-base leading-none">
+                                        ▶
+                                      </span>
+                                      <span className="mt-0.5 text-[8px] font-bold uppercase">
+                                        Uitleg
+                                      </span>
+                                    </button>
+                                  )}
+
+                                  <div
+                                    className={`min-w-0 flex-1 border rounded-xl p-3 transition ${getExerciseColorClass(
+                                      exercise.name,
+                                    )} ${
+                                      selectedAthleteExerciseId === exercise.id &&
+                                      athleteExercisePanelOpen
+                                        ? "ring-2 ring-black/20"
+                                        : ""
+                                    }`}
+                                  >
                                   <button
                                     type="button"
                                     onClick={() =>
@@ -4781,11 +5133,22 @@ export default function ProgramWeekPage() {
                                           </p>
                                         </div>
 
-                                        <div className="w-[42px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1">
+                                        <div
+                                          className={withOverdueCardBoxClass(
+                                            "w-[42px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1",
+                                            weightOverdue,
+                                          )}
+                                        >
                                           <p className="text-[7px] font-bold text-gray-400 leading-none mb-1">
                                             KG
                                           </p>
-                                          <p className="font-semibold text-[11px] text-gray-500 truncate">
+                                          <p
+                                            className={`font-semibold text-[11px] truncate ${
+                                              weightOverdue
+                                                ? "text-red-700"
+                                                : "text-gray-500"
+                                            }`}
+                                          >
                                             {getAthleteSetAverage(
                                               exercise,
                                               "weight",
@@ -4793,11 +5156,22 @@ export default function ProgramWeekPage() {
                                           </p>
                                         </div>
 
-                                        <div className="w-[42px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1">
+                                        <div
+                                          className={withOverdueCardBoxClass(
+                                            "w-[42px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1",
+                                            repsOverdue,
+                                          )}
+                                        >
                                           <p className="text-[7px] font-bold text-gray-400 leading-none mb-1">
                                             REPS
                                           </p>
-                                          <p className="font-semibold text-[11px] text-gray-500 truncate">
+                                          <p
+                                            className={`font-semibold text-[11px] truncate ${
+                                              repsOverdue
+                                                ? "text-red-700"
+                                                : "text-gray-500"
+                                            }`}
+                                          >
                                             {getAthleteSetAverage(
                                               exercise,
                                               "reps",
@@ -4805,11 +5179,22 @@ export default function ProgramWeekPage() {
                                           </p>
                                         </div>
 
-                                        <div className="w-[48px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1">
+                                        <div
+                                          className={withOverdueCardBoxClass(
+                                            "w-[48px] text-center bg-gray-50 border border-dashed border-gray-300 rounded-md px-1 py-1",
+                                            rpeOverdue,
+                                          )}
+                                        >
                                           <p className="text-[7px] font-bold text-gray-400 leading-none mb-1">
                                             isRPE
                                           </p>
-                                          <p className="font-semibold text-[11px] text-gray-500 truncate">
+                                          <p
+                                            className={`font-semibold text-[11px] truncate ${
+                                              rpeOverdue
+                                                ? "text-red-700"
+                                                : "text-gray-500"
+                                            }`}
+                                          >
                                             {getAthleteSetAverage(
                                               exercise,
                                               "rpe",
@@ -4843,6 +5228,7 @@ export default function ProgramWeekPage() {
                                       </div>
                                     )}
                                   </button>
+                                  </div>
                                 </div>
                               );
                             })}
@@ -4858,7 +5244,7 @@ export default function ProgramWeekPage() {
             <div className="max-w-full">
               {!embeddedInChat && (
               <div className="mb-4 hidden flex-col gap-3 lg:mb-8 lg:flex lg:flex-row lg:items-center lg:justify-between lg:pr-44">
-                <div className="min-w-0">
+                <div className="min-w-0 flex-1">
                   <h1 className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
                     <span className="text-2xl font-bold text-black md:text-3xl">
                       {currentBlock?.title || "Block"}
@@ -4867,6 +5253,9 @@ export default function ProgramWeekPage() {
                       {week?.title || "Week"}
                     </span>
                   </h1>
+                  <div className="mt-3 max-w-xl">
+                    <ProgramSearch context={programSearchContext} />
+                  </div>
                 </div>
 
                 <button
@@ -4898,13 +5287,13 @@ export default function ProgramWeekPage() {
                   return (
                     <div
                       key={day.id}
-                      draggable={role === "coach"}
+                      draggable={isCoachLikeRole(role)}
                       onDragStart={() => handleDragStart(day.id)}
                       onDragOver={(e) => handleDragOver(e, day.id)}
                       onDrop={(e) => e.preventDefault()}
                       onDragEnd={saveDayOrder}
                       className={`group flex w-[min(360px,calc(100vw-1.5rem))] min-w-[min(360px,calc(100vw-1.5rem))] flex-shrink-0 snap-center flex-col rounded-2xl border-2 border-gray-200 bg-white p-3 text-black shadow transform-gpu transition-all duration-300 ease-out hover:border-black lg:w-[360px] lg:min-w-[360px] lg:p-4 ${
-                        role === "coach"
+                        isCoachLikeRole(role)
                           ? "cursor-grab active:cursor-grabbing"
                           : ""
                       } ${
@@ -4927,7 +5316,7 @@ export default function ProgramWeekPage() {
                       <div className="flex flex-col h-full">
                         <div className="flex justify-between items-start mb-3">
                           <div className="flex gap-2">
-                            {role === "coach" && !day.warmup?.trim() && (
+                            {isCoachLikeRole(role) && !day.warmup?.trim() && (
                               <button
                                 type="button"
                                 onClick={() => setOpenDayWarmupId(day.id)}
@@ -4937,7 +5326,7 @@ export default function ProgramWeekPage() {
                               </button>
                             )}
 
-                            {role === "coach" && !day.notes?.trim() && (
+                            {isCoachLikeRole(role) && !day.notes?.trim() && (
                               <button
                                 type="button"
                                 onClick={() => setOpenDayNoteId(day.id)}
@@ -4946,10 +5335,24 @@ export default function ProgramWeekPage() {
                                 Coach notes
                               </button>
                             )}
+
+                            {isCoachLikeRole(role) && (
+                              <button
+                                type="button"
+                                onClick={() => setUitlegMode((current) => !current)}
+                                className={`px-3 py-2 rounded-full text-xs font-bold transition ${
+                                  uitlegMode
+                                    ? "bg-purple-600 text-white"
+                                    : "bg-purple-100 hover:bg-purple-200 text-purple-900"
+                                }`}
+                              >
+                                Uitleg
+                              </button>
+                            )}
                           </div>
 
                           <div className="flex items-center gap-2">
-                            {role === "coach" && (
+                            {isCoachLikeRole(role) && (
                               <>
                                 <button
                                   type="button"
@@ -4979,7 +5382,7 @@ export default function ProgramWeekPage() {
                             <button
                               type="button"
                               onClick={() =>
-                                role === "coach" && setOpenDayWarmupId(day.id)
+                                isCoachLikeRole(role) && setOpenDayWarmupId(day.id)
                               }
                               className="w-full text-left bg-blue-50 border border-blue-200 rounded-xl p-3 pr-8 transition hover:bg-blue-100"
                             >
@@ -4992,7 +5395,7 @@ export default function ProgramWeekPage() {
                               </p>
                             </button>
 
-                            {role === "coach" && (
+                            {isCoachLikeRole(role) && (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -5050,7 +5453,7 @@ export default function ProgramWeekPage() {
                             <button
                               type="button"
                               onClick={() =>
-                                role === "coach" && setOpenDayNoteId(day.id)
+                                isCoachLikeRole(role) && setOpenDayNoteId(day.id)
                               }
                               className="w-full text-left bg-yellow-50 border border-yellow-200 rounded-xl p-3 pr-8 transition hover:bg-yellow-100"
                             >
@@ -5063,7 +5466,7 @@ export default function ProgramWeekPage() {
                               </p>
                             </button>
 
-                            {role === "coach" && (
+                            {isCoachLikeRole(role) && (
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -5127,48 +5530,90 @@ export default function ProgramWeekPage() {
                               const intensityType = getIntensityType(exercise);
                               const exerciseNoteOpen =
                                 openExerciseNoteId === exercise.id;
+                              const linkedLibraryItem =
+                                getExerciseLibraryItem(exercise);
 
                               return (
                                 <div
                                   key={exercise.id}
-                                  draggable={role === "coach"}
-                                  onDragStart={(e) => {
-                                    e.stopPropagation();
-                                    handleExerciseDragStart(
-                                      day.id,
-                                      exercise.id,
-                                    );
-                                  }}
-                                  onDragOver={(e) =>
-                                    handleExerciseDragOver(
-                                      e,
-                                      day.id,
-                                      exercise.id,
-                                    )
-                                  }
-                                  onDrop={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                  }}
-                                  onDragEnd={() => saveExerciseOrder(day.id)}
-                                  className={`group/exercise relative rounded-lg px-4 py-1.5 ${getCoachExerciseColorClass(
-                                    exercise.name,
-                                  )} transition-all duration-200 ${
-                                    role === "coach"
-                                      ? "cursor-grab active:cursor-grabbing"
-                                      : ""
-                                  } ${
-                                    draggedExercise?.exerciseId === exercise.id
-                                      ? "opacity-60 scale-[0.98]"
-                                      : "opacity-100 scale-100"
-                                  } ${
-                                    dragOverExerciseId === exercise.id &&
-                                    draggedExercise?.exerciseId !== exercise.id
-                                      ? "ring-2 ring-black"
-                                      : ""
-                                  }`}
+                                  id={`exercise-${exercise.id}`}
+                                  className="flex items-stretch gap-1.5"
                                 >
-                                  {role === "coach" && (
+                                  {linkedLibraryItem && (
+                                    <div className="group/uitleg relative w-10 shrink-0">
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          setPreviewLibraryItem(linkedLibraryItem)
+                                        }
+                                        className="flex h-full w-full flex-col items-center justify-center rounded-lg border border-purple-200 bg-purple-50 px-1 text-purple-700 transition hover:bg-purple-100"
+                                        title={`Uitleg: ${linkedLibraryItem.name}`}
+                                      >
+                                        <span className="text-base leading-none">
+                                          ▶
+                                        </span>
+                                        <span className="mt-0.5 text-[8px] font-bold uppercase">
+                                          Uitleg
+                                        </span>
+                                      </button>
+                                      {isCoachLikeRole(role) && (
+                                        <button
+                                          type="button"
+                                          onClick={(event) => {
+                                            event.stopPropagation();
+                                            void saveExerciseLibraryLink(
+                                              exercise.id,
+                                              null,
+                                            );
+                                          }}
+                                          className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-[9px] text-white opacity-0 transition hover:bg-red-600 group-hover/uitleg:opacity-100"
+                                          title="Uitlegvideo loskoppelen"
+                                        >
+                                          ✕
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <div
+                                    draggable={isCoachLikeRole(role)}
+                                    onDragStart={(e) => {
+                                      e.stopPropagation();
+                                      handleExerciseDragStart(
+                                        day.id,
+                                        exercise.id,
+                                      );
+                                    }}
+                                    onDragOver={(e) =>
+                                      handleExerciseDragOver(
+                                        e,
+                                        day.id,
+                                        exercise.id,
+                                      )
+                                    }
+                                    onDrop={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                    }}
+                                    onDragEnd={() => saveExerciseOrder(day.id)}
+                                    className={`group/exercise relative min-w-0 flex-1 rounded-lg px-4 py-1.5 ${getCoachExerciseColorClass(
+                                      exercise.name,
+                                    )} transition-all duration-200 ${
+                                      isCoachLikeRole(role)
+                                        ? "cursor-grab active:cursor-grabbing"
+                                        : ""
+                                    } ${
+                                      draggedExercise?.exerciseId === exercise.id
+                                        ? "opacity-60 scale-[0.98]"
+                                        : "opacity-100 scale-100"
+                                    } ${
+                                      dragOverExerciseId === exercise.id &&
+                                      draggedExercise?.exerciseId !== exercise.id
+                                        ? "ring-2 ring-black"
+                                        : ""
+                                    }`}
+                                  >
+                                  {isCoachLikeRole(role) && (
                                     <>
                                       <button
                                         type="button"
@@ -5206,12 +5651,12 @@ export default function ProgramWeekPage() {
                                           e.currentTarget.blur();
                                         }
                                       }}
-                                      disabled={role !== "coach"}
+                                      disabled={!isCoachLikeRole(role)}
                                       rows={1}
                                       className="min-h-[24px] flex-1 resize-none overflow-hidden bg-transparent px-1 font-bold text-[13px] leading-tight outline-none text-black break-words whitespace-normal"
                                     />
 
-                                    {role === "coach" &&
+                                    {isCoachLikeRole(role) &&
                                       isPriorityExercise(exercise.name) && (
                                         <select
                                           value={exercise.priority || ""}
@@ -5249,7 +5694,7 @@ export default function ProgramWeekPage() {
                                         </select>
                                       )}
 
-                                    {role === "coach" && (
+                                    {isCoachLikeRole(role) && (
                                       <button
                                         type="button"
                                         onClick={(e) => {
@@ -5295,7 +5740,7 @@ export default function ProgramWeekPage() {
                                             e.currentTarget.blur();
                                           }
                                         }}
-                                        disabled={role !== "coach"}
+                                        disabled={!isCoachLikeRole(role)}
                                         className="h-7 w-full border rounded-md px-1 py-0 text-center text-xs outline-none bg-white border-gray-300 text-black"
                                       />
                                     </div>
@@ -5328,7 +5773,7 @@ export default function ProgramWeekPage() {
                                             e.currentTarget.blur();
                                           }
                                         }}
-                                        disabled={role !== "coach"}
+                                        disabled={!isCoachLikeRole(role)}
                                         className="h-7 w-full border rounded-md px-1 py-0 text-center text-xs outline-none bg-white border-gray-300 text-black"
                                       />
                                     </div>
@@ -5396,7 +5841,7 @@ export default function ProgramWeekPage() {
                                             e.currentTarget.blur();
                                           }
                                         }}
-                                        disabled={role !== "coach"}
+                                        disabled={!isCoachLikeRole(role)}
                                         className="h-7 w-full border rounded-md px-1 py-0 text-center text-xs outline-none bg-white border-gray-300 text-black"
                                       />
                                     </div>
@@ -5415,7 +5860,7 @@ export default function ProgramWeekPage() {
                                             e.target.value,
                                           )
                                         }
-                                        disabled={role !== "coach"}
+                                        disabled={!isCoachLikeRole(role)}
                                         className="h-7 w-full border rounded-md px-1 py-0 text-xs outline-none bg-white border-gray-300 text-black"
                                       >
                                         <option value="%">%</option>
@@ -5431,7 +5876,7 @@ export default function ProgramWeekPage() {
                                         <button
                                           type="button"
                                           onClick={() =>
-                                            role === "coach" &&
+                                            isCoachLikeRole(role) &&
                                             setOpenExerciseNoteId(exercise.id)
                                           }
                                           className="w-full text-left bg-yellow-50 border border-yellow-200 rounded-xl p-2 pr-7 transition hover:bg-yellow-100"
@@ -5445,7 +5890,7 @@ export default function ProgramWeekPage() {
                                           </p>
                                         </button>
 
-                                        {role === "coach" && (
+                                        {isCoachLikeRole(role) && (
                                           <button
                                             type="button"
                                             onClick={(e) => {
@@ -5479,7 +5924,7 @@ export default function ProgramWeekPage() {
 
                                   {exerciseNoteOpen && (
                                     <div className="relative mt-2 bg-yellow-50 border border-yellow-200 rounded-xl p-2 pt-6">
-                                      {role === "coach" && (
+                                      {isCoachLikeRole(role) && (
                                         <button
                                           type="button"
                                           onClick={(e) => {
@@ -5538,6 +5983,47 @@ export default function ProgramWeekPage() {
                                       </button>
                                     </div>
                                   )}
+
+                                  {isCoachLikeRole(role) && uitlegMode && (
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                      {!linkedLibraryItem ? (
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            setLinkingExercise(exercise)
+                                          }
+                                          className="rounded-full bg-purple-100 px-3 py-1 text-[10px] font-bold text-purple-900 hover:bg-purple-200"
+                                        >
+                                          + Uitleg video
+                                        </button>
+                                      ) : (
+                                        <>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              setLinkingExercise(exercise)
+                                            }
+                                            className="rounded-full bg-purple-100 px-3 py-1 text-[10px] font-bold text-purple-900 hover:bg-purple-200"
+                                          >
+                                            Wijzig uitleg
+                                          </button>
+                                          <button
+                                            type="button"
+                                            onClick={() =>
+                                              void saveExerciseLibraryLink(
+                                                exercise.id,
+                                                null,
+                                              )
+                                            }
+                                            className="rounded-full bg-white/80 px-3 py-1 text-[10px] font-bold text-gray-700 hover:bg-white"
+                                          >
+                                            Verwijder uitleg
+                                          </button>
+                                        </>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
                                 </div>
                               );
                             })}
@@ -5545,7 +6031,7 @@ export default function ProgramWeekPage() {
                         )}
 
                         <div className="mt-auto pt-5">
-                          {role === "coach" && !isAddingExercise && (
+                          {isCoachLikeRole(role) && !isAddingExercise && (
                             <button
                               type="button"
                               onClick={() => {
@@ -5562,7 +6048,7 @@ export default function ProgramWeekPage() {
                             </button>
                           )}
 
-                          {role === "coach" && isAddingExercise && (
+                          {isCoachLikeRole(role) && isAddingExercise && (
                             <div
                               className="rounded-2xl p-3 bg-gray-100"
                               data-new-exercise-form="true"
@@ -5665,7 +6151,7 @@ export default function ProgramWeekPage() {
                   );
                 })}
 
-                {role === "coach" && !isCreatingDay && (
+                {isCoachLikeRole(role) && !isCreatingDay && (
                   <button
                     onClick={() => setIsCreatingDay(true)}
                     className="bg-white rounded-2xl shadow border-2 border-dashed border-gray-300 min-h-[230px] w-[360px] min-w-[360px] flex flex-col items-center justify-center hover:border-black hover:bg-gray-50 transition"
@@ -5676,7 +6162,7 @@ export default function ProgramWeekPage() {
                   </button>
                 )}
 
-                {role === "coach" && isCreatingDay && (
+                {isCoachLikeRole(role) && isCreatingDay && (
                   <div className="bg-white rounded-2xl shadow border-2 border-gray-200 min-h-[230px] w-[360px] min-w-[360px] p-4 flex flex-col justify-between">
                     <div>
                       <h2 className="text-xl font-bold mb-4">Nieuwe dag</h2>
@@ -6079,7 +6565,7 @@ export default function ProgramWeekPage() {
                           placeholder="8"
                           inputMode="numeric"
                           className={withOverdueInputClass(
-                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            `w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                             dayIsPast && isEmptySetField(row.reps),
                           )}
                         />
@@ -6109,7 +6595,7 @@ export default function ProgramWeekPage() {
                           placeholder="100"
                           inputMode="decimal"
                           className={withOverdueInputClass(
-                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            `w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                             dayIsPast && isEmptySetField(row.weight),
                           )}
                         />
@@ -6139,7 +6625,7 @@ export default function ProgramWeekPage() {
                           placeholder="8"
                           inputMode="decimal"
                           className={withOverdueInputClass(
-                            "w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm",
+                            `w-full rounded-xl border border-gray-300 bg-white px-2 py-2 text-base text-black outline-none focus:ring-2 focus:ring-black md:px-3 md:text-sm ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                             dayIsPast && isEmptySetField(row.rpe),
                           )}
                         />
@@ -6542,6 +7028,24 @@ export default function ProgramWeekPage() {
           </div>,
           document.body,
         )}
+
+      <ExerciseLibraryPickerModal
+        open={Boolean(linkingExercise)}
+        items={libraryItems}
+        exerciseName={linkingExercise?.name}
+        onClose={() => setLinkingExercise(null)}
+        onSelect={(item) => {
+          if (linkingExercise) {
+            void saveExerciseLibraryLink(linkingExercise.id, item.id);
+          }
+          setLinkingExercise(null);
+        }}
+      />
+
+      <ExerciseLibraryVideoModal
+        item={previewLibraryItem}
+        onClose={() => setPreviewLibraryItem(null)}
+      />
 
     </main>
     </div>

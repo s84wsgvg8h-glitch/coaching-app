@@ -15,6 +15,7 @@ type PollMessageProps = {
   votes: PollVote[];
   memberCount: number;
   onVote: (optionId: string) => void;
+  onOpenDetails: () => void;
   voting: boolean;
 };
 
@@ -26,10 +27,12 @@ export default function PollMessage({
   votes,
   memberCount,
   onVote,
+  onOpenDetails,
   voting,
 }: PollMessageProps) {
   const userVote = getUserPollVote(votes, messageId, userId);
-  const totalVotes = votes.filter((vote) => vote.poll_message_id === messageId).length;
+  const totalVotes = votes.filter((vote) => vote.poll_message_id === messageId)
+    .length;
 
   return (
     <div className="space-y-3">
@@ -83,10 +86,24 @@ export default function PollMessage({
         })}
       </div>
 
-      <p className={`text-xs ${isMine ? "text-white/70" : "text-gray-500"}`}>
-        {totalVotes} stem{totalVotes === 1 ? "" : "men"}
-        {memberCount > 0 ? ` · ${memberCount} leden` : ""}
-      </p>
+      <div className="flex items-center justify-between gap-3">
+        <p className={`text-xs ${isMine ? "text-white/70" : "text-gray-500"}`}>
+          {totalVotes} stem{totalVotes === 1 ? "" : "men"}
+          {memberCount > 0 ? ` · ${memberCount} leden` : ""}
+        </p>
+
+        {totalVotes > 0 && (
+          <button
+            type="button"
+            onClick={onOpenDetails}
+            className={`text-xs font-semibold underline-offset-2 hover:underline ${
+              isMine ? "text-white/80" : "text-gray-600"
+            }`}
+          >
+            Poll details
+          </button>
+        )}
+      </div>
     </div>
   );
 }

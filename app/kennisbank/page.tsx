@@ -18,6 +18,7 @@ export default function KennisbankPage() {
   const [chunks, setChunks] = useState<KnowledgeChunk[]>([]);
   const [stats, setStats] = useState<KnowledgeBrowseStats | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [scope, setScope] = useState<"coach" | "athlete">("coach");
 
   useEffect(() => {
     async function load() {
@@ -30,8 +31,19 @@ export default function KennisbankPage() {
         return;
       }
 
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      const knowledgeScope = profile?.role === "atleet" ? "athlete" : "coach";
+      setScope(knowledgeScope);
+
       try {
-        const response = await fetch("/api/knowledge-base");
+        const response = await fetch(
+          `/api/knowledge-base?scope=${knowledgeScope}`,
+        );
         const payload = (await response.json()) as {
           curated: KnowledgeChunk[];
           stats: KnowledgeBrowseStats;
@@ -67,15 +79,15 @@ export default function KennisbankPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <div className="rounded-3xl bg-white p-6 shadow-xl md:p-8">
           <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-            AI kennisbank
+            {scope === "athlete" ? "Atleten AI kennisbank" : "AI kennisbank"}
           </p>
           <h1 className="mt-2 text-3xl font-bold text-black md:text-4xl">
             Kennisbank
           </h1>
           <p className="mt-2 max-w-2xl text-sm text-gray-500 md:text-base">
-            Alle curated chunks waar de dashboard-AI antwoorden op baseert.
-            Zonder match in deze lijst zegt de AI dat het antwoord niet in de
-            kennisbank staat.
+            {scope === "athlete"
+              ? "Alle onderwerpen waar de AI-assistent in je chat antwoorden op baseert. Zonder match zegt de AI dat het antwoord niet in de kennisbank staat."
+              : "Alle curated chunks waar de dashboard-AI antwoorden op baseert. Zonder match in deze lijst zegt de AI dat het antwoord niet in de kennisbank staat."}
           </p>
 
           {stats ? (

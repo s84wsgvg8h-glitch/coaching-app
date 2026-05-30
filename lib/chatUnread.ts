@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { upsertDirectReadState } from "@/lib/chatReadState";
 
 export const CHAT_UNREAD_CHANGED_EVENT = "chat-unread-changed";
 
@@ -81,5 +82,6 @@ export async function markConversationAsRead(
     throw error;
   }
 
+  await upsertDirectReadState(userId, otherUserId);
   notifyChatUnreadChanged();
 }

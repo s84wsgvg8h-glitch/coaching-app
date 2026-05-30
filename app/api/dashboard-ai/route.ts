@@ -8,13 +8,16 @@ import {
 import {
   formatCoachSnapshotForPrompt,
   formatKnowledgeForPrompt,
+  getKnowledgeScopeLabel,
   searchKnowledge,
   type CoachSnapshot,
+  type KnowledgeScope,
 } from "@/lib/knowledgeSearch";
 
 type DashboardAiRequest = {
   query?: string;
   role?: string;
+  knowledgeScope?: KnowledgeScope;
   pages?: Array<{ title: string; href: string; description: string }>;
   athletes?: Array<{ name: string; href: string }>;
   commands?: Array<{ command: string; description: string; requiresChat?: boolean }>;
@@ -37,6 +40,7 @@ function buildSystemPrompt(
   body: DashboardAiRequest,
   knowledgeContext: string,
   trainingContext: string,
+  scope: KnowledgeScope,
 ) {
   const pages = (body.pages || [])
     .map((page) => `- ${page.title} (${page.href}): ${page.description}`)
@@ -53,9 +57,22 @@ function buildSystemPrompt(
     )
     .join("\n");
 
-  const coachContext = formatCoachSnapshotForPrompt(body.coachSnapshot);
+  const coachContext =
+    scope === "athlete"
+      ? "Niet beschikbaar in atleten-modus."
+      : formatCoachSnapshotForPrompt(body.coachSnapshot);
+
+  const scopeLabel = getKnowledgeScopeLabel(scope);
+  const audienceHint =
+    scope === "athlete"
+      ? "Je spreekt een atleet aan. Gebruik eenvoudige, praktische taal. Verwijs naar de app-functies die atleten gebruiken."
+      : "Je spreekt een coach aan. Je mag dieper ingaan op programmering en coaching.";
 
   return `Je bent een kennisbank-assistent voor deze coaching-app. Schrijf in het Nederlands: direct, zonder fluff.
+
+${audienceHint}
+
+KENNISBANK: ${scopeLabel}
 
 STRICT — GEEN EIGEN KENNIS:
 - Gebruik NOOIT algemene modelkennis, internetkennis of aannames.
@@ -63,10 +80,9 @@ STRICT — GEEN EIGEN KENNIS:
 - Staat het antwoord niet in een toegestane sectie: antwoord exact met "Dat staat niet in mijn kennisbank" en leg kort uit wat ontbreekt. Geen gokken, geen aanvullen.
 
 Toegestane bronnen (en alleen deze):
-1. KENNISBANK — coaching, techniek, app-uitleg, theorie
+1. KENNISBANK — ${scope === "athlete" ? "atleten-uitleg, app-gebruik, basis training" : "coaching, techniek, app-uitleg, theorie"}
 2. TRAININGSDATA — alleen cijfers/trends bij data-analysevragen
-3. LIVE COACH-DATA — alleen inkomsten, betalingen, atleetadministratie
-4. APP PAGINA'S / COMMANDS — alleen bij expliciete navigatie-vraag
+${scope === "athlete" ? "" : "3. LIVE COACH-DATA — alleen inkomsten, betalingen, atleetadministratie\n"}${scope === "athlete" ? "3" : "4"}. APP PAGINA'S / COMMANDS — alleen bij expliciete navigatie-vraag
 
 === KENNISBANK ===
 ${knowledgeContext}
@@ -90,7 +106,7 @@ Regels:
 - Formaat "answer": 1 korte alinea + bulletpoints (regels met "- ").
 - Coaching/theorie/app: ALLEEN KENNISBANK. Geen enkel feit toevoegen dat niet in KENNISBANK staat.
 - Data-analyse: cijfers ALLEEN uit TRAININGSDATA; interpretatie ALLEEN als die interpretatie expliciet in KENNISBANK staat — anders alleen de cijfers rapporteren.
-- Admin/financiën: ALLEEN LIVE COACH-DATA.
+- Admin/financiën: ${scope === "athlete" ? "niet van toepassing in atleten-modus." : "ALLEEN LIVE COACH-DATA."}
 - Navigatie: alleen bij expliciete vraag; href/command alleen uit bovenstaande lijsten.
 - Bij twijfel of ontbrekende info: zeg dat je het niet weet. Liever "weer niet" dan verzinnen.
 - JSON:
@@ -103,12 +119,16 @@ Regels:
 Alleen JSON. Gebruik \\n in "answer".`;
 }
 
-function hasAllowedNonKnowledgeContext(body: DashboardAiRequest, query: string) {
+function hasAllowedNonKnowledgeContext(
+  body: DashboardAiRequest,
+  query: string,
+  scope: KnowledgeScope,
+) {
   if (isTrainingDataQuestion(query)) {
     return Boolean(body.trainingSnapshot || body.trainingContext);
   }
 
-  if (isAdminDataQuestion(query)) {
+  if (scope === "coach" && isAdminDataQuestion(query)) {
     return Boolean(body.coachSnapshot);
   }
 
@@ -142,13 +162,19 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Vul een vraag in." }, { status: 400 });
   }
 
-  const knowledgeChunks = searchKnowledge(query, 8);
+  const knowledgeScope: KnowledgeScope =
+    body.knowledgeScope === "athlete" ? "athlete" : "coach";
+
+  const knowledgeChunks = searchKnowledge(query, 8, knowledgeScope);
   const knowledgeContext = formatKnowledgeForPrompt(knowledgeChunks);
   const trainingContext = body.trainingSnapshot
     ? formatTrainingSnapshotForPrompt(body.trainingSnapshot)
     : body.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
 
-  if (knowledgeChunks.length === 0 && !hasAllowedNonKnowledgeContext(body, query)) {
+  if (
+    knowledgeChunks.length === 0 &&
+    !hasAllowedNonKnowledgeContext(body, query, knowledgeScope)
+  ) {
     return NextResponse.json({
       answer: UNKNOWN_ANSWER,
       href: null,
@@ -172,7 +198,12 @@ export async function POST(request: Request) {
         messages: [
           {
             role: "system",
-            content: buildSystemPrompt(body, knowledgeContext, trainingContext),
+            content: buildSystemPrompt(
+              body,
+              knowledgeContext,
+              trainingContext,
+              knowledgeScope,
+            ),
           },
           {
             role: "user",

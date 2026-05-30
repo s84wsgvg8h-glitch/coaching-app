@@ -3,25 +3,20 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import ProgramSearch from "@/components/ProgramSearch";
+import EmptyState from "@/components/ui/EmptyState";
+import { SkeletonList } from "@/components/ui/Skeleton";
+import { ApplyTemplatePanel } from "@/components/programs/ProgramTemplateActions";
+import { isAdminRole, isCoachLikeRole } from "@/lib/authRoles";
+import {
+  buildProgramWeekPath,
+  resolveProgramEntryForAthlete,
+} from "@/lib/programNavigation";
 
 type Profile = {
   id: string;
   full_name: string | null;
   role: string | null;
-};
-
-type ProgramBlock = {
-  id: string;
-  title: string;
-  athlete_id: string | null;
-  start_date: string | null;
-};
-
-type ProgramWeek = {
-  id: string;
-  title: string;
-  week_number: number;
-  program_block_id: string;
 };
 
 export default function ProgramsPage() {
@@ -59,12 +54,18 @@ export default function ProgramsPage() {
     const loadedRole = profile?.role || "";
     setRole(loadedRole);
 
-    if (loadedRole === "coach") {
-      const { data: acceptedAthletes, error } = await supabase
+    if (isCoachLikeRole(loadedRole)) {
+      let athletesQuery = supabase
         .from("profiles")
         .select("*")
         .eq("role", "atleet")
         .order("full_name", { ascending: true });
+
+      if (!isAdminRole(loadedRole)) {
+        athletesQuery = athletesQuery.eq("coach_id", user.id);
+      }
+
+      const { data: acceptedAthletes, error } = await athletesQuery;
 
       if (error) {
         alert(error.message);
@@ -86,95 +87,26 @@ export default function ProgramsPage() {
     setOpeningAthleteId(athleteId);
 
     const activeRole = loadedRole || role;
+    const actingUserId = userId || athleteId;
 
-    const { data: blocks, error: blocksError } = await supabase
-      .from("program_blocks")
-      .select("*")
-      .eq("athlete_id", athleteId)
-      .order("start_date", { ascending: true });
+    const { data: entry, error } = await resolveProgramEntryForAthlete(
+      athleteId,
+      actingUserId,
+    );
 
-    if (blocksError) {
-      alert(blocksError.message);
+    if (error || !entry) {
+      alert(error || "Geen block of week gevonden");
       setOpeningAthleteId("");
       setRedirectingAthlete(false);
       return;
     }
 
-    let block: ProgramBlock | null = blocks?.[0] || null;
-
-    if (!block) {
-      const { data: createdBlock, error: createBlockError } = await supabase
-        .from("program_blocks")
-        .insert({
-          title: "Block 1",
-          description: "",
-          start_date: new Date().toISOString().split("T")[0],
-          athlete_id: athleteId,
-          created_by: userId || athleteId,
-        })
-        .select("*")
-        .single();
-
-      if (createBlockError || !createdBlock) {
-        alert(createBlockError?.message || "Block kon niet worden aangemaakt");
-        setOpeningAthleteId("");
-        setRedirectingAthlete(false);
-        return;
-      }
-
-      block = createdBlock;
-    }
-
-    const { data: weeks, error: weeksError } = await supabase
-      .from("program_weeks")
-      .select("*")
-      .eq("program_block_id", block!.id)
-      .order("week_number", { ascending: true });
-
-    if (weeksError) {
-      alert(weeksError.message);
-      setOpeningAthleteId("");
-      setRedirectingAthlete(false);
-      return;
-    }
-
-    let week: ProgramWeek | null = weeks?.[0] || null;
-
-    if (!week) {
-      const { data: createdWeek, error: createWeekError } = await supabase
-        .from("program_weeks")
-        .insert({
-          title: "Week 1",
-          week_number: 1,
-          program_block_id: block!.id,
-        })
-        .select("*")
-        .single();
-
-      if (createWeekError || !createdWeek) {
-        alert(createWeekError?.message || "Week kon niet worden aangemaakt");
-        setOpeningAthleteId("");
-        setRedirectingAthlete(false);
-        return;
-      }
-
-      week = createdWeek;
-    }
-
-    if (!block || !week) {
-      alert("Geen block of week gevonden");
-      setOpeningAthleteId("");
-      setRedirectingAthlete(false);
-      return;
-    }
-
-    window.location.href =
-      activeRole === "coach"
-        ? `/programs/${block.id}/weeks/${week.id}?athlete=${athleteId}`
-        : `/programs/${block.id}/weeks/${week.id}`;
+    window.location.href = buildProgramWeekPath(entry, {
+      coachViewingAthlete: isCoachLikeRole(activeRole),
+    });
   }
 
-  if (redirectingAthlete || (loading && role !== "coach")) {
+  if (redirectingAthlete || (loading && !isCoachLikeRole(role))) {
     return (
       <AppShell contentClassName="flex-1 p-8">
         <div className="mx-auto max-w-5xl">
@@ -198,41 +130,52 @@ export default function ProgramsPage() {
             Klik op een atleet om direct naar zijn of haar blocks en weken te
             gaan.
           </p>
+
+          {!loading && isCoachLikeRole(role) && (
+            <div className="mt-4">
+              <ProgramSearch
+                context={{
+                  athletes: athletes.map((athlete) => ({
+                    id: athlete.id,
+                    name: athlete.full_name || "Atleet",
+                  })),
+                }}
+              />
+            </div>
+          )}
         </div>
 
         {loading && (
           <div className="rounded-2xl bg-white p-8 shadow">
-            <p className="text-gray-500">Laden...</p>
+            <SkeletonList rows={4} />
           </div>
         )}
 
-        {!loading && role === "coach" && athletes.length === 0 && (
-          <div className="rounded-2xl bg-white p-8 shadow">
-            <h2 className="mb-2 text-xl font-bold text-black">Geen atleten gevonden</h2>
-
-            <p className="text-gray-500">
-              Er zijn nog geen atleten met de rol “atleet”.
-            </p>
-          </div>
+        {!loading && isCoachLikeRole(role) && athletes.length === 0 && (
+          <EmptyState
+            icon="programs"
+            title="Geen atleten gevonden"
+            description='Er zijn nog geen atleten met de rol "atleet".'
+          />
         )}
 
-        {!loading && role === "coach" && athletes.length > 0 && (
+        {!loading && isCoachLikeRole(role) && athletes.length > 0 && (
           <div className="flex flex-col gap-4">
             {athletes.map((athlete) => {
               const isOpening = openingAthleteId === athlete.id;
 
               return (
-                <button
-                  key={athlete.id}
-                  type="button"
-                  onClick={() => openAthleteProgram(athlete.id)}
-                  disabled={!!openingAthleteId}
-                  className={`w-full rounded-2xl border-2 bg-white p-5 text-left shadow transition-all duration-150 ${
-                    isOpening
-                      ? "scale-[0.99] border-black opacity-80"
-                      : "border-transparent hover:-translate-y-0.5 hover:border-black hover:shadow-lg"
-                  }`}
-                >
+                <div key={athlete.id} className="space-y-3">
+                  <button
+                    type="button"
+                    onClick={() => openAthleteProgram(athlete.id)}
+                    disabled={!!openingAthleteId}
+                    className={`w-full rounded-2xl border-2 bg-white p-5 text-left shadow transition-all duration-150 ${
+                      isOpening
+                        ? "scale-[0.99] border-black opacity-80"
+                        : "border-transparent hover:-translate-y-0.5 hover:border-black hover:shadow-lg"
+                    }`}
+                  >
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex items-center gap-4">
                       <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-black text-xl font-bold text-white">
@@ -255,6 +198,15 @@ export default function ProgramsPage() {
                     </div>
                   </div>
                 </button>
+                  <ApplyTemplatePanel
+                    coachId={userId}
+                    athleteId={athlete.id}
+                    actingUserId={userId}
+                    onApplied={(blockId) => {
+                      window.location.href = `/programs/${blockId}`;
+                    }}
+                  />
+                </div>
               );
             })}
           </div>

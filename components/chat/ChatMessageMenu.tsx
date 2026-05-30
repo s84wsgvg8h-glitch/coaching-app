@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { ChevronDown, Pin, Reply, Trash2 } from "lucide-react";
 
+import { QUICK_REACTION_EMOJIS } from "@/lib/chatReactions";
+
 type ChatMessageMenuProps = {
   open: boolean;
   onClose: () => void;
@@ -13,6 +15,7 @@ type ChatMessageMenuProps = {
   onReply: () => void;
   onPin: () => void;
   onDelete: () => void;
+  onReact: (emoji: string) => void;
 };
 
 export default function ChatMessageMenu({
@@ -25,6 +28,7 @@ export default function ChatMessageMenu({
   onReply,
   onPin,
   onDelete,
+  onReact,
 }: ChatMessageMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
@@ -81,6 +85,26 @@ export default function ChatMessageMenu({
     action();
   }
 
+  function EmojiRow({ className = "" }: { className?: string }) {
+    return (
+      <div
+        className={`flex flex-wrap items-center justify-center gap-2 border-b border-gray-100 px-4 py-3 ${className}`}
+      >
+        {QUICK_REACTION_EMOJIS.map((emoji) => (
+          <button
+            key={emoji}
+            type="button"
+            onClick={() => run(() => onReact(emoji))}
+            className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-gray-100"
+            aria-label={`Reageer met ${emoji}`}
+          >
+            {emoji}
+          </button>
+        ))}
+      </div>
+    );
+  }
+
   const useSheet = typeof window !== "undefined" && window.innerWidth < 768;
 
   if (useSheet) {
@@ -93,6 +117,7 @@ export default function ChatMessageMenu({
           onClick={onClose}
         />
         <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl">
+          <EmojiRow />
           <button
             type="button"
             onClick={() => run(onReply)}
@@ -137,6 +162,7 @@ export default function ChatMessageMenu({
         style={{ top: position.top, left: position.left }}
         className="fixed z-[90] min-w-[200px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
       >
+        <EmojiRow />
         <button
           type="button"
           onClick={() => run(onReply)}

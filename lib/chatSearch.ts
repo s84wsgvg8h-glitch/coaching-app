@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { ChatMessage } from "@/lib/chatUtils";
 import { parseExerciseVideoMessage } from "@/lib/chatUtils";
+import { parseAiAssistantMessage } from "@/lib/chatAi";
 
 export type GlobalMessageSearchResult = {
   message: ChatMessage;
@@ -14,6 +15,11 @@ function escapeRegex(value: string) {
 }
 
 export function getSearchableMessageText(message: ChatMessage) {
+  const aiMessage = parseAiAssistantMessage(message.body);
+  if (aiMessage) {
+    return `${aiMessage.question} ${aiMessage.answer}`;
+  }
+
   if (parseExerciseVideoMessage(message.body)) {
     return message.body ? "Video" : "Video";
   }

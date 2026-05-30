@@ -12,6 +12,7 @@ export type IntakeSelectOption = {
 export type IntakeFormField = {
   key: string;
   label: string;
+  description?: string;
   type: IntakeFieldType;
   required?: boolean;
   order: number;
@@ -34,19 +35,87 @@ export type AthleteIntakeResponse = {
 };
 
 export const DEFAULT_INTAKE_FIELDS: IntakeFormField[] = [
-  { key: "name", label: "Naam", type: "text", required: true, order: 1 },
-  { key: "birthdate", label: "Geboortedatum", type: "date", required: true, order: 2 },
-  { key: "knkf_lidnummer", label: "KNKF-lidnummer", type: "text", required: false, order: 3 },
-  { key: "bodyweight", label: "Lichaamsgewicht (kg)", type: "number", required: true, order: 4 },
-  { key: "weightclass", label: "Gewichtsklasse", type: "text", required: false, order: 5 },
-  { key: "height", label: "Lengte (cm)", type: "number", required: false, order: 6 },
-  { key: "upcoming_meet_name", label: "Aankomende wedstrijd", type: "text", required: false, order: 7 },
-  { key: "upcoming_meet_date", label: "Datum aankomende wedstrijd", type: "date", required: false, order: 8 },
-  { key: "prs", label: "Huidige PR's", type: "textarea", required: false, order: 9 },
-  { key: "injury_history", label: "Blessuregeschiedenis", type: "textarea", required: false, order: 10 },
+  {
+    key: "name",
+    label: "Naam",
+    type: "text",
+    required: true,
+    order: 1,
+  },
+  {
+    key: "birthdate",
+    label: "Geboortedatum",
+    description: "Vul dag, maand en jaar in.",
+    type: "date",
+    required: true,
+    order: 2,
+  },
+  {
+    key: "knkf_lidnummer",
+    label: "KNKF-lidnummer (als je die hebt)",
+    type: "text",
+    required: false,
+    order: 3,
+  },
+  {
+    key: "bodyweight",
+    label: "Lichaamsgewicht",
+    description: "Je huidige lichaamsgewicht in kilogram.",
+    type: "number",
+    required: true,
+    order: 4,
+  },
+  {
+    key: "weightclass",
+    label: "Gewichtsklasse",
+    type: "text",
+    required: false,
+    order: 5,
+  },
+  {
+    key: "height",
+    label: "Lengte",
+    description: "Je lengte in centimeters.",
+    type: "number",
+    required: false,
+    order: 6,
+  },
+  {
+    key: "upcoming_meet_name",
+    label: "Aankomende wedstrijd (naam)",
+    type: "text",
+    required: false,
+    order: 7,
+  },
+  {
+    key: "upcoming_meet_date",
+    label: "Aankomende wedstrijd (datum)",
+    description: "Vul dag, maand en jaar in.",
+    type: "date",
+    required: false,
+    order: 8,
+  },
+  {
+    key: "prs",
+    label: "PR's (wedstrijd en gym)",
+    description:
+      "Noteer je huidige personal records, zowel van wedstrijden als van training in de gym.",
+    type: "textarea",
+    required: false,
+    order: 9,
+  },
+  {
+    key: "injury_history",
+    label: "Blessuregeschiedenis",
+    description:
+      "Beschrijf eerdere blessures, huidige klachten en wat je merkt tijdens het trainen.",
+    type: "textarea",
+    required: false,
+    order: 10,
+  },
   {
     key: "had_coach_before",
-    label: "Eerder een coach gehad?",
+    label: "Heb je eerder een coach gehad?",
     type: "select",
     required: true,
     order: 11,
@@ -55,20 +124,98 @@ export const DEFAULT_INTAKE_FIELDS: IntakeFormField[] = [
       { value: "no", label: "Nee" },
     ],
   },
-  { key: "old_program", label: "Vorig programma", type: "textarea", required: false, order: 12 },
-  { key: "what_worked", label: "Wat werkte goed?", type: "textarea", required: false, order: 13 },
-  { key: "training_days", label: "Trainingsdagen", type: "textarea", required: true, order: 14 },
-  { key: "equipment", label: "Beschikbare apparatuur", type: "textarea", required: false, order: 15 },
-  { key: "short_term_goals", label: "Korte-termijn doelen", type: "textarea", required: true, order: 16 },
-  { key: "long_term_goals", label: "Lange-termijn doelen", type: "textarea", required: true, order: 17 },
-  { key: "lifestyle", label: "Leefstijl", type: "textarea", required: false, order: 18 },
-  { key: "recovery_management", label: "Herstelbeheer", type: "textarea", required: false, order: 19 },
-  { key: "coach_expectations", label: "Verwachtingen van coach", type: "textarea", required: false, order: 20 },
-  { key: "training_duration", label: "Hoe lang train je al?", type: "textarea", required: false, order: 21 },
-  { key: "city", label: "Woonplaats", type: "text", required: false, order: 22 },
+  {
+    key: "old_program",
+    label: "Kun je beschrijven hoe je vorige programma eruitzag?",
+    description:
+      "Vertel hoe je training was opgebouwd: frequentie, volume, intensiteit, varianten en eventuele periodes.",
+    type: "textarea",
+    required: false,
+    order: 12,
+  },
+  {
+    key: "what_worked",
+    label:
+      "Wat werkte goed voor squat, bench press, deadlift en over het algemeen in de gym?",
+    type: "textarea",
+    required: false,
+    order: 13,
+  },
+  {
+    key: "training_days",
+    label: "Op welke dagen kun je trainen?",
+    description:
+      "Geef aan op welke dagen en tijden je realistisch kunt trainen, inclusief eventuele beperkingen.",
+    type: "textarea",
+    required: true,
+    order: 14,
+  },
+  {
+    key: "equipment",
+    label: "Welke apparatuur heb je beschikbaar om te trainen?",
+    description:
+      "Bijvoorbeeld: power rack, bench, stangen, plates, bands, machines, specialty bars, home gym, commerciële gym.",
+    type: "textarea",
+    required: false,
+    order: 15,
+  },
+  {
+    key: "short_term_goals",
+    label: "Wat zijn je korte-termijndoelen? (komende maanden)",
+    type: "textarea",
+    required: true,
+    order: 16,
+  },
+  {
+    key: "long_term_goals",
+    label: "Wat zijn je lange-termijndoelen? (komende jaren)",
+    type: "textarea",
+    required: true,
+    order: 17,
+  },
+  {
+    key: "lifestyle",
+    label: "Hoe ziet je leefstijl erbuiten de gym eruit?",
+    description:
+      "Denk aan werk, studie, gezin, reistijd, stress en andere factoren die je training beïnvloeden.",
+    type: "textarea",
+    required: false,
+    order: 18,
+  },
+  {
+    key: "recovery_management",
+    label: "Hoe goed manage je slaap, voeding, herstel en recovery?",
+    description:
+      "Beschrijf hoe consistent je slaapt, eet, hydrateert en herstelt tussen trainingen door.",
+    type: "textarea",
+    required: false,
+    order: 19,
+  },
+  {
+    key: "coach_expectations",
+    label: "Wat verwacht je van mij als coach?",
+    description: "Noem hieronder alles wat je van mij verwacht.",
+    type: "textarea",
+    required: false,
+    order: 20,
+  },
+  {
+    key: "training_duration",
+    label: "Hoe lang train je al? (gym en powerlifting)",
+    type: "textarea",
+    required: false,
+    order: 21,
+  },
+  {
+    key: "city",
+    label: "Waar woon je? (stad)",
+    type: "text",
+    required: false,
+    order: 22,
+  },
   {
     key: "meets_before",
-    label: "Eerder wedstrijden gedaan?",
+    label: "Heb je eerder powerlifting-wedstrijden gedaan?",
     type: "select",
     required: true,
     order: 23,
@@ -77,19 +224,58 @@ export const DEFAULT_INTAKE_FIELDS: IntakeFormField[] = [
       { value: "no", label: "Nee" },
     ],
   },
-  { key: "motivation", label: "Motivatie", type: "textarea", required: true, order: 24 },
+  {
+    key: "motivation",
+    label:
+      "Wat is je innerlijke motivatie om met coaching te starten?",
+    description:
+      "Bijvoorbeeld: waarom wil je winnen, waarom wil je sterker worden, of wat drijft je op lange termijn?",
+    type: "textarea",
+    required: true,
+    order: 24,
+  },
   {
     key: "no_steroids",
-    label: "Ik gebruik geen anabole steroïden",
+    label:
+      "Ik heb nog nooit anabole steroïden gebruikt en zal geen anabole steroïden gaan gebruiken zolang het coachingstraject loopt",
     type: "select",
     required: true,
     order: 25,
     options: [
-      { value: "yes", label: "Ja, ik bevestig dit" },
+      { value: "yes", label: "Ja" },
       { value: "no", label: "Nee" },
     ],
   },
 ];
+
+function mergeTemplateFields(stored: IntakeFormField[]): IntakeFormField[] {
+  const defaultsByKey = new Map(
+    DEFAULT_INTAKE_FIELDS.map((field) => [field.key, field]),
+  );
+
+  const merged = stored.map((field) => {
+    const defaults = defaultsByKey.get(field.key);
+    if (!defaults) return field;
+
+    return {
+      ...field,
+      label: defaults.label,
+      description: defaults.description,
+      type: defaults.type,
+      required: defaults.required,
+      options: defaults.options ?? field.options,
+    };
+  });
+
+  const existingKeys = new Set(merged.map((field) => field.key));
+  for (const field of DEFAULT_INTAKE_FIELDS) {
+    if (!existingKeys.has(field.key)) {
+      merged.push(field);
+    }
+  }
+
+  return merged.sort((a, b) => a.order - b.order);
+}
 
 function normalizeFields(raw: unknown): IntakeFormField[] {
   if (!Array.isArray(raw)) return DEFAULT_INTAKE_FIELDS;
@@ -109,7 +295,7 @@ function normalizeFields(raw: unknown): IntakeFormField[] {
     }))
     .sort((a, b) => a.order - b.order);
 
-  return fields.length > 0 ? fields : DEFAULT_INTAKE_FIELDS;
+  return fields.length > 0 ? mergeTemplateFields(fields) : DEFAULT_INTAKE_FIELDS;
 }
 
 export async function loadIntakeTemplate(): Promise<IntakeFormTemplate> {
@@ -260,7 +446,8 @@ export function validateIntakeAnswers(
     }
 
     if (field.key === "no_steroids" && field.required && value !== "yes") {
-      errors[field.key] = "Je moet bevestigen dat je geen anabole steroïden gebruikt.";
+      errors[field.key] =
+        "Je moet bevestigen dat je geen anabole steroïden gebruikt en ook niet gaat gebruiken zolang het coachingstraject loopt.";
     }
   }
 

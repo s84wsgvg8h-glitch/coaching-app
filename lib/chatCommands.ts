@@ -8,6 +8,9 @@ const MAX_PREFIX = "/max";
 const LEGACY_PR_PREFIX = "/pr";
 const DATA_PREFIX = "/data";
 const INJURIES_PREFIX = "/injuries";
+const AI_PREFIX = "/ai";
+const TODO_PREFIX = "/todo";
+const AGENDA_PREFIX = "/agenda";
 
 export type ChatSlashCommand = {
   command: string;
@@ -76,6 +79,25 @@ export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
     command: INJURIES_PREFIX,
     label: "Blessures",
     description: "Blessures en spierkaart",
+    coachOnly: true,
+    requiresDirectChat: true,
+  },
+  {
+    command: AI_PREFIX,
+    label: "AI",
+    description: "Stel vragen aan de coaching-assistent",
+    requiresDirectChat: true,
+  },
+  {
+    command: TODO_PREFIX,
+    label: "Todo",
+    description: "Open je persoonlijke todo-lijst",
+    coachOnly: true,
+  },
+  {
+    command: AGENDA_PREFIX,
+    label: "Agenda",
+    description: "Agenda-items voor deze atleet beheren",
     coachOnly: true,
     requiresDirectChat: true,
   },
@@ -158,7 +180,10 @@ function isOtherSlashCommand(message: string, prefix: string) {
       (isMaxCommand(normalized) || isLegacyPrCommand(normalized))) ||
     (prefix !== DATA_PREFIX &&
       (isDataCommand(normalized) || isLegacyRawDataCommand(normalized))) ||
-    (prefix !== INJURIES_PREFIX && normalized.startsWith(INJURIES_PREFIX))
+    (prefix !== INJURIES_PREFIX && normalized.startsWith(INJURIES_PREFIX)) ||
+    (prefix !== AI_PREFIX && normalized.startsWith(AI_PREFIX)) ||
+    (prefix !== TODO_PREFIX && normalized.startsWith(TODO_PREFIX)) ||
+    (prefix !== AGENDA_PREFIX && normalized.startsWith(AGENDA_PREFIX))
   );
 }
 
@@ -311,6 +336,51 @@ export function parseInjuriesCommand(message: string) {
   }
 
   const rest = normalized.slice(INJURIES_PREFIX.length);
+  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+
+  return { active: true, query };
+}
+
+export function parseAiCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+
+  if (!normalized.startsWith(AI_PREFIX) || isOtherSlashCommand(normalized, AI_PREFIX)) {
+    return { active: false, query: "" };
+  }
+
+  const rest = normalized.slice(AI_PREFIX.length);
+  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+
+  return { active: true, query };
+}
+
+export function parseAgendaCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+
+  if (
+    !normalized.startsWith(AGENDA_PREFIX) ||
+    isOtherSlashCommand(normalized, AGENDA_PREFIX)
+  ) {
+    return { active: false, query: "" };
+  }
+
+  const rest = normalized.slice(AGENDA_PREFIX.length);
+  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
+
+  return { active: true, query };
+}
+
+export function parseTodoCommand(message: string) {
+  const normalized = normalizeChatCommand(message);
+
+  if (
+    !normalized.startsWith(TODO_PREFIX) ||
+    isOtherSlashCommand(normalized, TODO_PREFIX)
+  ) {
+    return { active: false, query: "" };
+  }
+
+  const rest = normalized.slice(TODO_PREFIX.length);
   const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
 
   return { active: true, query };

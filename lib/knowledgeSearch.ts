@@ -1,7 +1,14 @@
 import { APP_KNOWLEDGE, type KnowledgeChunk } from "@/lib/knowledgeBase";
+import { ATHLETE_KNOWLEDGE } from "@/lib/athleteKnowledgeBase";
 import { getLocalKnowledge } from "@/lib/knowledgeLocal";
 
-function allKnowledge(): KnowledgeChunk[] {
+export type KnowledgeScope = "coach" | "athlete";
+
+function allKnowledge(scope: KnowledgeScope = "coach"): KnowledgeChunk[] {
+  if (scope === "athlete") {
+    return ATHLETE_KNOWLEDGE;
+  }
+
   return [...APP_KNOWLEDGE, ...getLocalKnowledge()];
 }
 
@@ -47,17 +54,26 @@ function scoreChunk(chunk: KnowledgeChunk, queryTokens: string[], rawQuery: stri
   return score;
 }
 
-export function searchKnowledge(query: string, limit = 5): KnowledgeChunk[] {
+export function searchKnowledge(
+  query: string,
+  limit = 5,
+  scope: KnowledgeScope = "coach",
+): KnowledgeChunk[] {
   const queryTokens = tokenize(query);
 
-  return allKnowledge().map((chunk) => ({
-    chunk,
-    score: scoreChunk(chunk, queryTokens, query),
-  }))
+  return allKnowledge(scope)
+    .map((chunk) => ({
+      chunk,
+      score: scoreChunk(chunk, queryTokens, query),
+    }))
     .filter((entry) => entry.score > 0)
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
     .map((entry) => entry.chunk);
+}
+
+export function getKnowledgeScopeLabel(scope: KnowledgeScope) {
+  return scope === "athlete" ? "Atleten-kennisbank" : "Coach-kennisbank";
 }
 
 export function formatKnowledgeForPrompt(chunks: KnowledgeChunk[]) {

@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 
-export default function LoginPage() {
+function LoginForm() {
+  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
@@ -26,6 +28,12 @@ export default function LoginPage() {
       data: { user },
     } = await supabase.auth.getUser();
 
+    const nextPath = searchParams.get("next");
+    const safeNext =
+      nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
+        ? nextPath
+        : "/dashboard";
+
     if (user) {
       const { data: profile } = await supabase
         .from("profiles")
@@ -39,79 +47,64 @@ export default function LoginPage() {
       }
     }
 
-    window.location.href = "/dashboard";
+    window.location.href = safeNext;
   }
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-gray-100 px-4">
-      <div className="w-full max-w-md bg-white p-8 rounded-2xl shadow">
-        <h1 className="text-3xl font-bold text-black mb-2">
-          Inloggen
-        </h1>
+    <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4 py-8 pt-safe pb-safe">
+      <div className="w-full max-w-md rounded-2xl bg-app-surface p-6 shadow-xl md:p-8">
+        <h1 className="mb-2 text-3xl font-bold text-app-text">Inloggen</h1>
 
-        <p className="text-gray-600 mb-6">
+        <p className="mb-6 text-app-muted">
           Welkom terug bij je coaching dashboard
         </p>
 
         <input
-          className="
-            border
-            rounded-lg
-            p-3
-            w-full
-            mb-3
-            text-black
-            placeholder-gray-400
-            bg-white
-            outline-none
-          "
+          className="mb-3 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle focus:ring-2 focus:ring-app-primary"
           placeholder="E-mail"
           type="email"
+          autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
 
         <input
-          className="
-            border
-            rounded-lg
-            p-3
-            w-full
-            mb-4
-            text-black
-            placeholder-gray-400
-            bg-white
-            outline-none
-          "
+          className="mb-4 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle focus:ring-2 focus:ring-app-primary"
           type="password"
           placeholder="Wachtwoord"
+          autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
 
         <button
-          className="
-            bg-black
-            text-white
-            rounded-lg
-            p-3
-            w-full
-            font-semibold
-            active:scale-[0.98]
-            transition
-          "
-          onClick={login}
+          className="theme-preserve w-full rounded-lg bg-app-primary p-3 font-semibold text-app-primary-fg transition active:scale-[0.98]"
+          onClick={() => void login()}
         >
           Inloggen
         </button>
 
-        <p className="text-sm text-gray-600 mt-6 text-center">
+        <p className="mt-6 text-center text-sm text-app-muted">
           Nog geen account?{" "}
-          <a href="/signup" className="text-black font-semibold">
+          <a href="/signup" className="font-semibold text-app-text">
             Account maken
           </a>
         </p>
       </div>
     </main>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg">
+          <p className="text-app-muted">Laden...</p>
+        </main>
+      }
+    >
+      <LoginForm />
+    </Suspense>
   );
 }

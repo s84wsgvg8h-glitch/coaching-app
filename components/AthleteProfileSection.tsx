@@ -29,6 +29,8 @@ import { supabase } from "@/lib/supabaseClient";
 type AthleteProfileSectionProps = {
   athleteId: string;
   canEdit?: boolean;
+  canEditStartingPrs?: boolean;
+  canEditCompetitions?: boolean;
   canEditPayment?: boolean;
   initialGeboortedatum?: string | null;
   initialLidnummer?: string | null;
@@ -39,6 +41,8 @@ type AthleteProfileSectionProps = {
 export default function AthleteProfileSection({
   athleteId,
   canEdit = true,
+  canEditStartingPrs = false,
+  canEditCompetitions = false,
   canEditPayment = false,
   initialGeboortedatum = "",
   initialLidnummer = "",
@@ -168,10 +172,12 @@ export default function AthleteProfileSection({
     lidnummer,
     betalingPrijs,
     betalingDag,
-    selectedCompetitionIds,
-    startingPrInputs,
+    ...(canEditCompetitions ? [selectedCompetitionIds] : []),
+    ...(canEditStartingPrs ? [startingPrInputs] : []),
     canEdit,
     canEditPayment,
+    canEditCompetitions,
+    canEditStartingPrs,
     athleteId,
     loading,
   ]);
@@ -251,7 +257,7 @@ export default function AthleteProfileSection({
       }
     }
 
-    if (canEdit) {
+    if (canEditStartingPrs) {
       const nextStartingPrs = {
         coaching_start_date: startingPrInputs.coaching_start_date || null,
         starting_pr_squat: parsePrInput(startingPrInputs.starting_pr_squat),
@@ -273,17 +279,20 @@ export default function AthleteProfileSection({
       setStartingPrs(nextStartingPrs);
     }
 
-    const { error: competitionsError } = await saveAthleteCompetitions(
-      athleteId,
-      selectedCompetitionIds,
-    );
+    if (canEditCompetitions) {
+      const { error: competitionsError } = await saveAthleteCompetitions(
+        athleteId,
+        selectedCompetitionIds,
+      );
+
+      if (competitionsError) {
+        setSaving(false);
+        setMessage("Profiel opgeslagen, maar wedstrijden konden niet worden opgeslagen.");
+        return;
+      }
+    }
 
     setSaving(false);
-
-    if (competitionsError) {
-      setMessage("Profiel opgeslagen, maar wedstrijden konden niet worden opgeslagen.");
-      return;
-    }
 
     setMessage("Profiel opgeslagen.");
     if (saveMessageTimer.current) {
@@ -437,7 +446,7 @@ export default function AthleteProfileSection({
           Startdatum bij coach en beginwaarden voor squat, bench en deadlift.
         </p>
 
-        {canEdit ? (
+        {canEditStartingPrs ? (
           <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
             <div>
               <label className="mb-2 block text-sm font-semibold">
@@ -548,14 +557,14 @@ export default function AthleteProfileSection({
       <div>
         <h3 className="text-lg font-bold text-black">Opkomende wedstrijden</h3>
         <p className="mt-1 text-sm text-gray-500">
-          {canEdit
+          {canEditCompetitions
             ? "Selecteer de wedstrijden waar deze atleet aan meedoet."
             : "Wedstrijden uit de wedstrijdkalender."}
         </p>
 
         {loading ? (
           <p className="mt-4 text-sm text-gray-500">Wedstrijden laden...</p>
-        ) : canEdit ? (
+        ) : canEditCompetitions ? (
           upcomingCompetitions.length === 0 ? (
             <p className="mt-4 text-sm text-gray-500">
               Er staan nog geen aankomende wedstrijden in de kalender.

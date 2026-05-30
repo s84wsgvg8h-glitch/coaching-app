@@ -1,4 +1,6 @@
+import { loadActiveAdminKnowledgeChunks } from "@/lib/adminKnowledge";
 import { APP_KNOWLEDGE, type KnowledgeChunk } from "@/lib/knowledgeBase";
+import { ATHLETE_KNOWLEDGE } from "@/lib/athleteKnowledgeBase";
 
 export type KnowledgeBrowseStats = {
   curatedCount: number;
@@ -8,8 +10,31 @@ export type KnowledgeBrowseStats = {
   hasLocalPdf: boolean;
 };
 
-export function getCuratedKnowledge(): KnowledgeChunk[] {
+export function getCuratedKnowledge(scope: "coach" | "athlete" = "coach"): KnowledgeChunk[] {
+  if (scope === "athlete") {
+    return ATHLETE_KNOWLEDGE;
+  }
+
   return APP_KNOWLEDGE;
+}
+
+function mergeKnowledgeChunks(
+  base: KnowledgeChunk[],
+  extra: KnowledgeChunk[],
+): KnowledgeChunk[] {
+  const byId = new Map(base.map((chunk) => [chunk.id, chunk]));
+  for (const chunk of extra) {
+    byId.set(chunk.id, chunk);
+  }
+  return [...byId.values()];
+}
+
+export async function getCuratedKnowledgeAsync(
+  scope: "coach" | "athlete" = "coach",
+): Promise<KnowledgeChunk[]> {
+  const base = getCuratedKnowledge(scope);
+  const adminChunks = await loadActiveAdminKnowledgeChunks(scope);
+  return mergeKnowledgeChunks(base, adminChunks);
 }
 
 export function getKnowledgeCategories(chunks: KnowledgeChunk[]) {

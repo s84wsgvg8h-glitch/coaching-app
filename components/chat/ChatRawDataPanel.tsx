@@ -14,7 +14,7 @@ export default function ChatRawDataPanel({
   athleteName,
   onClose,
 }: ChatRawDataPanelProps) {
-  const iframeSrc = `/raw-data?athlete=${athleteId}&embedded=chat`;
+  const iframeSrc = `/data?tab=ruwe-data&athlete=${athleteId}&embedded=chat`;
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>

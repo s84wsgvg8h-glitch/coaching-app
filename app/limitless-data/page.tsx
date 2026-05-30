@@ -253,7 +253,7 @@ export default function LimitlessDataPage() {
   }
 
   return (
-    <AppShell contentClassName="flex-1 p-6 overflow-x-hidden">
+    <AppShell>
       <div className="max-w-7xl mx-auto">
         <div className="flex items-center justify-between mb-8">
           <div>

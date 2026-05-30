@@ -1,5 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getPollPreviewText, parsePollMessage } from "@/lib/chatPolls";
+import {
+  getAiAssistantPreviewText,
+  parseAiAssistantMessage,
+} from "@/lib/chatAi";
 
 export type ChatMessage = {
   id: string;
@@ -37,6 +41,7 @@ export type ExerciseVideoMessagePayload = {
   rpe: string | null;
   caption: string | null;
   thumbnailUrl: string | null;
+  priority?: string | null;
 };
 
 export function formatDutchSetLabel(setNumber: number) {
@@ -117,6 +122,10 @@ export function getMessagePreview(
 
   const sender = message.sender_id === selfId ? "Jij" : senderName;
 
+  if (parseAiAssistantMessage(message.body)) {
+    return { text: getAiAssistantPreviewText(message.body), sender };
+  }
+
   if (parsePollMessage(message.body)) {
     return { text: getPollPreviewText(message.body), sender };
   }
@@ -145,6 +154,10 @@ export function getMessagePreview(
 }
 
 export function getReplyText(message: ChatMessage) {
+  if (parseAiAssistantMessage(message.body)) {
+    return getAiAssistantPreviewText(message.body);
+  }
+
   if (parsePollMessage(message.body)) {
     return getPollPreviewText(message.body);
   }
@@ -220,6 +233,7 @@ export async function sendExerciseVideoMessageToCoach(params: {
   coachReps: string | null;
   weight: string | null;
   rpe: string | null;
+  priority?: string | null;
 }) {
   const { data: coaches, error: coachError } = await supabase
     .from("profiles")
@@ -249,6 +263,7 @@ export async function sendExerciseVideoMessageToCoach(params: {
       rpe: params.rpe,
       caption: params.caption,
       thumbnailUrl: params.thumbnailUrl,
+      priority: params.priority ?? null,
     }),
     file_url: params.videoUrl,
     file_type: "video",

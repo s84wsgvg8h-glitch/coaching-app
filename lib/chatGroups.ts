@@ -109,6 +109,35 @@ export async function markGroupAsRead(userId: string, groupId: string) {
   notifyChatUnreadChanged();
 }
 
+export async function loadChatGroupMemberProfiles(groupId: string) {
+  const { data: members, error } = await supabase
+    .from("chat_group_members")
+    .select("user_id")
+    .eq("group_id", groupId);
+
+  if (error || !members?.length) {
+    return {} as Record<string, { name: string; avatar_url: string | null }>;
+  }
+
+  const userIds = members.map((member) => member.user_id);
+  const { data: profiles } = await supabase
+    .from("profiles")
+    .select("id, full_name, avatar_url")
+    .in("id", userIds);
+
+  const result: Record<string, { name: string; avatar_url: string | null }> =
+    {};
+
+  for (const profile of profiles || []) {
+    result[profile.id] = {
+      name: profile.full_name || "Onbekend",
+      avatar_url: profile.avatar_url || null,
+    };
+  }
+
+  return result;
+}
+
 export async function loadChatGroupMemberNames(
   groupId: string,
 ): Promise<Record<string, string>> {

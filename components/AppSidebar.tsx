@@ -10,6 +10,7 @@ import {
   getUnreadMessageCount,
 } from "@/lib/chatUnread";
 import { getChatReturnRoute } from "@/lib/chatNavigation";
+import { useAuth } from "@/components/AuthProvider";
 
 type AppSidebarProps = {
   className?: string;
@@ -17,8 +18,8 @@ type AppSidebarProps = {
 
 export default function AppSidebar({ className = "" }: AppSidebarProps) {
   const pathname = usePathname();
-  const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState("");
+  const { profile, role, userId } = useAuth();
+  const fullName = profile?.full_name || "";
   const [pendingCount, setPendingCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -26,37 +27,22 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
   const [isMobileNav, setIsMobileNav] = useState(false);
 
   useEffect(() => {
-    async function loadSidebarData() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+    if (!userId) return;
 
-      if (!user) return;
-
-      const { data } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("id", user.id)
-        .single();
-
-      if (data) {
-        setFullName(data.full_name || "");
-        setRole(data.role || "");
-      }
-
+    async function loadSidebarCounts() {
       const { data: pendingProfiles } = await supabase
         .from("profiles")
         .select("*")
         .eq("role", "pending");
 
       setPendingCount(pendingProfiles?.length || 0);
-      setChatUnreadCount(await getUnreadMessageCount(user.id));
+      setChatUnreadCount(await getUnreadMessageCount(userId));
     }
 
-    loadSidebarData();
+    loadSidebarCounts();
 
     function handleChatUnreadChanged() {
-      loadSidebarData();
+      loadSidebarCounts();
     }
 
     window.addEventListener(CHAT_UNREAD_CHANGED_EVENT, handleChatUnreadChanged);
@@ -67,7 +53,7 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
         handleChatUnreadChanged,
       );
     };
-  }, [pathname]);
+  }, [pathname, userId]);
 
   useEffect(() => {
     setChatHref(getChatReturnRoute());
@@ -115,15 +101,15 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
   return (
     <>
       <aside
-        className={`group sticky top-0 z-30 hidden h-screen max-w-[80px] min-w-[80px] w-20 flex-col self-start overflow-hidden bg-white p-3 shadow-xl transition-all duration-300 hover:w-64 hover:max-w-[256px] lg:flex ${className}`}
+        className={`group sticky top-0 z-30 hidden h-[100dvh] max-w-[80px] min-w-[80px] w-20 flex-col self-start overflow-hidden bg-app-sidebar p-3 shadow-xl transition-all duration-150 hover:w-64 hover:max-w-[256px] lg:flex ${className}`}
       >
         <div className="mb-5 flex items-center justify-center transition-all group-hover:justify-between">
           <Link
             href="/profile"
-            className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 transition ${
+            className={`flex w-full items-center gap-3 rounded-xl px-2 py-2 transition app-focus-ring ${
               profileActive
-                ? "bg-black text-white"
-                : "bg-gray-100 hover:bg-gray-200"
+                ? "bg-app-primary text-app-primary-fg"
+                : "bg-app-surface-muted hover:bg-app-surface-hover"
             }`}
           >
             <div
@@ -163,10 +149,10 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
               <Link
                 key={item.href}
                 href={href}
-                className={`relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 ${
+                className={`relative flex items-center gap-3 rounded-xl p-3 transition-all duration-200 app-focus-ring ${
                   active
-                    ? "bg-black text-white"
-                    : "bg-gray-100 hover:bg-gray-200"
+                    ? "bg-app-primary text-app-primary-fg"
+                    : "bg-app-surface-muted hover:bg-app-surface-hover"
                 }`}
               >
                 <div className="relative">
@@ -185,7 +171,7 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
                   )}
                 </div>
 
-                <div className="overflow-hidden whitespace-nowrap opacity-0 transition-all duration-200 group-hover:opacity-100">
+                <div className="overflow-hidden whitespace-nowrap opacity-0 transition-all duration-100 group-hover:opacity-100">
                   <h3 className="text-sm font-semibold">{item.title}</h3>
                   <p
                     className={`text-xs ${
@@ -200,16 +186,18 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
           })}
         </nav>
 
-        <button
-          type="button"
-          onClick={logout}
-          className="mt-5 flex items-center gap-3 rounded-xl bg-black px-3 py-2 text-white transition hover:opacity-90"
-        >
+        <div className="mt-auto space-y-3">
+          <button
+            type="button"
+            onClick={logout}
+            className="theme-preserve app-focus-ring flex w-full items-center gap-3 rounded-xl bg-app-primary px-3 py-2 text-app-primary-fg transition hover:opacity-90"
+          >
           <span className="min-w-9 text-lg">🚪</span>
-          <span className="overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-200 group-hover:opacity-100">
+          <span className="overflow-hidden whitespace-nowrap text-sm opacity-0 transition-all duration-100 group-hover:opacity-100">
             Uitloggen
           </span>
         </button>
+        </div>
       </aside>
 
       {menuOpen && (
@@ -221,29 +209,29 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
             className="absolute inset-0 bg-black/45 backdrop-blur-[1px]"
           />
 
-          <div className="absolute inset-x-0 bottom-0 flex max-h-[min(88dvh,100dvh)] flex-col overflow-hidden rounded-t-3xl bg-white pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl animate-[slidepanel_0.22s_ease-out]">
-            <div className="flex shrink-0 items-center justify-between border-b border-gray-200 px-5 py-4">
+          <div className="absolute inset-x-0 bottom-0 flex max-h-[min(88dvh,100dvh)] flex-col overflow-hidden rounded-t-3xl bg-app-surface pb-[max(0.75rem,env(safe-area-inset-bottom))] shadow-2xl animate-[slidepanel_0.22s_ease-out]">
+            <div className="flex shrink-0 items-center justify-between border-b border-app-border px-5 py-4">
               <div>
-                <p className="text-xs font-black uppercase tracking-wider text-gray-400">
+                <p className="text-xs font-black uppercase tracking-wider text-app-muted">
                   Menu
                 </p>
-                <p className="text-lg font-bold text-black">
+                <p className="text-lg font-bold text-app-text">
                   {fullName || "Ingelogd"}
                 </p>
-                <p className="text-sm capitalize text-gray-500">{role || "..."}</p>
+                <p className="text-sm capitalize text-app-muted">{role || "..."}</p>
               </div>
 
               <button
                 type="button"
                 onClick={() => setMenuOpen(false)}
-                className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-xl text-black"
+                className="flex h-10 w-10 items-center justify-center rounded-full bg-app-surface-muted text-xl text-app-text"
                 aria-label="Sluit menu"
               >
                 ×
               </button>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3">
+            <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 py-3 mobile-scroll">
               <Link
                 href="/profile"
                 onClick={() => setMenuOpen(false)}
@@ -310,11 +298,11 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
               </nav>
             </div>
 
-            <div className="shrink-0 border-t border-gray-200 px-4 pt-3">
+            <div className="shrink-0 border-t border-app-border px-4 pt-3">
               <button
                 type="button"
                 onClick={logout}
-                className="flex w-full items-center justify-center gap-2 rounded-2xl bg-black px-4 py-3 text-sm font-bold text-white"
+                className="theme-preserve flex w-full items-center justify-center gap-2 rounded-2xl bg-app-primary px-4 py-3 text-sm font-bold text-app-primary-fg"
               >
                 <span>🚪</span>
                 Uitloggen
@@ -332,13 +320,13 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
         <button
           type="button"
           onClick={() => setMenuOpen(true)}
-          className="pointer-events-auto flex h-12 w-12 items-center justify-center rounded-2xl border border-gray-200 bg-white/95 shadow-lg backdrop-blur active:scale-95"
+          className="pointer-events-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-app-border bg-app-surface/95 shadow-lg backdrop-blur active:scale-95"
           aria-label="Menu openen"
         >
           <span className="flex flex-col gap-1.5" aria-hidden="true">
-            <span className="block h-0.5 w-5 rounded-full bg-black" />
-            <span className="block h-0.5 w-5 rounded-full bg-black" />
-            <span className="block h-0.5 w-5 rounded-full bg-black" />
+            <span className="block h-0.5 w-5 rounded-full bg-app-text" />
+            <span className="block h-0.5 w-5 rounded-full bg-app-text" />
+            <span className="block h-0.5 w-5 rounded-full bg-app-text" />
           </span>
         </button>
       </nav>

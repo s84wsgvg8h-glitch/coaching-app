@@ -187,3 +187,87 @@ export async function loadAthleteUpcomingCompetitions(athleteId: string) {
 
   return selected.sort((a, b) => a.start_date.localeCompare(b.start_date));
 }
+
+export type CoachAthleteCompetitionEntry = {
+  athleteId: string;
+  athleteName: string;
+  competition: Competition;
+};
+
+export function formatAthleteShortName(
+  fullName: string,
+  allFullNames: string[],
+): string {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  const firstName = parts[0] || "Atleet";
+  const normalizedFirst = firstName.toLowerCase();
+
+  const hasDuplicateFirstName = allFullNames.filter((name) => {
+    const otherFirst = name.trim().split(/\s+/)[0] || "";
+    return otherFirst.toLowerCase() === normalizedFirst;
+  }).length > 1;
+
+  const capitalizedFirst =
+    firstName.charAt(0).toUpperCase() + firstName.slice(1).toLowerCase();
+
+  if (!hasDuplicateFirstName) {
+    return capitalizedFirst;
+  }
+
+  if (parts.length > 1) {
+    const lastInitial = parts[parts.length - 1]![0]?.toUpperCase() || "";
+    return lastInitial ? `${capitalizedFirst} ${lastInitial}.` : capitalizedFirst;
+  }
+
+  return capitalizedFirst;
+}
+
+export async function loadCoachAthleteCompetitions(today = getTodayDateString()) {
+  const { data: rows, error } = await supabase
+    .from("athlete_competitions")
+    .select("athlete_id, competition_id");
+
+  if (error || !rows?.length) {
+    return [] as CoachAthleteCompetitionEntry[];
+  }
+
+  const athleteIds = [...new Set(rows.map((row) => row.athlete_id as string))];
+  const competitionIds = [
+    ...new Set(rows.map((row) => row.competition_id as string)),
+  ];
+
+  const [{ data: profiles }, { data: competitions }] = await Promise.all([
+    supabase.from("profiles").select("id, full_name").in("id", athleteIds),
+    supabase
+      .from("wedstrijden")
+      .select("id, naam, start_date, end_date")
+      .in("id", competitionIds),
+  ]);
+
+  const profileById = new Map(
+    (profiles || []).map((profile) => [profile.id as string, profile.full_name as string | null]),
+  );
+  const competitionById = new Map(
+    (competitions || []).map((competition) => [
+      competition.id as string,
+      competition as Competition,
+    ]),
+  );
+
+  const entries: CoachAthleteCompetitionEntry[] = [];
+
+  for (const row of rows) {
+    const competition = competitionById.get(row.competition_id as string);
+    if (!competition || !isUpcomingCompetition(competition, today)) continue;
+
+    entries.push({
+      athleteId: row.athlete_id as string,
+      athleteName: profileById.get(row.athlete_id as string) || "Atleet",
+      competition,
+    });
+  }
+
+  return entries.sort((a, b) =>
+    a.competition.start_date.localeCompare(b.competition.start_date),
+  );
+}

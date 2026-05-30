@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import ExerciseVideoBadge from "@/components/ExerciseVideoBadge";
 import {
   formatDutchSetLabel,
   formatExerciseVideoStatsLine,
@@ -44,6 +45,11 @@ export default function ExerciseVideoMessage({
           className="relative block w-full overflow-hidden rounded-xl text-left"
           aria-label={`Video openen: ${payload.exerciseName}`}
         >
+          <ExerciseVideoBadge
+            exerciseName={payload.exerciseName}
+            priority={payload.priority}
+          />
+
           {payload.thumbnailUrl ? (
             <img
               src={payload.thumbnailUrl}

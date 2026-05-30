@@ -1,27 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
 import ChatAvatar from "@/components/chat/ChatAvatar";
+import IntakeAnswersSection from "@/components/IntakeAnswersSection";
+import AvatarCropModal from "@/components/AvatarCropModal";
+import AthleteGoalsSection from "@/components/profile/AthleteGoalsSection";
+import ThemeToggle from "@/components/ThemeToggle";
+import ProfileRpeTableSection from "@/components/profile/ProfileRpeTableSection";
+import ProfileSettingsPanel from "@/components/profile/ProfileSettingsPanel";
+import ProfileSettingsLayout, {
+  type ProfileSettingsSection,
+} from "@/components/profile/ProfileSettingsLayout";
 import { updateProfileAvatar, uploadAvatar } from "@/lib/chatAvatars";
+import { isCoachLikeRole } from "@/lib/authRoles";
 
-export default function ProfilePage() {
+function ProfilePageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const activeSection = searchParams.get("section") || "account";
+
   const [userId, setUserId] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [geboortedatum, setGeboortedatum] = useState("");
   const [lidnummer, setLidnummer] = useState("");
-
+  const [businessName, setBusinessName] = useState("");
   const [editedFullName, setEditedFullName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
   const [editedPassword, setEditedPassword] = useState("");
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
-
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
+  const [avatarCropFile, setAvatarCropFile] = useState<File | null>(null);
   const [profileLoaded, setProfileLoaded] = useState(false);
   const autoSaveReady = useRef(false);
   const saveMessageTimer = useRef<number | null>(null);
@@ -53,6 +68,7 @@ export default function ProfilePage() {
         setLidnummer(data.lidnummer || "");
         setGeboortedatum(data.geboortedatum || "");
         setAvatarUrl(data.avatar_url || null);
+        setBusinessName(data.business_name || "");
       }
 
       setProfileLoaded(true);
@@ -81,7 +97,7 @@ export default function ProfilePage() {
     }, 800);
 
     return () => window.clearTimeout(timer);
-  }, [editedFullName, editedEmail, profileLoaded, userId]);
+  }, [editedFullName, editedEmail, businessName, profileLoaded, userId]);
 
   useEffect(() => {
     return () => {
@@ -90,6 +106,30 @@ export default function ProfilePage() {
       }
     };
   }, []);
+
+  const sections = useMemo<ProfileSettingsSection[]>(() => {
+    if (role === "atleet") {
+      return [
+        { id: "account", label: "Account", group: "Algemeen" },
+        { id: "maxes", label: "Current maxes & RPE", group: "Training" },
+        { id: "athlete", label: "Atleetgegevens", group: "Training" },
+        { id: "intake", label: "Intake", group: "Training" },
+        { id: "injuries", label: "Blessures", group: "Training" },
+        { id: "goals", label: "Doelen", group: "Training" },
+        { id: "preferences", label: "Voorkeuren", group: "Algemeen" },
+      ];
+    }
+
+    return [
+      { id: "account", label: "Account", group: "Algemeen" },
+      { id: "settings", label: "Instellingen", group: "Algemeen" },
+      { id: "preferences", label: "Voorkeuren", group: "Algemeen" },
+    ];
+  }, [role]);
+
+  function setSection(sectionId: string) {
+    router.replace(`/profile?section=${sectionId}`);
+  }
 
   async function saveProfile(clearPasswordAfterSave = true) {
     if (!editedFullName.trim()) {
@@ -104,6 +144,9 @@ export default function ProfilePage() {
       .from("profiles")
       .update({
         full_name: editedFullName.trim(),
+        ...(isCoachLikeRole(role)
+          ? { business_name: businessName.trim() || null }
+          : {}),
       })
       .eq("id", userId);
 
@@ -155,9 +198,15 @@ export default function ProfilePage() {
   async function handleAvatarUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
     if (!file || !userId) return;
+    setAvatarCropFile(file);
+    event.target.value = "";
+  }
 
+  async function handleAvatarCropConfirm(croppedFile: File) {
+    if (!userId) return;
+    setAvatarCropFile(null);
     setSaving(true);
-    const { url, error } = await uploadAvatar(userId, file, "profile");
+    const { url, error } = await uploadAvatar(userId, croppedFile, "profile");
 
     if (error || !url) {
       setSaving(false);
@@ -177,61 +226,116 @@ export default function ProfilePage() {
     setMessage("Profielfoto opgeslagen.");
   }
 
+  const sectionTitle =
+    sections.find((section) => section.id === activeSection)?.label || "Profiel";
+
   return (
-    <AppShell contentClassName="flex-1 p-6 space-y-6">
-      <div className="bg-white rounded-3xl shadow-xl p-8 max-w-3xl">
-        <h2 className="text-3xl font-bold mb-2">Profiel aanpassen</h2>
-        <p className="text-gray-500 mb-8">Pas hier je persoonlijke gegevens aan.</p>
+    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6">
+      <ProfileSettingsLayout
+        title={sectionTitle}
+        subtitle="Beheer je account en traininginstellingen."
+        sections={sections}
+        activeSection={activeSection}
+        onSectionChange={setSection}
+      >
+        {activeSection === "account" && (
+          <div className="space-y-6">
+            <div className="flex items-center gap-4">
+              <ChatAvatar
+                name={editedFullName}
+                imageUrl={avatarUrl}
+                className="h-20 w-20 text-2xl"
+              />
+              <label className="cursor-pointer rounded-2xl bg-gray-100 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-200">
+                Profielfoto wijzigen
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(event) => void handleAvatarUpload(event)}
+                  className="hidden"
+                />
+              </label>
+            </div>
 
-        <div className="mb-8 flex items-center gap-4">
-          <ChatAvatar
-            name={editedFullName}
-            imageUrl={avatarUrl}
-            className="h-20 w-20 text-2xl"
-          />
-          <label className="cursor-pointer rounded-2xl bg-gray-100 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-200">
-            Profielfoto wijzigen
-            <input
-              type="file"
-              accept="image/*"
-              onChange={(event) => void handleAvatarUpload(event)}
-              className="hidden"
-            />
-          </label>
-        </div>
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Volledige naam
+                </label>
+                <input
+                  type="text"
+                  value={editedFullName}
+                  onChange={(event) => setEditedFullName(event.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Email</label>
+                <input
+                  type="email"
+                  value={editedEmail}
+                  onChange={(event) => setEditedEmail(event.target.value)}
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold">
+                  Nieuw wachtwoord
+                </label>
+                <input
+                  type="password"
+                  value={editedPassword}
+                  onChange={(event) => setEditedPassword(event.target.value)}
+                  onBlur={() => void savePasswordOnBlur()}
+                  placeholder="Laat leeg als je niks wilt wijzigen"
+                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold">Rol</label>
+                <div className="w-full rounded-2xl bg-gray-100 px-4 py-3 capitalize text-gray-600">
+                  {role}
+                </div>
+              </div>
+              {isCoachLikeRole(role) ? (
+                <div className="md:col-span-2">
+                  <label className="mb-2 block text-sm font-semibold">
+                    Business name
+                  </label>
+                  <input
+                    type="text"
+                    value={businessName}
+                    onChange={(event) => setBusinessName(event.target.value)}
+                    placeholder="Naam van je coachingbedrijf"
+                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+              ) : null}
+            </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-          <div>
-            <label className="block text-sm font-semibold mb-2">Volledige naam</label>
-            <input type="text" value={editedFullName} onChange={(e) => setEditedFullName(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
+            <div className="flex min-h-6 items-center gap-3 text-sm text-gray-500">
+              {saving ? <span>Opslaan...</span> : null}
+              {message ? <span>{message}</span> : null}
+              {!saving && !message ? (
+                <span>Wijzigingen worden automatisch opgeslagen</span>
+              ) : null}
+            </div>
           </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Email</label>
-            <input type="email" value={editedEmail} onChange={(e) => setEditedEmail(e.target.value)} className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Nieuw wachtwoord</label>
-            <input type="password" value={editedPassword} onChange={(e) => setEditedPassword(e.target.value)} onBlur={() => void savePasswordOnBlur()} placeholder="Laat leeg als je niks wilt wijzigen" className="w-full border border-gray-300 rounded-2xl px-4 py-3 outline-none focus:ring-2 focus:ring-black" />
-          </div>
-          <div>
-            <label className="block text-sm font-semibold mb-2">Rol</label>
-            <div className="w-full bg-gray-100 rounded-2xl px-4 py-3 text-gray-600 capitalize">{role}</div>
-          </div>
-        </div>
+        )}
 
-        <div className="mt-8 flex min-h-6 items-center gap-3 text-sm text-gray-500">
-          {saving ? <span>Opslaan...</span> : null}
-          {message ? <span>{message}</span> : null}
-          {!saving && !message ? (
-            <span>Wijzigingen worden automatisch opgeslagen</span>
-          ) : null}
-        </div>
-      </div>
+        {activeSection === "maxes" && userId ? (
+          <ProfileRpeTableSection athleteId={userId} canEditMaxes={false} />
+        ) : null}
 
-      {userId && (
-        <div className="bg-white rounded-3xl shadow-xl p-8 max-w-3xl">
+        {activeSection === "settings" && userId && isCoachLikeRole(role) ? (
+          <ProfileSettingsPanel coachUserId={userId} />
+        ) : null}
+
+        {activeSection === "athlete" && userId && role === "atleet" ? (
           <AthleteProfileSection
             athleteId={userId}
+            canEditStartingPrs={false}
+            canEditCompetitions={false}
             initialGeboortedatum={geboortedatum}
             initialLidnummer={lidnummer}
             onSaved={async () => {
@@ -247,10 +351,44 @@ export default function ProfilePage() {
               }
             }}
           />
-        </div>
-      )}
+        ) : null}
 
-      <BodyAreaDiagram athleteId={userId} />
+        {activeSection === "intake" && userId && role === "atleet" ? (
+          <IntakeAnswersSection athleteId={userId} collapsible defaultOpen />
+        ) : null}
+
+        {activeSection === "injuries" && userId && role === "atleet" ? (
+          <BodyAreaDiagram athleteId={userId} />
+        ) : null}
+
+        {activeSection === "goals" && userId && role === "atleet" ? (
+          <AthleteGoalsSection athleteId={userId} />
+        ) : null}
+
+        {activeSection === "preferences" && (
+          <div className="space-y-4">
+            <h2 className="text-xl font-bold text-app-text">Voorkeuren</h2>
+            <p className="text-sm text-app-muted">Thema en weergave-instellingen.</p>
+            <ThemeToggle />
+          </div>
+        )}
+      </ProfileSettingsLayout>
+
+      {avatarCropFile ? (
+        <AvatarCropModal
+          file={avatarCropFile}
+          onCancel={() => setAvatarCropFile(null)}
+          onConfirm={(file) => void handleAvatarCropConfirm(file)}
+        />
+      ) : null}
     </AppShell>
+  );
+}
+
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<AppShell contentClassName="flex-1 p-6">Profiel laden...</AppShell>}>
+      <ProfilePageContent />
+    </Suspense>
   );
 }

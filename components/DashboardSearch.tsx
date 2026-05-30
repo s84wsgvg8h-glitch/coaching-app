@@ -16,6 +16,7 @@ import {
   resolveAthleteFromQuery,
   type TrainingSnapshot,
 } from "@/lib/aiTrainingSnapshot";
+import { isCoachLikeRole } from "@/lib/authRoles";
 
 type DashboardSearchProps = {
   role: string;
@@ -128,7 +129,7 @@ export default function DashboardSearch({
         const athlete = resolveAthleteFromQuery(question, coachSnapshot, selfAthlete);
         if (athlete) {
           trainingSnapshot = await buildTrainingSnapshot(athlete, question);
-        } else if (role === "coach") {
+        } else if (isCoachLikeRole(role)) {
           trainingContext = formatMissingAthletePrompt(coachSnapshot);
         }
       }

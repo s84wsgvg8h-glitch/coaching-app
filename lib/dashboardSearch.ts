@@ -1,3 +1,4 @@
+import { isCoachLikeRole } from "@/lib/authRoles";
 import { getNavLinks } from "@/lib/navigation";
 import {
   CHAT_SLASH_COMMANDS,
@@ -36,7 +37,7 @@ export function buildDashboardSearchItems(
   );
 
   const commands: DashboardSearchItem[] = CHAT_SLASH_COMMANDS.filter((command) => {
-    if (command.coachOnly && role !== "coach") return false;
+    if (command.coachOnly && !isCoachLikeRole(role)) return false;
     return true;
   }).map((command: ChatSlashCommand) => ({
     id: `command:${command.command}`,
