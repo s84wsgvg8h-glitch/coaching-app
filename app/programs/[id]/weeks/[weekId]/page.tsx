@@ -97,7 +97,7 @@ import {
 import { mergeAthleteSetRowsWithDefaults } from "@/lib/athleteSetDefaults";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import {
-  capitalizeExerciseName,
+  normalizeExerciseName,
   getPriorityClass,
   isPriorityExercise,
 } from "@/lib/programWeek/exerciseUtils";
@@ -2071,7 +2071,7 @@ export default function ProgramWeekPage() {
       if ((sourceExercises || []).length > 0) {
         const exercisesToInsert = (sourceExercises || []).map((exercise) => ({
           program_day_id: createdDay.id,
-          name: capitalizeExerciseName(exercise.name),
+          name: normalizeExerciseName(exercise.name),
           sets: exercise.sets || "",
           reps: exercise.reps || "",
           load: exercise.load || "",
@@ -2400,7 +2400,7 @@ export default function ProgramWeekPage() {
       await runSave(async () => {
         const { error } = await supabase.from("program_exercises").insert({
           program_day_id: dayId,
-          name: capitalizeExerciseName(exerciseName),
+          name: normalizeExerciseName(exerciseName),
           sets: exerciseSets.trim(),
           reps: exerciseReps.trim(),
           load: loadValue,
@@ -2460,7 +2460,7 @@ export default function ProgramWeekPage() {
     value: string,
   ) {
     let cleanValue: string | number | null =
-      field === "name" ? capitalizeExerciseName(value) : value.trim();
+      field === "name" ? normalizeExerciseName(value) : value.trim();
 
     if (field === "rest_seconds") {
       cleanValue = value.trim() ? Number.parseInt(value.trim(), 10) : null;
@@ -2522,7 +2522,7 @@ export default function ProgramWeekPage() {
         key,
         typeof value === "string"
           ? key === "name"
-            ? capitalizeExerciseName(value)
+            ? normalizeExerciseName(value)
             : value.trim()
           : value,
       ]),
@@ -2762,7 +2762,7 @@ export default function ProgramWeekPage() {
     if (sourceExercises.length > 0) {
       const exercisesToInsert = sourceExercises.map((exercise, index) => ({
         program_day_id: createdDay.id,
-        name: capitalizeExerciseName(exercise.name),
+        name: normalizeExerciseName(exercise.name),
         sets: exercise.sets || "",
         reps: exercise.reps || "",
         load: exercise.load || "",
@@ -4456,7 +4456,7 @@ export default function ProgramWeekPage() {
           videoUrl: publicUrlData.publicUrl,
           thumbnailUrl,
           caption,
-          exerciseName: capitalizeExerciseName(exercise.name),
+          exerciseName: normalizeExerciseName(exercise.name),
           setNumber,
           reps: setRow?.reps || null,
           coachReps: exercise.reps || null,
@@ -5134,7 +5134,7 @@ export default function ProgramWeekPage() {
               getDisplayIntensity={getDisplayIntensity}
               getExercisePriority={getExercisePriority}
               getExercisePriorityLabel={getExercisePriorityLabel}
-              capitalizeExerciseName={capitalizeExerciseName}
+              capitalizeExerciseName={normalizeExerciseName}
               openAthleteExercisePanel={openAthleteExercisePanel}
               setPreviewLibraryItem={setPreviewLibraryItem}
             />
@@ -5245,7 +5245,7 @@ export default function ProgramWeekPage() {
               dayIsPast={dayIsPast}
               dayDateLabel={getDayDate(day)}
               exerciseTitle={
-                capitalizeExerciseName(exercise.name) || "Oefening invullen"
+                normalizeExerciseName(exercise.name) || "Oefening invullen"
               }
               prescribedLabel={`${exercise.sets || "-"} sets · ${exercise.reps || "-"} reps · ${getDisplayIntensity(exercise)}`}
               loadingSets={loadingAthleteSets}
@@ -5333,7 +5333,7 @@ export default function ProgramWeekPage() {
                     </p>
                     <p className="max-w-[190px] truncate text-xs font-bold text-white">
                       {videoRecorderTarget
-                        ? `${capitalizeExerciseName(videoRecorderTarget.exercise.name)} · set ${videoRecorderTarget.setNumber}`
+                        ? `${normalizeExerciseName(videoRecorderTarget.exercise.name)} · set ${videoRecorderTarget.setNumber}`
                         : "Video opnemen"}
                     </p>
                   </div>

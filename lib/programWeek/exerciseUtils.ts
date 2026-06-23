@@ -7,12 +7,20 @@ export function isPriorityExercise(name: string) {
   );
 }
 
+/** Capitalize while typing — preserves internal/trailing spaces. */
 export function capitalizeExerciseName(value: string | null | undefined) {
-  const cleanValue = (value || "").trim();
+  if (!value) return "";
 
-  if (!cleanValue) return "";
+  return value.charAt(0).toUpperCase() + value.slice(1);
+}
 
-  return cleanValue.charAt(0).toUpperCase() + cleanValue.slice(1);
+/** Trim + capitalize for save/display labels. */
+export function normalizeExerciseName(value: string | null | undefined) {
+  const trimmed = (value || "").trim();
+
+  if (!trimmed) return "";
+
+  return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
 }
 
 export function getPriorityClass(priority: string | null | undefined) {

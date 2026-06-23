@@ -7,7 +7,7 @@ import CoachProgramWeekHeader, {
   type CoachSbdSummaryItem,
 } from "@/components/programs/coach/CoachProgramWeekHeader";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
-import { capitalizeExerciseName, isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
+import { isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import { COACH_CARD_DISMISS_BTN, DELETE_X_BTN, setEmptyDragImage } from "@/lib/programWeek/constants";
 import {
@@ -636,7 +636,7 @@ export default function CoachProgramWeekContent({
                                       <div className="coach-program-exercise-title-row">
                                         <div className="coach-program-exercise-name-wrap min-w-0 flex-1">
                                           <AutoResizeTextarea
-                                            value={capitalizeExerciseName(exercise.name) || ""}
+                                            value={exercise.name || ""}
                                             onChange={(e) =>
                                               updateExerciseLocal(
                                                 day.id,
@@ -1005,9 +1005,7 @@ export default function CoachProgramWeekContent({
                               <input
                                 ref={exerciseNameInputRef}
                                 value={exerciseName}
-                                onChange={(e) =>
-                                  setExerciseName(capitalizeExerciseName(e.target.value))
-                                }
+                                onChange={(e) => setExerciseName(e.target.value)}
                                 onKeyDown={(e) =>
                                   handleNewExerciseFormKeyDown(e, day.id)
                                 }
