@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { getPublicSupabaseUrl } from "@/lib/supabasePublicEnv";
 
 /**
  * Auth guards run client-side in AuthProvider (Supabase session lives in
@@ -27,7 +28,7 @@ export function middleware(request: NextRequest) {
     );
   }
 
-  const supabaseOrigin = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+  const supabaseOrigin = getPublicSupabaseUrl();
   const mediaSrc = ["'self'", "blob:", supabaseOrigin].filter(Boolean).join(" ");
   const connectSrc = [
     "'self'",

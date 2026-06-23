@@ -2,10 +2,11 @@
 
 import type { ReactNode, RefObject } from "react";
 import { GripVertical } from "lucide-react";
-import AutoResizeTextarea from "@/components/ui/AutoResizeTextarea";
+import CoachExerciseNameInput from "@/components/programs/coach/CoachExerciseNameInput";
 import CoachProgramDayHeader from "@/components/programs/coach/CoachProgramDayHeader";
 import CoachProgramWeekHeader, {
   type CoachSbdSummaryItem,
+  type EditorView,
 } from "@/components/programs/coach/CoachProgramWeekHeader";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
 import { isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
@@ -163,6 +164,9 @@ export type CoachProgramWeekContentProps = {
   onLinkExerciseForLibrary: (exercise: ProgramExercise) => void;
   sbdWeekSummary?: CoachSbdSummaryItem[];
   weekStatsReport?: WeekStatsReport | null;
+  editorView?: EditorView;
+  onEditorViewChange?: (view: EditorView) => void;
+  showEditorViewToggle?: boolean;
 };
 
 export default function CoachProgramWeekContent({
@@ -242,6 +246,9 @@ export default function CoachProgramWeekContent({
   onLinkExerciseForLibrary,
   sbdWeekSummary,
   weekStatsReport = null,
+  editorView = "card",
+  onEditorViewChange,
+  showEditorViewToggle = false,
 }: CoachProgramWeekContentProps) {
   return (
     <div className="coach-program-main max-w-full">
@@ -255,6 +262,9 @@ export default function CoachProgramWeekContent({
           backHref={backHref}
           sbdWeekSummary={sbdWeekSummary}
           weekStatsReport={weekStatsReport}
+          editorView={editorView}
+          onEditorViewChange={onEditorViewChange}
+          showEditorViewToggle={showEditorViewToggle}
         />
       )}
 
@@ -293,10 +303,9 @@ export default function CoachProgramWeekContent({
                     >
                       <div className="coach-program-day-header-row flex items-start gap-1">
                         {isCoach ? (
-                          <div
-                            role="button"
-                            tabIndex={0}
+                          <span
                             draggable
+                            tabIndex={-1}
                             onDragStart={(event) => {
                               setEmptyDragImage(event);
                               handleDragStart(day.id);
@@ -307,7 +316,7 @@ export default function CoachProgramWeekContent({
                             title="Sleep om dag te verplaatsen"
                           >
                             <GripVertical className="h-4 w-4" aria-hidden />
-                          </div>
+                          </span>
                         ) : null}
                         <div className="min-w-0 flex-1">
                           <CoachProgramDayHeader
@@ -553,10 +562,9 @@ export default function CoachProgramWeekContent({
                                   className="coach-program-exercise-row flex items-stretch gap-1.5"
                                 >
                                   {isCoach ? (
-                                    <div
-                                      role="button"
-                                      tabIndex={0}
+                                    <span
                                       draggable
+                                      tabIndex={-1}
                                       onDragStart={(e) => {
                                         e.stopPropagation();
                                         setEmptyDragImage(e);
@@ -568,7 +576,7 @@ export default function CoachProgramWeekContent({
                                       title="Sleep om oefening te verplaatsen"
                                     >
                                       <GripVertical className="h-4 w-4" aria-hidden />
-                                    </div>
+                                    </span>
                                   ) : null}
                                   {linkedLibraryItem && (
                                     <div className="coach-exercise-uitleg group/uitleg relative shrink-0">
@@ -607,6 +615,24 @@ export default function CoachProgramWeekContent({
                                   )}
 
                                   <div
+                                    onMouseDown={(e) => {
+                                      if (
+                                        (e.target as HTMLElement).closest(
+                                          "input, textarea, select, button",
+                                        )
+                                      ) {
+                                        e.stopPropagation();
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (
+                                        (e.target as HTMLElement).closest(
+                                          "input, textarea, select, [contenteditable='true']",
+                                        )
+                                      ) {
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                     onDragOver={(e) =>
                                       handleExerciseDragOver(
                                         e,
@@ -618,7 +644,6 @@ export default function CoachProgramWeekContent({
                                       e.preventDefault();
                                       e.stopPropagation();
                                     }}
-                                    onDragEnd={() => void saveExerciseOrder(day.id)}
                                     className={`coach-exercise-block group/exercise relative min-w-0 flex-1 ${getCoachExerciseColorClass(
                                       exercise.name,
                                     )} transition-[transform,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${exerciseDropShift} ${
@@ -651,33 +676,29 @@ export default function CoachProgramWeekContent({
                                   <div className="coach-program-exercise-head">
                                     <div className="min-w-0 flex-1">
                                       <div className="coach-program-exercise-title-row">
-                                        <div className="coach-program-exercise-name-wrap min-w-0 flex-1">
-                                          <AutoResizeTextarea
-                                            value={exercise.name || ""}
-                                            onChange={(e) =>
+                                        <div
+                                          className="coach-program-exercise-name-wrap min-w-0 flex-1"
+                                          onMouseDown={(event) => {
+                                            event.stopPropagation();
+                                          }}
+                                        >
+                                          <CoachExerciseNameInput
+                                            exerciseId={exercise.id}
+                                            initialName={exercise.name || ""}
+                                            onCommit={(nextValue) => {
                                               updateExerciseLocal(
                                                 day.id,
                                                 exercise.id,
                                                 "name",
-                                                e.target.value,
-                                              )
-                                            }
-                                            onBlur={(e) =>
-                                              saveExerciseField(
+                                                nextValue,
+                                              );
+                                              void saveExerciseField(
                                                 exercise.id,
                                                 "name",
-                                                e.target.value,
-                                              )
-                                            }
-                                            onKeyDown={(e) => {
-                                              e.stopPropagation();
-                                              if (e.key === "Enter" && !e.shiftKey) {
-                                                e.preventDefault();
-                                                e.currentTarget.blur();
-                                              }
+                                                nextValue,
+                                              );
                                             }}
                                             disabled={!isCoach}
-                                            rows={1}
                                             className="coach-program-exercise-name"
                                           />
                                         </div>
@@ -1021,13 +1042,18 @@ export default function CoachProgramWeekContent({
                               data-new-exercise-form="true"
                             >
                               <input
+                                key={`new-exercise-${day.id}`}
                                 ref={exerciseNameInputRef}
-                                value={exerciseName}
-                                onChange={(e) => setExerciseName(e.target.value)}
+                                defaultValue=""
+                                onMouseDown={(e) => e.stopPropagation()}
+                                onKeyDownCapture={(e) => e.stopPropagation()}
                                 onKeyDown={(e) => {
                                   e.stopPropagation();
                                   handleNewExerciseFormKeyDown(e, day.id);
                                 }}
+                                autoComplete="off"
+                                autoCorrect="off"
+                                spellCheck={false}
                                 placeholder="Naam oefening"
                                 className="coach-program-inline-form-input coach-program-inline-form-input-name"
                               />

@@ -14,6 +14,8 @@ export type CoachSbdSummaryItem = {
   reps: number;
 };
 
+export type EditorView = "card" | "raw";
+
 type CoachProgramWeekHeaderProps = {
   blockTitle: string;
   weekTitle: string;
@@ -23,6 +25,9 @@ type CoachProgramWeekHeaderProps = {
   backHref: string;
   sbdWeekSummary?: CoachSbdSummaryItem[];
   weekStatsReport?: WeekStatsReport | null;
+  editorView?: EditorView;
+  onEditorViewChange?: (view: EditorView) => void;
+  showEditorViewToggle?: boolean;
 };
 
 function SbdSummaryPill({
@@ -68,6 +73,37 @@ function SbdSummaryPill({
   );
 }
 
+function EditorViewToggle({
+  editorView,
+  onEditorViewChange,
+}: {
+  editorView: EditorView;
+  onEditorViewChange: (view: EditorView) => void;
+}) {
+  return (
+    <div
+      className="coach-program-editor-view-toggle"
+      role="group"
+      aria-label="Editorweergave"
+    >
+      <button
+        type="button"
+        className={editorView === "card" ? "is-active" : ""}
+        onClick={() => onEditorViewChange("card")}
+      >
+        Card View
+      </button>
+      <button
+        type="button"
+        className={editorView === "raw" ? "is-active" : ""}
+        onClick={() => onEditorViewChange("raw")}
+      >
+        Raw View
+      </button>
+    </div>
+  );
+}
+
 export default function CoachProgramWeekHeader({
   blockTitle,
   weekTitle,
@@ -77,6 +113,9 @@ export default function CoachProgramWeekHeader({
   backHref,
   sbdWeekSummary = [],
   weekStatsReport = null,
+  editorView = "card",
+  onEditorViewChange,
+  showEditorViewToggle = false,
 }: CoachProgramWeekHeaderProps) {
   const [weekStatsOpen, setWeekStatsOpen] = useState(false);
 
@@ -97,6 +136,15 @@ export default function CoachProgramWeekHeader({
           </Link>
         </div>
 
+        {showEditorViewToggle && onEditorViewChange ? (
+          <div className="mb-3">
+            <EditorViewToggle
+              editorView={editorView}
+              onEditorViewChange={onEditorViewChange}
+            />
+          </div>
+        ) : null}
+
         {sbdWeekSummary.length > 0 ? (
           <div className="mb-3">
             <SbdSummaryPill items={sbdWeekSummary} onClick={openWeekStats} />
@@ -113,6 +161,13 @@ export default function CoachProgramWeekHeader({
           </h1>
 
           <div className="coach-program-week-actions">
+            {showEditorViewToggle && onEditorViewChange ? (
+              <EditorViewToggle
+                editorView={editorView}
+                onEditorViewChange={onEditorViewChange}
+              />
+            ) : null}
+
             <button
               type="button"
               onClick={onTogglePlanning}

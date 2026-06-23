@@ -44,6 +44,16 @@ const CoachProgramWeekContent = dynamic(
   { loading: () => <ProgramWeekSkeleton /> },
 );
 
+const RawProgramEditor = dynamic(
+  () => import("@/components/programs/coach/RawProgramEditor"),
+  { loading: () => <ProgramWeekSkeleton /> },
+);
+
+const CoachProgramWeekHeader = dynamic(
+  () => import("@/components/programs/coach/CoachProgramWeekHeader"),
+  { loading: () => null },
+);
+
 const AthleteProgramSidebar = dynamic(
   () => import("@/components/programs/athlete/AthleteProgramSidebar"),
   { ssr: false },
@@ -334,6 +344,7 @@ export default function ProgramWeekPage() {
   const [previewLibraryItem, setPreviewLibraryItem] =
     useState<ExerciseLibraryItem | null>(null);
   const [planningSplitOpen, setPlanningSplitOpen] = useState(false);
+  const [editorView, setEditorView] = useState<"card" | "raw">("card");
   const [planningPanelHeight, setPlanningPanelHeight] = useState(360);
   const planningResizeRef = useRef<{ startY: number; startHeight: number } | null>(null);
   const planningAthleteId = athleteId || currentBlock?.athlete_id || "";
@@ -2380,7 +2391,9 @@ export default function ProgramWeekPage() {
   }
 
   async function addExercise(dayId: string) {
-    if (!exerciseName.trim()) {
+    const rawName =
+      exerciseNameInputRef.current?.value ?? exerciseName;
+    if (!rawName.trim()) {
       alert("Vul een oefening in");
       return;
     }
@@ -2400,7 +2413,7 @@ export default function ProgramWeekPage() {
       await runSave(async () => {
         const { error } = await supabase.from("program_exercises").insert({
           program_day_id: dayId,
-          name: normalizeExerciseName(exerciseName),
+          name: normalizeExerciseName(rawName),
           sets: exerciseSets.trim(),
           reps: exerciseReps.trim(),
           load: loadValue,
@@ -2417,6 +2430,9 @@ export default function ProgramWeekPage() {
     }
 
     setExerciseName("");
+    if (exerciseNameInputRef.current) {
+      exerciseNameInputRef.current.value = "";
+    }
     setExerciseSets("");
     setExerciseReps("");
     setExerciseIntensity("");
@@ -2424,6 +2440,79 @@ export default function ProgramWeekPage() {
     setCreatingExerciseDayId("");
 
     await loadDays();
+  }
+
+  async function insertExerciseFromRaw(
+    dayId: string,
+    seed: Partial<
+      Pick<
+        ProgramExercise,
+        "name" | "sets" | "reps" | "load" | "rpe" | "notes" | "priority"
+      >
+    > = {},
+    afterIndex?: number,
+  ) {
+    const sorted = [...(exercisesByDay[dayId] || [])].sort(
+      (a, b) => (a.exercise_number || 0) - (b.exercise_number || 0),
+    );
+    const insertAt =
+      afterIndex === undefined ? sorted.length : Math.max(afterIndex + 1, 0);
+
+    const name = seed.name ? normalizeExerciseName(seed.name) : "Nieuwe oefening";
+
+    try {
+      await runSave(async () => {
+        for (let index = insertAt; index < sorted.length; index += 1) {
+          const { error } = await supabase
+            .from("program_exercises")
+            .update({ exercise_number: index + 2 })
+            .eq("id", sorted[index].id);
+
+          if (error) throw error;
+        }
+
+        const { error } = await supabase.from("program_exercises").insert({
+          program_day_id: dayId,
+          name,
+          sets: (seed.sets ?? "").trim(),
+          reps: (seed.reps ?? "").trim(),
+          load: seed.load ?? "",
+          rpe: seed.rpe ?? "",
+          notes: (seed.notes ?? "").trim(),
+          exercise_number: insertAt + 1,
+          priority: seed.priority ?? "",
+        });
+
+        if (error) throw error;
+      });
+    } catch {
+      return;
+    }
+
+    await loadDays();
+  }
+
+  async function duplicateExerciseRow(dayId: string, exerciseId: string) {
+    const sorted = [...(exercisesByDay[dayId] || [])].sort(
+      (a, b) => (a.exercise_number || 0) - (b.exercise_number || 0),
+    );
+    const index = sorted.findIndex((exercise) => exercise.id === exerciseId);
+    if (index === -1) return;
+
+    const exercise = sorted[index];
+    await insertExerciseFromRaw(
+      dayId,
+      {
+        name: exercise.name,
+        sets: exercise.sets || "",
+        reps: exercise.reps || "",
+        load: exercise.load || "",
+        rpe: exercise.rpe || "",
+        notes: exercise.notes || "",
+        priority: exercise.priority || "",
+      },
+      index,
+    );
   }
 
   function updateExerciseLocal(
@@ -5138,7 +5227,7 @@ export default function ProgramWeekPage() {
               openAthleteExercisePanel={openAthleteExercisePanel}
               setPreviewLibraryItem={setPreviewLibraryItem}
             />
-          ) : (
+          ) : editorView === "card" ? (
             <CoachProgramWeekContent
               embeddedInChat={embeddedInChat}
               isCoach={isCoachLikeRole(role)}
@@ -5149,6 +5238,9 @@ export default function ProgramWeekPage() {
               planningSplitOpen={planningSplitOpen}
               onTogglePlanning={() => setPlanningSplitOpen((value) => !value)}
               backHref={athleteId ? `/athletes/${athleteId}` : "/athletes"}
+              editorView={editorView}
+              onEditorViewChange={setEditorView}
+              showEditorViewToggle={isCoachLikeRole(role)}
               days={days}
               exercisesByDay={exercisesByDay}
               creatingExerciseDayId={creatingExerciseDayId}
@@ -5217,6 +5309,49 @@ export default function ProgramWeekPage() {
               sbdWeekSummary={getShortSbdWeekSummary()}
               weekStatsReport={weekStatsReport}
             />
+          ) : (
+            <div className="coach-program-main max-w-full">
+              {!embeddedInChat && (
+                <CoachProgramWeekHeader
+                  blockTitle={currentBlock?.title || "Block"}
+                  weekTitle={week?.title || "Week"}
+                  programSearchContext={programSearchContext}
+                  planningSplitOpen={planningSplitOpen}
+                  onTogglePlanning={() =>
+                    setPlanningSplitOpen((value) => !value)
+                  }
+                  backHref={athleteId ? `/athletes/${athleteId}` : "/athletes"}
+                  sbdWeekSummary={getShortSbdWeekSummary()}
+                  weekStatsReport={weekStatsReport}
+                  editorView={editorView}
+                  onEditorViewChange={setEditorView}
+                  showEditorViewToggle={isCoachLikeRole(role)}
+                />
+              )}
+
+              {!embeddedInChat ? renderBlockWeekNav() : null}
+
+              <RawProgramEditor
+                days={days}
+                exercisesByDay={exercisesByDay}
+                getDayDate={getDayDate}
+                blockWeeks={weeksByBlock[blockId] || []}
+                currentWeekId={weekId}
+                onSelectWeek={(targetWeekId) =>
+                  goToProgram(blockId, targetWeekId)
+                }
+                libraryItems={libraryItems}
+                updateExerciseLocal={updateExerciseLocal}
+                saveExerciseField={saveExerciseField}
+                saveExerciseFields={saveExerciseFields}
+                saveExercisePriority={saveExercisePriority}
+                updateIntensityType={updateIntensityType}
+                deleteExercise={deleteExercise}
+                duplicateDay={duplicateDay}
+                insertExerciseFromRaw={insertExerciseFromRaw}
+                duplicateExerciseRow={duplicateExerciseRow}
+              />
+            </div>
           )}
       </section>
 

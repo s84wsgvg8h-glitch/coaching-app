@@ -1,0 +1,22 @@
+# Build artifacts and local-only files (not needed for Vercel deploys)
+.next
+node_modules
+
+# Code export bundle
+coaching-app-export.zip
+
+# Dev / test tooling
+scripts
+playwright.config.*
+tests
+e2e
+*.spec.ts
+*.test.ts
+
+# Local env files (Vercel uses its own env vars)
+.env.local
+.env*.local
+
+# Editor / tooling
+.cursor
+tsconfig.tsbuildinfo
