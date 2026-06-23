@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
+import { GripVertical } from "lucide-react";
 import AutoResizeTextarea from "@/components/ui/AutoResizeTextarea";
 import CoachProgramDayHeader from "@/components/programs/coach/CoachProgramDayHeader";
 import CoachProgramWeekHeader, {
@@ -279,45 +280,56 @@ export default function CoachProgramWeekContent({
                   return (
                     <div
                       key={day.id}
-                      draggable={isCoach}
-                      onDragStart={(event) => {
-                        setEmptyDragImage(event);
-                        handleDragStart(day.id);
-                      }}
                       onDragOver={(e) => handleDragOver(e, day.id)}
                       onDrop={(e) => {
                         e.preventDefault();
                         void saveDayOrder();
                       }}
-                      onDragEnd={() => void saveDayOrder()}
                       className={`coach-program-day-column group/day flex w-full min-w-0 flex-col transform-gpu transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        isCoach
-                          ? "cursor-grab active:cursor-grabbing"
-                          : ""
-                      } ${
                         draggedDayId === day.id
                           ? "z-10 opacity-55 scale-[0.94] rotate-1"
                           : "opacity-100 scale-100 rotate-0"
                       } ${dayDropShift}`}
                     >
-                      <CoachProgramDayHeader
-                        title={day.title}
-                        dateLabel={getDayDate(day)}
-                        dateInputValue={getDayDateInputValue(day)}
-                        editable={isCoach}
-                        onTitleChange={(value) =>
-                          updateDayLocal(day.id, "title", value)
-                        }
-                        onTitleBlur={() => {
-                          void saveDayMeta(day.id, { title: day.title });
-                        }}
-                        onDateChange={(value) => {
-                          updateDayLocal(day.id, "scheduled_date", value);
-                          void saveDayMeta(day.id, {
-                            scheduled_date: value || null,
-                          });
-                        }}
-                      />
+                      <div className="coach-program-day-header-row flex items-start gap-1">
+                        {isCoach ? (
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            draggable
+                            onDragStart={(event) => {
+                              setEmptyDragImage(event);
+                              handleDragStart(day.id);
+                            }}
+                            onDragEnd={() => void saveDayOrder()}
+                            className="coach-program-drag-handle mt-1 shrink-0"
+                            aria-label="Dag verplaatsen"
+                            title="Sleep om dag te verplaatsen"
+                          >
+                            <GripVertical className="h-4 w-4" aria-hidden />
+                          </div>
+                        ) : null}
+                        <div className="min-w-0 flex-1">
+                          <CoachProgramDayHeader
+                            title={day.title}
+                            dateLabel={getDayDate(day)}
+                            dateInputValue={getDayDateInputValue(day)}
+                            editable={isCoach}
+                            onTitleChange={(value) =>
+                              updateDayLocal(day.id, "title", value)
+                            }
+                            onTitleBlur={() => {
+                              void saveDayMeta(day.id, { title: day.title });
+                            }}
+                            onDateChange={(value) => {
+                              updateDayLocal(day.id, "scheduled_date", value);
+                              void saveDayMeta(day.id, {
+                                scheduled_date: value || null,
+                              });
+                            }}
+                          />
+                        </div>
+                      </div>
 
                       <div
                         className={`coach-program-day-card flex flex-col transition-[transform,opacity,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
@@ -540,6 +552,24 @@ export default function CoachProgramWeekContent({
                                   id={`exercise-${exercise.id}`}
                                   className="coach-program-exercise-row flex items-stretch gap-1.5"
                                 >
+                                  {isCoach ? (
+                                    <div
+                                      role="button"
+                                      tabIndex={0}
+                                      draggable
+                                      onDragStart={(e) => {
+                                        e.stopPropagation();
+                                        setEmptyDragImage(e);
+                                        handleExerciseDragStart(day.id, exercise.id);
+                                      }}
+                                      onDragEnd={() => void saveExerciseOrder(day.id)}
+                                      className="coach-program-drag-handle self-center shrink-0"
+                                      aria-label="Oefening verplaatsen"
+                                      title="Sleep om oefening te verplaatsen"
+                                    >
+                                      <GripVertical className="h-4 w-4" aria-hidden />
+                                    </div>
+                                  ) : null}
                                   {linkedLibraryItem && (
                                     <div className="coach-exercise-uitleg group/uitleg relative shrink-0">
                                       <button
@@ -577,33 +607,6 @@ export default function CoachProgramWeekContent({
                                   )}
 
                                   <div
-                                    draggable={isCoach}
-                                    onDragStart={(e) => {
-                                      e.stopPropagation();
-                                      setEmptyDragImage(e);
-                                      handleExerciseDragStart(
-                                        day.id,
-                                        exercise.id,
-                                      );
-                                    }}
-                                    onMouseDown={(e) => {
-                                      if (
-                                        (e.target as HTMLElement).closest(
-                                          "input, textarea, select, button",
-                                        )
-                                      ) {
-                                        e.stopPropagation();
-                                      }
-                                    }}
-                                    onKeyDown={(e) => {
-                                      if (
-                                        (e.target as HTMLElement).closest(
-                                          "input, textarea, select",
-                                        )
-                                      ) {
-                                        e.stopPropagation();
-                                      }
-                                    }}
                                     onDragOver={(e) =>
                                       handleExerciseDragOver(
                                         e,
@@ -619,10 +622,6 @@ export default function CoachProgramWeekContent({
                                     className={`coach-exercise-block group/exercise relative min-w-0 flex-1 ${getCoachExerciseColorClass(
                                       exercise.name,
                                     )} transition-[transform,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${exerciseDropShift} ${
-                                      isCoach
-                                        ? "cursor-grab active:cursor-grabbing"
-                                        : ""
-                                    } ${
                                       draggedExercise?.exerciseId === exercise.id
                                         ? "z-10 opacity-55 scale-[0.96] shadow-lg ring-2 ring-black/15"
                                         : "opacity-100 scale-100"

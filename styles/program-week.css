@@ -46,30 +46,33 @@
 }
 
 .program-week-shell .program-day-chip-warmup {
-  background: rgba(59, 130, 246, 0.14);
+  background: rgba(59, 130, 246, 0.28);
   color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.35);
 }
 
 .program-week-shell .program-day-chip-warmup:hover {
-  background: rgba(59, 130, 246, 0.22);
+  background: rgba(59, 130, 246, 0.38);
 }
 
 .program-week-shell .program-day-chip-notes {
-  background: rgba(245, 158, 11, 0.16);
-  color: #92400e;
+  background: rgba(245, 158, 11, 0.3);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.38);
 }
 
 .program-week-shell .program-day-chip-notes:hover {
-  background: rgba(245, 158, 11, 0.24);
+  background: rgba(245, 158, 11, 0.4);
 }
 
 .program-week-shell .program-day-chip-uitleg {
-  background: rgba(168, 85, 247, 0.14);
-  color: #6b21a8;
+  background: rgba(168, 85, 247, 0.28);
+  color: #7c3aed;
+  border: 1px solid rgba(168, 85, 247, 0.35);
 }
 
 .program-week-shell .program-day-chip-uitleg:hover {
-  background: rgba(168, 85, 247, 0.22);
+  background: rgba(168, 85, 247, 0.38);
 }
 
 .program-week-shell .program-day-chip-uitleg-active {
@@ -1882,35 +1885,38 @@ html.dark .athlete-program-dashboard-btn--fixed {
 }
 
 .coach-program-shell .program-day-chip-warmup {
-  background: rgba(59, 130, 246, 0.14);
+  background: rgba(59, 130, 246, 0.34);
   color: #93c5fd;
+  border: 1px solid rgba(59, 130, 246, 0.42);
 }
 
 .coach-program-shell .program-day-chip-warmup:hover {
-  background: rgba(59, 130, 246, 0.22);
+  background: rgba(59, 130, 246, 0.48);
 }
 
 .coach-program-shell .program-day-chip-notes {
-  background: rgba(245, 158, 11, 0.14);
+  background: rgba(245, 158, 11, 0.34);
   color: #fcd34d;
+  border: 1px solid rgba(245, 158, 11, 0.42);
 }
 
 .coach-program-shell .program-day-chip-notes:hover {
-  background: rgba(245, 158, 11, 0.22);
+  background: rgba(245, 158, 11, 0.48);
 }
 
 .coach-program-shell .program-day-chip-notes-active {
-  background: rgba(245, 158, 11, 0.24);
-  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.52);
+  box-shadow: inset 0 0 0 1px rgba(245, 158, 11, 0.55);
 }
 
 .coach-program-shell .program-day-chip-uitleg {
-  background: rgba(168, 85, 247, 0.14);
-  color: #d8b4fe;
+  background: rgba(168, 85, 247, 0.34);
+  color: #e9d5ff;
+  border: 1px solid rgba(168, 85, 247, 0.42);
 }
 
 .coach-program-shell .program-day-chip-uitleg:hover {
-  background: rgba(168, 85, 247, 0.22);
+  background: rgba(168, 85, 247, 0.48);
 }
 
 .coach-program-shell .program-day-chip-uitleg-active {
@@ -3024,4 +3030,97 @@ html:not(.dark) .coach-program-week-stats-day {
   .program-edit-modal-textarea {
     font-size: 0.875rem;
   }
+}
+
+/* Drag handles — only these elements are draggable (keeps space working in inputs). */
+.coach-program-drag-handle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  min-height: 28px;
+  flex-shrink: 0;
+  border-radius: var(--coach-program-radius);
+  color: var(--app-text-muted);
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.coach-program-drag-handle:active {
+  cursor: grabbing;
+}
+
+.coach-program-drag-handle:focus-visible {
+  outline: 2px solid rgba(59, 130, 246, 0.55);
+  outline-offset: 2px;
+}
+
+/* Coach program: light mode — lighter grey fields + vivid chips */
+html:not(.dark) .coach-program-day-pill,
+html:not(.dark) .coach-program-exercise-name-wrap,
+html:not(.dark) .coach-program-inline-form,
+html:not(.dark) .coach-program-inline-form-input,
+html:not(.dark) .coach-program-priority-select {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #f1f5f9;
+  color: var(--app-text);
+}
+
+html:not(.dark) .coach-program-day-pill-date {
+  color-scheme: light;
+  color: var(--app-text-muted);
+}
+
+html:not(.dark) .coach-program-exercise-name {
+  color: var(--app-text);
+}
+
+html:not(.dark) .coach-program-field {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+  color: var(--app-text);
+}
+
+html:not(.dark) .coach-program-search-input {
+  border-color: rgba(15, 23, 42, 0.08);
+  background: #f8fafc;
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-warmup {
+  background: rgba(59, 130, 246, 0.22);
+  color: #1d4ed8;
+  border: 1px solid rgba(59, 130, 246, 0.38);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-warmup:hover {
+  background: rgba(59, 130, 246, 0.34);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-notes,
+html:not(.dark) .coach-program-shell .program-day-chip-notes-active {
+  background: rgba(245, 158, 11, 0.26);
+  color: #b45309;
+  border: 1px solid rgba(245, 158, 11, 0.4);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-notes:hover,
+html:not(.dark) .coach-program-shell .program-day-chip-notes-active:hover {
+  background: rgba(245, 158, 11, 0.38);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-uitleg {
+  background: rgba(168, 85, 247, 0.22);
+  color: #7c3aed;
+  border: 1px solid rgba(168, 85, 247, 0.38);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-uitleg:hover {
+  background: rgba(168, 85, 247, 0.34);
+}
+
+html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
+  background: #7c3aed;
+  color: #fff;
+  border-color: #6d28d9;
 }
