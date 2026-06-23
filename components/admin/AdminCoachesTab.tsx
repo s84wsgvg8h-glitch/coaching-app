@@ -19,6 +19,8 @@ import {
   AdminPanel,
   AdminRoleBadge,
 } from "@/components/admin/AdminUi";
+import Toast, { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
 
 type AdminCoachesTabProps = {
   users: AdminUser[];
@@ -36,6 +38,8 @@ export default function AdminCoachesTab({
   onReload,
   onDeleteUser,
 }: AdminCoachesTabProps) {
+  const confirm = useConfirm();
+  const { message: toastMessage, showToast, clearToast } = useToast();
   const [reviews, setReviews] = useState<CoachApprovalReview[]>([]);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
   const [processingId, setProcessingId] = useState<string | null>(null);
@@ -72,7 +76,7 @@ export default function AdminCoachesTab({
       .eq("id", userId);
 
     if (error) {
-      alert(error.message);
+      showToast(error.message);
       setProcessingId(null);
       return;
     }
@@ -90,9 +94,13 @@ export default function AdminCoachesTab({
   }
 
   async function rejectCoach(userId: string) {
-    if (!window.confirm("Coach-aanmelding afwijzen en account verwijderen?")) {
-      return;
-    }
+    const confirmed = await confirm({
+      title: "Coach afwijzen",
+      message: "Coach-aanmelding afwijzen en account verwijderen?",
+      confirmLabel: "Afwijzen",
+      tone: "danger",
+    });
+    if (!confirmed) return;
 
     setProcessingId(userId);
     const notes = notesDraft[userId]?.trim() || null;
@@ -210,6 +218,7 @@ export default function AdminCoachesTab({
           </div>
         )}
       </AdminPanel>
+      <Toast message={toastMessage} onDismiss={clearToast} />
     </div>
   );
 }

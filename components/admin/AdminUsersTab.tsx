@@ -324,7 +324,7 @@ export default function AdminUsersTab({
       .eq("id", athleteId);
 
     if (error) {
-      alert(error.message);
+      showToast(error.message);
       return;
     }
 
