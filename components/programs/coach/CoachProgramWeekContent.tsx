@@ -586,6 +586,24 @@ export default function CoachProgramWeekContent({
                                         exercise.id,
                                       );
                                     }}
+                                    onMouseDown={(e) => {
+                                      if (
+                                        (e.target as HTMLElement).closest(
+                                          "input, textarea, select, button",
+                                        )
+                                      ) {
+                                        e.stopPropagation();
+                                      }
+                                    }}
+                                    onKeyDown={(e) => {
+                                      if (
+                                        (e.target as HTMLElement).closest(
+                                          "input, textarea, select",
+                                        )
+                                      ) {
+                                        e.stopPropagation();
+                                      }
+                                    }}
                                     onDragOver={(e) =>
                                       handleExerciseDragOver(
                                         e,
@@ -653,6 +671,7 @@ export default function CoachProgramWeekContent({
                                               )
                                             }
                                             onKeyDown={(e) => {
+                                              e.stopPropagation();
                                               if (e.key === "Enter" && !e.shiftKey) {
                                                 e.preventDefault();
                                                 e.currentTarget.blur();
@@ -1006,9 +1025,10 @@ export default function CoachProgramWeekContent({
                                 ref={exerciseNameInputRef}
                                 value={exerciseName}
                                 onChange={(e) => setExerciseName(e.target.value)}
-                                onKeyDown={(e) =>
-                                  handleNewExerciseFormKeyDown(e, day.id)
-                                }
+                                onKeyDown={(e) => {
+                                  e.stopPropagation();
+                                  handleNewExerciseFormKeyDown(e, day.id);
+                                }}
                                 placeholder="Naam oefening"
                                 className="coach-program-inline-form-input coach-program-inline-form-input-name"
                               />
