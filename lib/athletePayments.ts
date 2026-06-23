@@ -1,3 +1,8 @@
+import { isAdminRole } from "@/lib/authRoles";
+import {
+  applyAthleteScope,
+  loadCoachOrgContext,
+} from "@/lib/orgAthleteScope";
 import { supabase } from "@/lib/supabaseClient";
 
 export type AthletePayment = {
@@ -84,9 +89,109 @@ export function formatPaymentPrice(value: number | null) {
   }).format(value);
 }
 
+export function formatPaymentPriceCompact(value: number | null) {
+  if (value === null || Number.isNaN(value)) return null;
+  return new Intl.NumberFormat("nl-NL", {
+    style: "currency",
+    currency: "EUR",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
+
 export function formatPaymentDay(value: number | null) {
   if (value === null || Number.isNaN(value)) return "—";
   return `Elke maand op dag ${value}`;
+}
+
+export type MonthlyPaymentStatus = "paid" | "overdue" | "planned";
+
+export type MonthlyPaymentEntry = {
+  isoDate: string;
+  monthLabel: string;
+  dayLabel: string;
+  amount: number;
+  status: MonthlyPaymentStatus;
+};
+
+function clampPaymentDay(year: number, month: number, paymentDay: number) {
+  const lastDay = new Date(year, month + 1, 0).getDate();
+  return Math.min(paymentDay, lastDay);
+}
+
+export function resolveMonthlyPaymentStatus(
+  isoDate: string,
+  today = new Date(),
+): MonthlyPaymentStatus {
+  const payment = new Date(`${isoDate}T12:00:00`);
+  const now = new Date(today);
+  now.setHours(12, 0, 0, 0);
+
+  if (payment > now) return "planned";
+
+  const sameMonth =
+    payment.getFullYear() === now.getFullYear() &&
+    payment.getMonth() === now.getMonth();
+
+  if (sameMonth) {
+    if (payment.getDate() > now.getDate()) return "planned";
+    if (payment.getDate() === now.getDate()) return "planned";
+    return "overdue";
+  }
+
+  return "paid";
+}
+
+export function buildMonthlyPaymentHistory(
+  price: number | null,
+  paymentDay: number | null,
+  monthCount = 8,
+): MonthlyPaymentEntry[] {
+  if (
+    price === null ||
+    paymentDay === null ||
+    Number.isNaN(price) ||
+    Number.isNaN(paymentDay)
+  ) {
+    return [];
+  }
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  const entries: MonthlyPaymentEntry[] = [];
+  const pastMonths = Math.max(0, monthCount - 3);
+
+  for (let offset = pastMonths; offset >= -2; offset -= 1) {
+    const monthAnchor = new Date(
+      today.getFullYear(),
+      today.getMonth() - offset,
+      1,
+      12,
+      0,
+      0,
+    );
+    const year = monthAnchor.getFullYear();
+    const month = monthAnchor.getMonth();
+    const day = clampPaymentDay(year, month, paymentDay);
+    const paymentDate = new Date(year, month, day, 12, 0, 0);
+    const isoDate = paymentDate.toISOString().slice(0, 10);
+
+    entries.push({
+      isoDate,
+      monthLabel: paymentDate.toLocaleDateString("nl-NL", {
+        month: "short",
+        year: "numeric",
+      }),
+      dayLabel: paymentDate.toLocaleDateString("nl-NL", {
+        day: "numeric",
+        month: "short",
+      }),
+      amount: price,
+      status: resolveMonthlyPaymentStatus(isoDate, today),
+    });
+  }
+
+  return entries;
 }
 
 export function parsePaymentDayInput(value: string): number | null {
@@ -153,23 +258,50 @@ export async function saveAthletePayment(
   return { source: "remote", migrationRequired: false };
 }
 
-export async function loadTotalAthleteIncome(): Promise<{
+export async function loadTotalAthleteIncome(
+  coachId?: string,
+  role?: string,
+): Promise<{
   total: number;
   athleteCount: number;
   payingAthleteCount: number;
   migrationRequired: boolean;
 }> {
-  const { data, error } = await supabase
+  let query = supabase
     .from("profiles")
     .select("id, betaling_prijs")
-    .eq("role", "atleet");
+    .eq("role", "atleet")
+    .is("archived_at", null);
+
+  if (coachId && role && !isAdminRole(role)) {
+    const ctx = await loadCoachOrgContext(coachId);
+    if (ctx) {
+      query = applyAthleteScope(query, { ...ctx, role });
+    } else {
+      query = query.eq("coach_id", coachId);
+    }
+  }
+
+  const { data, error } = await query;
 
   if (error) {
     if (isMissingPaymentColumnError(error.message)) {
-      const { data: athletes } = await supabase
+      let fallbackQuery = supabase
         .from("profiles")
         .select("id")
-        .eq("role", "atleet");
+        .eq("role", "atleet")
+        .is("archived_at", null);
+
+      if (coachId && role && !isAdminRole(role)) {
+        const ctx = await loadCoachOrgContext(coachId);
+        if (ctx) {
+          fallbackQuery = applyAthleteScope(fallbackQuery, { ...ctx, role });
+        } else {
+          fallbackQuery = fallbackQuery.eq("coach_id", coachId);
+        }
+      }
+
+      const { data: athletes } = await fallbackQuery;
 
       const athleteIds = (athletes || []).map((row) => row.id as string);
       let total = 0;

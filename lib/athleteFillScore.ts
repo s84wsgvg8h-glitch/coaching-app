@@ -135,6 +135,24 @@ export function isDayInPastWeek(
   return dayDate.getTime() >= weekStart.getTime();
 }
 
+/** Rolling 30-day window (inclusive of today). */
+export function isDayInPastMonth(
+  startDate: string | null,
+  weekNumber: number,
+  dayNumber: number,
+  today = getTodayAtMidnight(),
+) {
+  const dayDate = getProgramDayDate(startDate, weekNumber, dayNumber);
+  if (!dayDate) return false;
+  if (dayDate.getTime() > today.getTime()) return false;
+
+  const monthStart = new Date(today);
+  monthStart.setDate(monthStart.getDate() - 29);
+  monthStart.setHours(0, 0, 0, 0);
+
+  return dayDate.getTime() >= monthStart.getTime();
+}
+
 export function calculateAthleteFillScore(input: {
   athleteId: string;
   athleteName: string;

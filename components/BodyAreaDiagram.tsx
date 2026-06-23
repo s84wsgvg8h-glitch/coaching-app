@@ -12,10 +12,12 @@ export default function BodyAreaDiagram({
   canEdit = true,
 }: BodyAreaDiagramProps) {
   return (
-    <div className="rounded-3xl border border-gray-200 bg-[#eceff3] p-8 shadow-xl">
-      <div className="mb-8">
-        <h2 className="text-3xl font-bold text-black">Lichaamsgebieden</h2>
-        <p className="mt-2 text-gray-500">
+    <div className="rounded-3xl border border-app-border bg-app-surface p-5 shadow-sm sm:p-8">
+      <div className="mb-6 sm:mb-8">
+        <h2 className="text-2xl font-bold text-app-text sm:text-3xl">
+          Lichaamsgebieden
+        </h2>
+        <p className="mt-2 text-sm text-app-muted sm:text-base">
           Beweeg over een spiergroep om de naam te zien. Klik op een gebied om
           een blessure toe te voegen. Voorkant links, achterkant rechts.
         </p>

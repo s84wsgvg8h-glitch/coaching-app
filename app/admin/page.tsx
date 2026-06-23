@@ -2,20 +2,29 @@
 
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import AppShell from "@/components/AppShell";
 import AdminAnalyticsTab from "@/components/admin/AdminAnalyticsTab";
+import AdminAppShell from "@/components/admin/AdminAppShell";
+import AdminAuditTab from "@/components/admin/AdminAuditTab";
 import AdminCoachesTab from "@/components/admin/AdminCoachesTab";
+import AdminCommerceTab from "@/components/admin/AdminCommerceTab";
+import AdminHierarchyTab from "@/components/admin/AdminHierarchyTab";
 import AdminInvitesTab from "@/components/admin/AdminInvitesTab";
 import AdminKnowledgeTab from "@/components/admin/AdminKnowledgeTab";
 import AdminOrganizationsTab from "@/components/admin/AdminOrganizationsTab";
+import AdminOverviewTab from "@/components/admin/AdminOverviewTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
+import AdminShell from "@/components/admin/AdminShell";
 import AdminSystemTab from "@/components/admin/AdminSystemTab";
-import AdminTabNav, {
-  ADMIN_TABS,
-  type AdminTabId,
-} from "@/components/admin/AdminTabNav";
+import { ADMIN_TABS, type AdminTabId } from "@/components/admin/AdminTabNav";
+import { AdminLoading } from "@/components/admin/AdminUi";
 import AdminUsersTab, { type AdminUser } from "@/components/admin/AdminUsersTab";
-import { supabase } from "@/lib/supabaseClient";
+import Toast, { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/ConfirmProvider";
+import { PageLoading } from "@/components/ui/Skeleton";
+import { disableDemoMode } from "@/lib/demo/demoMode";
+import { getRealSupabase } from "@/lib/supabaseClient";
+import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import "@/styles/admin.css";
 
 function isAdminTab(value: string | null): value is AdminTabId {
   return ADMIN_TABS.some((tab) => tab.id === value);
@@ -24,17 +33,19 @@ function isAdminTab(value: string | null): value is AdminTabId {
 function AdminPageContent() {
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
-  const activeTab: AdminTabId = isAdminTab(tabParam) ? tabParam : "users";
+  const activeTab: AdminTabId = isAdminTab(tabParam) ? tabParam : "overview";
+  const { message: toastMessage, showToast, clearToast } = useToast();
+  const confirm = useConfirm();
 
   const [loading, setLoading] = useState(true);
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [adminId, setAdminId] = useState("");
 
   const reloadUsers = useCallback(async () => {
-    const { data, error } = await supabase.rpc("admin_list_users");
+    const { data, error } = await getRealSupabase().rpc("admin_list_users");
 
     if (error) {
-      alert(error.message);
+      showToast(error.message);
       return;
     }
 
@@ -42,12 +53,14 @@ function AdminPageContent() {
   }, []);
 
   useEffect(() => {
-    document.title = "Admin";
+    document.title = "Admin · Limitless";
 
     async function load() {
+      disableDemoMode();
+
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await getRealSupabase().auth.getUser();
 
       if (!user) {
         window.location.href = "/login";
@@ -56,11 +69,7 @@ function AdminPageContent() {
 
       setAdminId(user.id);
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
+      const profile = await loadAuthenticatedProfile(user.id);
 
       if (profile?.role !== "admin") {
         window.location.href = "/dashboard";
@@ -72,119 +81,123 @@ function AdminPageContent() {
     }
 
     void load();
-  }, [reloadUsers]);
+  }, [reloadUsers, showToast]);
 
-  async function deleteUser(userId: string) {
-    const confirmed = window.confirm(
-      "Weet je zeker dat je deze gebruiker permanent wilt verwijderen?",
-    );
-    if (!confirmed) return;
+  async function deleteUser(
+    userId: string,
+    options?: { skipConfirm?: boolean },
+  ) {
+    if (userId === adminId) {
+      showToast("Je kunt je eigen admin-account niet verwijderen.");
+      return;
+    }
+
+    if (!options?.skipConfirm) {
+      const target = users.find((user) => user.id === userId);
+      const message =
+        target?.role === "admin"
+          ? `WAARSCHUWING: Je staat op het punt om admin "${target.full_name || target.email}" permanent te verwijderen. Dit kan niet ongedaan worden gemaakt. Doorgaan?`
+          : "Weet je zeker dat je deze gebruiker permanent wilt verwijderen?";
+      const confirmed = await confirm({
+        title: target?.role === "admin" ? "Admin verwijderen" : "Gebruiker verwijderen",
+        message,
+        confirmLabel: "Verwijderen",
+        tone: "danger",
+      });
+      if (!confirmed) return;
+    }
 
     const {
       data: { session },
-    } = await supabase.auth.getSession();
+    } = await getRealSupabase().auth.getSession();
+
+    if (!session?.access_token) {
+      showToast("Sessie verlopen. Log opnieuw in.");
+      return;
+    }
 
     const response = await fetch("/api/admin/delete-user", {
       method: "DELETE",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${session?.access_token || ""}`,
+        Authorization: `Bearer ${session.access_token}`,
       },
       body: JSON.stringify({ userId }),
     });
 
     const payload = (await response.json()) as { error?: string };
     if (!response.ok) {
-      alert(payload.error || "Verwijderen mislukt.");
+      showToast(payload.error || "Verwijderen mislukt.");
       return;
     }
+
+    showToast("Gebruiker verwijderd.");
 
     setUsers((current) => current.filter((user) => user.id !== userId));
   }
 
-  const tabTitles: Record<AdminTabId, { title: string; subtitle: string }> = {
-    users: {
-      title: "Gebruikers",
-      subtitle: "Overzicht van coaches, atleten en koppelingen.",
-    },
-    coaches: {
-      title: "Coach-goedkeuring",
-      subtitle: "Keur aanmeldingen goed of af met reviewnotities.",
-    },
-    settings: {
-      title: "Platforminstellingen",
-      subtitle: "Onderhoud, welkomsttekst, flags, banners en e-mailtemplates.",
-    },
-    analytics: {
-      title: "Analytics",
-      subtitle: "Platformstatistieken, invulscores en groei.",
-    },
-    invites: {
-      title: "Uitnodigingen",
-      subtitle: "Coach signup-links en atleet-uitnodigingen beheren.",
-    },
-    kennisbank: {
-      title: "Kennisbank editor",
-      subtitle: "Database-chunks die worden samengevoegd met de kennisbank.",
-    },
-    system: {
-      title: "Systeem",
-      subtitle: "Supabase health en kalender sync logs.",
-    },
-    organizations: {
-      title: "Organisaties",
-      subtitle: "Multi-coach organisaties en toewijzingen.",
-    },
-  };
-
-  const header = tabTitles[activeTab];
-
   return (
-    <AppShell contentClassName="flex-1 p-4 md:p-8">
-      <div className="mx-auto max-w-6xl">
-        <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-            Beheer
-          </p>
-          <h1 className="text-3xl font-bold text-black">{header.title}</h1>
-          <p className="mt-2 text-gray-500">{header.subtitle}</p>
-        </div>
-
-        <AdminTabNav activeTab={activeTab} />
-
+    <div className="admin-page-root min-h-[100dvh] bg-app-bg">
+      <div className="admin-shell">
         {loading ? (
-          <p className="text-sm text-gray-500">Laden...</p>
+          <div className="px-4 py-8">
+            <AdminLoading label="Admin gegevens laden…" />
+          </div>
         ) : (
-          <>
-            {activeTab === "users" && (
-              <AdminUsersTab users={users} onUsersChange={setUsers} />
+          <AdminAppShell activeTab={activeTab}>
+            {activeTab === "overview" ? (
+              <AdminOverviewTab users={users} />
+            ) : (
+              <AdminShell>
+                {activeTab === "hierarchy" && (
+                  <AdminHierarchyTab users={users} />
+                )}
+                {activeTab === "users" && (
+                  <AdminUsersTab
+                    users={users}
+                    adminId={adminId}
+                    onUsersChange={setUsers}
+                    onDeleteUser={deleteUser}
+                  />
+                )}
+                {activeTab === "coaches" && (
+                  <AdminCoachesTab
+                    users={users}
+                    adminId={adminId}
+                    onReload={reloadUsers}
+                    onDeleteUser={deleteUser}
+                  />
+                )}
+                {activeTab === "settings" && (
+                  <AdminSettingsTab onToast={showToast} />
+                )}
+                {activeTab === "analytics" && <AdminAnalyticsTab />}
+                {activeTab === "commerce" && <AdminCommerceTab />}
+                {activeTab === "invites" && (
+                  <AdminInvitesTab adminId={adminId} />
+                )}
+                {activeTab === "kennisbank" && <AdminKnowledgeTab />}
+                {activeTab === "audit" && <AdminAuditTab />}
+                {activeTab === "system" && <AdminSystemTab />}
+                {activeTab === "organizations" && (
+                  <AdminOrganizationsTab
+                    users={users}
+                    onReload={reloadUsers}
+                  />
+                )}
+              </AdminShell>
             )}
-            {activeTab === "coaches" && (
-              <AdminCoachesTab
-                users={users}
-                adminId={adminId}
-                onReload={reloadUsers}
-                onDeleteUser={deleteUser}
-              />
-            )}
-            {activeTab === "settings" && <AdminSettingsTab />}
-            {activeTab === "analytics" && <AdminAnalyticsTab />}
-            {activeTab === "invites" && <AdminInvitesTab adminId={adminId} />}
-            {activeTab === "kennisbank" && <AdminKnowledgeTab />}
-            {activeTab === "system" && <AdminSystemTab />}
-            {activeTab === "organizations" && (
-              <AdminOrganizationsTab users={users} onReload={reloadUsers} />
-            )}
-          </>
+          </AdminAppShell>
         )}
       </div>
-    </AppShell>
+      <Toast message={toastMessage} onDismiss={clearToast} />
+    </div>
   );
 }
 
 export default function AdminPage() {
   return (
-    <Suspense fallback={<p className="p-8 text-sm text-gray-500">Laden...</p>}>
+    <Suspense fallback={<PageLoading label="Admin laden…" />}>
       <AdminPageContent />
     </Suspense>
   );

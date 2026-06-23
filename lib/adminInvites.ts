@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import type { CoachInviteLink } from "@/lib/coachInviteLinks";
 import type { CoachSignupInvite } from "@/lib/coachSignupInvites";
+import type { AdminPlatformInvite } from "@/lib/adminPlatformInvites";
 
 export type AdminAthleteInvite = CoachInviteLink & {
   coach_name: string | null;
@@ -10,10 +11,12 @@ export type AdminAthleteInvite = CoachInviteLink & {
 export type AdminInviteOverview = {
   coachSignupInvites: CoachSignupInvite[];
   athleteInvites: AdminAthleteInvite[];
+  platformInvites: AdminPlatformInvite[];
 };
 
 export async function loadAdminInviteOverview(): Promise<AdminInviteOverview> {
-  const [signupResult, athleteResult, coachesResult] = await Promise.all([
+  const [signupResult, athleteResult, coachesResult, platformResult] =
+    await Promise.all([
     supabase
       .from("coach_signup_invites")
       .select("*")
@@ -26,6 +29,10 @@ export async function loadAdminInviteOverview(): Promise<AdminInviteOverview> {
       .from("profiles")
       .select("id, full_name, role")
       .in("role", ["coach", "admin"]),
+    supabase
+      .from("admin_platform_invites")
+      .select("*")
+      .order("created_at", { ascending: false }),
   ]);
 
   const coachMap = new Map(
@@ -46,6 +53,7 @@ export async function loadAdminInviteOverview(): Promise<AdminInviteOverview> {
   return {
     coachSignupInvites: (signupResult.data || []) as CoachSignupInvite[],
     athleteInvites,
+    platformInvites: (platformResult.data || []) as AdminPlatformInvite[],
   };
 }
 
@@ -61,4 +69,11 @@ export async function revokeAthleteInviteLink(linkId: string) {
     .from("coach_invite_links")
     .update({ active: false })
     .eq("id", linkId);
+}
+
+export async function revokeAdminPlatformInvite(inviteId: string) {
+  return supabase
+    .from("admin_platform_invites")
+    .update({ active: false })
+    .eq("id", inviteId);
 }

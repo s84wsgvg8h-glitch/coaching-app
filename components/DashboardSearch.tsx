@@ -17,6 +17,8 @@ import {
   type TrainingSnapshot,
 } from "@/lib/aiTrainingSnapshot";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { getApiAuthHeaders } from "@/lib/apiClient";
+import { isDemoMode } from "@/lib/demo/demoMode";
 
 type DashboardSearchProps = {
   role: string;
@@ -24,6 +26,7 @@ type DashboardSearchProps = {
   athletes?: Array<{ id: string; full_name: string | null }>;
   coachSnapshot?: CoachSnapshot;
   selfAthlete?: { id: string; name: string };
+  variant?: "default" | "athlete";
 };
 
 type AiResult = {
@@ -40,6 +43,7 @@ export default function DashboardSearch({
   athletes = [],
   coachSnapshot,
   selfAthlete,
+  variant = "default",
 }: DashboardSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -121,6 +125,12 @@ export default function DashboardSearch({
     setAiResult(null);
     setOpen(true);
 
+    if (isDemoMode()) {
+      setAiError("AI is niet beschikbaar in demo-modus.");
+      setAiLoading(false);
+      return;
+    }
+
     let trainingSnapshot: TrainingSnapshot | undefined;
     let trainingContext: string | undefined;
 
@@ -136,7 +146,7 @@ export default function DashboardSearch({
 
       const response = await fetch("/api/dashboard-ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getApiAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           query: question,
           role,
@@ -215,6 +225,8 @@ export default function DashboardSearch({
   const showAiSection =
     aiLoading || aiError || aiResult || (query.trim().length > 0 && results.length === 0);
 
+  const isAthleteVariant = variant === "athlete";
+
   return (
     <div ref={containerRef} className="relative">
       <input
@@ -226,12 +238,26 @@ export default function DashboardSearch({
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
-        placeholder="Zoek pagina's, atleten, typ / voor commands, of stel een vraag..."
-        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+        placeholder={
+          isAthleteVariant
+            ? "Zoek modules, oefeningen of programmadagen..."
+            : "Zoek pagina's, atleten, typ / voor commands, of stel een vraag..."
+        }
+        className={
+          isAthleteVariant
+            ? "athlete-dashboard-search-input w-full"
+            : "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+        }
       />
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <div
+          className={
+            isAthleteVariant
+              ? "athlete-dashboard-search-dropdown absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden"
+              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+          }
+        >
           {results.length > 0 && (
             <ul className="max-h-64 overflow-y-auto py-1">
               {results.map((item, index) => (
@@ -241,15 +267,29 @@ export default function DashboardSearch({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectItem(item)}
                     className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition ${
-                      index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                      isAthleteVariant
+                        ? index === activeIndex
+                          ? "bg-white/8"
+                          : "hover:bg-white/5"
+                        : index === activeIndex
+                          ? "bg-gray-100"
+                          : "hover:bg-gray-50"
                     }`}
                   >
                     <span className="text-base">{item.icon}</span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-black">
+                      <span
+                        className={`block font-semibold ${
+                          isAthleteVariant ? "text-app-text" : "text-black"
+                        }`}
+                      >
                         {item.command || item.title}
                       </span>
-                      <span className="block truncate text-xs text-gray-500">
+                      <span
+                        className={`block truncate text-xs ${
+                          isAthleteVariant ? "text-app-muted" : "text-gray-500"
+                        }`}
+                      >
                         {item.description}
                       </span>
                     </span>
@@ -266,7 +306,13 @@ export default function DashboardSearch({
 
           {showAiSection && (
             <div
-              className={`border-gray-100 px-4 py-3 ${results.length > 0 ? "border-t" : ""}`}
+              className={`px-4 py-3 ${
+                results.length > 0
+                  ? isAthleteVariant
+                    ? "border-t border-white/8"
+                    : "border-t border-gray-100"
+                  : ""
+              }`}
             >
               <div className="mb-2 flex items-center justify-between gap-3">
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
@@ -321,9 +367,22 @@ export default function DashboardSearch({
             </div>
           )}
 
-          <div className="border-t border-gray-100 px-4 py-2 text-[11px] text-gray-400">
+          <div
+            className={`border-t px-4 py-2 text-[11px] ${
+              isAthleteVariant
+                ? "border-white/8 text-app-muted"
+                : "border-gray-100 text-gray-400"
+            }`}
+          >
             Pijltjes + Enter voor resultaten. Enter zonder match = AI. Typ{" "}
-            <code className="rounded bg-gray-100 px-1">/</code> voor commands.
+            <code
+              className={`rounded px-1 ${
+                isAthleteVariant ? "bg-white/8" : "bg-gray-100"
+              }`}
+            >
+              /
+            </code>{" "}
+            voor commands.
           </div>
         </div>
       )}

@@ -1,4 +1,6 @@
 import { NextResponse } from "next/server";
+import { assertAuthenticated } from "@/lib/apiAuth";
+import { checkRateLimit } from "@/lib/rateLimit";
 import {
   formatTrainingSnapshotForPrompt,
   isAdminDataQuestion,
@@ -136,6 +138,27 @@ function hasAllowedNonKnowledgeContext(
 }
 
 export async function POST(request: Request) {
+  const auth = await assertAuthenticated(request);
+  if (!auth.user) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const rate = checkRateLimit(`dashboard-ai:${auth.user.id}`, {
+    max: 30,
+    windowMs: 60_000,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Te veel AI-verzoeken. Probeer over een minuut opnieuw." },
+      {
+        status: 429,
+        headers: rate.retryAfterMs
+          ? { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) }
+          : undefined,
+      },
+    );
+  }
+
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
@@ -160,6 +183,13 @@ export async function POST(request: Request) {
 
   if (!query) {
     return NextResponse.json({ error: "Vul een vraag in." }, { status: 400 });
+  }
+
+  if (query.length > 4000) {
+    return NextResponse.json(
+      { error: "Vraag is te lang (max. 4000 tekens)." },
+      { status: 400 },
+    );
   }
 
   const knowledgeScope: KnowledgeScope =

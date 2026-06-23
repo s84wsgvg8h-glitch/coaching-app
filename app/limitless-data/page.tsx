@@ -254,7 +254,7 @@ export default function LimitlessDataPage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto">
+      <div className="mx-auto w-full max-w-none">
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold">Limitless Data</h1>

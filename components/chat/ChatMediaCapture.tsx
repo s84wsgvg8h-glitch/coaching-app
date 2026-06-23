@@ -479,7 +479,7 @@ export default function ChatMediaCapture({
               onClick={() => void toggleFlash()}
               disabled={!flashSupported || isRecordingVideo}
               className={`flex h-11 w-11 items-center justify-center rounded-full backdrop-blur active:scale-95 disabled:opacity-30 ${
-                flashOn ? "bg-yellow-300 text-black" : "bg-black/45 text-white"
+                flashOn ? "bg-yellow-300 text-app-text" : "bg-black/45 text-white"
               }`}
               aria-label="Flits"
             >
@@ -511,7 +511,7 @@ export default function ChatMediaCapture({
                 disabled={isRecordingVideo}
                 className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
                   mode === "photo"
-                    ? "bg-white text-black"
+                    ? "bg-app-surface text-app-text"
                     : "bg-black/45 text-white/80"
                 }`}
               >
@@ -526,7 +526,7 @@ export default function ChatMediaCapture({
                 disabled={isRecordingVideo}
                 className={`rounded-full px-4 py-2 text-xs font-black uppercase tracking-[0.16em] ${
                   mode === "video"
-                    ? "bg-white text-black"
+                    ? "bg-app-surface text-app-text"
                     : "bg-black/45 text-white/80"
                 }`}
               >
@@ -565,7 +565,7 @@ export default function ChatMediaCapture({
                     mode === "video" && isRecordingVideo
                       ? "h-8 w-8 rounded-lg bg-red-500"
                       : mode === "photo"
-                        ? "h-14 w-14 rounded-full bg-white"
+                        ? "h-14 w-14 rounded-full bg-app-surface"
                         : "h-14 w-14 rounded-full bg-red-500"
                   }`}
                 />
@@ -612,7 +612,7 @@ export default function ChatMediaCapture({
               <button
                 type="button"
                 onClick={handleConfirm}
-                className="rounded-full bg-white px-5 py-2 text-sm font-bold text-black"
+                className="rounded-full bg-app-surface px-5 py-2 text-sm font-bold text-app-text"
               >
                 Versturen
               </button>

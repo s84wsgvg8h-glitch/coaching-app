@@ -5,6 +5,7 @@ type EmptyStateProps = {
   description?: string;
   action?: ReactNode;
   icon?: "athletes" | "calendar" | "chat" | "programs" | "generic";
+  compact?: boolean;
 };
 
 function EmptyIcon({ icon }: { icon: EmptyStateProps["icon"] }) {
@@ -47,7 +48,7 @@ function EmptyIcon({ icon }: { icon: EmptyStateProps["icon"] }) {
   return (
     <svg
       viewBox="0 0 24 24"
-      className="mx-auto h-16 w-16 text-app-accent opacity-80"
+      className="mx-auto h-12 w-12 text-app-subtle"
       aria-hidden
     >
       {paths[icon || "generic"]}
@@ -60,13 +61,20 @@ export default function EmptyState({
   description,
   action,
   icon = "generic",
+  compact = false,
 }: EmptyStateProps) {
   return (
-    <div className="flex flex-col items-center justify-center px-4 py-12 text-center">
+    <div
+      className={`ui-empty-state flex flex-col items-center justify-center text-center ${
+        compact ? "py-6" : "py-10"
+      }`}
+    >
       <EmptyIcon icon={icon} />
-      <h3 className="mt-4 text-lg font-bold text-app-text">{title}</h3>
+      <h3 className="mt-3 text-[15px] font-semibold text-app-text">{title}</h3>
       {description ? (
-        <p className="mt-2 max-w-sm text-sm text-app-muted">{description}</p>
+        <p className="mt-1.5 max-w-sm text-[13px] font-normal leading-relaxed text-app-muted">
+          {description}
+        </p>
       ) : null}
       {action ? <div className="mt-4">{action}</div> : null}
     </div>

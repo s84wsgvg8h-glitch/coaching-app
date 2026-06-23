@@ -9,8 +9,9 @@ import {
   useState,
 } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { supabase, getRealSupabase } from "@/lib/supabaseClient";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 import { loadAppSettings } from "@/lib/adminSettings";
 import {
   isAdminRole,
@@ -18,6 +19,14 @@ import {
   pathRequiresAdminRole,
   pathRequiresCoachLikeRole,
 } from "@/lib/authRoles";
+import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import {
+  getDemoEmail,
+  getDemoProfile,
+  getDemoUserId,
+  clearDemoModeIfRealSession,
+  isDemoMode,
+} from "@/lib/demo/demoMode";
 
 export type AuthProfile = {
   id: string;
@@ -25,6 +34,7 @@ export type AuthProfile = {
   role: string | null;
   coach_id?: string | null;
   business_name?: string | null;
+  archived_at?: string | null;
 };
 
 type AuthContextValue = {
@@ -40,7 +50,21 @@ type AuthContextValue = {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-const PUBLIC_PATHS = ["/login", "/signup", "/"];
+const PUBLIC_PATHS = ["/login", "/signup", "/", "/privacy", "/voorwaarden"];
+
+function buildLoginRedirectPath(pathname: string) {
+  const path = pathname.split("?")[0];
+  if (
+    path === "/profile" ||
+    path.startsWith("/profile/") ||
+    path === "/login" ||
+    path === "/signup" ||
+    path === "/"
+  ) {
+    return "/login";
+  }
+  return `/login?next=${encodeURIComponent(pathname)}`;
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -55,9 +79,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const refresh = useCallback(async () => {
+    await clearDemoModeIfRealSession(() => getRealSupabase().auth.getSession());
+
+    if (isDemoMode()) {
+      setUserId(getDemoUserId());
+      setEmail(getDemoEmail());
+      setProfile(getDemoProfile());
+      setMaintenanceMode(false);
+      setMaintenanceMessage(null);
+      setLoading(false);
+      return;
+    }
+
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await getRealSupabase().auth.getUser();
 
     if (!user) {
       setUserId("");
@@ -70,19 +106,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUserId(user.id);
     setEmail(user.email || "");
 
-    const { data } = await supabase
-      .from("profiles")
-      .select("id, full_name, role, coach_id, business_name")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    setProfile((data as AuthProfile | null) || null);
-
-    const settings = await loadAppSettings();
-    setMaintenanceMode(settings.maintenance_mode);
-    setMaintenanceMessage(settings.maintenance_message);
+    const profileData = await loadAuthenticatedProfile(user.id);
+    setProfile(profileData);
 
     setLoading(false);
+
+    void loadAppSettings().then((settings) => {
+      setMaintenanceMode(settings.maintenance_mode);
+      setMaintenanceMessage(settings.maintenance_message);
+    });
   }, []);
 
   useEffect(() => {
@@ -108,11 +140,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     );
 
     if (!userId && !isPublic && !pathname.startsWith("/signup")) {
-      router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+      router.replace(buildLoginRedirectPath(pathname));
       return;
     }
 
     const role = profile?.role || "";
+
+    if (userId && isAdminRole(role) && pathname === "/dashboard") {
+      router.replace("/admin");
+      return;
+    }
 
     if (userId && pathRequiresAdminRole(pathname) && !isAdminRole(role)) {
       router.replace("/dashboard");
@@ -148,8 +185,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   if (loading && !isPublicPath) {
     return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-app-bg">
-        <p className="text-sm text-app-muted">Laden...</p>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4">
+        <div className="w-full max-w-sm">
+          <SkeletonCard />
+        </div>
       </div>
     );
   }

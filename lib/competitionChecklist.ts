@@ -261,3 +261,23 @@ export async function saveCompetitionChecklistTemplate(
 export function getAllChecklistItemIds(sections: CompetitionChecklistSection[]) {
   return sections.flatMap((section) => section.items.map((item) => item.id));
 }
+
+export function readChecklistProgress(
+  userId: string,
+  sections: CompetitionChecklistSection[],
+) {
+  if (typeof window === "undefined") {
+    return { checkedCount: 0, totalCount: 0 };
+  }
+
+  try {
+    const raw = localStorage.getItem(getCompetitionChecklistStorageKey(userId));
+    const checked = raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
+    const allItems = sections.flatMap((section) => section.items);
+    const checkedCount = allItems.filter((item) => checked[item.id]).length;
+    return { checkedCount, totalCount: allItems.length };
+  } catch {
+    const allItems = sections.flatMap((section) => section.items);
+    return { checkedCount: 0, totalCount: allItems.length };
+  }
+}

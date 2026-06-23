@@ -55,16 +55,16 @@ export default function PollMessage({
                 selected
                   ? isMine
                     ? "border-white bg-white/15"
-                    : "border-black bg-gray-50"
+                    : "border-app-border bg-app-surface-muted"
                   : isMine
                     ? "border-white/30 hover:bg-white/10"
-                    : "border-gray-200 hover:bg-gray-50"
+                    : "border-app-border hover:bg-app-surface-muted"
               }`}
             >
               {totalVotes > 0 && (
                 <span
                   className={`absolute inset-y-0 left-0 ${
-                    isMine ? "bg-white/20" : "bg-gray-200"
+                    isMine ? "bg-white/20" : "bg-app-surface-hover"
                   }`}
                   style={{ width: `${percentage}%` }}
                 />
@@ -74,7 +74,7 @@ export default function PollMessage({
                 <span className="text-sm font-semibold">{option.text}</span>
                 <span
                   className={`text-xs font-bold ${
-                    isMine ? "text-white/80" : "text-gray-500"
+                    isMine ? "text-white/80" : "text-app-muted"
                   }`}
                 >
                   {count}
@@ -87,7 +87,7 @@ export default function PollMessage({
       </div>
 
       <div className="flex items-center justify-between gap-3">
-        <p className={`text-xs ${isMine ? "text-white/70" : "text-gray-500"}`}>
+        <p className={`text-xs ${isMine ? "text-white/70" : "text-app-muted"}`}>
           {totalVotes} stem{totalVotes === 1 ? "" : "men"}
           {memberCount > 0 ? ` · ${memberCount} leden` : ""}
         </p>
@@ -97,7 +97,7 @@ export default function PollMessage({
             type="button"
             onClick={onOpenDetails}
             className={`text-xs font-semibold underline-offset-2 hover:underline ${
-              isMine ? "text-white/80" : "text-gray-600"
+              isMine ? "text-white/80" : "text-app-muted"
             }`}
           >
             Poll details

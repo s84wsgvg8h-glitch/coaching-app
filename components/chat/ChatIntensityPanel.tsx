@@ -70,8 +70,8 @@ function ToggleChip({
       onClick={onClick}
       className={`rounded-full px-3 py-1.5 text-xs font-bold transition ${
         active
-          ? "bg-black text-white"
-          : "border border-gray-200 bg-white text-gray-600 hover:bg-gray-50"
+          ? "bg-app-accent text-white"
+          : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-muted"
       }`}
     >
       {label}
@@ -207,15 +207,15 @@ export default function ChatIntensityPanel({
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-app-border px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">Intensiteit</h3>
-          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+          <h3 className="truncate text-base font-bold text-app-text">Intensiteit</h3>
+          <p className="truncate text-xs text-app-muted">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          className="shrink-0 rounded-xl p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="Intensiteit sluiten"
         >
           <X className="h-4 w-4" />
@@ -224,14 +224,14 @@ export default function ChatIntensityPanel({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
         <div className="mb-4">
-          <p className="text-xs font-black uppercase text-gray-500">
+          <p className="text-xs font-black uppercase text-app-muted">
             SBD intensiteit
           </p>
-          <h4 className="text-lg font-black text-black">
+          <h4 className="text-lg font-black text-app-text">
             {hasWeekFilter ? "Gefilterde periode" : "Alle weken"}
           </h4>
           {startDate && endDate && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 text-xs text-app-muted">
               {formatShortDate(startDate)} – {formatShortDate(endDate)}
             </p>
           )}
@@ -254,19 +254,19 @@ export default function ChatIntensityPanel({
         )}
 
         {loading && (
-          <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center text-sm text-app-muted">
             Intensiteit laden...
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-red-600">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-destructive">
             {error}
           </div>
         )}
 
         {!loading && !error && !hasAnyData && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Nog geen SBD intensiteit voor deze atleet.
           </div>
         )}
@@ -274,7 +274,7 @@ export default function ChatIntensityPanel({
         {!loading && !error && filteredSnapshot && (
           <div className="space-y-4">
             <div>
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-app-subtle">
                 Statistieken
               </p>
               <div className="flex flex-wrap gap-2">
@@ -290,7 +290,7 @@ export default function ChatIntensityPanel({
             </div>
 
             <div>
-              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-app-subtle">
                 Grafieken per lift
               </p>
               <div className="flex flex-wrap gap-2">
@@ -309,19 +309,19 @@ export default function ChatIntensityPanel({
               {SBD_LIFTS.filter((lift) => visibleLifts.has(lift)).map((lift) => (
                 <div
                   key={lift}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center"
+                  className="rounded-2xl border border-app-border bg-app-surface-muted p-3 text-center"
                 >
-                  <p className="text-[10px] font-black uppercase text-gray-400">
+                  <p className="text-[10px] font-black uppercase text-app-subtle">
                     {formatLiftLabel(lift)}
                   </p>
                   {STAT_TOGGLES.filter(({ key }) => visibleStats.has(key)).map(
                     ({ key, label }) => (
                       <div key={key} className="mt-2">
-                        <p className="text-[10px] font-bold uppercase text-gray-500">
+                        <p className="text-[10px] font-bold uppercase text-app-muted">
                           {label}
                         </p>
                         <p
-                          className={`font-black text-black ${
+                          className={`font-black text-app-text ${
                             key === "peakLoad" ? "text-sm" : "text-lg"
                           }`}
                         >
@@ -349,13 +349,13 @@ export default function ChatIntensityPanel({
               return (
                 <div
                   key={lift}
-                  className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+                  className="rounded-3xl border border-app-border bg-app-surface p-3 shadow-sm"
                 >
                   <div className="mb-3 px-1">
-                    <p className="text-xs font-black uppercase text-gray-500">
+                    <p className="text-xs font-black uppercase text-app-muted">
                       Piek load
                     </p>
-                    <h5 className="text-sm font-black text-black">
+                    <h5 className="text-sm font-black text-app-text">
                       {formatLiftLabel(lift)} per week
                     </h5>
                   </div>

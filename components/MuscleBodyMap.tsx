@@ -154,7 +154,7 @@ export default function MuscleBodyMap({
   return (
     <div className={className}>
       <div
-        className={`relative mx-auto w-full rounded-3xl border border-gray-200 bg-white ${
+        className={`relative mx-auto w-full rounded-3xl border border-app-border bg-app-surface ${
           compact ? "max-w-[420px]" : "max-w-[532px]"
         }`}
         style={{
@@ -172,14 +172,14 @@ export default function MuscleBodyMap({
             y="0"
             width={BODY_MAP_CANVAS.width}
             height={BODY_MAP_CANVAS.height}
-            fill="#f8fafc"
+            fill="var(--app-surface-muted)"
             rx="24"
           />
           <text
             x={BODY_MAP_CANVAS.width * 0.25}
             y="14"
             textAnchor="middle"
-            className="fill-gray-400 text-[11px] font-bold uppercase tracking-wide"
+            className="fill-[var(--app-text-muted)] text-[11px] font-bold uppercase tracking-wide"
           >
             Voorkant
           </text>
@@ -187,7 +187,7 @@ export default function MuscleBodyMap({
             x={BODY_MAP_CANVAS.width * 0.75}
             y="14"
             textAnchor="middle"
-            className="fill-gray-400 text-[11px] font-bold uppercase tracking-wide"
+            className="fill-[var(--app-text-muted)] text-[11px] font-bold uppercase tracking-wide"
           >
             Achterkant
           </text>
@@ -196,7 +196,7 @@ export default function MuscleBodyMap({
             y1={BODY_MAP_CANVAS.labelHeight}
             x2={BODY_MAP_CANVAS.width / 2}
             y2={BODY_MAP_CANVAS.height - 8}
-            stroke="#e2e8f0"
+            stroke="var(--app-border-strong)"
             strokeDasharray="4 4"
           />
           <BodySilhouette path={FRONT_BODY_SILHOUETTE} layout={BODY_MAP_LAYOUT.front} />
@@ -226,11 +226,11 @@ export default function MuscleBodyMap({
 
       {showLabel && (
         <div
-          className={`mx-auto flex min-h-[44px] items-center justify-center rounded-2xl border border-gray-200 bg-white px-4 py-2 text-center shadow-sm ${
+          className={`mx-auto flex min-h-[44px] items-center justify-center rounded-2xl border border-app-border bg-app-surface-muted px-4 py-2 text-center ${
             compact ? "mt-3 max-w-[420px] text-xs" : "mt-6 max-w-[532px] text-sm"
           }`}
         >
-          <p className="font-bold text-black">
+          <p className="font-bold text-app-text">
             {labelArea
               ? `${labelArea.labelNl} · ${labelArea.labelEn}`
               : interactive

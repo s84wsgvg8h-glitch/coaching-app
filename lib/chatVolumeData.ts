@@ -16,6 +16,7 @@ export type LiftVolume = {
 export type WeeklyVolumeRow = {
   id: string;
   date: string;
+  weekStartDate: string;
   blockId: string;
   blockTitle: string;
   weekId: string;
@@ -310,12 +311,16 @@ export async function loadAthleteSbdVolumeData(athleteId: string) {
 
     if (!date) continue;
 
+    const weekStartDate =
+      addDays(block.start_date, (week.week_number - 1) * 7) || date;
+
     const weekKey = `${block.id}:${week.id}`;
     const existing =
       volumeByWeek.get(weekKey) ||
       ({
         id: weekKey,
         date,
+        weekStartDate,
         blockId: block.id,
         blockTitle: block.title || "Block",
         weekId: week.id,

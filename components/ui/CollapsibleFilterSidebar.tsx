@@ -6,14 +6,31 @@ type CollapsibleFilterSidebarProps = {
   title: string;
   children: React.ReactNode;
   defaultOpen?: boolean;
+  collapsible?: boolean;
 };
 
 export default function CollapsibleFilterSidebar({
   title,
   children,
   defaultOpen = true,
+  collapsible = true,
 }: CollapsibleFilterSidebarProps) {
   const [open, setOpen] = useState(defaultOpen);
+
+  if (!collapsible) {
+    return (
+      <aside className="hidden w-52 shrink-0 flex-col border-r border-app-border bg-app-surface lg:flex">
+        <div className="border-b border-app-border px-3 py-3">
+          <span className="text-xs font-bold uppercase tracking-wide text-app-muted">
+            {title}
+          </span>
+        </div>
+        <div className="min-h-0 flex-1 overflow-y-auto p-2 mobile-scroll">
+          {children}
+        </div>
+      </aside>
+    );
+  }
 
   return (
     <aside

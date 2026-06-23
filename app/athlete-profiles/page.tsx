@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
 
 export default function AthleteProfilesPage() {
-  redirect("/athletes?tab=profielen");
+  redirect("/athletes");
 }

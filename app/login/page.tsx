@@ -1,97 +1,195 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import Link from "next/link";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { disableDemoMode } from "@/lib/demo/demoMode";
+import { getRealSupabase } from "@/lib/supabaseClient";
+import { getHomePathForRole } from "@/lib/authRoles";
+import { needsIntakeCompletion } from "@/lib/intakeForm";
+import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import AuthShell, { AuthField, AuthInput } from "@/components/auth/AuthShell";
+import AuthLegalLinks from "@/components/legal/AuthLegalLinks";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+
+async function prepareLoginPage() {
+  disableDemoMode();
+  await getRealSupabase().auth.signOut();
+}
+
+async function waitForSession(userId: string, attempts = 5) {
+  const client = getRealSupabase();
+
+  for (let i = 0; i < attempts; i += 1) {
+    const {
+      data: { session },
+    } = await client.auth.getSession();
+
+    if (session?.user?.id === userId) {
+      return session;
+    }
+
+    await new Promise((resolve) => window.setTimeout(resolve, 120));
+  }
+
+  return null;
+}
+
+async function loadProfileWithRetry(userId: string) {
+  for (let i = 0; i < 5; i += 1) {
+    const profile = await loadAuthenticatedProfile(userId);
+    if (profile?.role) return profile;
+    await new Promise((resolve) => window.setTimeout(resolve, 120));
+  }
+
+  return loadAuthenticatedProfile(userId);
+}
+
+async function redirectAfterAuth(userId: string) {
+  const session = await waitForSession(userId);
+  if (!session) {
+    throw new Error(
+      "Sessie kon niet worden gestart. Probeer opnieuw in te loggen.",
+    );
+  }
+
+  const profile = await loadProfileWithRetry(userId);
+
+  if (profile?.role === "atleet") {
+    const needsIntake = await needsIntakeCompletion(userId);
+    if (needsIntake) {
+      window.location.assign("/intake");
+      return;
+    }
+  }
+
+  window.location.assign(getHomePathForRole(profile?.role));
+}
 
 function LoginForm() {
-  const searchParams = useSearchParams();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pageReady, setPageReady] = useState(false);
+  const submittingRef = useRef(false);
 
   useEffect(() => {
     document.title = "Login";
+
+    void (async () => {
+      await prepareLoginPage();
+      if (!submittingRef.current) {
+        setPageReady(true);
+      }
+    })();
   }, []);
 
   async function login() {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+    submittingRef.current = true;
+    setLoading(true);
+    setError(null);
+    disableDemoMode();
 
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    try {
+      const client = getRealSupabase();
+      const { data, error: signInError } = await client.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    const nextPath = searchParams.get("next");
-    const safeNext =
-      nextPath && nextPath.startsWith("/") && !nextPath.startsWith("//")
-        ? nextPath
-        : "/dashboard";
-
-    if (user) {
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role, intake_completed_at")
-        .eq("id", user.id)
-        .single();
-
-      if (profile?.role === "atleet" && !profile.intake_completed_at) {
-        window.location.href = "/intake";
+      if (signInError) {
+        setError(signInError.message);
         return;
       }
-    }
 
-    window.location.href = safeNext;
+      const user = data.session?.user ?? data.user;
+
+      if (!user) {
+        setError(
+          "Inloggen gelukt, maar er is geen actieve sessie. Bevestig je e-mail en probeer opnieuw.",
+        );
+        return;
+      }
+
+      await redirectAfterAuth(user.id);
+    } catch (nextError) {
+      setError(
+        nextError instanceof Error
+          ? nextError.message
+          : "Inloggen mislukt. Probeer het opnieuw.",
+      );
+    } finally {
+      submittingRef.current = false;
+      setLoading(false);
+    }
+  }
+
+  if (!pageReady) {
+    return (
+      <main className="auth-shell flex min-h-[100dvh] items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <SkeletonCard />
+        </div>
+      </main>
+    );
   }
 
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4 py-8 pt-safe pb-safe">
-      <div className="w-full max-w-md rounded-2xl bg-app-surface p-6 shadow-xl md:p-8">
-        <h1 className="mb-2 text-3xl font-bold text-app-text">Inloggen</h1>
-
-        <p className="mb-6 text-app-muted">
-          Welkom terug bij je coaching dashboard
+    <AuthShell
+      title="Inloggen"
+      subtitle="Welkom terug bij je coaching workspace"
+      footer={
+        <p className="text-center text-[14px] font-normal text-app-muted">
+          Nog geen account? Vraag je coach of admin om een uitnodigingslink.
         </p>
-
-        <input
-          className="mb-3 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle focus:ring-2 focus:ring-app-primary"
-          placeholder="E-mail"
+      }
+    >
+      <AuthField label="E-mail">
+        <AuthInput
+          placeholder="jij@email.nl"
           type="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void login();
+          }}
         />
-
-        <input
-          className="mb-4 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle focus:ring-2 focus:ring-app-primary"
+      </AuthField>
+      <AuthField label="Wachtwoord">
+        <AuthInput
           type="password"
-          placeholder="Wachtwoord"
+          placeholder="••••••••"
           autoComplete="current-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void login();
+          }}
         />
-
-        <button
-          className="theme-preserve w-full rounded-lg bg-app-primary p-3 font-semibold text-app-primary-fg transition active:scale-[0.98]"
-          onClick={() => void login()}
+      </AuthField>
+      <div className="flex justify-end">
+        <Link
+          href="/reset-password"
+          className="text-[13px] font-medium text-app-accent hover:underline"
         >
-          Inloggen
-        </button>
-
-        <p className="mt-6 text-center text-sm text-app-muted">
-          Nog geen account?{" "}
-          <a href="/signup" className="font-semibold text-app-text">
-            Account maken
-          </a>
-        </p>
+          Wachtwoord vergeten?
+        </Link>
       </div>
-    </main>
+      {error ? (
+        <p className="text-[13px] font-medium text-red-400" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <button
+        className="app-btn-primary min-h-[44px] w-full"
+        onClick={() => void login()}
+        disabled={loading}
+      >
+        {loading ? "Bezig..." : "Inloggen"}
+      </button>
+      <AuthLegalLinks />
+    </AuthShell>
   );
 }
 
@@ -99,8 +197,10 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg">
-          <p className="text-app-muted">Laden...</p>
+        <main className="auth-shell flex min-h-[100dvh] items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            <SkeletonCard />
+          </div>
         </main>
       }
     >

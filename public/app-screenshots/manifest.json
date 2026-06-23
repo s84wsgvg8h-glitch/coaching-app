@@ -1,0 +1,294 @@
+{
+  "baseUrl": "https://limitlesscoaching.app",
+  "capturedAt": "2026-06-17T08:33:25.603Z",
+  "results": [
+    {
+      "name": "00-home",
+      "fileName": "00-home.png",
+      "slug": "/",
+      "ok": true
+    },
+    {
+      "name": "01-login",
+      "fileName": "01-login.png",
+      "slug": "/login",
+      "ok": true
+    },
+    {
+      "name": "02-signup",
+      "fileName": "02-signup.png",
+      "slug": "/signup",
+      "ok": true
+    },
+    {
+      "name": "coach-dashboard",
+      "fileName": "coach-dashboard.png",
+      "slug": "/dashboard",
+      "ok": true
+    },
+    {
+      "name": "coach-kennisbank",
+      "fileName": "coach-kennisbank.png",
+      "slug": "/kennisbank",
+      "ok": true
+    },
+    {
+      "name": "coach-ai-vragen",
+      "fileName": "coach-ai-vragen.png",
+      "slug": "/ai-vragen",
+      "ok": true
+    },
+    {
+      "name": "coach-agenda",
+      "fileName": "coach-agenda.png",
+      "slug": "/agenda",
+      "ok": true
+    },
+    {
+      "name": "coach-wedstrijd-kalender",
+      "fileName": "coach-wedstrijd-kalender.png",
+      "slug": "/wedstrijd-kalender",
+      "ok": true
+    },
+    {
+      "name": "coach-wedstrijd-checklist",
+      "fileName": "coach-wedstrijd-checklist.png",
+      "slug": "/wedstrijd-checklist",
+      "ok": true
+    },
+    {
+      "name": "coach-planning",
+      "fileName": "coach-planning.png",
+      "slug": "/planning",
+      "ok": true
+    },
+    {
+      "name": "coach-data",
+      "fileName": "coach-data.png",
+      "slug": "/data",
+      "ok": true
+    },
+    {
+      "name": "coach-statistics",
+      "fileName": "coach-statistics.png",
+      "slug": "/statistics",
+      "ok": true
+    },
+    {
+      "name": "coach-raw-data",
+      "fileName": "coach-raw-data.png",
+      "slug": "/raw-data",
+      "ok": true
+    },
+    {
+      "name": "coach-invulscore",
+      "fileName": "coach-invulscore.png",
+      "slug": "/invulscore",
+      "ok": true
+    },
+    {
+      "name": "coach-leaderboard",
+      "fileName": "coach-leaderboard.png",
+      "slug": "/leaderboard",
+      "ok": true
+    },
+    {
+      "name": "coach-oefeningenbibliotheek",
+      "fileName": "coach-oefeningenbibliotheek.png",
+      "slug": "/oefeningenbibliotheek",
+      "ok": true
+    },
+    {
+      "name": "coach-betalingen",
+      "fileName": "coach-betalingen.png",
+      "slug": "/betalingen",
+      "ok": true
+    },
+    {
+      "name": "coach-merch",
+      "fileName": "coach-merch.png",
+      "slug": "/merch",
+      "ok": true
+    },
+    {
+      "name": "coach-limitless-data",
+      "fileName": "coach-limitless-data.png",
+      "slug": "/limitless-data",
+      "ok": true
+    },
+    {
+      "name": "coach-athletes",
+      "fileName": "coach-athletes.png",
+      "slug": "/athletes",
+      "ok": true
+    },
+    {
+      "name": "coach-atleten-overzicht",
+      "fileName": "coach-atleten-overzicht.png",
+      "slug": "/atleten-overzicht",
+      "ok": true
+    },
+    {
+      "name": "coach-athlete-profiles",
+      "fileName": "coach-athlete-profiles.png",
+      "slug": "/athlete-profiles",
+      "ok": true
+    },
+    {
+      "name": "coach-athlete-hub",
+      "fileName": "coach-athlete-hub.png",
+      "slug": "/athletes/7c2397f1-6b4a-48d8-bcf8-78a90ed364b4",
+      "ok": true
+    },
+    {
+      "name": "coach-athlete-profile",
+      "fileName": "coach-athlete-profile.png",
+      "slug": "/profile/7c2397f1-6b4a-48d8-bcf8-78a90ed364b4",
+      "ok": true
+    },
+    {
+      "name": "coach-todo",
+      "fileName": "coach-todo.png",
+      "slug": "/todo",
+      "ok": true
+    },
+    {
+      "name": "coach-chat",
+      "fileName": "coach-chat.png",
+      "slug": "/chat",
+      "ok": true
+    },
+    {
+      "name": "coach-chat-direct",
+      "fileName": "coach-chat-direct.png",
+      "slug": "/chat/7c2397f1-6b4a-48d8-bcf8-78a90ed364b4",
+      "ok": true
+    },
+    {
+      "name": "coach-programs",
+      "fileName": "coach-programs.png",
+      "slug": "/programs",
+      "ok": true
+    },
+    {
+      "name": "coach-program-detail",
+      "fileName": "coach-program-detail.png",
+      "slug": "/programs/8bc3887d-4631-4787-857f-f870fd73753c",
+      "ok": true
+    },
+    {
+      "name": "coach-video-review",
+      "fileName": "coach-video-review.png",
+      "slug": "/video-review",
+      "ok": true
+    },
+    {
+      "name": "coach-video-gallery",
+      "fileName": "coach-video-gallery.png",
+      "slug": "/video-gallery",
+      "ok": true
+    },
+    {
+      "name": "coach-doelen",
+      "fileName": "coach-doelen.png",
+      "slug": "/doelen",
+      "ok": true
+    },
+    {
+      "name": "coach-profile",
+      "fileName": "coach-profile.png",
+      "slug": "/profile",
+      "ok": true
+    },
+    {
+      "name": "coach-settings-intake-form",
+      "fileName": "coach-settings-intake-form.png",
+      "slug": "/settings/intake-form",
+      "ok": true
+    },
+    {
+      "name": "coach-settings-checklist",
+      "fileName": "coach-settings-checklist.png",
+      "slug": "/settings/competition-checklist",
+      "ok": true
+    },
+    {
+      "name": "coach-rpe-tabel",
+      "fileName": "coach-rpe-tabel.png",
+      "slug": "/rpe-tabel",
+      "ok": true
+    },
+    {
+      "name": "athlete-dashboard",
+      "fileName": "athlete-dashboard.png",
+      "slug": "/dashboard",
+      "ok": true
+    },
+    {
+      "name": "athlete-programs",
+      "fileName": "athlete-programs.png",
+      "slug": "/programs",
+      "ok": true
+    },
+    {
+      "name": "athlete-program-detail",
+      "fileName": "athlete-program-detail.png",
+      "slug": "/programs/8bc3887d-4631-4787-857f-f870fd73753c",
+      "ok": true
+    },
+    {
+      "name": "athlete-data",
+      "fileName": "athlete-data.png",
+      "slug": "/data",
+      "ok": true
+    },
+    {
+      "name": "athlete-meet-week",
+      "fileName": "athlete-meet-week.png",
+      "slug": "/meet-week",
+      "ok": true
+    },
+    {
+      "name": "athlete-merch",
+      "fileName": "athlete-merch.png",
+      "slug": "/merch",
+      "ok": true
+    },
+    {
+      "name": "athlete-chat",
+      "fileName": "athlete-chat.png",
+      "slug": "/chat",
+      "ok": true
+    },
+    {
+      "name": "athlete-leaderboard",
+      "fileName": "athlete-leaderboard.png",
+      "slug": "/leaderboard",
+      "ok": true
+    },
+    {
+      "name": "athlete-profile",
+      "fileName": "athlete-profile.png",
+      "slug": "/profile",
+      "ok": true
+    },
+    {
+      "name": "athlete-intake",
+      "fileName": "athlete-intake.png",
+      "slug": "/intake",
+      "ok": true
+    },
+    {
+      "name": "athlete-doelen",
+      "fileName": "athlete-doelen.png",
+      "slug": "/doelen",
+      "ok": true
+    },
+    {
+      "name": "admin-panel",
+      "fileName": "admin-panel.png",
+      "slug": "/admin",
+      "ok": true
+    }
+  ]
+}

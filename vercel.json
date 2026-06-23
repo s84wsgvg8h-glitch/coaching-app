@@ -2,7 +2,15 @@
   "crons": [
     {
       "path": "/api/competition-calendar/sync",
-      "schedule": "0 6 * * 1"
+      "schedule": "0 6 * * *"
+    },
+    {
+      "path": "/api/cron/broadcasts",
+      "schedule": "0 7 * * *"
+    },
+    {
+      "path": "/api/cron/reminders",
+      "schedule": "0 8 * * *"
     }
   ]
 }

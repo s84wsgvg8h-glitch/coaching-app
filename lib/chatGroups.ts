@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { upsertGroupReadState } from "@/lib/chatReadState";
 import { notifyChatUnreadChanged } from "@/lib/chatUnread";
 
 export type ChatGroup = {
@@ -64,24 +65,52 @@ export async function getGroupUnreadCount(
     return 0;
   }
 
-  const { data: readState } = await supabase
-    .from("chat_group_read_states")
-    .select("last_read_at")
-    .eq("group_id", groupId)
-    .eq("user_id", userId)
-    .maybeSingle();
+  const [{ data: legacyReadState }, { data: modernReadState }, { data: membership }] =
+    await Promise.all([
+      supabase
+        .from("chat_group_read_states")
+        .select("last_read_at")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("chat_read_state")
+        .select("last_read_at")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("chat_group_members")
+        .select("joined_at, created_at")
+        .eq("group_id", groupId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+    ]);
 
-  let query = supabase
+  const lastReadCandidates = [
+    legacyReadState?.last_read_at,
+    modernReadState?.last_read_at,
+    membership?.joined_at,
+    membership?.created_at,
+  ].filter(Boolean) as string[];
+
+  const lastReadAt =
+    lastReadCandidates.length > 0
+      ? lastReadCandidates.reduce((latest, current) =>
+          new Date(current) > new Date(latest) ? current : latest,
+        )
+      : null;
+
+  if (!lastReadAt) {
+    return 0;
+  }
+
+  const { count, error } = await supabase
     .from("messages")
     .select("*", { count: "exact", head: true })
     .eq("group_id", groupId)
-    .neq("sender_id", userId);
-
-  if (readState?.last_read_at) {
-    query = query.gt("created_at", readState.last_read_at);
-  }
-
-  const { count, error } = await query;
+    .neq("sender_id", userId)
+    .gt("created_at", lastReadAt);
 
   if (error) {
     return 0;
@@ -106,6 +135,7 @@ export async function markGroupAsRead(userId: string, groupId: string) {
     throw error;
   }
 
+  await upsertGroupReadState(userId, groupId);
   notifyChatUnreadChanged();
 }
 

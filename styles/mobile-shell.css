@@ -1,0 +1,268 @@
+/* ─── Mobile shell & layout (visible UX improvements) ─── */
+
+@media (max-width: 767px) {
+  .shell-topbar {
+    position: sticky;
+    top: 0;
+    z-index: 35;
+  }
+
+  /* Prevent iOS zoom on focus */
+  .app-shell input,
+  .app-shell select,
+  .app-shell textarea,
+  .admin-input,
+  .admin-select,
+  .admin-search-input {
+    font-size: 16px;
+  }
+
+  /* Theme-aware cards on mobile */
+  .app-shell .rounded-3xl.bg-white,
+  .app-shell section.rounded-3xl.bg-white {
+    border: 1px solid var(--app-panel-border) !important;
+    background: var(--app-panel-bg) !important;
+    box-shadow: var(--app-card-highlight), var(--app-card-shadow) !important;
+    color: var(--app-text);
+  }
+
+  .app-shell .rounded-3xl.bg-white .text-black,
+  .app-shell .rounded-3xl.bg-white h1,
+  .app-shell .rounded-3xl.bg-white h2,
+  .app-shell .rounded-3xl.bg-white h3,
+  .app-shell .rounded-3xl.bg-white .font-bold {
+    color: var(--app-text) !important;
+  }
+
+  .app-shell .rounded-3xl.bg-white .text-gray-500,
+  .app-shell .rounded-3xl.bg-white .text-gray-600,
+  .app-shell .rounded-3xl.bg-white .text-gray-400 {
+    color: var(--app-text-muted) !important;
+  }
+
+  .app-shell .rounded-3xl.bg-white .border-gray-200,
+  .app-shell .rounded-3xl.bg-white .border-gray-100,
+  .app-shell .rounded-3xl.bg-white .divide-gray-100 > * {
+    border-color: var(--app-border) !important;
+  }
+
+  .app-shell .rounded-3xl.bg-white .bg-gray-50,
+  .app-shell .rounded-3xl.bg-white .bg-gray-100 {
+    background: var(--app-surface-muted) !important;
+  }
+
+  .table-compact-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .table-compact th.col-hide-sm,
+  .table-compact td.col-hide-sm {
+    display: none;
+  }
+
+  .ui-panel,
+  .glass-accent-card {
+    border-radius: 16px;
+  }
+
+  .command-palette-panel {
+    max-height: min(85dvh, 640px);
+  }
+
+  .dashboard-apps-grid {
+    display: none;
+  }
+
+  .dashboard-widget-row {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+  }
+
+  .dashboard-widget-row > * {
+    width: 100%;
+    max-width: none !important;
+  }
+
+  /* Compact KPI tiles side-by-side instead of full-width squares */
+  .dashboard-widget-row > .team-engagement-card,
+  .dashboard-widget-row > .dashboard-metric-card,
+  .dashboard-widget-row > .dashboard-metric-card-link {
+    order: -1;
+    flex: 1 1 calc(50% - 0.33rem);
+    width: auto !important;
+    max-width: none !important;
+    aspect-ratio: auto;
+    min-height: 116px;
+  }
+
+  .dashboard-focus-panel {
+    max-width: none !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    height: auto;
+  }
+
+  .dashboard-focus-panel-list {
+    max-height: min(42vh, 320px);
+    overflow-y: auto;
+  }
+
+  .dashboard-coach-main .dashboard-edit-btn {
+    min-height: 44px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .page-shell-header {
+    gap: 0.75rem;
+  }
+
+  .apple-tab-bar {
+    box-shadow: var(--app-nav-shadow);
+    border-top: 1px solid var(--app-nav-border);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  .apple-tab-bar a {
+    min-height: 52px;
+  }
+
+  .athlete-mobile-tab-bar {
+    background: var(--app-nav-bg);
+    border-top: 1px solid var(--app-nav-border);
+    box-shadow: var(--app-nav-shadow);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+  }
+
+  .athlete-mobile-tab-bar__item {
+    display: flex;
+    min-height: 54px;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    padding: 6px 8px 8px;
+    color: var(--app-text-muted);
+    transition: color 0.15s ease;
+  }
+
+  .athlete-mobile-tab-bar__item.is-active {
+    color: var(--app-accent);
+  }
+
+  .athlete-mobile-tab-bar__icon-wrap {
+    display: flex;
+    height: 28px;
+    width: 28px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition:
+      background 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
+    background: rgba(59, 130, 246, 0.14);
+    transform: scale(1.05);
+  }
+
+  .athlete-mobile-tab-bar__label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+  }
+
+  .dashboard-greeting-header h1 {
+    font-size: 22px;
+    line-height: 1.15;
+  }
+
+  .athletes-crm-search input,
+  .athletes-crm-toolbar button {
+    min-height: 44px;
+  }
+}
+
+.demo-pages-sheet {
+  animation: demo-sheet-up 0.22s ease-out;
+}
+
+@keyframes demo-sheet-up {
+  from {
+    transform: translateY(100%);
+    opacity: 0.6;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* Todo kanban: tab switcher on mobile instead of 3 stacked columns */
+.todo-kanban-mobile-tabs {
+  display: none;
+}
+
+@media (max-width: 1023px) {
+  .todo-kanban-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    margin-top: 1rem;
+    padding: 4px;
+    border-radius: 14px;
+    border: 1px solid var(--app-panel-border);
+    background: var(--app-panel-bg);
+  }
+
+  .todo-kanban-mobile-tab {
+    display: flex;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--app-text-muted);
+    transition: background 0.15s ease, color 0.15s ease;
+  }
+
+  .todo-kanban-mobile-tab.is-active {
+    background: rgba(59, 130, 246, 0.18);
+    color: var(--app-text);
+    box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+  }
+
+  .todo-kanban-mobile-tab-count {
+    display: inline-flex;
+    min-width: 20px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    background: var(--app-surface-hover);
+    padding: 0 6px;
+    font-size: 10px;
+    font-weight: 700;
+  }
+
+  .todo-kanban-board {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .todo-kanban-board[data-mobile-column="todo"] .todo-kanban-column:not([data-status="todo"]),
+  .todo-kanban-board[data-mobile-column="doing"] .todo-kanban-column:not([data-status="doing"]),
+  .todo-kanban-board[data-mobile-column="done"] .todo-kanban-column:not([data-status="done"]) {
+    display: none;
+  }
+
+  .todo-kanban-column {
+    min-height: min(62vh, 520px);
+  }
+}

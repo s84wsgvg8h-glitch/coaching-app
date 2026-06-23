@@ -4,13 +4,27 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
 import { supabase } from "@/lib/supabaseClient";
+import { isAthleteRole, isCoachLikeRole } from "@/lib/authRoles";
 import {
+  deleteExerciseLibraryCategory,
   deleteExerciseLibraryItem,
   EXERCISE_LIBRARY_CATEGORIES,
+  hideExerciseLibraryCategory,
+  loadExerciseLibraryCategories,
+  loadExerciseLibraryItemById,
   loadExerciseLibraryItems,
+  loadHiddenExerciseLibraryCategories,
+  saveExerciseLibraryCategory,
   saveExerciseLibraryItem,
+  type ExerciseLibraryCategoryRow,
   type ExerciseLibraryItem,
 } from "@/lib/exerciseLibrary";
+import ExerciseLibraryCategoryNav, {
+  categoryFilterLabel,
+  emptyCategoryMessage,
+  itemMatchesCategoryFilter,
+  parseCategoryFilter,
+} from "@/components/oefeningenbibliotheek/ExerciseLibraryCategoryNav";
 import {
   removeExerciseLibraryStorage,
   uploadExerciseLibraryVideo,
@@ -25,6 +39,7 @@ function emptyDraft(): Omit<
   return {
     name: "",
     category: "Overig",
+    subcategory: "",
     description: "",
     cues: "",
     video_url: "",
@@ -33,6 +48,16 @@ function emptyDraft(): Omit<
     active: true,
     sort_order: 0,
   };
+}
+
+function setCompactDragImage(event: React.DragEvent, label: string) {
+  const ghost = document.createElement("div");
+  ghost.textContent = label;
+  ghost.style.cssText =
+    "position:fixed;top:-1000px;left:-1000px;padding:4px 8px;border-radius:8px;background:#4f8cff;color:#fff;font:600 11px/1.2 system-ui,sans-serif;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;";
+  document.body.appendChild(ghost);
+  event.dataTransfer.setDragImage(ghost, 10, 10);
+  window.setTimeout(() => ghost.remove(), 0);
 }
 
 export default function ExerciseLibraryPage() {
@@ -46,14 +71,22 @@ export default function ExerciseLibraryPage() {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [message, setMessage] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("Alle");
+  const [customCategories, setCustomCategories] = useState<
+    ExerciseLibraryCategoryRow[]
+  >([]);
   const [selectedItem, setSelectedItem] = useState<ExerciseLibraryItem | null>(
     null,
   );
   const [recorderOpen, setRecorderOpen] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
+  const [draggingItemId, setDraggingItemId] = useState<string | null>(null);
+  const [categoryError, setCategoryError] = useState("");
+  const [hiddenBuiltinCategories, setHiddenBuiltinCategories] = useState<string[]>(
+    [],
+  );
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const isCoach = role === "coach";
+  const isCoach = isCoachLikeRole(role);
 
   useEffect(() => {
     document.title = "Oefeningenbibliotheek";
@@ -79,7 +112,21 @@ export default function ExerciseLibraryPage() {
         .single();
 
       setRole(profile?.role || "");
-      setItems(await loadExerciseLibraryItems(profile?.role === "coach"));
+
+      if (isAthleteRole(profile?.role)) {
+        window.location.href = "/programs";
+        return;
+      }
+
+      setHiddenBuiltinCategories(loadHiddenExerciseLibraryCategories());
+
+      const coachView = isCoachLikeRole(profile?.role);
+      const [loadedItems, loadedCategories] = await Promise.all([
+        loadExerciseLibraryItems(coachView),
+        loadExerciseLibraryCategories(),
+      ]);
+      setItems(loadedItems);
+      setCustomCategories(loadedCategories);
       setLoading(false);
     }
 
@@ -87,12 +134,133 @@ export default function ExerciseLibraryPage() {
   }, []);
 
   const filteredItems = useMemo(() => {
-    if (categoryFilter === "Alle") return items;
-    return items.filter((item) => item.category === categoryFilter);
+    return items.filter((item) => itemMatchesCategoryFilter(item, categoryFilter));
   }, [items, categoryFilter]);
+
+  const categoryOptions = useMemo(() => {
+    const names = new Set<string>([...EXERCISE_LIBRARY_CATEGORIES]);
+    for (const row of customCategories) {
+      if (!row.parent_id) names.add(row.name);
+    }
+    for (const item of items) {
+      names.add(item.category);
+    }
+    return [...names];
+  }, [customCategories, items]);
+
+  const subcategoryOptions = useMemo(() => {
+    const subs = new Set<string>();
+    for (const row of customCategories) {
+      if (row.parent_id) {
+        const parent = customCategories.find((entry) => entry.id === row.parent_id);
+        if (parent?.name === draft.category) subs.add(row.name);
+      }
+    }
+    for (const item of items) {
+      if (item.category === draft.category && item.subcategory) {
+        subs.add(item.subcategory);
+      }
+    }
+    return [...subs];
+  }, [customCategories, draft.category, items]);
 
   async function refresh(includeInactive: boolean) {
     setItems(await loadExerciseLibraryItems(includeInactive));
+    setCustomCategories(await loadExerciseLibraryCategories());
+  }
+
+  async function handleAddCategory(
+    name: string,
+    parentId: string | null,
+    parentName?: string,
+  ): Promise<boolean> {
+    setCategoryError("");
+    let resolvedParentId = parentId;
+
+    if (!resolvedParentId && parentName) {
+      const existing = customCategories.find(
+        (row) => !row.parent_id && row.name === parentName,
+      );
+      if (existing) {
+        resolvedParentId = existing.id;
+      } else {
+        const { data: rootRow, error: rootError } =
+          await saveExerciseLibraryCategory(parentName, null);
+        if (rootError || !rootRow) {
+          const msg = rootError?.message || "Categorie aanmaken mislukt.";
+          setCategoryError(msg);
+          setMessage(msg);
+          return false;
+        }
+        resolvedParentId = rootRow.id;
+      }
+    }
+
+    const { data, error } = await saveExerciseLibraryCategory(name, resolvedParentId);
+    if (error || !data) {
+      const msg = error?.message || "Categorie opslaan mislukt.";
+      setCategoryError(msg);
+      setMessage(msg);
+      return false;
+    }
+
+    await refresh(isCoach);
+    setMessage(resolvedParentId ? "Subcategorie toegevoegd." : "Categorie toegevoegd.");
+    return true;
+  }
+
+  async function handleMoveItemToCategory(filterKey: string) {
+    if (!draggingItemId || !isCoach) return;
+
+    const item = items.find((entry) => entry.id === draggingItemId);
+    if (!item) return;
+
+    const { category, subcategory } = parseCategoryFilter(filterKey);
+    if (filterKey === "Alle") return;
+
+    const { error } = await saveExerciseLibraryItem({
+      ...item,
+      category,
+      subcategory,
+    });
+
+    setDraggingItemId(null);
+
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    setCategoryFilter(filterKey);
+    await refresh(isCoach);
+    setMessage(`"${item.name}" verplaatst naar ${categoryFilterLabel(filterKey)}.`);
+  }
+
+  async function handleDeleteCategory(id: string | null, name: string) {
+    if (!window.confirm(`"${name}" verwijderen?`)) return;
+
+    if (!id) {
+      hideExerciseLibraryCategory(name);
+      setHiddenBuiltinCategories(loadHiddenExerciseLibraryCategories());
+      if (categoryFilter.includes(name)) {
+        setCategoryFilter("Alle");
+      }
+      setMessage("Categorie verborgen.");
+      return;
+    }
+
+    const { error } = await deleteExerciseLibraryCategory(id);
+    if (error) {
+      setMessage(error.message);
+      return;
+    }
+
+    if (categoryFilter.includes(name)) {
+      setCategoryFilter("Alle");
+    }
+
+    await refresh(isCoach);
+    setMessage("Categorie verwijderd.");
   }
 
   function resetForm() {
@@ -101,19 +269,21 @@ export default function ExerciseLibraryPage() {
     setShowCreateForm(false);
   }
 
-  function startEdit(item: ExerciseLibraryItem) {
+  async function startEdit(item: ExerciseLibraryItem) {
+    const fullItem = (await loadExerciseLibraryItemById(item.id)) || item;
     setShowCreateForm(true);
-    setEditingId(item.id);
+    setEditingId(fullItem.id);
     setDraft({
-      name: item.name,
-      category: item.category,
-      description: item.description || "",
-      cues: item.cues || "",
-      video_url: item.video_url || "",
-      video_path: item.video_path || "",
-      thumbnail_url: item.thumbnail_url || "",
-      active: item.active,
-      sort_order: item.sort_order,
+      name: fullItem.name,
+      category: fullItem.category,
+      subcategory: fullItem.subcategory || "",
+      description: fullItem.description || "",
+      cues: fullItem.cues || "",
+      video_url: fullItem.video_url || "",
+      video_path: fullItem.video_path || "",
+      thumbnail_url: fullItem.thumbnail_url || "",
+      active: fullItem.active,
+      sort_order: fullItem.sort_order,
     });
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
@@ -213,35 +383,30 @@ export default function ExerciseLibraryPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex max-w-6xl min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
-        <CollapsibleFilterSidebar title="Categorie">
-          {["Alle", ...EXERCISE_LIBRARY_CATEGORIES].map((category) => (
-            <button
-              key={category}
-              type="button"
-              onClick={() => setCategoryFilter(category)}
-              className={`mb-1 block w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
-                categoryFilter === category
-                  ? "bg-brand-purple text-white"
-                  : "text-app-text hover:bg-app-surface-muted"
-              }`}
-            >
-              {category}
-            </button>
-          ))}
+      <div className="mx-auto flex w-full max-w-none min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
+        <CollapsibleFilterSidebar title="Categorie" collapsible={false}>
+          <ExerciseLibraryCategoryNav
+            customCategories={customCategories}
+            hiddenBuiltinNames={hiddenBuiltinCategories}
+            categoryFilter={categoryFilter}
+            isCoach={isCoach}
+            draggingItemId={draggingItemId}
+            onFilterChange={setCategoryFilter}
+            onAddCategory={handleAddCategory}
+            onDeleteCategory={handleDeleteCategory}
+            onMoveItemToCategory={handleMoveItemToCategory}
+            categoryError={categoryError}
+          />
         </CollapsibleFilterSidebar>
 
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
         <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">
-            Limitless Coaching
+          <p className="text-sm font-semibold uppercase tracking-wide text-app-muted">
+            Oefeningenbibliotheek
           </p>
-          <h1 className="text-3xl font-bold text-black">Oefeningenbibliotheek</h1>
-          <p className="mt-2 text-gray-600">
-            {isCoach
-              ? "Maak uitlegvideo's voor oefeningen die atleten kunnen bekijken."
-              : "Bekijk uitlegvideo's van je coach per oefening."}
-          </p>
+          <h1 className="text-3xl font-bold text-app-text">
+            {categoryFilterLabel(categoryFilter)}
+          </h1>
         </div>
 
         {isCoach && !showCreateForm && (
@@ -283,16 +448,35 @@ export default function ExerciseLibraryPage() {
                   setDraft((current) => ({
                     ...current,
                     category: event.target.value,
+                    subcategory: "",
                   }))
                 }
                 className="rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
               >
-                {EXERCISE_LIBRARY_CATEGORIES.map((category) => (
+                {categoryOptions.map((category) => (
                   <option key={category} value={category}>
                     {category}
                   </option>
                 ))}
               </select>
+
+              <input
+                list="exercise-subcategories"
+                value={draft.subcategory || ""}
+                onChange={(event) =>
+                  setDraft((current) => ({
+                    ...current,
+                    subcategory: event.target.value,
+                  }))
+                }
+                placeholder="Subcategorie (optioneel), bijv. arch"
+                className="rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+              />
+              <datalist id="exercise-subcategories">
+                {subcategoryOptions.map((subcategory) => (
+                  <option key={subcategory} value={subcategory} />
+                ))}
+              </datalist>
 
               <textarea
                 value={draft.description || ""}
@@ -476,21 +660,37 @@ export default function ExerciseLibraryPage() {
           <div className="rounded-3xl bg-white p-8 text-center shadow-xl">
             <p className="text-gray-500">
               {isCoach
-                ? "Nog geen oefeningen in de bibliotheek. Klik op \"Nieuwe oefening aanmaken\" om je eerste uitlegvideo toe te voegen."
-                : "Er staan nog geen uitlegvideo's klaar."}
+                ? emptyCategoryMessage(categoryFilter)
+                : categoryFilter === "Alle"
+                  ? "Er staan nog geen uitlegvideo's klaar."
+                  : emptyCategoryMessage(categoryFilter).replace(
+                      "Nog geen oefeningen",
+                      "Geen oefeningen",
+                    )}
             </p>
           </div>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {filteredItems.map((item) => (
               <article
                 key={item.id}
-                className="overflow-hidden rounded-3xl bg-white shadow-xl"
+                draggable={isCoach}
+                onDragStart={(event) => {
+                  setDraggingItemId(item.id);
+                  event.dataTransfer.effectAllowed = "move";
+                  event.dataTransfer.setData("text/plain", item.id);
+                  setCompactDragImage(event, item.name);
+                }}
+                onDragEnd={() => setDraggingItemId(null)}
+                className={`group relative overflow-hidden rounded-3xl bg-white shadow-xl ${
+                  draggingItemId === item.id ? "opacity-40" : ""
+                } ${isCoach ? "cursor-grab active:cursor-grabbing" : ""}`}
               >
                 <button
                   type="button"
+                  draggable={false}
                   onClick={() => setSelectedItem(item)}
-                  className="group relative block w-full text-left"
+                  className="relative block w-full text-left"
                 >
                   {item.thumbnail_url ? (
                     <img
@@ -503,19 +703,20 @@ export default function ExerciseLibraryPage() {
                       🎥
                     </div>
                   )}
-                  <span className="absolute inset-0 flex items-center justify-center bg-black/0 transition group-hover:bg-black/20">
-                    <span className="rounded-full bg-white/90 px-4 py-2 text-sm font-bold text-black opacity-0 transition group-hover:opacity-100">
-                      Bekijk uitleg
-                    </span>
-                  </span>
                   {!item.active && isCoach && (
-                    <span className="absolute left-3 top-3 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <span className="absolute left-3 top-3 z-20 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       Verborgen
                     </span>
                   )}
                 </button>
 
-                <div className="p-4">
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/50 group-hover:opacity-100">
+                  <span className="rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white shadow-lg">
+                    Bekijk uitleg
+                  </span>
+                </div>
+
+                <div className="relative z-0 p-4">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
                     {item.category}
                   </p>

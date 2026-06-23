@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState, startTransition } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   BellOff,
@@ -62,12 +62,17 @@ import {
   formatDateDivider,
   formatMessageTime,
   getInitials,
+  getMessageBubbleRadiusClass,
   getMessagePreview,
   getReplyText,
   parseExerciseVideoMessage,
+  shouldGroupWithPrevious,
   shouldShowDateDivider,
+  shouldShowMessageTimestamp,
 } from "@/lib/chatUtils";
+import ChatSwipeReplyRow from "@/components/chat/ChatSwipeReplyRow";
 import ExerciseVideoMessage from "@/components/chat/ExerciseVideoMessage";
+import ChatVideoCoachFeedbackViewer from "@/components/chat/ChatVideoCoachFeedbackViewer";
 import PollMessage from "@/components/chat/PollMessage";
 import ChatMediaCapture from "@/components/chat/ChatMediaCapture";
 import ChatMediaComposer from "@/components/chat/ChatMediaComposer";
@@ -82,10 +87,11 @@ import {
   loadDirectMessagePreviews,
   loadGroupMessagePreviews,
 } from "@/lib/chatConversationPreviews";
-import { saveChatReturnRoute } from "@/lib/chatNavigation";
+import { saveChatReturnRoute, saveChatEntryReturn, getChatEntryReturn } from "@/lib/chatNavigation";
 import {
   searchMessagesGlobally,
   getSearchableMessageText,
+  messageMatchesQuery,
   type GlobalMessageSearchResult,
 } from "@/lib/chatSearch";
 import ChatSearchField from "@/components/chat/ChatSearchField";
@@ -95,7 +101,6 @@ import ChatMessageMenu, {
   ChatMessageMenuTrigger,
 } from "@/components/chat/ChatMessageMenu";
 import HighlightedText from "@/components/chat/HighlightedText";
-import ChatToolsPanel from "@/components/chat/ChatToolsPanel";
 import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
 import ChatBwPanel from "@/components/chat/ChatBwPanel";
 import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
@@ -106,7 +111,7 @@ import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
 import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
 import ChatAiPanel from "@/components/chat/ChatAiPanel";
 import ChatTodoPanel from "@/components/chat/ChatTodoPanel";
-import ChatAgendaPanel from "@/components/chat/ChatAgendaPanel";
+import ChatCoachAgendaOverviewPanel from "@/components/chat/ChatCoachAgendaOverviewPanel";
 import ChatAiMessage from "@/components/chat/ChatAiMessage";
 import ChatBroadcastModal from "@/components/chat/ChatBroadcastModal";
 import ChatMessageReactions from "@/components/chat/ChatMessageReactions";
@@ -145,14 +150,9 @@ import {
   parseProgramCommand,
   parseTodoCommand,
   parseAgendaCommand,
-  parseToolsCommand,
   parseVolumeCommand,
   shouldShowSlashCommandMenu,
 } from "@/lib/chatCommands";
-import {
-  type ChatToolItem,
-  type ProgramBlockTool,
-} from "@/lib/chatTools";
 import {
   buildPollMessageBody,
   castPollVote,
@@ -193,6 +193,7 @@ function getActiveChatRoute(pathname: string) {
 export default function ChatApp() {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
@@ -247,6 +248,9 @@ export default function ChatApp() {
   >({});
   const [messageSearchOpen, setMessageSearchOpen] = useState(false);
   const [messageSearchQuery, setMessageSearchQuery] = useState("");
+  const [searchHighlightQuery, setSearchHighlightQuery] = useState("");
+  const [keyboardInset, setKeyboardInset] = useState(0);
+  const [listFilter, setListFilter] = useState<"all" | "unread">("all");
   const [globalSearchResults, setGlobalSearchResults] = useState<
     GlobalMessageSearchResult[]
   >([]);
@@ -271,15 +275,67 @@ export default function ChatApp() {
     messageId: string;
     payload: PollMessagePayload;
   } | null>(null);
-  const [toolPrograms, setToolPrograms] = useState<ProgramBlockTool[]>([]);
-  const [toolProgramsLoading, setToolProgramsLoading] = useState(false);
+  const [coachVideoReview, setCoachVideoReview] = useState<{
+    url: string;
+    title: string;
+    subtitle?: string;
+    replyMessage?: ChatMessage | null;
+  } | null>(null);
   const conversationPanelRef = useRef<HTMLDivElement | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
   const listLongPressTriggeredRef = useRef(false);
+  const messageLongPressTimerRef = useRef<number | null>(null);
+  const messageLongPressTriggeredRef = useRef(false);
+  const messageTouchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastMessageTapRef = useRef<{ time: number; msgId: string } | null>(null);
+
+  useEffect(() => {
+    if (!activeUserId && !activeGroupId) {
+      setKeyboardInset(0);
+      return;
+    }
+
+    const viewport = window.visualViewport;
+    if (!viewport) return;
+
+    function syncKeyboardInset() {
+      const activeViewport = window.visualViewport;
+      if (!activeViewport) return;
+      const inset = Math.max(
+        0,
+        window.innerHeight - activeViewport.height - activeViewport.offsetTop,
+      );
+      setKeyboardInset(Math.round(inset));
+    }
+
+    syncKeyboardInset();
+    viewport.addEventListener("resize", syncKeyboardInset);
+    viewport.addEventListener("scroll", syncKeyboardInset);
+
+    return () => {
+      viewport.removeEventListener("resize", syncKeyboardInset);
+      viewport.removeEventListener("scroll", syncKeyboardInset);
+    };
+  }, [activeUserId, activeGroupId]);
 
   useEffect(() => {
     bootstrap();
   }, []);
+
+  useEffect(() => {
+    const from = searchParams.get("from");
+    if (from && from.startsWith("/")) {
+      saveChatEntryReturn(from);
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    const athleteId = searchParams.get("athlete");
+    if (!athleteId || bootstrapping) return;
+    if (pathname === `/chat/${athleteId}`) return;
+
+    router.replace(`/chat/${athleteId}`);
+  }, [bootstrapping, pathname, router, searchParams]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -295,6 +351,35 @@ export default function ChatApp() {
     shouldStickToBottomRef.current = true;
     void switchConversation(activeRoute);
   }, [activeRoute.id, activeRoute.type, userId, bootstrapping]);
+
+  useEffect(() => {
+    if (!userId || bootstrapping) return;
+
+    async function syncActiveConversationReadState() {
+      if (activeUserId) {
+        await markConversationAsRead(userId, activeUserId);
+        setContacts((current) =>
+          current.map((contact) =>
+            contact.id === activeUserId
+              ? { ...contact, unreadCount: 0 }
+              : contact,
+          ),
+        );
+        return;
+      }
+
+      if (activeGroupId) {
+        await markGroupAsRead(userId, activeGroupId);
+        setGroups((current) =>
+          current.map((group) =>
+            group.id === activeGroupId ? { ...group, unreadCount: 0 } : group,
+          ),
+        );
+      }
+    }
+
+    void syncActiveConversationReadState();
+  }, [activeUserId, activeGroupId, userId, bootstrapping]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -429,6 +514,28 @@ export default function ChatApp() {
       panel.removeEventListener("touchmove", onTouchMove);
     };
   }, [activeUserId, activeGroupId]);
+
+  useEffect(() => {
+    if (bootstrapping) return;
+    if (!activeUserId && !activeGroupId) return;
+    if (mediaCaptureOpen || broadcastOpen || pollCreateOpen || createGroupOpen) {
+      return;
+    }
+
+    const timer = window.setTimeout(() => {
+      focusMessageInput();
+    }, 80);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    activeUserId,
+    activeGroupId,
+    bootstrapping,
+    mediaCaptureOpen,
+    broadcastOpen,
+    pollCreateOpen,
+    createGroupOpen,
+  ]);
 
   function scrollToBottom(behavior: ScrollBehavior = "smooth") {
     const container = messagesContainerRef.current;
@@ -915,14 +1022,34 @@ export default function ChatApp() {
     });
   }
 
-  function handleReply(msg: ChatMessage) {
-    setReplyingTo(msg);
-    setTimeout(() => inputRef.current?.focus(), 0);
+  function focusMessageInput() {
+    const focusInput = () => {
+      const input = inputRef.current;
+      if (!input) return;
+      input.focus({ preventScroll: true });
+      const length = input.value.length;
+      input.setSelectionRange(length, length);
+      forceScrollToBottom();
+    };
+
+    focusInput();
+    window.requestAnimationFrame(() => {
+      focusInput();
+      window.requestAnimationFrame(focusInput);
+    });
+    window.setTimeout(focusInput, 120);
+    window.setTimeout(focusInput, 280);
   }
 
-  function closeToolsPanel() {
-    setMessage((current) => (current.startsWith("/tools") ? "" : current));
+  function handleReply(msg: ChatMessage) {
+    setReplyingTo(msg);
+    focusMessageInput();
   }
+
+  useEffect(() => {
+    if (!replyingTo) return;
+    focusMessageInput();
+  }, [replyingTo]);
 
   function closeProgramPanel() {
     setMessage((current) => (current.startsWith("/program") ? "" : current));
@@ -1035,31 +1162,8 @@ export default function ChatApp() {
     forceScrollToBottom();
   }
 
-  function handleToolsQueryChange(query: string) {
-    setMessage(query ? `/tools ${query}` : "/tools");
-  }
-
-  function handleToolsSelect(item: ChatToolItem) {
-    closeToolsPanel();
-
-    if (item.chatKind === "direct" && item.targetId) {
-      openDirectChat(item.targetId);
-      return;
-    }
-
-    if (item.chatKind === "group" && item.targetId) {
-      openGroupChat(item.targetId);
-      return;
-    }
-
-    if (item.href) {
-      router.push(item.href);
-    }
-  }
-
   async function sendMessage() {
     if (!message.trim() || !userId) return;
-    if (parseToolsCommand(message).active) return;
     if (parseProgramCommand(message).active) return;
     if (parseBwCommand(message).active) return;
     if (parseExternalsCommand(message).active) return;
@@ -1078,8 +1182,10 @@ export default function ChatApp() {
     }
 
     const messageText = message.trim();
+    const replyTarget = replyingTo;
+    const optimisticId = crypto.randomUUID();
     const optimisticMessage: ChatMessage = {
-      id: crypto.randomUUID(),
+      id: optimisticId,
       sender_id: userId,
       receiver_id: activeUserId || null,
       group_id: activeGroupId || null,
@@ -1088,43 +1194,73 @@ export default function ChatApp() {
       file_type: null,
       created_at: new Date().toISOString(),
       read_at: null,
-      reply_to_body: replyingTo ? getReplyText(replyingTo) : null,
-      reply_to_file_type: replyingTo?.file_type || null,
-      reply_to_sender_id: replyingTo?.sender_id || null,
+      reply_to_body: replyTarget ? getReplyText(replyTarget) : null,
+      reply_to_file_type: replyTarget?.file_type || null,
+      reply_to_sender_id: replyTarget?.sender_id || null,
     };
 
+    setMessages((current) => [...current, optimisticMessage]);
+    setMessage("");
+    setReplyingTo(null);
+    inputRef.current?.blur();
+    window.requestAnimationFrame(() => {
+      forceScrollToBottom();
+      window.requestAnimationFrame(forceScrollToBottom);
+    });
+
     let error: { message: string } | null = null;
+    let insertedId: string | null = null;
 
     if (activeGroupId) {
-      const result = await supabase.from("messages").insert({
-        sender_id: userId,
-        group_id: activeGroupId,
-        body: messageText,
-        read_at: null,
-        reply_to_body: replyingTo ? getReplyText(replyingTo) : null,
-        reply_to_file_type: replyingTo?.file_type || null,
-        reply_to_sender_id: replyingTo?.sender_id || null,
-      });
+      const result = await supabase
+        .from("messages")
+        .insert({
+          sender_id: userId,
+          group_id: activeGroupId,
+          body: messageText,
+          read_at: null,
+          reply_to_body: replyTarget ? getReplyText(replyTarget) : null,
+          reply_to_file_type: replyTarget?.file_type || null,
+          reply_to_sender_id: replyTarget?.sender_id || null,
+        })
+        .select("id")
+        .single();
       error = result.error;
+      insertedId = (result.data as { id: string } | null)?.id ?? null;
     } else {
-      const result = await supabase.from("messages").insert({
-        sender_id: userId,
-        receiver_id: activeUserId,
-        body: messageText,
-        read_at: null,
-        reply_to_body: replyingTo ? getReplyText(replyingTo) : null,
-        reply_to_file_type: replyingTo?.file_type || null,
-        reply_to_sender_id: replyingTo?.sender_id || null,
-      });
+      const result = await supabase
+        .from("messages")
+        .insert({
+          sender_id: userId,
+          receiver_id: activeUserId,
+          body: messageText,
+          read_at: null,
+          reply_to_body: replyTarget ? getReplyText(replyTarget) : null,
+          reply_to_file_type: replyTarget?.file_type || null,
+          reply_to_sender_id: replyTarget?.sender_id || null,
+        })
+        .select("id")
+        .single();
       error = result.error;
+      insertedId = (result.data as { id: string } | null)?.id ?? null;
     }
 
     if (error) {
+      setMessages((current) =>
+        current.filter((item) => item.id !== optimisticId),
+      );
+      setMessage(messageText);
       alert(error.message);
       return;
     }
 
-    setMessages((current) => [...current, optimisticMessage]);
+    if (insertedId) {
+      setMessages((current) =>
+        current.map((item) =>
+          item.id === optimisticId ? { ...item, id: insertedId! } : item,
+        ),
+      );
+    }
 
     if (activeGroupId) {
       setGroups((current) =>
@@ -1155,11 +1291,6 @@ export default function ChatApp() {
         ),
       );
     }
-
-    setMessage("");
-    setReplyingTo(null);
-    inputRef.current?.focus();
-    forceScrollToBottom();
   }
 
   function getReplySenderLabel(senderId: string | null | undefined) {
@@ -1208,7 +1339,11 @@ export default function ChatApp() {
     );
   }
 
-  async function sendMediaFile(file: File, caption = "") {
+  async function sendMediaFile(
+    file: File,
+    caption = "",
+    replyOverride?: ChatMessage | null,
+  ) {
     if (!userId || (!activeUserId && !activeGroupId) || uploadingMedia) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
@@ -1221,6 +1356,8 @@ export default function ChatApp() {
       alert("Kies een foto of video");
       return;
     }
+
+    const reply = replyOverride ?? replyingTo;
 
     setUploadingMedia(true);
 
@@ -1242,7 +1379,7 @@ export default function ChatApp() {
         caption,
         groupId: activeGroupId || undefined,
         receiverId: activeUserId || undefined,
-        replyTo: replyingTo,
+        replyTo: reply,
       });
 
       if (error) {
@@ -1261,9 +1398,9 @@ export default function ChatApp() {
         file_type: fileType,
         created_at: createdAt,
         read_at: null,
-        reply_to_body: replyingTo ? getReplyText(replyingTo) : null,
-        reply_to_file_type: replyingTo?.file_type || null,
-        reply_to_sender_id: replyingTo?.sender_id || null,
+        reply_to_body: reply ? getReplyText(reply) : null,
+        reply_to_file_type: reply?.file_type || null,
+        reply_to_sender_id: reply?.sender_id || null,
       };
 
       setMessages((current) => [...current, optimisticMessage]);
@@ -1277,6 +1414,82 @@ export default function ChatApp() {
     } finally {
       setUploadingMedia(false);
     }
+  }
+
+  async function sendCoachVideoFeedback(
+    text: string,
+    imageFile?: File,
+    replyMessage?: ChatMessage | null,
+  ) {
+    if (!userId || (!activeUserId && !activeGroupId)) return;
+    if (!canSendMessages) {
+      alert("Alleen beheerders kunnen berichten sturen in deze groep.");
+      return;
+    }
+
+    const reply = replyMessage || replyingTo;
+
+    if (imageFile) {
+      await sendMediaFile(imageFile, text, reply);
+      return;
+    }
+
+    const messageText = text.trim();
+    if (!messageText) return;
+
+    const optimisticMessage: ChatMessage = {
+      id: crypto.randomUUID(),
+      sender_id: userId,
+      receiver_id: activeUserId || null,
+      group_id: activeGroupId || null,
+      body: messageText,
+      file_url: null,
+      file_type: null,
+      created_at: new Date().toISOString(),
+      read_at: null,
+      reply_to_body: reply ? getReplyText(reply) : null,
+      reply_to_file_type: reply?.file_type || null,
+      reply_to_sender_id: reply?.sender_id || null,
+    };
+
+    let error: { message: string } | null = null;
+
+    if (activeGroupId) {
+      const result = await supabase.from("messages").insert({
+        sender_id: userId,
+        group_id: activeGroupId,
+        body: messageText,
+        read_at: null,
+        reply_to_body: reply ? getReplyText(reply) : null,
+        reply_to_file_type: reply?.file_type || null,
+        reply_to_sender_id: reply?.sender_id || null,
+      });
+      error = result.error;
+    } else {
+      const result = await supabase.from("messages").insert({
+        sender_id: userId,
+        receiver_id: activeUserId,
+        body: messageText,
+        read_at: null,
+        reply_to_body: reply ? getReplyText(reply) : null,
+        reply_to_file_type: reply?.file_type || null,
+        reply_to_sender_id: reply?.sender_id || null,
+      });
+      error = result.error;
+    }
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    setMessages((current) => [...current, optimisticMessage]);
+    updateSidebarAfterMessage(
+      getMessagePreview(optimisticMessage, userId),
+      optimisticMessage.created_at,
+    );
+    setReplyingTo(null);
+    forceScrollToBottom();
   }
 
   async function sendVoiceMessage(blob: Blob, mimeType: string) {
@@ -1517,8 +1730,32 @@ export default function ChatApp() {
 
   async function handleEntryMarkUnread(entry: ChatListEntry) {
     if (!userId) return;
+
+    const isActive =
+      (entry.kind === "direct" && entry.id === activeUserId) ||
+      (entry.kind === "group" && entry.id === activeGroupId);
+
+    if (isActive) return;
+
     await markConversationUnread(userId, getEntryConversationTarget(entry));
-    await bootstrapSidebarCounts();
+
+    if (entry.kind === "direct") {
+      setContacts((current) =>
+        current.map((contact) =>
+          contact.id === entry.id
+            ? { ...contact, unreadCount: Math.max(contact.unreadCount || 0, 1) }
+            : contact,
+        ),
+      );
+    } else {
+      setGroups((current) =>
+        current.map((group) =>
+          group.id === entry.id
+            ? { ...group, unreadCount: Math.max(group.unreadCount || 0, 1) }
+            : group,
+        ),
+      );
+    }
   }
 
   async function handleEntryClear(entry: ChatListEntry) {
@@ -1603,13 +1840,83 @@ export default function ChatApp() {
     await refreshConversationSettings();
   }
 
+  function openMessageMenuFromElement(msg: ChatMessage, element: HTMLElement) {
+    setMessageMenu({ message: msg, anchorRect: element.getBoundingClientRect() });
+  }
+
   function openMessageMenu(
     msg: ChatMessage,
     event: React.MouseEvent<HTMLElement>,
   ) {
     event.stopPropagation();
-    const anchor = (event.currentTarget as HTMLElement).getBoundingClientRect();
-    setMessageMenu({ message: msg, anchorRect: anchor });
+    openMessageMenuFromElement(msg, event.currentTarget as HTMLElement);
+  }
+
+  function cancelMessageLongPress() {
+    if (messageLongPressTimerRef.current) {
+      window.clearTimeout(messageLongPressTimerRef.current);
+      messageLongPressTimerRef.current = null;
+    }
+  }
+
+  function startMessageLongPress(
+    msg: ChatMessage,
+    event: React.TouchEvent<HTMLElement>,
+  ) {
+    if (typeof window !== "undefined" && window.innerWidth >= 768) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    messageTouchStartRef.current = { x: touch.clientX, y: touch.clientY };
+    messageLongPressTriggeredRef.current = false;
+    cancelMessageLongPress();
+
+    const element = event.currentTarget;
+    messageLongPressTimerRef.current = window.setTimeout(() => {
+      messageLongPressTriggeredRef.current = true;
+      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
+        navigator.vibrate(10);
+      }
+      openMessageMenuFromElement(msg, element);
+    }, 450);
+  }
+
+  function handleMessageTouchMove(event: React.TouchEvent<HTMLElement>) {
+    if (!messageTouchStartRef.current) return;
+
+    const touch = event.touches[0];
+    if (!touch) return;
+
+    const dx = Math.abs(touch.clientX - messageTouchStartRef.current.x);
+    const dy = Math.abs(touch.clientY - messageTouchStartRef.current.y);
+    if (dx > 10 || dy > 10) {
+      cancelMessageLongPress();
+    }
+  }
+
+  function handleMessageTouchEnd(
+    msg: ChatMessage,
+    event: React.TouchEvent<HTMLElement>,
+  ) {
+    cancelMessageLongPress();
+
+    if (messageLongPressTriggeredRef.current) {
+      messageLongPressTriggeredRef.current = false;
+      event.preventDefault();
+      return;
+    }
+
+    const now = Date.now();
+    const last = lastMessageTapRef.current;
+    if (last && last.msgId === msg.id && now - last.time < 320) {
+      event.preventDefault();
+      handleReply(msg);
+      lastMessageTapRef.current = null;
+      return;
+    }
+
+    lastMessageTapRef.current = { time: now, msgId: msg.id };
   }
 
   function scrollToMessage(messageId: string) {
@@ -1755,10 +2062,28 @@ export default function ChatApp() {
 
     if (entry.kind === "direct") {
       openDirectChat(entry.id);
+      if (userId) {
+        void markConversationAsRead(userId, entry.id).then(() => {
+          setContacts((current) =>
+            current.map((contact) =>
+              contact.id === entry.id ? { ...contact, unreadCount: 0 } : contact,
+            ),
+          );
+        });
+      }
       return;
     }
 
     openGroupChat(entry.id);
+    if (userId) {
+      void markGroupAsRead(userId, entry.id).then(() => {
+        setGroups((current) =>
+          current.map((group) =>
+            group.id === entry.id ? { ...group, unreadCount: 0 } : group,
+          ),
+        );
+      });
+    }
   }
 
   function renderChatListEntry(entry: ChatListEntry, highlightQuery = "") {
@@ -1775,8 +2100,8 @@ export default function ChatApp() {
     return (
       <div
         key={`${highlightQuery ? "search-chat-" : ""}${entry.kind}-${entry.id}`}
-        className={`group flex w-full items-stretch border-b border-gray-100 px-2 py-2 transition hover:bg-gray-50 ${
-          isActive ? "bg-gray-100" : ""
+        className={`group chat-list-row flex w-full items-stretch border-b px-2 py-1.5 transition ${
+          isActive ? "chat-list-row-active" : ""
         }`}
       >
         <button
@@ -1796,7 +2121,7 @@ export default function ChatApp() {
             imageUrl={entry.avatar_url}
             className="h-12 w-12"
             fallbackClassName={
-              entry.kind === "group" ? "bg-gray-700 text-white" : "bg-black text-white"
+              entry.kind === "group" ? "chat-avatar-fallback-group" : "chat-avatar-fallback"
             }
           >
             {entry.kind === "group" ? <Users className="h-5 w-5" /> : undefined}
@@ -1806,19 +2131,19 @@ export default function ChatApp() {
             <div className="flex items-start justify-between gap-2">
               <div className="flex min-w-0 items-center gap-1.5">
                 {isPinned && (
-                  <Pin className="h-3.5 w-3.5 shrink-0 text-gray-500" aria-hidden />
+                  <Pin className="h-3.5 w-3.5 shrink-0 text-app-muted" aria-hidden />
                 )}
                 {isMuted && (
                   <BellOff
-                    className="h-3.5 w-3.5 shrink-0 text-gray-500"
+                    className="h-3.5 w-3.5 shrink-0 text-app-muted"
                     aria-hidden
                   />
                 )}
                 <p
                   className={`truncate text-[15px] ${
                     hasUnread
-                      ? "font-bold text-black"
-                      : "font-semibold text-black"
+                      ? "font-bold text-app-text"
+                      : "font-semibold text-app-text"
                   }`}
                 >
                   {highlightQuery ? (
@@ -1831,7 +2156,7 @@ export default function ChatApp() {
 
               <span
                   className={`shrink-0 text-xs ${
-                    hasUnread ? "font-semibold text-black" : "text-gray-400"
+                    hasUnread ? "font-semibold text-app-text" : "text-app-subtle"
                   }`}
                 >
                   {formatChatListTime(entry.lastMessageTime)}
@@ -1841,7 +2166,7 @@ export default function ChatApp() {
             <div className="mt-1 flex items-center justify-between gap-3">
               <p
                 className={`truncate text-sm ${
-                  hasUnread ? "font-semibold text-black" : "text-gray-500"
+                  hasUnread ? "font-semibold text-app-text" : "text-app-muted"
                 }`}
               >
                 {entry.lastMessageSender
@@ -1849,28 +2174,27 @@ export default function ChatApp() {
                   : entry.lastMessage}
               </p>
 
-              <div className="flex shrink-0 items-center">
-                {hasUnread && (
-                  <span
-                    className="h-2.5 w-2.5 shrink-0 rounded-full bg-black transition-all duration-200 group-hover:mr-1.5"
-                    aria-label="Ongelezen"
-                  />
-                )}
-                <button
-                  type="button"
-                  onClick={(event) => {
-                    event.preventDefault();
-                    event.stopPropagation();
-                    openListMenu(entry);
-                  }}
-                  className="flex h-4 w-0 items-center justify-center overflow-hidden text-gray-400 opacity-0 transition-all duration-200 hover:text-black group-hover:w-4 group-hover:opacity-100 max-md:hidden"
-                  aria-label="Chatopties"
-                >
-                  <MoreVertical className="h-3.5 w-3.5 shrink-0" />
-                </button>
-              </div>
+              {hasUnread && (
+                <span
+                  className="h-2.5 w-2.5 shrink-0 rounded-full bg-app-accent"
+                  aria-label="Ongelezen"
+                />
+              )}
             </div>
           </div>
+        </button>
+
+        <button
+          type="button"
+          onClick={(event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            openListMenu(entry);
+          }}
+          className="flex w-0 items-center justify-center self-center overflow-hidden text-app-subtle opacity-0 transition-all duration-200 hover:text-app-text group-hover:w-8 group-hover:opacity-100 max-md:hidden"
+          aria-label="Chatopties"
+        >
+          <MoreVertical className="h-4 w-4 shrink-0" />
         </button>
       </div>
     );
@@ -1978,10 +2302,23 @@ export default function ChatApp() {
   }, [searchQuery, userId, contacts, groups]);
 
   const filteredEntries = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
-    if (!query) return chatEntries;
+    let entries = chatEntries;
 
-    return chatEntries.filter((entry) => {
+    if (listFilter === "unread") {
+      entries = entries.filter((entry) => {
+        const key =
+          entry.kind === "direct"
+            ? getSettingsKey({ peerUserId: entry.id })
+            : getSettingsKey({ groupId: entry.id });
+        const isMuted = Boolean(conversationSettings[key]?.muted);
+        return !isMuted && (entry.unreadCount || 0) > 0;
+      });
+    }
+
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return entries;
+
+    return entries.filter((entry) => {
       const label =
         entry.kind === "direct" ? entry.full_name || "" : entry.name || "";
 
@@ -1991,7 +2328,7 @@ export default function ChatApp() {
         (entry.lastMessageSender || "").toLowerCase().includes(query)
       );
     });
-  }, [chatEntries, searchQuery]);
+  }, [chatEntries, searchQuery, listFilter, conversationSettings]);
 
   const showConversationOnMobile = Boolean(activeUserId || activeGroupId);
   const conversationTitle =
@@ -2032,7 +2369,6 @@ export default function ChatApp() {
     return messages.find((item) => item.id === pinnedId) || null;
   }, [messages, currentConversationSettings?.pinned_message_id]);
 
-  const toolsCommand = useMemo(() => parseToolsCommand(message), [message]);
   const programCommand = useMemo(() => parseProgramCommand(message), [message]);
   const bwCommand = useMemo(() => parseBwCommand(message), [message]);
   const externalsCommand = useMemo(() => parseExternalsCommand(message), [message]);
@@ -2044,59 +2380,54 @@ export default function ChatApp() {
   const aiCommand = useMemo(() => parseAiCommand(message), [message]);
   const todoCommand = useMemo(() => parseTodoCommand(message), [message]);
   const agendaCommand = useMemo(() => parseAgendaCommand(message), [message]);
-  const toolsPanelOpen =
-    toolsCommand.active && Boolean(activeUserId || activeGroupId);
   const programPanelOpen =
     programCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const bwPanelOpen =
     bwCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const externalsPanelOpen =
     externalsCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const volumePanelOpen =
     volumeCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const intensityPanelOpen =
     intensityCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const maxPanelOpen =
     maxCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const dataPanelOpen =
     dataCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const injuriesPanelOpen =
     injuriesCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId) &&
     !activeGroupId;
   const aiPanelOpen =
     aiCommand.active && Boolean(activeUserId) && !activeGroupId;
   const todoPanelOpen =
     todoCommand.active &&
-    userRole === "coach" &&
+    isCoachLikeRole(userRole) &&
     Boolean(activeUserId || activeGroupId);
   const agendaPanelOpen =
-    agendaCommand.active &&
-    userRole === "coach" &&
-    Boolean(activeUserId) &&
-    !activeGroupId;
+    agendaCommand.active && isCoachLikeRole(userRole);
   const sidePanelOpen =
     programPanelOpen ||
     bwPanelOpen ||
@@ -2116,7 +2447,7 @@ export default function ChatApp() {
       "Atleet"
     );
   }, [activeUserId, contacts]);
-  const slashPanelOpen = toolsPanelOpen || sidePanelOpen;
+  const slashPanelOpen = sidePanelOpen;
   const slashCommandSuggestions = useMemo(
     () =>
       filterChatSlashCommands(message, {
@@ -2231,8 +2562,24 @@ export default function ChatApp() {
                 return current;
               }
 
+              let next = current;
+              if (incoming.sender_id === userId && incoming.body) {
+                const withoutOptimisticDupes = current.filter(
+                  (item) =>
+                    !(
+                      item.sender_id === userId &&
+                      item.body === incoming.body &&
+                      item.id !== incoming.id &&
+                      !item.file_url
+                    ),
+                );
+                if (withoutOptimisticDupes.length !== current.length) {
+                  next = withoutOptimisticDupes;
+                }
+              }
+
               return filterMessagesByClearedAt(
-                [...current, incoming],
+                [...next, incoming],
                 clearedAt,
               );
             });
@@ -2344,90 +2691,18 @@ export default function ChatApp() {
     inputRef.current?.focus();
   }
 
-  useEffect(() => {
-    if (!toolsPanelOpen || !userId) return;
-
-    let cancelled = false;
-
-    async function loadToolPrograms() {
-      setToolProgramsLoading(true);
-
-      let blocksQuery = supabase
-        .from("program_blocks")
-        .select("id, title, athlete_id")
-        .order("title", { ascending: true });
-
-      if (!isCoachLikeRole(userRole)) {
-        blocksQuery = blocksQuery.eq("athlete_id", userId);
-      }
-
-      const { data: blocks, error } = await blocksQuery;
-
-      if (cancelled) return;
-
-      if (error || !blocks) {
-        setToolPrograms([]);
-        setToolProgramsLoading(false);
-        return;
-      }
-
-      const athleteIds = Array.from(
-        new Set(
-          blocks
-            .map((block) => block.athlete_id)
-            .filter((id): id is string => Boolean(id)),
-        ),
-      );
-
-      let athleteNames: Record<string, string> = {};
-
-      if (athleteIds.length > 0) {
-        const { data: profiles } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .in("id", athleteIds);
-
-        athleteNames = Object.fromEntries(
-          (profiles || []).map((profile) => [
-            profile.id,
-            profile.full_name || "Atleet",
-          ]),
-        );
-      }
-
-      if (cancelled) return;
-
-      setToolPrograms(
-        blocks.map((block) => ({
-          id: block.id,
-          title: block.title || "Programma",
-          athleteName: block.athlete_id
-            ? athleteNames[block.athlete_id]
-            : undefined,
-        })),
-      );
-      setToolProgramsLoading(false);
-    }
-
-    void loadToolPrograms();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [toolsPanelOpen, userId, userRole]);
-
   return (
     <AppShell
-      className="fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] overflow-hidden bg-gray-100 lg:relative lg:inset-auto lg:min-h-screen"
+      className="chat-shell fixed inset-0 z-40 h-[100dvh] max-h-[100dvh] overflow-hidden lg:relative lg:inset-auto lg:min-h-screen"
       contentClassName="flex h-full min-h-0 flex-1 overflow-hidden p-0 pb-0"
     >
       <div
-        className={`flex h-full min-h-0 w-full overflow-hidden bg-gray-100 ${
+        className={`flex h-full min-h-0 w-full overflow-hidden ${
           sidePanelOpen ? "flex-row" : ""
         }`}
       >
         <aside
-          className={`flex h-full min-h-0 w-full flex-col border-r border-gray-200 bg-white md:w-[420px] md:max-w-[40%] ${
+          className={`chat-list-panel flex h-full min-h-0 w-full flex-col overflow-x-hidden border-r md:w-[420px] md:max-w-[40%] ${
             sidePanelOpen
               ? "hidden"
               : showConversationOnMobile
@@ -2435,9 +2710,22 @@ export default function ChatApp() {
                 : "flex"
           }`}
         >
-          <div className="shrink-0 border-b border-gray-200 bg-white px-4 pb-3 pt-5">
-            <div className="mb-4 flex items-center justify-between gap-3">
-              <h1 className="text-2xl font-bold text-black">Chats</h1>
+          <div className="shrink-0 border-b border-app-border bg-app-surface px-3 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-4 md:pt-4">
+            <div className="mb-3 flex items-center justify-between gap-2 md:mb-4 md:gap-3">
+              <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
+                <button
+                  type="button"
+                  onClick={() => router.push(getChatEntryReturn())}
+                  className="page-back-btn page-back-btn--topbar app-focus-ring"
+                  aria-label="Terug naar vorige pagina"
+                >
+                  <ArrowLeft className="h-4 w-4 shrink-0" />
+                  <span className="hidden sm:inline">Terug</span>
+                </button>
+                <h1 className="text-lg font-semibold tracking-tight text-app-text md:text-xl">
+                  Chats
+                </h1>
+              </div>
               <div className="flex items-center gap-2">
                 {isCoachLikeRole(userRole) && (
                   <>
@@ -2451,14 +2739,14 @@ export default function ChatApp() {
                     <button
                       type="button"
                       onClick={() => setCreateGroupOpen(true)}
-                      className="app-focus-ring flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 text-black transition hover:bg-gray-200"
+                      className="ui-icon-btn app-focus-ring"
                       aria-label="Nieuwe groep"
                     >
                       <Users className="h-5 w-5" />
                     </button>
                   </>
                 )}
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-black text-sm font-semibold text-white">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-app-accent text-sm font-semibold text-white">
                   {getInitials(userName)}
                 </div>
               </div>
@@ -2469,9 +2757,36 @@ export default function ChatApp() {
               onChange={setSearchQuery}
               placeholder="Zoek op naam of bericht"
             />
+
+            {searchQuery.trim().length < 2 ? (
+              <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-none">
+                <button
+                  type="button"
+                  onClick={() => setListFilter("all")}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                    listFilter === "all"
+                      ? "bg-app-accent text-white"
+                      : "bg-app-surface-muted text-app-muted hover:bg-app-surface-hover"
+                  }`}
+                >
+                  Alle
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setListFilter("unread")}
+                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                    listFilter === "unread"
+                      ? "bg-app-accent text-white"
+                      : "bg-app-surface-muted text-app-muted hover:bg-app-surface-hover"
+                  }`}
+                >
+                  Ongelezen
+                </button>
+              </div>
+            ) : null}
           </div>
 
-          <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain bg-white">
+          <div className="chat-list-scroll">
             {bootstrapping && (
               <div className="px-4 py-4">
                 <SkeletonList rows={6} />
@@ -2486,13 +2801,13 @@ export default function ChatApp() {
             {searchQuery.trim().length > 0 &&
               !bootstrapping &&
               filteredEntries.length === 0 && (
-                <p className="px-4 py-4 text-sm text-gray-500">Geen chats gevonden.</p>
+                <p className="px-4 py-4 text-sm text-app-muted">Geen chats gevonden.</p>
               )}
 
             {searchQuery.trim().length >= 2 && (
               <>
                 {globalSearchLoading && (
-                  <p className="px-4 py-4 text-sm text-gray-500">Berichten zoeken...</p>
+                  <p className="px-4 py-4 text-sm text-app-muted">Berichten zoeken...</p>
                 )}
 
                 {!globalSearchLoading &&
@@ -2510,17 +2825,17 @@ export default function ChatApp() {
                           scrollToMessage(result.message.id);
                         }, 350);
                       }}
-                      className="flex w-full flex-col gap-1 border-b border-gray-100 px-4 py-3 text-left hover:bg-gray-50"
+                      className="flex w-full flex-col gap-1 border-b border-app-border px-4 py-3 text-left hover:bg-app-surface-muted"
                     >
                       <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-sm font-semibold text-black">
+                        <p className="truncate text-sm font-semibold text-app-text">
                           {result.chatTitle}
                         </p>
-                        <span className="shrink-0 text-xs text-gray-400">
+                        <span className="shrink-0 text-xs text-app-subtle">
                           {formatChatListTime(result.message.created_at)}
                         </span>
                       </div>
-                      <p className="line-clamp-2 text-sm text-gray-600">
+                      <p className="line-clamp-2 text-sm text-app-muted">
                         <HighlightedText
                           text={getSearchableMessageText(result.message)}
                           query={searchQuery}
@@ -2530,7 +2845,7 @@ export default function ChatApp() {
                   ))}
 
                 {!globalSearchLoading && globalSearchResults.length === 0 && (
-                  <p className="px-4 py-4 text-sm text-gray-500">
+                  <p className="px-4 py-4 text-sm text-app-muted">
                     Geen berichten gevonden.
                   </p>
                 )}
@@ -2538,8 +2853,10 @@ export default function ChatApp() {
             )}
 
             {searchQuery.trim().length < 2 && !bootstrapping && filteredEntries.length === 0 && (
-              <p className="px-4 py-6 text-sm text-gray-500">
-                Geen chats gevonden.
+              <p className="px-4 py-6 text-sm text-app-muted">
+                {listFilter === "unread"
+                  ? "Geen ongelezen chats."
+                  : "Geen chats gevonden."}
               </p>
             )}
 
@@ -2637,18 +2954,13 @@ export default function ChatApp() {
           <ChatTodoPanel coachId={userId} onClose={closeTodoPanel} />
         )}
 
-        {agendaPanelOpen && userId && activeUserId && (
-          <ChatAgendaPanel
-            coachId={userId}
-            athleteId={activeUserId}
-            athleteName={activeAthleteName}
-            onClose={closeAgendaPanel}
-          />
-        )}
+        {agendaPanelOpen && userId ? (
+          <ChatCoachAgendaOverviewPanel coachId={userId} onClose={closeAgendaPanel} />
+        ) : null}
 
         <section
           ref={conversationPanelRef}
-          className={`flex h-full min-h-0 flex-col overflow-hidden bg-gray-100 overscroll-x-none ${
+          className={`chat-side-panel flex h-full min-h-0 flex-col overflow-hidden overscroll-x-none ${
             sidePanelOpen
               ? "min-w-0 flex-1"
               : `flex-1 md:relative ${
@@ -2662,7 +2974,11 @@ export default function ChatApp() {
             <EmptyState
               icon="chat"
               title="Limitless Chat"
-              description="Stuur berichten naar je coach, atleten of groepen. Selecteer een chat links om te beginnen."
+              description={
+                userRole === "atleet"
+                  ? "Tik op je coach om te starten. Swipe of gebruik /programma, /bw en /ai in een chat."
+                  : "Selecteer een atleet of groep om te beginnen. Gebruik slash-commando's voor snelle coaching-tools."
+              }
             />
           ) : showGroupInfo && activeGroupId ? (
             <GroupInfoPanel
@@ -2680,36 +2996,36 @@ export default function ChatApp() {
               }}
             />
           ) : (
-            <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
-              <header className="flex shrink-0 items-center gap-3 border-b border-gray-200 bg-white px-3 py-3 md:px-4">
+            <div className="chat-conversation-panel flex min-h-0 flex-1 flex-col overflow-hidden">
+              <header className="chat-conversation-header flex shrink-0 items-center gap-1.5 border-b px-3 py-1.5 md:gap-3 md:px-4 md:py-2">
                 <button
                   type="button"
                   onClick={closeConversation}
-                  className="rounded-xl p-2 hover:bg-gray-100 md:hidden"
+                  className="ui-icon-btn md:hidden app-focus-ring"
                   aria-label="Terug naar chats"
                 >
-                  <ArrowLeft className="h-5 w-5 text-black" />
+                  <ArrowLeft className="h-4 w-4" />
                 </button>
 
                 {activeGroupId ? (
                   <button
                     type="button"
                     onClick={() => openGroupInfo(activeGroupId)}
-                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                    className="flex min-w-0 flex-1 items-center gap-2 text-left"
                   >
                     <ChatAvatar
                       name={activeGroup?.name}
                       imageUrl={activeGroup?.avatar_url}
-                      className="h-10 w-10"
-                      fallbackClassName="bg-gray-700 text-white"
+                      className="h-8 w-8"
+                      fallbackClassName="bg-app-surface-elevated text-white"
                     >
-                      <Users className="h-5 w-5" />
+                      <Users className="h-4 w-4" />
                     </ChatAvatar>
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-lg font-bold text-black">
+                      <h2 className="truncate text-sm font-bold text-app-text md:text-base">
                         {conversationTitle}
                       </h2>
-                      <p className="truncate text-sm text-gray-500">
+                      <p className="truncate text-xs text-app-muted">
                         {groupMembersSubtitle || `${Object.keys(groupMemberNames).length} deelnemers`}
                       </p>
                     </div>
@@ -2718,23 +3034,23 @@ export default function ChatApp() {
                   <Link
                     href={profileLink}
                     onClick={() => saveChatReturnRoute(`/chat/${activeUserId}`)}
-                    className="flex min-w-0 flex-1 items-center gap-3"
+                    className="flex min-w-0 flex-1 items-center gap-2"
                   >
                     <ChatAvatar
                       name={activeContact?.full_name}
                       imageUrl={activeContact?.avatar_url}
-                      className="h-10 w-10"
+                      className="h-8 w-8"
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate text-lg font-bold text-black">
+                      <h2 className="truncate text-sm font-bold text-app-text md:text-base">
                         {conversationTitle}
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-xs text-app-muted">
                         {userRole === "coach" ? (
                           <>
                             Atleet
                             {athleteProgramLabel ? (
-                              <span className="text-gray-400">
+                              <span className="text-app-subtle">
                                 {" "}
                                 · {athleteProgramLabel}
                               </span>
@@ -2751,21 +3067,21 @@ export default function ChatApp() {
                 <button
                   type="button"
                   onClick={() => setMessageSearchOpen((current) => !current)}
-                  className="rounded-xl p-2 hover:bg-gray-100"
+                  className="ui-icon-btn app-focus-ring"
                   aria-label="Zoek in chat"
                 >
-                  <Search className="h-5 w-5 text-black" />
+                  <Search className="h-5 w-5" />
                 </button>
 
                 {!activeGroupId && activeUserId ? (
                   <button
                     type="button"
                     onClick={() => setMessage("/ai")}
-                    className="rounded-xl p-2 hover:bg-purple-50"
+                    className="chat-ai-btn flex h-9 w-9 items-center justify-center app-focus-ring"
                     aria-label="AI-assistent openen"
                     title="AI-assistent"
                   >
-                    <Sparkles className="h-5 w-5 text-purple-600" />
+                    <Sparkles className="h-4 w-4" />
                   </button>
                 ) : null}
 
@@ -2793,33 +3109,37 @@ export default function ChatApp() {
                   messages={messages}
                   onSelectMessage={(selectedMessage) => {
                     setMessageSearchOpen(false);
+                    setSearchHighlightQuery(messageSearchQuery.trim());
                     setMessageSearchQuery("");
                     window.setTimeout(() => {
                       scrollToMessage(selectedMessage.id);
                     }, 50);
+                    window.setTimeout(() => {
+                      setSearchHighlightQuery("");
+                    }, 4000);
                   }}
                 />
               ) : (
                 <>
               {!canSendMessages && activeGroupId && (
-                <div className="shrink-0 border-b border-amber-200 bg-amber-50 px-4 py-2 text-sm text-amber-800">
+                <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
                   Alleen beheerders kunnen berichten sturen in deze groep.
                 </div>
               )}
 
               {pinnedMessage && (
-                <div className="sticky top-0 z-10 flex shrink-0 items-center gap-2 border-b border-emerald-200 bg-emerald-50 px-3 py-2.5 md:px-4">
+                <div className="chat-pinned-bar">
                   <button
                     type="button"
                     onClick={() => scrollToMessage(pinnedMessage.id)}
                     className="flex min-w-0 flex-1 items-center gap-3 text-left hover:opacity-80"
                   >
-                    <Pin className="h-4 w-4 shrink-0 text-emerald-600" />
+                    <Pin className="h-4 w-4 shrink-0 text-emerald-400" />
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs font-semibold text-emerald-700">
+                      <p className="text-xs font-semibold text-app-accent">
                         Vastgezet bericht
                       </p>
-                      <p className="truncate text-sm text-gray-700">
+                      <p className="truncate text-sm text-app-muted">
                         {getReplyText(pinnedMessage)}
                       </p>
                     </div>
@@ -2827,7 +3147,7 @@ export default function ChatApp() {
                   <button
                     type="button"
                     onClick={() => void handlePinMessage(pinnedMessage)}
-                    className="shrink-0 p-1 text-gray-500 transition hover:text-black"
+                    className="shrink-0 p-1 text-app-muted transition hover:text-app-text"
                     aria-label="Vastgezet bericht losmaken"
                   >
                     <X className="h-4 w-4" />
@@ -2839,29 +3159,43 @@ export default function ChatApp() {
                 ref={messagesContainerRef}
                 data-chat-scroll="true"
                 onScroll={handleMessagesScroll}
-                className={`min-h-0 flex-1 overflow-y-auto overscroll-contain bg-gray-100 px-3 py-4 transition-opacity duration-150 md:px-8 ${
+                className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain chat-messages-scroll px-3 py-3 transition-opacity duration-150 md:px-6 ${
                   switchingConversation ? "opacity-70" : "opacity-100"
                 }`}
               >
                 {switchingConversation && messages.length === 0 && (
-                  <p className="text-sm text-gray-500">Chat laden...</p>
+                  <p className="text-sm text-app-muted">Chat laden...</p>
                 )}
 
                 {visibleMessages.map((msg, index) => {
                   const isMine = msg.sender_id === userId;
                   const previous = visibleMessages[index - 1];
+                  const next = visibleMessages[index + 1];
                   const showDate = shouldShowDateDivider(msg, previous);
+                  const groupedWithPrevious = shouldGroupWithPrevious(msg, previous);
+                  const groupedWithNext = shouldGroupWithPrevious(next, msg);
+                  const showTimestamp = shouldShowMessageTimestamp(msg, next);
+                  const showSenderName =
+                    Boolean(activeGroupId) && !isMine && !groupedWithPrevious;
+                  const bubbleRadiusClass = getMessageBubbleRadiusClass(
+                    isMine,
+                    groupedWithPrevious,
+                    groupedWithNext,
+                  );
                   const exerciseVideo = parseExerciseVideoMessage(msg.body);
                   const pollMessage = parsePollMessage(msg.body);
                   const aiAssistantMessage = parseAiAssistantMessage(msg.body);
                   const inlineTimestamp = shouldUseInlineTimestamp(msg, exerciseVideo);
+                  const highlightSearchMatch =
+                    Boolean(searchHighlightQuery) &&
+                    messageMatchesQuery(msg, searchHighlightQuery);
 
                   if (aiAssistantMessage) {
                     return (
                       <div key={msg.id} id={`chat-message-${msg.id}`} className="mb-3">
                         {showDate && (
                           <div className="my-4 flex justify-center">
-                            <span className="rounded-xl bg-white px-3 py-1 text-xs font-semibold text-gray-500 shadow-sm">
+                            <span className="chat-date-divider">
                               {formatDateDivider(msg.created_at)}
                             </span>
                           </div>
@@ -2870,7 +3204,7 @@ export default function ChatApp() {
                           question={aiAssistantMessage.question}
                           answer={aiAssistantMessage.answer}
                         />
-                        <p className="mt-1 text-center text-[11px] text-gray-400">
+                        <p className="mt-1 text-center text-[11px] text-app-subtle">
                           {formatMessageTime(msg.created_at)}
                           {isMine && activeUserId && !activeGroupId ? (
                             <span className="ml-1 inline-flex align-middle">
@@ -2891,46 +3225,65 @@ export default function ChatApp() {
                       key={msg.id}
                       id={`chat-message-${msg.id}`}
                       className={
-                        highlightedMessageId === msg.id
-                          ? "rounded-2xl bg-emerald-100/70 transition-colors"
+                        highlightedMessageId === msg.id ||
+                        highlightSearchMatch
+                          ? "rounded-2xl bg-emerald-500/10 ring-1 ring-emerald-500/30 transition-colors"
                           : ""
                       }
                     >
                       {showDate && (
                         <div className="my-4 flex justify-center">
-                          <span className="rounded-xl bg-white px-3 py-1 text-xs font-semibold text-gray-500 shadow-sm">
+                          <span className="chat-date-divider">
                             {formatDateDivider(msg.created_at)}
                           </span>
                         </div>
                       )}
 
                       <div
-                        className={`mb-1 flex w-full ${isMine ? "justify-end" : "justify-start"}`}
+                        className={`flex w-full max-w-full overflow-hidden ${groupedWithPrevious ? "mb-0.5" : "mb-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
                         onDoubleClick={(event) => {
                           event.stopPropagation();
                           handleReply(msg);
                         }}
                       >
-                        <div
-                          className={`flex max-w-[82%] flex-col md:max-w-[65%] ${
-                            isMine ? "items-end" : "items-start"
-                          }`}
+                        <ChatSwipeReplyRow
+                          onReply={() => handleReply(msg)}
+                          onSwipeStart={cancelMessageLongPress}
                         >
-                          {activeGroupId && (
-                            <span className="mb-1 px-1 text-xs font-semibold text-gray-500">
-                              {isMine
-                                ? "Jij"
-                                : groupMemberNames[msg.sender_id] || "Onbekend"}
-                            </span>
-                          )}
-
                           <div
-                            className={`group relative px-4 py-3 shadow-sm ${
-                              isMine
-                                ? "rounded-2xl rounded-br-md bg-black text-white"
-                                : "rounded-2xl rounded-bl-md bg-white text-black"
+                            className={`flex max-w-[82%] flex-col md:max-w-[65%] ${
+                              isMine ? "items-end" : "items-start"
                             }`}
                           >
+                            {showSenderName ? (
+                              <span className="mb-0.5 px-1 text-[11px] font-semibold text-app-muted">
+                                {groupMemberNames[msg.sender_id] || "Onbekend"}
+                              </span>
+                            ) : null}
+
+                            <div
+                              className={`group relative w-fit max-w-full touch-manipulation select-none px-2.5 py-1.5 shadow-sm md:select-text ${
+                                isMine
+                                  ? "chat-bubble-own"
+                                  : "chat-bubble-other"
+                              } ${bubbleRadiusClass}`}
+                              onTouchStart={(event) =>
+                                startMessageLongPress(msg, event)
+                              }
+                              onTouchMove={handleMessageTouchMove}
+                              onTouchEnd={(event) =>
+                                handleMessageTouchEnd(msg, event)
+                              }
+                              onTouchCancel={cancelMessageLongPress}
+                              onContextMenu={(event) => {
+                                if (
+                                  typeof window !== "undefined" &&
+                                  window.innerWidth < 768
+                                ) {
+                                  event.preventDefault();
+                                }
+                              }}
+                            >
                           <ChatMessageMenuTrigger
                             isMine={isMine}
                             onOpen={(event) => openMessageMenu(msg, event)}
@@ -2940,19 +3293,19 @@ export default function ChatApp() {
                               className={`mb-2 rounded-xl border-l-4 px-3 py-2 ${
                                 isMine
                                   ? "border-white/70 bg-white/10"
-                                  : "border-black bg-gray-50"
+                                  : "border-app-border bg-app-surface-muted"
                               }`}
                             >
                               <p
                                 className={`text-xs font-semibold ${
-                                  isMine ? "text-white/80" : "text-black"
+                                  isMine ? "text-white/80" : "text-app-text"
                                 }`}
                               >
                                 {getReplySenderLabel(msg.reply_to_sender_id)}
                               </p>
                               <p
                                 className={`truncate text-sm ${
-                                  isMine ? "text-white/75" : "text-gray-600"
+                                  isMine ? "text-white/75" : "text-app-muted"
                                 }`}
                               >
                                 {msg.reply_to_body}
@@ -2976,12 +3329,43 @@ export default function ChatApp() {
                                 videoUrl={msg.file_url}
                                 payload={exerciseVideo}
                                 isMine={isMine}
+                                coachFeedbackEnabled={
+                                  isCoachLikeRole(userRole) && !isMine
+                                }
+                                onSendFeedback={async ({ text, imageFile }) => {
+                                  await sendCoachVideoFeedback(text, imageFile, msg);
+                                }}
                               />
                             </div>
                           )}
 
                           {msg.file_url && msg.file_type === "video" &&
-                            !exerciseVideo && (
+                            !exerciseVideo &&
+                            (isCoachLikeRole(userRole) && !isMine ? (
+                              <button
+                                type="button"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setCoachVideoReview({
+                                    url: msg.file_url!,
+                                    title: "Video feedback",
+                                    replyMessage: msg,
+                                  });
+                                }}
+                                className="relative mb-2 block w-full overflow-hidden rounded-[16px] text-left"
+                              >
+                                <video
+                                  src={msg.file_url}
+                                  preload="metadata"
+                                  playsInline
+                                  onLoadedData={handleMediaLoaded}
+                                  className="max-h-72 w-full object-cover"
+                                />
+                                <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">
+                                  Open met feedback
+                                </span>
+                              </button>
+                            ) : (
                               <video
                                 src={msg.file_url}
                                 controls
@@ -2989,9 +3373,9 @@ export default function ChatApp() {
                                 playsInline
                                 onLoadedData={handleMediaLoaded}
                                 onClick={(event) => event.stopPropagation()}
-                                className="mb-2 max-h-72 w-full rounded-xl"
+                                className="mb-2 max-h-72 w-full rounded-[16px]"
                               />
-                            )}
+                            ))}
 
                           {msg.file_url && msg.file_type === "audio" && (
                             <div onClick={(event) => event.stopPropagation()}>
@@ -3026,80 +3410,97 @@ export default function ChatApp() {
                           )}
 
                           {msg.body && !exerciseVideo && !pollMessage && (
-                            inlineTimestamp ? (
+                            inlineTimestamp && showTimestamp ? (
                               <div
                                 className={`flex flex-wrap items-end gap-x-2 gap-y-1 ${
                                   isMine ? "justify-end" : "justify-start"
                                 }`}
                               >
-                                <p className="whitespace-pre-wrap break-words text-[14px] leading-6">
-                                  {msg.body}
-                                </p>
+                                {highlightSearchMatch ? (
+                                  <HighlightedText
+                                    text={msg.body}
+                                    query={searchHighlightQuery}
+                                    className="whitespace-pre-wrap break-words text-[13px] leading-5"
+                                  />
+                                ) : (
+                                  <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
+                                    {msg.body}
+                                  </p>
+                                )}
                                 <div
                                   className={`flex shrink-0 items-center gap-1 ${
-                                    isMine ? "text-white/70" : "text-gray-400"
+                                    isMine ? "text-white/70" : "text-app-subtle"
                                   }`}
                                 >
-                                  <span className="text-[11px]">
+                                  <span className="text-[10px] tabular-nums">
                                     {formatMessageTime(msg.created_at)}
                                   </span>
                                   {isMine &&
                                     !activeGroupId &&
                                     (isOutgoingMessageRead(msg) ? (
-                                      <CheckCheck className="h-3.5 w-3.5" />
+                                      <CheckCheck className="h-3 w-3" />
                                     ) : (
-                                      <Check className="h-3.5 w-3.5" />
+                                      <Check className="h-3 w-3" />
                                     ))}
                                 </div>
                               </div>
+                            ) : highlightSearchMatch ? (
+                              <HighlightedText
+                                text={msg.body}
+                                query={searchHighlightQuery}
+                                className="whitespace-pre-wrap break-words text-[13px] leading-5"
+                              />
                             ) : (
-                              <p className="whitespace-pre-wrap break-words text-[14px] leading-6">
+                              <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
                                 {msg.body}
                               </p>
                             )
                           )}
 
                           {!msg.body && !msg.file_url && msg.file_type && (
-                            <p className="text-[14px] italic opacity-80">
+                            <p className="text-[13px] italic opacity-80">
                               {getReplyText(msg)}
                             </p>
                           )}
+                            </div>
 
-                          {!inlineTimestamp && (
-                          <div
-                            className={`mt-1 flex items-center justify-end gap-1 ${
-                              isMine ? "text-white/70" : "text-gray-400"
-                            }`}
-                          >
-                            <span className="text-[11px]">
-                              {formatMessageTime(msg.created_at)}
-                            </span>
-                            {isMine &&
-                              !activeGroupId &&
-                              (isOutgoingMessageRead(msg) ? (
-                                <CheckCheck className="h-3.5 w-3.5" />
-                              ) : (
-                                <Check className="h-3.5 w-3.5" />
-                              ))}
+                            {showTimestamp && !inlineTimestamp ? (
+                              <div
+                                className={`mt-0.5 flex items-center gap-1 px-1 ${
+                                  isMine
+                                    ? "justify-end text-app-subtle"
+                                    : "justify-start text-app-subtle"
+                                }`}
+                              >
+                                <span className="text-[10px] tabular-nums">
+                                  {formatMessageTime(msg.created_at)}
+                                </span>
+                                {isMine &&
+                                  !activeGroupId &&
+                                  (isOutgoingMessageRead(msg) ? (
+                                    <CheckCheck className="h-3 w-3" />
+                                  ) : (
+                                    <Check className="h-3 w-3" />
+                                  ))}
+                              </div>
+                            ) : null}
+
+                            <ChatMessageReactions
+                              reactions={(messageReactions[msg.id] || []).map(
+                                (reaction) => ({
+                                  ...reaction,
+                                  user_name: resolveReactionUserName(
+                                    reaction.user_id,
+                                  ),
+                                }),
+                              )}
+                              currentUserId={userId}
+                              onToggle={(emoji) =>
+                                void handleMessageReaction(msg.id, emoji)
+                              }
+                            />
                           </div>
-                          )}
-                        </div>
-
-                          <ChatMessageReactions
-                            reactions={(messageReactions[msg.id] || []).map(
-                              (reaction) => ({
-                                ...reaction,
-                                user_name: resolveReactionUserName(
-                                  reaction.user_id,
-                                ),
-                              }),
-                            )}
-                            currentUserId={userId}
-                            onToggle={(emoji) =>
-                              void handleMessageReaction(msg.id, emoji)
-                            }
-                          />
-                        </div>
+                        </ChatSwipeReplyRow>
                       </div>
                     </div>
                   );
@@ -3114,22 +3515,22 @@ export default function ChatApp() {
               ) : null}
 
               {replyingTo && (
-                <div className="flex shrink-0 items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-3">
-                  <div className="min-w-0 border-l-4 border-black pl-3">
-                    <p className="text-sm font-semibold text-black">
+                <div className="chat-reply-bar">
+                  <div className="min-w-0 border-l-4 border-app-accent pl-3">
+                    <p className="text-sm font-semibold text-app-text">
                       Antwoorden op{" "}
                       {replyingTo.sender_id === userId
                         ? "jezelf"
                         : getReplySenderLabel(replyingTo.sender_id)}
                     </p>
-                    <p className="truncate text-sm text-gray-600">
+                    <p className="truncate text-sm text-app-muted">
                       {getReplyText(replyingTo)}
                     </p>
                   </div>
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
-                    className="rounded-xl p-2 text-gray-500 hover:bg-gray-100"
+                    className="rounded-xl p-2 text-app-muted hover:bg-app-surface-hover"
                     aria-label="Antwoord annuleren"
                   >
                     <X className="h-4 w-4" />
@@ -3137,8 +3538,16 @@ export default function ChatApp() {
                 </div>
               )}
 
-              <footer className="shrink-0 border-t border-gray-200 bg-white px-3 pt-2 pb-[max(8px,env(safe-area-inset-bottom))] md:px-4 md:py-3">
-                <div className="relative flex items-end gap-2 rounded-2xl border border-gray-200 bg-white px-3 py-2">
+              <footer
+                className="chat-compose-footer shrink-0 px-3 pt-2 md:px-4 md:py-2.5"
+                style={{
+                  paddingBottom:
+                    keyboardInset > 0
+                      ? `${keyboardInset + 8}px`
+                      : "max(8px, env(safe-area-inset-bottom))",
+                }}
+              >
+                <div className="chat-input-bar relative flex items-end gap-1.5 px-2.5 py-1.5 md:px-3">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -3152,7 +3561,7 @@ export default function ChatApp() {
                       type="button"
                       onClick={() => setAttachMenuOpen((current) => !current)}
                       disabled={!canSendMessages || uploadingMedia}
-                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Bijlage toevoegen"
                     >
                       <Plus className="h-5 w-5" />
@@ -3166,14 +3575,14 @@ export default function ChatApp() {
                           className="fixed inset-0 z-10"
                           onClick={() => setAttachMenuOpen(false)}
                         />
-                        <div className="absolute bottom-12 left-0 z-20 min-w-[180px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+                        <div className="chat-attach-menu">
                           <button
                             type="button"
                             onClick={() => {
                               setAttachMenuOpen(false);
                               fileInputRef.current?.click();
                             }}
-                            className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+                            className="chat-menu-item"
                           >
                             Foto of video
                           </button>
@@ -3184,7 +3593,7 @@ export default function ChatApp() {
                                 setAttachMenuOpen(false);
                                 setPollCreateOpen(true);
                               }}
-                              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+                              className="chat-menu-item"
                             >
                               Poll
                             </button>
@@ -3198,7 +3607,7 @@ export default function ChatApp() {
                     type="button"
                     onClick={() => setMediaCaptureOpen(true)}
                     disabled={!canSendMessages || uploadingMedia}
-                    className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
+                    className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
                     aria-label="Camera openen"
                   >
                     <Camera className="h-5 w-5" />
@@ -3209,14 +3618,14 @@ export default function ChatApp() {
                       type="button"
                       onClick={() => setPollCreateOpen(true)}
                       disabled={!canSendMessages || uploadingMedia}
-                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
+                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
                       aria-label="Poll maken"
                     >
                       <BarChart2 className="h-5 w-5" />
                     </button>
                   )}
 
-                  <div className="relative min-w-0 flex-1">
+                  <div className="relative min-w-0 flex-1 pl-1">
                     {slashCommandMenuOpen && (
                       <ChatSlashCommandMenu
                         commands={slashCommandSuggestions}
@@ -3310,8 +3719,6 @@ export default function ChatApp() {
                             closeTodoPanel();
                           } else if (agendaPanelOpen) {
                             closeAgendaPanel();
-                          } else {
-                            closeToolsPanel();
                           }
                           return;
                         }
@@ -3350,12 +3757,10 @@ export default function ChatApp() {
                                 ? "Todo geopend..."
                                 : agendaPanelOpen
                                   ? "Agenda geopend..."
-                              : toolsPanelOpen
-                                ? "Zoek in tools..."
                                 : "Typ een bericht"
                     }
                     disabled={!canSendMessages || uploadingMedia}
-                    className="max-h-32 min-h-[24px] w-full resize-none bg-transparent py-2 text-[15px] text-black outline-none placeholder:text-gray-400 disabled:opacity-60"
+                    className="chat-message-input disabled:opacity-60"
                   />
                   </div>
 
@@ -3364,7 +3769,7 @@ export default function ChatApp() {
                       type="button"
                       onClick={sendMessage}
                       disabled={uploadingMedia}
-                      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-black text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+                      className="chat-send-btn mb-0.5 flex h-9 w-9 shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
                       aria-label="Verstuur bericht"
                     >
                       <SendHorizontal className="h-4 w-4" />
@@ -3384,30 +3789,6 @@ export default function ChatApp() {
                 </>
               )}
                 </div>
-
-                {toolsPanelOpen && !sidePanelOpen && (
-                  <>
-                    <button
-                      type="button"
-                      className="fixed inset-0 z-[55] bg-black/20 md:hidden"
-                      onClick={closeToolsPanel}
-                      aria-label="Tools sluiten"
-                    />
-                    <div className="fixed inset-y-0 right-0 z-[60] flex max-w-[85vw] md:static md:max-w-none md:z-auto">
-                      <ChatToolsPanel
-                        query={toolsCommand.query}
-                        onQueryChange={handleToolsQueryChange}
-                        onClose={closeToolsPanel}
-                        onSelect={handleToolsSelect}
-                        userRole={userRole}
-                        contacts={contacts}
-                        groups={groups}
-                        programs={toolPrograms}
-                        loadingPrograms={toolProgramsLoading}
-                      />
-                    </div>
-                  </>
-                )}
               </div>
             </div>
           )}
@@ -3415,14 +3796,14 @@ export default function ChatApp() {
       </div>
 
       {createGroupOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-4 md:items-center">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+        <div className="chat-overlay flex items-end justify-center p-4 md:items-center">
+          <div className="chat-modal">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-black">Nieuwe groep</h2>
+              <h2 className="chat-modal-title">Nieuwe groep</h2>
               <button
                 type="button"
                 onClick={() => setCreateGroupOpen(false)}
-                className="rounded-full p-2 hover:bg-gray-100"
+                className="ui-icon-btn app-focus-ring"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3432,17 +3813,17 @@ export default function ChatApp() {
               value={newGroupName}
               onChange={(e) => setNewGroupName(e.target.value)}
               placeholder="Groepsnaam"
-              className="mb-4 w-full rounded-2xl border border-gray-200 px-4 py-3 text-black outline-none focus:ring-2 focus:ring-black"
+              className="chat-field mb-4"
             />
 
-            <div className="mb-4 max-h-56 overflow-y-auto rounded-2xl border border-gray-200">
+            <div className="mb-4 max-h-56 overflow-y-auto rounded-xl border border-app-border">
               {contacts.map((contact) => {
                 const checked = selectedGroupMemberIds.includes(contact.id);
 
                 return (
                   <label
                     key={contact.id}
-                    className="flex cursor-pointer items-center gap-3 border-b border-gray-100 px-4 py-3 last:border-b-0"
+                    className="flex cursor-pointer items-center gap-3 border-b border-app-border px-4 py-3 last:border-b-0"
                   >
                     <input
                       type="checkbox"
@@ -3455,7 +3836,7 @@ export default function ChatApp() {
                         )
                       }
                     />
-                    <span className="font-semibold text-black">
+                    <span className="font-semibold text-app-text">
                       {contact.full_name}
                     </span>
                   </label>
@@ -3467,7 +3848,7 @@ export default function ChatApp() {
               type="button"
               onClick={handleCreateGroup}
               disabled={creatingGroup}
-              className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-50"
+              className="app-btn-primary w-full disabled:opacity-50"
             >
               {creatingGroup ? "Groep maken..." : "Groep aanmaken"}
             </button>
@@ -3476,14 +3857,14 @@ export default function ChatApp() {
       )}
 
       {pollCreateOpen && (
-        <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-4 md:items-center">
-          <div className="w-full max-w-lg rounded-3xl bg-white p-5 shadow-2xl">
+        <div className="chat-overlay flex items-end justify-center p-4 md:items-center">
+          <div className="chat-modal">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-black">Poll maken</h2>
+              <h2 className="chat-modal-title">Poll maken</h2>
               <button
                 type="button"
                 onClick={() => setPollCreateOpen(false)}
-                className="rounded-full p-2 hover:bg-gray-100"
+                className="ui-icon-btn app-focus-ring"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -3493,7 +3874,7 @@ export default function ChatApp() {
               value={pollQuestion}
               onChange={(event) => setPollQuestion(event.target.value)}
               placeholder="Stel je vraag..."
-              className="mb-4 w-full rounded-2xl border border-gray-200 px-4 py-3 text-black outline-none focus:ring-2 focus:ring-black"
+              className="chat-field mb-4"
             />
 
             <div className="mb-4 space-y-2">
@@ -3511,7 +3892,7 @@ export default function ChatApp() {
                       )
                     }
                     placeholder={`Optie ${index + 1}`}
-                    className="w-full rounded-2xl border border-gray-200 px-4 py-3 text-black outline-none focus:ring-2 focus:ring-black"
+                    className="w-full rounded-2xl border border-app-border px-4 py-3 text-app-text outline-none focus:border-app-accent focus:shadow-[0_0_0_3px_var(--app-accent-muted)]"
                   />
                   {pollOptions.length > 2 && (
                     <button
@@ -3521,7 +3902,7 @@ export default function ChatApp() {
                           current.filter((_, optionIndex) => optionIndex !== index),
                         )
                       }
-                      className="rounded-2xl border border-gray-200 px-3 text-sm font-semibold"
+                      className="rounded-2xl border border-app-border px-3 text-sm font-semibold"
                     >
                       ×
                     </button>
@@ -3538,7 +3919,7 @@ export default function ChatApp() {
                     current.length < 6 ? [...current, ""] : current,
                   )
                 }
-                className="mb-4 text-sm font-semibold text-black underline"
+                className="mb-4 text-sm font-semibold text-app-text underline"
               >
                 Optie toevoegen
               </button>
@@ -3548,7 +3929,7 @@ export default function ChatApp() {
               type="button"
               onClick={() => void sendPoll()}
               disabled={creatingPoll}
-              className="w-full rounded-2xl bg-black px-4 py-3 font-semibold text-white disabled:opacity-50"
+              className="app-btn-primary w-full disabled:opacity-50"
             >
               {creatingPoll ? "Poll plaatsen..." : "Poll plaatsen"}
             </button>
@@ -3637,6 +4018,23 @@ export default function ChatApp() {
         <ChatBroadcastModal
           coachId={userId}
           onClose={() => setBroadcastOpen(false)}
+        />
+      ) : null}
+
+      {coachVideoReview ? (
+        <ChatVideoCoachFeedbackViewer
+          videoUrl={coachVideoReview.url}
+          title={coachVideoReview.title}
+          subtitle={coachVideoReview.subtitle}
+          onClose={() => setCoachVideoReview(null)}
+          onSendFeedback={async ({ text, imageFile }) => {
+            await sendCoachVideoFeedback(
+              text,
+              imageFile,
+              coachVideoReview.replyMessage,
+            );
+            setCoachVideoReview(null);
+          }}
         />
       ) : null}
     </AppShell>

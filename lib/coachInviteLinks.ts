@@ -1,3 +1,4 @@
+import { getAppOrigin } from "@/lib/appUrl";
 import { supabase } from "@/lib/supabaseClient";
 
 export type CoachInviteLink = {
@@ -8,6 +9,7 @@ export type CoachInviteLink = {
   active: boolean;
   created_at: string;
   expires_at: string | null;
+  requires_intake?: boolean;
 };
 
 const INVITE_VALID_DAYS = 4;
@@ -34,12 +36,7 @@ export function formatInviteExpiry(link: Pick<CoachInviteLink, "expires_at" | "c
 }
 
 export function buildCoachInviteUrl(token: string) {
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://coaching-app-tan.vercel.app";
-
-  return `${origin}/signup?coach=${token}`;
+  return `${getAppOrigin()}/signup?coach=${token}`;
 }
 
 export async function loadCoachInviteLinks(coachId: string) {
@@ -60,7 +57,10 @@ export async function loadCoachInviteLinks(coachId: string) {
   );
 }
 
-export async function createCoachInviteLink(coachId: string, label?: string) {
+export async function createCoachInviteLink(
+  coachId: string,
+  options?: { label?: string; requiresIntake?: boolean },
+) {
   const token = crypto.randomUUID().replace(/-/g, "");
 
   return supabase
@@ -68,8 +68,9 @@ export async function createCoachInviteLink(coachId: string, label?: string) {
     .insert({
       coach_id: coachId,
       token,
-      label: label?.trim() || null,
+      label: options?.label?.trim() || null,
       active: true,
+      requires_intake: options?.requiresIntake !== false,
     })
     .select("*")
     .single();

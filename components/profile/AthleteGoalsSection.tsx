@@ -18,6 +18,7 @@ import {
   loadAthleteGoals,
   type AthleteGoal,
 } from "@/lib/athleteGoals";
+import { loadBodyweightGoal } from "@/lib/bodyweightGoal";
 
 type AthleteGoalsSectionProps = {
   athleteId: string;
@@ -37,16 +38,21 @@ export default function AthleteGoalsSection({
   const [targetDate, setTargetDate] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [bwGoalKg, setBwGoalKg] = useState<number | null>(null);
+  const [bwGoalDate, setBwGoalDate] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       setLoading(true);
-      const [goalRows, maxRows] = await Promise.all([
+      const [goalRows, maxRows, bwGoal] = await Promise.all([
         loadAthleteGoals(athleteId),
         loadAthleteCurrentMaxes(athleteId),
+        loadBodyweightGoal(athleteId),
       ]);
       setGoals(goalRows);
       setMaxes(maxRows);
+      setBwGoalKg(bwGoal.kg);
+      setBwGoalDate(bwGoal.date);
       setLoading(false);
     }
 
@@ -93,6 +99,12 @@ export default function AthleteGoalsSection({
         <p className="mt-1 text-sm text-app-muted">
           Stel liftdoelen met streefgewicht en datum. Voortgang t.o.v. current maxes.
         </p>
+        {bwGoalKg !== null && bwGoalDate ? (
+          <p className="mt-2 text-sm text-app-text">
+            Bodyweight doel: <strong>{bwGoalKg} kg</strong> op{" "}
+            {new Date(bwGoalDate).toLocaleDateString("nl-NL")} (ingesteld in Data)
+          </p>
+        ) : null}
       </div>
 
       {canEdit ? (

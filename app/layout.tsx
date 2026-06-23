@@ -2,9 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import IntakeGate from "@/components/IntakeGate";
 import { AuthProvider } from "@/components/AuthProvider";
+import { ConfirmProvider } from "@/components/ui/ConfirmProvider";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { THEME_STORAGE_KEY } from "@/lib/theme";
 import "./globals.css";
+import "@/styles/mobile-shell.css";
+import "@/styles/chat-mobile.css";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -26,12 +29,12 @@ export const viewport: Viewport = {
   initialScale: 1,
   viewportFit: "cover",
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f4f6" },
-    { media: "(prefers-color-scheme: dark)", color: "#09090f" },
+    { media: "(prefers-color-scheme: light)", color: "#fafafa" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
   ],
 };
 
-const themeInitScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t==="dark"){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}else{document.documentElement.classList.remove("dark");document.documentElement.style.colorScheme="light";}}catch(e){}})();`;
+const themeInitScript = `(function(){try{var t=localStorage.getItem("${THEME_STORAGE_KEY}");if(t!=="light"){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}else{document.documentElement.classList.remove("dark");document.documentElement.style.colorScheme="light";}}catch(e){document.documentElement.classList.add("dark");document.documentElement.style.colorScheme="dark";}})();`;
 
 export default function RootLayout({
   children,
@@ -47,10 +50,12 @@ export default function RootLayout({
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-full flex flex-col bg-app-bg text-app-text">
+      <body className="min-h-full flex flex-col bg-transparent text-app-text">
         <ThemeProvider>
           <AuthProvider>
-            <IntakeGate>{children}</IntakeGate>
+            <ConfirmProvider>
+              <IntakeGate>{children}</IntakeGate>
+            </ConfirmProvider>
           </AuthProvider>
         </ThemeProvider>
       </body>

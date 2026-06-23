@@ -1,9 +1,9 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getRealSupabase } from "@/lib/supabaseClient";
 
 export async function getAdminAccessToken() {
   const {
     data: { session },
-  } = await supabase.auth.getSession();
+  } = await getRealSupabase().auth.getSession();
 
   return session?.access_token || "";
 }
@@ -13,6 +13,14 @@ export async function adminFetch<T>(
   init?: RequestInit,
 ): Promise<{ data: T | null; error: string | null; status: number }> {
   const token = await getAdminAccessToken();
+
+  if (!token) {
+    return {
+      data: null,
+      error: "Sessie verlopen. Log opnieuw in.",
+      status: 401,
+    };
+  }
 
   const response = await fetch(path, {
     ...init,

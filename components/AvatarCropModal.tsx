@@ -1,6 +1,7 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { loadAvatarImagePreview } from "@/lib/avatarImagePreview";
 
 type AvatarCropModalProps = {
   file: File;
@@ -19,7 +20,53 @@ export default function AvatarCropModal({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0, ox: 0, oy: 0 });
-  const [imageUrl] = useState(() => URL.createObjectURL(file));
+  const [imageUrl, setImageUrl] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState("");
+  const [loadingPreview, setLoadingPreview] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+
+    async function loadPreview() {
+      setLoadingPreview(true);
+      setLoadError("");
+
+      try {
+        const preview = await loadAvatarImagePreview(file);
+        if (cancelled) {
+          if (preview.startsWith("blob:")) {
+            URL.revokeObjectURL(preview);
+          }
+          return;
+        }
+
+        if (preview.startsWith("blob:")) {
+          objectUrl = preview;
+        }
+        setImageUrl(preview);
+      } catch {
+        if (!cancelled) {
+          setLoadError(
+            "Deze afbeelding kon niet worden geladen. Probeer een JPG of PNG.",
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingPreview(false);
+        }
+      }
+    }
+
+    void loadPreview();
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+      }
+    };
+  }, [file]);
 
   const handleLoad = useCallback(() => {
     setScale(1);
@@ -47,7 +94,7 @@ export default function AvatarCropModal({
   function handleConfirm() {
     const canvas = canvasRef.current;
     const img = imgRef.current;
-    if (!canvas || !img) return;
+    if (!canvas || !img || !imageUrl) return;
 
     const size = 256;
     canvas.width = size;
@@ -101,23 +148,33 @@ export default function AvatarCropModal({
         </p>
 
         <div
-          className="relative mx-auto mt-4 h-[280px] w-[280px] overflow-hidden rounded-full border-4 border-app-accent bg-black/10"
+          className="relative mx-auto mt-4 h-[280px] w-[280px] overflow-hidden rounded-full border-4 border-app-accent bg-app-surface-muted"
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}
           onPointerUp={() => setDragging(false)}
           onPointerLeave={() => setDragging(false)}
         >
-          <img
-            ref={imgRef}
-            src={imageUrl}
-            alt="Voorbeeld"
-            onLoad={handleLoad}
-            draggable={false}
-            className="pointer-events-none absolute left-1/2 top-1/2 max-w-none select-none"
-            style={{
-              transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`,
-            }}
-          />
+          {loadingPreview ? (
+            <div className="flex h-full items-center justify-center text-sm text-app-muted">
+              Foto laden...
+            </div>
+          ) : loadError ? (
+            <div className="flex h-full items-center justify-center px-6 text-center text-sm text-red-500">
+              {loadError}
+            </div>
+          ) : imageUrl ? (
+            <img
+              ref={imgRef}
+              src={imageUrl}
+              alt="Voorbeeld"
+              onLoad={handleLoad}
+              draggable={false}
+              className="pointer-events-none absolute left-1/2 top-1/2 max-h-none max-w-none select-none"
+              style={{
+                transform: `translate(calc(-50% + ${offset.x}px), calc(-50% + ${offset.y}px)) scale(${scale})`,
+              }}
+            />
+          ) : null}
         </div>
 
         <label className="mt-4 block text-sm font-semibold text-app-text">
@@ -130,6 +187,7 @@ export default function AvatarCropModal({
             value={scale}
             onChange={(e) => setScale(Number(e.target.value))}
             className="mt-1 w-full"
+            disabled={!imageUrl || Boolean(loadError)}
           />
         </label>
 
@@ -139,7 +197,12 @@ export default function AvatarCropModal({
           <button type="button" onClick={onCancel} className="app-btn-secondary">
             Annuleren
           </button>
-          <button type="button" onClick={handleConfirm} className="app-btn-primary">
+          <button
+            type="button"
+            onClick={handleConfirm}
+            className="app-btn-primary"
+            disabled={!imageUrl || Boolean(loadError)}
+          >
             Opslaan
           </button>
         </div>

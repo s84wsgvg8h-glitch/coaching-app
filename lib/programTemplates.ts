@@ -1,7 +1,14 @@
 import { supabase } from "@/lib/supabaseClient";
+import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
 import { loadProgramHierarchy, type ProgramHierarchy } from "@/lib/programData";
 
+export type ProgramTemplateOptions = {
+  includeNotes: boolean;
+  includeUitlegVideos: boolean;
+};
+
 export type ProgramTemplateStructure = {
+  scope: "block" | "week";
   block: {
     title: string;
     description?: string | null;
@@ -38,9 +45,40 @@ export type ProgramTemplate = {
   created_at: string;
 };
 
-function buildStructureFromHierarchy(
+const DEFAULT_TEMPLATE_OPTIONS: ProgramTemplateOptions = {
+  includeNotes: true,
+  includeUitlegVideos: true,
+};
+
+function applyTemplateContentOptions<
+  T extends ProgramTemplateStructure,
+>(structure: T, options: ProgramTemplateOptions): T {
+  if (options.includeNotes && options.includeUitlegVideos) return structure;
+
+  return {
+    ...structure,
+    weeks: structure.weeks.map((week) => ({
+      ...week,
+      days: week.days.map((day) => ({
+        ...day,
+        notes: options.includeNotes ? day.notes : null,
+        warmup: options.includeNotes ? day.warmup : null,
+        exercises: day.exercises.map((exercise) => ({
+          ...exercise,
+          notes: options.includeNotes ? exercise.notes : null,
+          exercise_library_id: options.includeUitlegVideos
+            ? exercise.exercise_library_id
+            : null,
+        })),
+      })),
+    })),
+  };
+}
+
+function buildStructureFromBlock(
   blockId: string,
   hierarchy: ProgramHierarchy,
+  options: ProgramTemplateOptions,
 ): ProgramTemplateStructure | null {
   const block = hierarchy.blockById[blockId];
   if (!block) return null;
@@ -79,103 +117,58 @@ function buildStructureFromHierarchy(
         })),
     }));
 
-  return {
-    block: { title: block.title, description: block.description ?? null },
-    weeks,
-  };
+  return applyTemplateContentOptions(
+    {
+      scope: "block",
+      block: { title: block.title, description: block.description ?? null },
+      weeks,
+    },
+    options,
+  );
 }
 
-export async function loadProgramTemplates(coachId: string) {
-  const { data, error } = await supabase
-    .from("program_templates")
-    .select("*")
-    .eq("coach_id", coachId)
-    .order("created_at", { ascending: false });
+function buildStructureFromWeek(
+  weekId: string,
+  hierarchy: ProgramHierarchy,
+  options: ProgramTemplateOptions,
+): ProgramTemplateStructure | null {
+  const week = hierarchy.weekById[weekId];
+  if (!week) return null;
 
-  if (error) {
-    console.error("Sjablonen laden mislukt:", error.message);
-    return [] as ProgramTemplate[];
-  }
+  const block = hierarchy.blockById[week.program_block_id];
+  if (!block) return null;
 
-  return (data || []) as ProgramTemplate[];
+  const structure = buildStructureFromBlock(block.id, hierarchy, options);
+  if (!structure) return null;
+
+  const targetWeek = structure.weeks.find(
+    (item) => item.week_number === week.week_number,
+  );
+
+  if (!targetWeek) return null;
+
+  return applyTemplateContentOptions(
+    {
+      scope: "week",
+      block: { title: block.title, description: block.description ?? null },
+      weeks: [targetWeek],
+    },
+    options,
+  );
 }
 
-export async function saveProgramAsTemplate(
-  coachId: string,
+async function insertTemplateWeeks(
   blockId: string,
-  name: string,
-  actingUserId: string,
-  actingRole: string,
+  weeks: ProgramTemplateStructure["weeks"],
+  weekNumberOffset = 0,
 ) {
-  const { data: hierarchy, error: hierarchyError } = await loadProgramHierarchy({
-    userId: actingUserId,
-    role: actingRole,
-    includeSets: false,
-    includeCheckins: false,
-  });
-
-  if (hierarchyError || !hierarchy) {
-    return { data: null, error: new Error(hierarchyError || "Programma niet gevonden") };
-  }
-
-  const structure = buildStructureFromHierarchy(blockId, hierarchy);
-  if (!structure) {
-    return { data: null, error: new Error("Programma niet gevonden") };
-  }
-
-  return supabase
-    .from("program_templates")
-    .insert({
-      coach_id: coachId,
-      name: name.trim(),
-      source_program_id: blockId,
-      structure,
-    })
-    .select("*")
-    .single();
-}
-
-export async function applyProgramTemplate(
-  templateId: string,
-  athleteId: string,
-  actingUserId: string,
-  startDate?: string,
-) {
-  const { data: template, error: templateError } = await supabase
-    .from("program_templates")
-    .select("*")
-    .eq("id", templateId)
-    .single();
-
-  if (templateError || !template) {
-    return { blockId: null, error: templateError?.message || "Sjabloon niet gevonden" };
-  }
-
-  const structure = template.structure as ProgramTemplateStructure;
-
-  const { data: block, error: blockError } = await supabase
-    .from("program_blocks")
-    .insert({
-      title: structure.block.title,
-      description: structure.block.description || "",
-      athlete_id: athleteId,
-      start_date: startDate || new Date().toISOString().slice(0, 10),
-      created_by: actingUserId,
-    })
-    .select("id")
-    .single();
-
-  if (blockError || !block) {
-    return { blockId: null, error: blockError?.message || "Block aanmaken mislukt" };
-  }
-
-  for (const week of structure.weeks) {
+  for (const week of weeks) {
     const { data: createdWeek, error: weekError } = await supabase
       .from("program_weeks")
       .insert({
         title: week.title,
-        week_number: week.week_number,
-        program_block_id: block.id,
+        week_number: week.week_number + weekNumberOffset,
+        program_block_id: blockId,
       })
       .select("id")
       .single();
@@ -215,6 +208,179 @@ export async function applyProgramTemplate(
       }
     }
   }
+}
 
-  return { blockId: block.id as string, error: null };
+export async function loadProgramTemplates(coachId: string) {
+  const { data, error } = await supabase
+    .from("program_templates")
+    .select("*")
+    .eq("coach_id", coachId)
+    .order("created_at", { ascending: false });
+
+  if (error) {
+    console.error("Sjablonen laden mislukt:", error.message);
+    return [] as ProgramTemplate[];
+  }
+
+  return (data || []) as ProgramTemplate[];
+}
+
+export async function saveProgramAsTemplate(
+  coachId: string,
+  blockId: string,
+  name: string,
+  actingUserId: string,
+  actingRole: string,
+  options: ProgramTemplateOptions = DEFAULT_TEMPLATE_OPTIONS,
+) {
+  const { data: hierarchy, error: hierarchyError } = await loadProgramHierarchy({
+    userId: actingUserId,
+    role: actingRole,
+    includeSets: false,
+    includeCheckins: false,
+  });
+
+  if (hierarchyError || !hierarchy) {
+    return { data: null, error: new Error(hierarchyError || "Programma niet gevonden") };
+  }
+
+  const structure = buildStructureFromBlock(blockId, hierarchy, options);
+  if (!structure) {
+    return { data: null, error: new Error("Programma niet gevonden") };
+  }
+
+  return supabase
+    .from("program_templates")
+    .insert({
+      coach_id: coachId,
+      name: name.trim(),
+      source_program_id: blockId,
+      structure,
+    })
+    .select("*")
+    .single();
+}
+
+export async function saveWeekAsTemplate(
+  coachId: string,
+  weekId: string,
+  name: string,
+  actingUserId: string,
+  actingRole: string,
+  options: ProgramTemplateOptions = DEFAULT_TEMPLATE_OPTIONS,
+) {
+  const { data: hierarchy, error: hierarchyError } = await loadProgramHierarchy({
+    userId: actingUserId,
+    role: actingRole,
+    includeSets: false,
+    includeCheckins: false,
+  });
+
+  if (hierarchyError || !hierarchy) {
+    return { data: null, error: new Error(hierarchyError || "Programma niet gevonden") };
+  }
+
+  const week = hierarchy.weekById[weekId];
+  const structure = buildStructureFromWeek(weekId, hierarchy, options);
+  if (!structure || !week) {
+    return { data: null, error: new Error("Week niet gevonden") };
+  }
+
+  return supabase
+    .from("program_templates")
+    .insert({
+      coach_id: coachId,
+      name: name.trim(),
+      source_program_id: week.program_block_id,
+      structure,
+    })
+    .select("*")
+    .single();
+}
+
+export async function applyProgramTemplate(
+  templateId: string,
+  athleteId: string,
+  actingUserId: string,
+  startDate?: string,
+  targetBlockId?: string,
+) {
+  const { data: template, error: templateError } = await supabase
+    .from("program_templates")
+    .select("*")
+    .eq("id", templateId)
+    .single();
+
+  if (templateError || !template) {
+    return {
+      blockId: null,
+      weekId: null,
+      error: templateError?.message || "Sjabloon niet gevonden",
+    };
+  }
+
+  const structure = template.structure as ProgramTemplateStructure;
+  const scope = structure.scope || "block";
+
+  if (scope === "week" && targetBlockId) {
+    const { data: existingWeeks } = await supabase
+      .from("program_weeks")
+      .select("week_number")
+      .eq("program_block_id", targetBlockId)
+      .order("week_number", { ascending: false })
+      .limit(1);
+
+    const nextWeekNumber = (existingWeeks?.[0]?.week_number ?? 0) + 1;
+    const normalizedWeeks = structure.weeks.map((week, index) => ({
+      ...week,
+      week_number: nextWeekNumber + index,
+    }));
+
+    await insertTemplateWeeks(targetBlockId, normalizedWeeks);
+
+    const { data: createdWeeks } = await supabase
+      .from("program_weeks")
+      .select("id")
+      .eq("program_block_id", targetBlockId)
+      .order("week_number", { ascending: false })
+      .limit(1);
+
+    return {
+      blockId: targetBlockId,
+      weekId: createdWeeks?.[0]?.id ?? null,
+      error: null,
+    };
+  }
+
+  const { blockId, error: blockError } = await createProgramBlockForAthlete({
+    athleteId,
+    title: structure.block.title,
+    description: structure.block.description || "",
+    startDate: startDate || new Date().toISOString().slice(0, 10),
+  });
+
+  if (blockError || !blockId) {
+    return {
+      blockId: null,
+      weekId: null,
+      error: blockError || "Block aanmaken mislukt",
+    };
+  }
+
+  await supabase.from("program_weeks").delete().eq("program_block_id", blockId);
+  await insertTemplateWeeks(blockId, structure.weeks);
+
+  const { data: firstWeek } = await supabase
+    .from("program_weeks")
+    .select("id")
+    .eq("program_block_id", blockId)
+    .order("week_number", { ascending: true })
+    .limit(1)
+    .maybeSingle();
+
+  return {
+    blockId,
+    weekId: (firstWeek?.id as string) ?? null,
+    error: null,
+  };
 }

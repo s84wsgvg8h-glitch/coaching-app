@@ -2,40 +2,41 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { Dumbbell, Home, MessageCircle } from "lucide-react";
 import { isActiveNavPath } from "@/lib/navigation";
 
 const athleteMobileLinks = [
-  { href: "/dashboard", icon: "🏠", title: "Home" },
-  { href: "/programs", icon: "🏋️", title: "Training" },
-  { href: "/chat", icon: "💬", title: "Chat" },
-  { href: "/data", icon: "📈", title: "Data" },
-  { href: "/wedstrijd-checklist", icon: "✅", title: "Checklist" },
-];
+  { href: "/dashboard", icon: Home, title: "Home" },
+  { href: "/programs", icon: Dumbbell, title: "Training" },
+  { href: "/chat", icon: MessageCircle, title: "Chat" },
+] as const;
 
 export default function MobileBottomNav() {
   const pathname = usePathname();
 
   return (
     <nav
-      className="fixed inset-x-0 bottom-0 z-40 border-t border-app-border bg-app-sidebar pb-safe lg:hidden"
+      className="athlete-mobile-tab-bar fixed inset-x-0 bottom-0 z-40 pb-safe lg:hidden"
       aria-label="Mobiele navigatie"
     >
-      <div className="grid grid-cols-5">
+      <div className="grid grid-cols-3">
         {athleteMobileLinks.map((item) => {
           const active = isActiveNavPath(pathname, item.href);
+          const Icon = item.icon;
 
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`app-focus-ring flex flex-col items-center gap-0.5 px-1 py-2 text-[10px] font-semibold transition ${
-                active
-                  ? "text-app-accent"
-                  : "text-app-muted hover:text-app-text"
+              aria-current={active ? "page" : undefined}
+              className={`app-focus-ring athlete-mobile-tab-bar__item ${
+                active ? "is-active" : ""
               }`}
             >
-              <span className="text-lg leading-none">{item.icon}</span>
-              <span>{item.title}</span>
+              <span className="athlete-mobile-tab-bar__icon-wrap">
+                <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+              </span>
+              <span className="athlete-mobile-tab-bar__label">{item.title}</span>
             </Link>
           );
         })}

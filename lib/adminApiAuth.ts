@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { DEMO_ACCESS_TOKEN, getBearerToken } from "@/lib/apiAuth";
 
 export function getSupabaseForRequest(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -8,11 +9,23 @@ export function getSupabaseForRequest(request: Request) {
     throw new Error("Supabase is niet geconfigureerd.");
   }
 
-  const authHeader = request.headers.get("Authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
+  const token = getBearerToken(request);
 
   return createClient(url, anonKey, {
     global: token ? { headers: { Authorization: `Bearer ${token}` } } : {},
+  });
+}
+
+function getServiceClient() {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+  if (!url || !serviceRole) {
+    return null;
+  }
+
+  return createClient(url, serviceRole, {
+    auth: { autoRefreshToken: false, persistSession: false },
   });
 }
 
@@ -21,36 +34,35 @@ export async function assertAdmin(request: Request): Promise<{
   admin: SupabaseClient | null;
   userId: string | null;
 }> {
-  const supabase = getSupabaseForRequest(request);
+  const token = getBearerToken(request);
+
+  if (!token || token === DEMO_ACCESS_TOKEN) {
+    return { error: "Niet ingelogd.", admin: null, userId: null };
+  }
+
+  const adminClient = getServiceClient();
+  if (!adminClient) {
+    return { error: "Service role key ontbreekt.", admin: null, userId: null };
+  }
+
   const {
     data: { user },
     error: userError,
-  } = await supabase.auth.getUser();
+  } = await adminClient.auth.getUser(token);
 
   if (userError || !user) {
     return { error: "Niet ingelogd.", admin: null, userId: null };
   }
 
-  const { data: profile } = await supabase
+  const { data: profile } = await adminClient
     .from("profiles")
     .select("role")
     .eq("id", user.id)
-    .single();
+    .maybeSingle();
 
   if (profile?.role !== "admin") {
     return { error: "Alleen admins.", admin: null, userId: null };
   }
-
-  const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-  if (!serviceRole || !url) {
-    return { error: "Service role key ontbreekt.", admin: null, userId: null };
-  }
-
-  const adminClient = createClient(url, serviceRole, {
-    auth: { autoRefreshToken: false, persistSession: false },
-  });
 
   return { error: null, admin: adminClient, userId: user.id };
 }

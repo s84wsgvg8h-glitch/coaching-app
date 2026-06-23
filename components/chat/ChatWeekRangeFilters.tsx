@@ -58,13 +58,13 @@ export default function ChatWeekRangeFilters({
     <div className={`space-y-3 ${className}`}>
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Begin week
           </label>
           <select
             value={beginWeekId}
             onChange={(event) => handleBeginWeekChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2.5 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-app-border bg-app-surface-muted px-2 py-2.5 text-sm font-semibold text-app-text outline-none focus:border-app-accent focus:shadow-[0_0_0_3px_var(--app-accent-muted)]"
           >
             <option value="">Alle weken</option>
             {weekOptions.map((week) => (
@@ -75,13 +75,13 @@ export default function ChatWeekRangeFilters({
           </select>
         </div>
         <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Eind week
           </label>
           <select
             value={endWeekId}
             onChange={(event) => handleEndWeekChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-2 py-2.5 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-app-border bg-app-surface-muted px-2 py-2.5 text-sm font-semibold text-app-text outline-none focus:border-app-accent focus:shadow-[0_0_0_3px_var(--app-accent-muted)]"
           >
             <option value="">Alle weken</option>
             {weekOptions.map((week) => (
@@ -95,7 +95,7 @@ export default function ChatWeekRangeFilters({
 
       <div className="grid grid-cols-2 gap-2">
         <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Van datum
           </label>
           <input
@@ -104,11 +104,11 @@ export default function ChatWeekRangeFilters({
             min={minDate}
             max={maxDate}
             onChange={(event) => handleStartDateChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-app-border bg-app-surface px-2 py-1.5 text-xs font-semibold text-app-text outline-none focus:border-app-accent focus:shadow-[0_0_0_3px_var(--app-accent-muted)]"
           />
         </div>
         <div>
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Tot datum
           </label>
           <input
@@ -117,13 +117,13 @@ export default function ChatWeekRangeFilters({
             min={minDate}
             max={maxDate}
             onChange={(event) => handleEndDateChange(event.target.value)}
-            className="w-full rounded-xl border border-gray-200 bg-white px-2 py-1.5 text-xs font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+            className="w-full rounded-xl border border-app-border bg-app-surface px-2 py-1.5 text-xs font-semibold text-app-text outline-none focus:border-app-accent focus:shadow-[0_0_0_3px_var(--app-accent-muted)]"
           />
         </div>
       </div>
 
       {startDate && endDate && (
-        <p className="text-center text-xs text-gray-500">
+        <p className="text-center text-xs text-app-muted">
           {formatShortDate(startDate)} – {formatShortDate(endDate)}
         </p>
       )}
@@ -132,7 +132,7 @@ export default function ChatWeekRangeFilters({
         <button
           type="button"
           onClick={handleClearFilters}
-          className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-50"
+          className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-bold text-app-muted transition hover:bg-app-surface-muted"
         >
           Reset naar alle weken
         </button>

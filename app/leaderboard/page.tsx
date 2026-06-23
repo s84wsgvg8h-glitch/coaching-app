@@ -1,15 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
 import { getCurrentDivision, sortDivisions } from "@/lib/ipfDivision";
-import {
-  formatFillScorePercentage,
-  getFillScoreColorClass,
-} from "@/lib/athleteFillScore";
-import { isCoachLikeRole } from "@/lib/authRoles";
-import { loadCoachAthleteOverview } from "@/lib/coachAthleteOverview";
 import {
   aggregateLeaderboardMeets,
   getMetricValue,
@@ -17,16 +12,11 @@ import {
   type LeaderboardSortMetric,
   type OpenIpfLifterData,
 } from "@/lib/openipf";
+import { getApiAuthHeaders } from "@/lib/apiClient";
 
-const LEADERBOARD_CACHE_KEY = "openipf-leaderboard-cache-v1";
-const CACHE_TTL_MS = 60 * 60 * 1000;
-
-type InvulscoreRow = {
-  athlete_id: string;
-  full_name: string;
-  percentage: number;
-  rank: number;
-};
+const LEADERBOARD_CACHE_KEY = "openipf-leaderboard-cache-v2";
+const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+const OPENIPF_CHUNK_SIZE = 8;
 
 type LimitlessAthlete = {
   id: string;
@@ -46,6 +36,7 @@ type DisplayRow = {
   athlete_id: string;
   full_name: string;
   openipf_found: boolean;
+  openipf_pending: boolean;
   gl_points: number;
   total_kg: number;
   squat_kg: number;
@@ -77,7 +68,7 @@ const metricColumns: Array<{
 ];
 
 const tableGridClass =
-  "grid grid-cols-[64px_minmax(180px,1.4fr)_repeat(6,minmax(84px,1fr))] items-center gap-x-4";
+  "grid grid-cols-[48px_minmax(160px,1.4fr)_repeat(6,minmax(72px,1fr))] items-center gap-x-3";
 
 function sortWeightClasses(values: string[]) {
   return [...values].sort((a, b) => {
@@ -104,6 +95,10 @@ function formatMetricValue(
   key: LeaderboardSortMetric | "bodyweight",
   row: DisplayRow,
 ) {
+  if (row.openipf_pending) {
+    return "…";
+  }
+
   switch (key) {
     case "goodlift":
       return row.gl_points > 0 ? row.gl_points.toFixed(2) : "-";
@@ -122,71 +117,144 @@ function formatMetricValue(
   }
 }
 
+function readLeaderboardCache(): Record<string, OpenIpfLifterData | null> | null {
+  try {
+    const cached = sessionStorage.getItem(LEADERBOARD_CACHE_KEY);
+    if (!cached) return null;
+
+    const parsed = JSON.parse(cached) as {
+      at: number;
+      results: Record<string, OpenIpfLifterData | null>;
+    };
+
+    if (Date.now() - parsed.at > CACHE_TTL_MS) {
+      return null;
+    }
+
+    return parsed.results;
+  } catch {
+    return null;
+  }
+}
+
+function writeLeaderboardCache(
+  results: Record<string, OpenIpfLifterData | null>,
+) {
+  try {
+    sessionStorage.setItem(
+      LEADERBOARD_CACHE_KEY,
+      JSON.stringify({ at: Date.now(), results }),
+    );
+  } catch {
+    // Ignore cache write errors.
+  }
+}
+
+function chunkNames(names: string[], size: number) {
+  const chunks: string[][] = [];
+  for (let index = 0; index < names.length; index += size) {
+    chunks.push(names.slice(index, index + size));
+  }
+  return chunks;
+}
+
+function mergeLifterResults(
+  entries: AthleteEntry[],
+  results: Record<string, OpenIpfLifterData | null>,
+): AthleteEntry[] {
+  return entries.map((entry) => ({
+    ...entry,
+    lifter: results[entry.full_name] ?? entry.lifter,
+  }));
+}
+
 export default function LeaderboardPage() {
   const [entries, setEntries] = useState<AthleteEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [openipfLoading, setOpenipfLoading] = useState(false);
-  const [progress, setProgress] = useState("");
-  const [activeTab, setActiveTab] = useState<"openipf" | "invulscore">("openipf");
-  const [invulscoreRows, setInvulscoreRows] = useState<InvulscoreRow[]>([]);
-  const [invulscoreLoading, setInvulscoreLoading] = useState(false);
+  const [openipfProgress, setOpenipfProgress] = useState({ done: 0, total: 0 });
+  const [pendingNames, setPendingNames] = useState<Set<string>>(new Set());
   const [sortMetric, setSortMetric] = useState<LeaderboardSortMetric>("goodlift");
   const [filters, setFilters] = useState<LeaderboardFilters>({
     sex: "all",
     division: "all",
     weightClassKg: "all",
   });
+  const fetchGeneration = useRef(0);
 
   useEffect(() => {
+    document.title = "Leaderboard";
     void loadLeaderboard();
   }, []);
 
-  useEffect(() => {
-    if (activeTab !== "invulscore") return;
-    void loadInvulscoreRanking();
-  }, [activeTab]);
-
-  async function loadInvulscoreRanking() {
-    setInvulscoreLoading(true);
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/login";
+  async function fetchOpenIpfChunked(
+    names: string[],
+    baseEntries: AthleteEntry[],
+    generation: number,
+  ) {
+    const uniqueNames = [...new Set(names.map((name) => name.trim()).filter(Boolean))];
+    if (uniqueNames.length === 0) {
       return;
     }
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    setOpenipfLoading(true);
+    setPendingNames(new Set(uniqueNames));
+    setOpenipfProgress({ done: 0, total: uniqueNames.length });
 
-    if (!isCoachLikeRole(profile?.role)) {
-      setInvulscoreRows([]);
-      setInvulscoreLoading(false);
-      return;
-    }
+    const chunks = chunkNames(uniqueNames, OPENIPF_CHUNK_SIZE);
+    const allResults: Record<string, OpenIpfLifterData | null> = {};
+    let completed = 0;
 
-    const overview = await loadCoachAthleteOverview(user.id, profile?.role || "");
-    const sorted = [...overview].sort((a, b) => b.fillScore - a.fillScore);
+    await Promise.all(
+      chunks.map(async (chunk) => {
+        try {
+          const response = await fetch("/api/openipf-leaderboard", {
+            method: "POST",
+            headers: await getApiAuthHeaders({ "Content-Type": "application/json" }),
+            body: JSON.stringify({ names: chunk }),
+          });
 
-    setInvulscoreRows(
-      sorted.map((row, index) => ({
-        athlete_id: row.id,
-        full_name: row.fullName,
-        percentage: row.fillScore,
-        rank: index + 1,
-      })),
+          if (!response.ok) {
+            return;
+          }
+
+          const data = (await response.json()) as {
+            results: Record<string, OpenIpfLifterData | null>;
+          };
+
+          if (fetchGeneration.current !== generation) {
+            return;
+          }
+
+          Object.assign(allResults, data.results);
+          completed += chunk.length;
+
+          setEntries((current) => mergeLifterResults(current, data.results));
+          setPendingNames((current) => {
+            const next = new Set(current);
+            chunk.forEach((name) => next.delete(name));
+            return next;
+          });
+          setOpenipfProgress({ done: completed, total: uniqueNames.length });
+        } catch {
+          // Chunk failed — other chunks may still succeed.
+        }
+      }),
     );
-    setInvulscoreLoading(false);
+
+    if (fetchGeneration.current !== generation) {
+      return;
+    }
+
+    writeLeaderboardCache(allResults);
+    setEntries(mergeLifterResults(baseEntries, allResults));
+    setPendingNames(new Set());
+    setOpenipfLoading(false);
+    setOpenipfProgress({ done: 0, total: 0 });
   }
 
-  async function loadLeaderboard(force = false) {
+  async function loadLeaderboard() {
     setLoading(true);
-    setProgress("Atleten laden...");
 
     const {
       data: { user },
@@ -213,7 +281,6 @@ export default function LeaderboardPage() {
     if (athleteList.length === 0) {
       setEntries([]);
       setLoading(false);
-      setProgress("");
       return;
     }
 
@@ -225,75 +292,23 @@ export default function LeaderboardPage() {
       lifter: null as OpenIpfLifterData | null,
     }));
 
-    setEntries(baseEntries);
-    setLoading(false);
-    setProgress("");
-
-    if (!force) {
-      try {
-        const cached = sessionStorage.getItem(LEADERBOARD_CACHE_KEY);
-        if (cached) {
-          const parsed = JSON.parse(cached) as {
-            at: number;
-            results: Record<string, OpenIpfLifterData | null>;
-          };
-          if (Date.now() - parsed.at < CACHE_TTL_MS) {
-            setEntries(
-              baseEntries.map((entry) => ({
-                ...entry,
-                lifter: parsed.results[entry.full_name] || null,
-              })),
-            );
-            return;
-          }
-        }
-      } catch {
-        // Ignore cache errors.
-      }
-    }
-
-    setOpenipfLoading(true);
-    setProgress(`OpenIPF data ophalen voor ${athleteList.length} atleten...`);
-
-    const response = await fetch("/api/openipf-leaderboard", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        names: athleteList.map((athlete) => athlete.full_name),
-      }),
-    });
-
-    if (!response.ok) {
-      alert("Kon OpenIPF data niet laden");
-      setOpenipfLoading(false);
-      setProgress("");
-      return;
-    }
-
-    const data = (await response.json()) as {
-      results: Record<string, OpenIpfLifterData | null>;
-    };
-
-    try {
-      sessionStorage.setItem(
-        LEADERBOARD_CACHE_KEY,
-        JSON.stringify({ at: Date.now(), results: data.results }),
-      );
-    } catch {
-      // Ignore cache write errors.
-    }
+    const cachedResults = readLeaderboardCache();
 
     setEntries(
-      baseEntries.map((entry) => ({
-        ...entry,
-        lifter: data.results[entry.full_name] || null,
-      })),
+      cachedResults
+        ? mergeLifterResults(baseEntries, cachedResults)
+        : baseEntries,
     );
+    setLoading(false);
 
-    setOpenipfLoading(false);
-    setProgress("");
+    const generation = fetchGeneration.current + 1;
+    fetchGeneration.current = generation;
+
+    void fetchOpenIpfChunked(
+      athleteList.map((athlete) => athlete.full_name),
+      baseEntries,
+      generation,
+    );
   }
 
   const filterOptions = useMemo(() => {
@@ -348,6 +363,8 @@ export default function LeaderboardPage() {
         return;
       }
 
+      const isPending = pendingNames.has(entry.full_name);
+
       if (!entry.lifter) {
         if (
           filters.sex === "all" &&
@@ -358,6 +375,7 @@ export default function LeaderboardPage() {
             athlete_id: entry.athlete_id,
             full_name: entry.full_name,
             openipf_found: false,
+            openipf_pending: isPending,
             gl_points: 0,
             total_kg: 0,
             squat_kg: 0,
@@ -384,6 +402,7 @@ export default function LeaderboardPage() {
         athlete_id: entry.athlete_id,
         full_name: entry.full_name,
         openipf_found: true,
+        openipf_pending: false,
         gl_points: aggregate.goodlift,
         total_kg: aggregate.totalKg,
         squat_kg: aggregate.squatKg,
@@ -404,18 +423,23 @@ export default function LeaderboardPage() {
     });
 
     return [...rankedRows, ...missingRows];
-  }, [entries, filters, sortMetric]);
+  }, [entries, filters, sortMetric, pendingNames]);
 
   const rankByAthleteId = useMemo(() => {
     const map = new Map<string, number>();
     let rank = 0;
     displayRows.forEach((row) => {
-      if (!row.openipf_found) return;
+      if (!row.openipf_found || row.openipf_pending) return;
       rank += 1;
       map.set(row.athlete_id, rank);
     });
     return map;
   }, [displayRows]);
+
+  const progressPercent =
+    openipfProgress.total > 0
+      ? Math.round((openipfProgress.done / openipfProgress.total) * 100)
+      : 0;
 
   function updateFilter<K extends keyof LeaderboardFilters>(
     key: K,
@@ -434,106 +458,31 @@ export default function LeaderboardPage() {
 
   return (
     <AppShell>
-      <div className="max-w-7xl mx-auto">
-        <div className="flex flex-col gap-4 mb-8 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <p className="text-sm text-gray-500 mb-1">Leaderboard</p>
-            <h1 className="text-3xl font-bold">Team ranking</h1>
-            <p className="text-gray-500 mt-2">
-              OpenIPF prestaties en team invulscore ranking.
-            </p>
-          </div>
+      <PageContainer size="full">
+        <PageHeader
+          title="Team ranking"
+          description="OpenIPF prestaties van je team."
+        />
 
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => setActiveTab("openipf")}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${
-                activeTab === "openipf"
-                  ? "bg-brand-purple text-white"
-                  : "bg-gray-100 text-black"
-              }`}
-            >
-              OpenIPF
-            </button>
-            <button
-              type="button"
-              onClick={() => setActiveTab("invulscore")}
-              className={`rounded-xl px-4 py-2 text-sm font-semibold ${
-                activeTab === "invulscore"
-                  ? "bg-brand-purple text-white"
-                  : "bg-gray-100 text-black"
-              }`}
-            >
-              Invulscore
-            </button>
-            {activeTab === "openipf" && (
-              <button
-                type="button"
-                onClick={() => void loadLeaderboard(true)}
-                disabled={loading || openipfLoading}
-                className="bg-gray-100 hover:bg-gray-200 disabled:opacity-50 text-black px-4 py-2 rounded-xl font-medium"
-              >
-                Vernieuwen
-              </button>
-            )}
-          </div>
-        </div>
-
-        {activeTab === "invulscore" ? (
-          invulscoreLoading ? (
-            <div className="app-card">
-              <p className="text-gray-500">Invulscore ranking laden...</p>
-            </div>
-          ) : invulscoreRows.length === 0 ? (
-            <div className="app-card">
-              <p className="text-gray-500">
-                Geen team invulscore beschikbaar (alleen voor coaches).
-              </p>
-            </div>
-          ) : (
-            <div className="app-card overflow-hidden p-0">
-              {invulscoreRows.map((row) => (
-                <div
-                  key={row.athlete_id}
-                  className="flex items-center gap-4 border-b border-app-border px-5 py-3 last:border-b-0"
-                >
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold ${
-                      row.rank === 1
-                        ? "bg-yellow-300 text-black"
-                        : row.rank === 2
-                          ? "bg-gray-300 text-black"
-                          : row.rank === 3
-                            ? "bg-orange-300 text-black"
-                            : "bg-black text-white"
-                    }`}
-                  >
-                    {row.rank}
-                  </div>
-                  <p className="flex-1 font-semibold">{row.full_name}</p>
-                  <p
-                    className={`text-lg font-bold tabular-nums ${getFillScoreColorClass(row.percentage)}`}
-                  >
-                    {formatFillScorePercentage(row.percentage)}
-                  </p>
-                </div>
-              ))}
-            </div>
-          )
-        ) : (
-          <>
         {openipfLoading && (
-          <div className="bg-white rounded-2xl shadow p-4 mb-4">
-            <p className="text-sm text-gray-500">{progress}</p>
+          <div className="glass-accent-card ui-panel mb-4 p-4">
+            <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-app-surface-muted">
+              <div
+                className="h-full rounded-full bg-brand-purple transition-all duration-300"
+                style={{ width: `${Math.max(progressPercent, 8)}%` }}
+              />
+            </div>
+            <p className="text-sm text-app-muted">
+              OpenIPF data ophalen ({openipfProgress.done}/{openipfProgress.total})
+            </p>
           </div>
         )}
 
         {!loading && (
-          <div className="bg-white rounded-2xl shadow p-5 mb-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+          <div className="glass-accent-card ui-panel mb-6 p-3 md:p-4">
+            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
                   Sorteer op
                 </span>
                 <select
@@ -541,7 +490,7 @@ export default function LeaderboardPage() {
                   onChange={(e) =>
                     setSortMetric(e.target.value as LeaderboardSortMetric)
                   }
-                  className="rounded-xl border px-4 py-3"
+                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
                 >
                   {sortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -551,8 +500,8 @@ export default function LeaderboardPage() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
                   Geslacht
                 </span>
                 <select
@@ -560,7 +509,7 @@ export default function LeaderboardPage() {
                   onChange={(e) =>
                     updateFilter("sex", e.target.value as LeaderboardFilters["sex"])
                   }
-                  className="rounded-xl border px-4 py-3"
+                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
                 >
                   <option value="all">Alle</option>
                   <option value="M">Mannen</option>
@@ -568,14 +517,14 @@ export default function LeaderboardPage() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
                   Leeftijdsklasse
                 </span>
                 <select
                   value={filters.division}
                   onChange={(e) => updateFilter("division", e.target.value)}
-                  className="rounded-xl border px-4 py-3"
+                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
                 >
                   <option value="all">Alle</option>
                   {filterOptions.divisions.map((division) => (
@@ -586,14 +535,14 @@ export default function LeaderboardPage() {
                 </select>
               </label>
 
-              <label className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <label className="flex flex-col gap-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
                   Gewichtsklasse
                 </span>
                 <select
                   value={filters.weightClassKg}
                   onChange={(e) => updateFilter("weightClassKg", e.target.value)}
-                  className="rounded-xl border px-4 py-3"
+                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
                 >
                   <option value="all">Alle</option>
                   {filterOptions.weightClasses.map((weightClass) => (
@@ -608,16 +557,89 @@ export default function LeaderboardPage() {
         )}
 
         {loading && (
-          <div className="bg-white rounded-2xl shadow p-8">
-            <p className="text-gray-500">{progress || "Atleten laden..."}</p>
+          <div className="glass-accent-card ui-panel p-8">
+            <p className="text-app-muted">Atleten laden...</p>
           </div>
         )}
 
         {!loading && (
-          <div className="bg-white rounded-2xl shadow overflow-x-auto">
+          <div className="glass-accent-card ui-panel md:hidden divide-y divide-app-border overflow-hidden p-0">
+            {displayRows.map((row) => {
+              const rank =
+                row.openipf_found && !row.openipf_pending
+                  ? rankByAthleteId.get(row.athlete_id) ?? null
+                  : null;
+              const activeLabel =
+                sortOptions.find((option) => option.value === sortMetric)
+                  ?.label ?? "GL Points";
+
+              return (
+                <div
+                  key={row.athlete_id}
+                  className="flex items-center gap-3 px-3 py-3"
+                >
+                  <div
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
+                      rank === 1
+                        ? "bg-yellow-400/90 text-black"
+                        : rank === 2
+                          ? "bg-zinc-300 text-black"
+                          : rank === 3
+                            ? "bg-orange-400/90 text-black"
+                            : rank
+                              ? "bg-brand-purple text-white"
+                              : "bg-app-surface-muted text-app-muted"
+                    }`}
+                  >
+                    {rank ?? "-"}
+                  </div>
+
+                  <div className="min-w-0 flex-1">
+                    <h2 className="truncate text-sm font-semibold text-app-text">
+                      {row.full_name}
+                    </h2>
+                    {row.openipf_pending ? (
+                      <p className="text-xs text-app-muted">OpenIPF laden…</p>
+                    ) : !row.openipf_found ? (
+                      <p className="text-xs text-red-400">
+                        Niet gevonden in OpenIPF
+                      </p>
+                    ) : (
+                      <div className="mt-0.5 flex items-center gap-2.5 text-[11px] tabular-nums text-app-muted">
+                        <span>S {row.squat_kg || "-"}</span>
+                        <span>B {row.bench_kg || "-"}</span>
+                        <span>D {row.deadlift_kg || "-"}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className="text-lg font-bold tabular-nums text-app-text">
+                      {formatMetricValue(sortMetric, row)}
+                    </p>
+                    <p className="text-[10px] uppercase tracking-wide text-app-muted">
+                      {activeLabel}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+
+            {displayRows.length === 0 && (
+              <div className="p-8">
+                <p className="text-app-muted">
+                  Geen atleten gevonden voor deze filters.
+                </p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!loading && (
+          <div className="glass-accent-card ui-panel hidden overflow-x-auto p-0 md:block">
             <div className="min-w-[920px]">
               <div
-                className={`${tableGridClass} border-b px-5 py-4 text-xs font-bold uppercase tracking-wide text-gray-400`}
+                className={`${tableGridClass} border-b border-app-border px-4 py-3 text-[10px] font-semibold uppercase tracking-wide text-app-muted`}
               >
                 <div className="text-center">#</div>
                 <div>Atleet</div>
@@ -629,27 +651,28 @@ export default function LeaderboardPage() {
               </div>
 
               {displayRows.map((row) => {
-                const rank = row.openipf_found
-                  ? rankByAthleteId.get(row.athlete_id) ?? null
-                  : null;
+                const rank =
+                  row.openipf_found && !row.openipf_pending
+                    ? rankByAthleteId.get(row.athlete_id) ?? null
+                    : null;
 
                 return (
                   <div
                     key={row.athlete_id}
-                    className={`${tableGridClass} border-b px-5 py-4 last:border-b-0`}
+                    className={`${tableGridClass} border-b border-app-border px-4 py-3 transition hover:bg-app-surface-muted/40 last:border-b-0`}
                   >
                     <div className="flex justify-center">
                       <div
-                        className={`flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold ${
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold ${
                           rank === 1
-                            ? "bg-yellow-300 text-black"
+                            ? "bg-yellow-400/90 text-black"
                             : rank === 2
-                              ? "bg-gray-300 text-black"
+                              ? "bg-zinc-300 text-black"
                               : rank === 3
-                                ? "bg-orange-300 text-black"
+                                ? "bg-orange-400/90 text-black"
                                 : rank
-                                  ? "bg-black text-white"
-                                  : "bg-gray-100 text-gray-400"
+                                  ? "bg-brand-purple text-white"
+                                  : "bg-app-surface-muted text-app-muted"
                         }`}
                       >
                         {rank ?? "-"}
@@ -657,9 +680,14 @@ export default function LeaderboardPage() {
                     </div>
 
                     <div className="min-w-0">
-                      <h2 className="truncate text-lg font-bold">{row.full_name}</h2>
-                      {!row.openipf_found && (
-                        <p className="text-sm text-red-500">
+                      <h2 className="truncate text-sm font-medium text-app-text">
+                        {row.full_name}
+                      </h2>
+                      {row.openipf_pending && (
+                        <p className="text-xs text-app-muted">OpenIPF laden…</p>
+                      )}
+                      {!row.openipf_found && !row.openipf_pending && (
+                        <p className="text-xs text-red-400">
                           Niet gevonden in OpenIPF
                         </p>
                       )}
@@ -672,11 +700,15 @@ export default function LeaderboardPage() {
                       return (
                         <div
                           key={column.key}
-                          className={`rounded-xl px-3 py-2 text-right ${
-                            active ? "bg-black text-white" : ""
+                          className={`rounded-lg px-2 py-1.5 text-right text-sm ${
+                            active
+                              ? "bg-brand-purple text-white font-medium"
+                              : row.openipf_pending
+                                ? "font-normal text-app-muted"
+                                : "font-normal text-app-text"
                           }`}
                         >
-                          <p className="font-bold tabular-nums">
+                          <p className="tabular-nums">
                             {formatMetricValue(column.key, row)}
                           </p>
                         </div>
@@ -688,7 +720,7 @@ export default function LeaderboardPage() {
 
               {displayRows.length === 0 && (
                 <div className="p-8">
-                  <p className="text-gray-500">
+                  <p className="text-app-muted">
                     Geen atleten gevonden voor deze filters.
                   </p>
                 </div>
@@ -696,9 +728,7 @@ export default function LeaderboardPage() {
             </div>
           </div>
         )}
-          </>
-        )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

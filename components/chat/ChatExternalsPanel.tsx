@@ -81,13 +81,13 @@ function ExternalMetricChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="rounded-3xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="rounded-3xl border border-app-border bg-app-surface p-4 shadow-sm">
         <div className="mb-3 flex items-start justify-between gap-4">
-          <h5 className="text-sm font-black text-black">
+          <h5 className="text-sm font-black text-app-text">
             {formatExternalMetricLabel(metric)}
           </h5>
         </div>
-        <p className="py-8 text-center text-sm text-gray-500">
+        <p className="py-8 text-center text-sm text-app-muted">
           Geen {formatExternalMetricLabel(metric).toLowerCase()} data in deze periode.
         </p>
       </div>
@@ -95,13 +95,13 @@ function ExternalMetricChart({
   }
 
   return (
-    <div className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm">
+    <div className="rounded-3xl border border-app-border bg-app-surface p-3 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-4 px-1">
-        <h5 className="text-sm font-black text-black">
+        <h5 className="text-sm font-black text-app-text">
           {formatExternalMetricLabel(metric)}
         </h5>
         <div className="text-right">
-          <p className="text-2xl font-black text-black">
+          <p className="text-2xl font-black text-app-text">
             {formatExternalNumber(lastValue)}
           </p>
           <p
@@ -109,8 +109,8 @@ function ExternalMetricChart({
               periodDelta !== null
                 ? periodDelta >= 0
                   ? "text-green-600"
-                  : "text-red-600"
-                : "text-gray-400"
+                  : "text-app-destructive"
+                : "text-app-subtle"
             }`}
           >
             {periodDelta !== null
@@ -156,7 +156,7 @@ function ExternalMetricChart({
           type="button"
           onClick={onSendChart}
           disabled={!canSendChart || sendingChart}
-          className="mt-3 flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2 text-sm font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+            className="app-btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
         >
           <SendHorizontal className="h-4 w-4" />
           {sendingChart ? "Versturen..." : "Stuur in chat"}
@@ -308,15 +308,15 @@ export default function ChatExternalsPanel({
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-app-border px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">Externals</h3>
-          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+          <h3 className="truncate chat-panel-title truncate">Externals</h3>
+          <p className="truncate chat-panel-subtitle truncate">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          className="shrink-0 rounded-xl p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="Externals sluiten"
         >
           <X className="h-4 w-4" />
@@ -325,10 +325,10 @@ export default function ChatExternalsPanel({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
         <div className="mb-4">
-          <p className="text-xs font-black uppercase text-gray-500">
+          <p className="text-xs font-black uppercase text-app-muted">
             Program check-in
           </p>
-          <h4 className="text-lg font-black text-black">
+          <h4 className="text-lg font-black text-app-text">
             {hasWeekFilter ? "Gefilterde periode" : "Alle dagen"}
           </h4>
         </div>
@@ -350,25 +350,25 @@ export default function ChatExternalsPanel({
         )}
 
         {loading && (
-          <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center text-sm text-app-muted">
             Check-in laden...
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-red-600">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-destructive">
             {error}
           </div>
         )}
 
         {!loading && !error && points.length === 0 && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Nog geen check-in data voor deze atleet.
           </div>
         )}
 
         {!loading && !error && points.length > 0 && !hasAnyChartData && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Geen check-in data in deze periode.
           </div>
         )}

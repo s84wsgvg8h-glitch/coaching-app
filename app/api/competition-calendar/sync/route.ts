@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
-import { insertCalendarSyncLog } from "@/lib/calendarSyncLog";
+import { isCronAuthorized } from "@/lib/cronAuth";
+import { insertCalendarSyncLog, getLastSuccessfulCalendarSync } from "@/lib/calendarSyncLog";
 import {
   fetchKnkfCalendarEvents,
   syncKnkfEventsToSupabase,
@@ -23,12 +24,7 @@ function getSupabaseForRequest(request: Request) {
 }
 
 async function assertCoachAccess(request: Request) {
-  const cronSecret = process.env.CRON_SECRET;
-  const cronHeader =
-    request.headers.get("x-cron-secret") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-
-  if (cronSecret && cronHeader === cronSecret) {
+  if (isCronAuthorized(request)) {
     const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
 
@@ -61,12 +57,7 @@ async function assertCoachAccess(request: Request) {
 }
 
 async function getTriggerUserId(request: Request, supabase: NonNullable<Awaited<ReturnType<typeof assertCoachAccess>>["supabase"]>) {
-  const cronSecret = process.env.CRON_SECRET;
-  const cronHeader =
-    request.headers.get("x-cron-secret") ||
-    request.headers.get("authorization")?.replace(/^Bearer\s+/i, "");
-
-  if (cronSecret && cronHeader === cronSecret) {
+  if (isCronAuthorized(request)) {
     return null;
   }
 
@@ -127,13 +118,7 @@ export async function GET(request: Request) {
   let triggeredBy: string | null = null;
 
   try {
-    const cronSecret = process.env.CRON_SECRET;
-    const cronHeader = request.headers.get("authorization");
-
-    if (
-      cronSecret &&
-      cronHeader === `Bearer ${cronSecret}`
-    ) {
+    if (isCronAuthorized(request)) {
       const access = await assertCoachAccess(request);
 
       if (!access.supabase) {
@@ -142,6 +127,22 @@ export async function GET(request: Request) {
 
       supabaseClient = access.supabase;
       triggeredBy = await getTriggerUserId(request, access.supabase);
+
+      const lastSync = await getLastSuccessfulCalendarSync(access.supabase);
+      const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
+      if (
+        lastSync?.created_at &&
+        Date.now() - new Date(lastSync.created_at).getTime() < threeDaysMs
+      ) {
+        return NextResponse.json({
+          skipped_recent: true,
+          inserted: 0,
+          skipped: 0,
+          fetched: 0,
+          last_sync_at: lastSync.created_at,
+        });
+      }
+
       const events = await fetchKnkfCalendarEvents();
       const result = await syncKnkfEventsToSupabase(access.supabase, events);
 
@@ -154,6 +155,11 @@ export async function GET(request: Request) {
       });
 
       return NextResponse.json(result);
+    }
+
+    const access = await assertCoachAccess(request);
+    if (!access.supabase) {
+      return NextResponse.json({ error: access.error }, { status: 401 });
     }
 
     const events = await fetchKnkfCalendarEvents();

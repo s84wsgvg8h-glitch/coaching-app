@@ -37,14 +37,10 @@ export default function ChatMessageReactions({
               event.stopPropagation();
               onToggle(emoji);
             }}
-            className={`inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs shadow-sm transition ${
-              mine
-                ? "border-brand-purple/40 bg-brand-purple/10"
-                : "border-gray-200 bg-white hover:bg-gray-50"
-            }`}
+            className={`chat-reaction-pill ${mine ? "chat-reaction-pill-active" : ""}`}
           >
             <span>{emoji}</span>
-            <span className="font-semibold text-gray-600">{users.length}</span>
+            <span className="font-semibold text-app-muted">{users.length}</span>
           </button>
         );
       })}

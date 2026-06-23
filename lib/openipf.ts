@@ -1,4 +1,46 @@
 const OPENIPF_BASE = "https://www.openipf.org";
+const FETCH_TIMEOUT_MS = 10_000;
+const LIFTER_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
+
+type LifterCacheEntry = {
+  at: number;
+  data: OpenIpfLifterData | null;
+};
+
+const lifterCache = new Map<string, LifterCacheEntry>();
+
+function getLifterCache(fullName: string): OpenIpfLifterData | null | undefined {
+  const key = normalizeName(fullName);
+  const entry = lifterCache.get(key);
+  if (!entry) return undefined;
+  if (Date.now() - entry.at > LIFTER_CACHE_TTL_MS) {
+    lifterCache.delete(key);
+    return undefined;
+  }
+  return entry.data;
+}
+
+function setLifterCache(fullName: string, data: OpenIpfLifterData | null) {
+  lifterCache.set(normalizeName(fullName), { at: Date.now(), data });
+}
+
+async function fetchWithTimeout(
+  url: string,
+  init?: RequestInit,
+): Promise<Response> {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+
+  try {
+    return await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      next: init?.next ?? { revalidate: 3600 },
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
 
 export type OpenIpfMeetResult = {
   sex: string;
@@ -135,9 +177,7 @@ async function searchRankingsUsername(fullName: string) {
     sanitizeSearchQuery(fullName),
   )}&start=0`;
 
-  const searchResponse = await fetch(searchUrl, {
-    next: { revalidate: 3600 },
-  });
+  const searchResponse = await fetchWithTimeout(searchUrl);
 
   if (!searchResponse.ok) {
     return null;
@@ -155,9 +195,7 @@ async function searchRankingsUsername(fullName: string) {
     searchData.next_index + 1
   }&lang=en&units=kg`;
 
-  const rankingsResponse = await fetch(rankingsUrl, {
-    next: { revalidate: 3600 },
-  });
+  const rankingsResponse = await fetchWithTimeout(rankingsUrl);
 
   if (!rankingsResponse.ok) {
     return null;
@@ -187,9 +225,9 @@ async function searchRankingsUsername(fullName: string) {
 async function fetchLifterCsvData(
   username: string,
 ): Promise<OpenIpfLifterData | null> {
-  const response = await fetch(`${OPENIPF_BASE}/api/liftercsv/${username}`, {
-    next: { revalidate: 3600 },
-  });
+  const response = await fetchWithTimeout(
+    `${OPENIPF_BASE}/api/liftercsv/${username}`,
+  );
 
   if (!response.ok) {
     return null;
@@ -340,41 +378,71 @@ export async function getLifterData(
     return null;
   }
 
+  const cached = getLifterCache(trimmedName);
+  if (cached !== undefined) {
+    return cached;
+  }
+
   try {
+    const slug = slugifyName(trimmedName);
+    if (slug) {
+      const directCsv = await fetchLifterCsvData(slug);
+      if (directCsv && namesMatch(trimmedName, directCsv.name)) {
+        setLifterCache(trimmedName, directCsv);
+        return directCsv;
+      }
+    }
+
     const rankingMatch = await searchRankingsUsername(trimmedName);
-    const username = rankingMatch?.username || slugifyName(trimmedName);
+    const username = rankingMatch?.username || slug;
 
     if (!username) {
+      setLifterCache(trimmedName, null);
       return null;
     }
 
     const csvData = await fetchLifterCsvData(username);
     if (csvData) {
       if (!namesMatch(trimmedName, csvData.name)) {
+        setLifterCache(trimmedName, null);
         return null;
       }
 
+      setLifterCache(trimmedName, csvData);
       return csvData;
     }
 
     if (rankingMatch) {
-      return {
+      const fallback = {
         name: rankingMatch.name,
         username,
         sex: rankingMatch.meet.sex,
         meets: [rankingMatch.meet],
       };
+      setLifterCache(trimmedName, fallback);
+      return fallback;
     }
   } catch {
+    setLifterCache(trimmedName, null);
     return null;
   }
 
+  setLifterCache(trimmedName, null);
   return null;
 }
 
-export async function getLifterDataBatch(fullNames: string[], concurrency = 4) {
+export async function getLifterDataBatch(fullNames: string[], concurrency = 20) {
+  const uniqueNames = [...new Set(fullNames.map((name) => name.trim()).filter(Boolean))];
   const results = new Map<string, OpenIpfLifterData | null>();
-  const queue = [...fullNames];
+
+  for (const name of uniqueNames) {
+    const cached = getLifterCache(name);
+    if (cached !== undefined) {
+      results.set(name, cached);
+    }
+  }
+
+  const queue = uniqueNames.filter((name) => !results.has(name));
 
   async function worker() {
     while (queue.length > 0) {
@@ -387,9 +455,11 @@ export async function getLifterDataBatch(fullNames: string[], concurrency = 4) {
     }
   }
 
-  await Promise.all(
-    Array.from({ length: Math.min(concurrency, fullNames.length || 1) }, worker),
-  );
+  if (queue.length > 0) {
+    await Promise.all(
+      Array.from({ length: Math.min(concurrency, queue.length) }, worker),
+    );
+  }
 
   return results;
 }
@@ -423,7 +493,7 @@ export async function getBestOpenIpfResult(fullName: string) {
 
 export async function getBestOpenIpfResults(
   fullNames: string[],
-  concurrency = 4,
+  concurrency = 16,
 ) {
   const lifters = await getLifterDataBatch(fullNames, concurrency);
   const results = new Map<string, Awaited<ReturnType<typeof getBestOpenIpfResult>>>();

@@ -7,8 +7,12 @@ export type ChatReadState = {
   last_read_at: string;
 };
 
-export async function upsertDirectReadState(userId: string, peerUserId: string) {
-  const now = new Date().toISOString();
+export async function upsertDirectReadState(
+  userId: string,
+  peerUserId: string,
+  readAt?: string,
+) {
+  const timestamp = readAt || new Date().toISOString();
 
   const { data: existing } = await supabase
     .from("chat_read_state")
@@ -20,7 +24,7 @@ export async function upsertDirectReadState(userId: string, peerUserId: string) 
   if (existing?.id) {
     return supabase
       .from("chat_read_state")
-      .update({ last_read_at: now, updated_at: now })
+      .update({ last_read_at: timestamp, updated_at: timestamp })
       .eq("id", existing.id);
   }
 
@@ -28,8 +32,8 @@ export async function upsertDirectReadState(userId: string, peerUserId: string) 
     user_id: userId,
     peer_user_id: peerUserId,
     group_id: null,
-    last_read_at: now,
-    updated_at: now,
+    last_read_at: timestamp,
+    updated_at: timestamp,
   });
 }
 
@@ -56,6 +60,58 @@ export async function upsertGroupReadState(userId: string, groupId: string) {
     group_id: groupId,
     last_read_at: now,
     updated_at: now,
+  });
+}
+
+export async function resetDirectReadState(userId: string, peerUserId: string) {
+  const clearedAt = new Date(Date.now() - 60_000).toISOString();
+
+  const { data: existing } = await supabase
+    .from("chat_read_state")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("peer_user_id", peerUserId)
+    .maybeSingle();
+
+  if (existing?.id) {
+    return supabase
+      .from("chat_read_state")
+      .update({ last_read_at: clearedAt, updated_at: clearedAt })
+      .eq("id", existing.id);
+  }
+
+  return supabase.from("chat_read_state").insert({
+    user_id: userId,
+    peer_user_id: peerUserId,
+    group_id: null,
+    last_read_at: clearedAt,
+    updated_at: clearedAt,
+  });
+}
+
+export async function resetGroupReadState(userId: string, groupId: string) {
+  const clearedAt = new Date(Date.now() - 60_000).toISOString();
+
+  const { data: existing } = await supabase
+    .from("chat_read_state")
+    .select("id")
+    .eq("user_id", userId)
+    .eq("group_id", groupId)
+    .maybeSingle();
+
+  if (existing?.id) {
+    return supabase
+      .from("chat_read_state")
+      .update({ last_read_at: clearedAt, updated_at: clearedAt })
+      .eq("id", existing.id);
+  }
+
+  return supabase.from("chat_read_state").insert({
+    user_id: userId,
+    peer_user_id: null,
+    group_id: groupId,
+    last_read_at: clearedAt,
+    updated_at: clearedAt,
   });
 }
 

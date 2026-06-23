@@ -1,10 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 
+import { assertAuthenticated } from "@/lib/apiAuth";
 import { getCuratedKnowledgeAsync } from "@/lib/knowledgeBrowse";
 import { getLocalKnowledge } from "@/lib/knowledgeLocal";
 import type { KnowledgeScope } from "@/lib/knowledgeSearch";
 
 export async function GET(request: NextRequest) {
+  const auth = await assertAuthenticated(request);
+  if (!auth.user) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
   const scopeParam = request.nextUrl.searchParams.get("scope");
   const scope: KnowledgeScope = scopeParam === "athlete" ? "athlete" : "coach";
   const curated = await getCuratedKnowledgeAsync(scope);

@@ -190,15 +190,15 @@ export default function ChatBwPanel({
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-app-border px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">BW</h3>
-          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+          <h3 className="truncate chat-panel-title truncate">BW</h3>
+          <p className="truncate chat-panel-subtitle truncate">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          className="shrink-0 rounded-xl p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="BW sluiten"
         >
           <X className="h-4 w-4" />
@@ -208,16 +208,16 @@ export default function ChatBwPanel({
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
         <div className="mb-4 flex items-start justify-between gap-4">
           <div>
-            <p className="text-xs font-black uppercase text-gray-500">
+            <p className="text-xs font-black uppercase text-app-muted">
               Lichaamsgewicht
             </p>
-            <h4 className="text-lg font-black text-black">
+            <h4 className="text-lg font-black text-app-text">
               {hasWeekFilter ? "Gefilterde periode" : "Alle dagen"}
             </h4>
           </div>
 
           <div className="text-right">
-            <p className="text-3xl font-black text-black">
+            <p className="text-3xl font-black text-app-text">
               {formatBwNumber(lastWeight)}kg
             </p>
             <p
@@ -225,8 +225,8 @@ export default function ChatBwPanel({
                 periodDelta !== null
                   ? periodDelta >= 0
                     ? "text-green-600"
-                    : "text-red-600"
-                  : "text-gray-400"
+                    : "text-app-destructive"
+                  : "text-app-subtle"
               }`}
             >
               {periodDelta !== null
@@ -253,25 +253,25 @@ export default function ChatBwPanel({
         )}
 
         {loading && (
-          <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center text-sm text-app-muted">
             BW laden...
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-red-600">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-destructive">
             {error}
           </div>
         )}
 
         {!loading && !error && points.length === 0 && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Nog geen BW ingevuld voor deze atleet.
           </div>
         )}
 
         {!loading && !error && points.length > 0 && chartData.length === 0 && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Geen BW-data in deze periode.
           </div>
         )}
@@ -279,7 +279,7 @@ export default function ChatBwPanel({
         {!loading && !error && chartData.length > 0 && (
           <div
             ref={chartContainerRef}
-            className="min-h-[320px] flex-1 rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+            className="min-h-[320px] flex-1 rounded-3xl border border-app-border bg-app-surface p-3 shadow-sm"
           >
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={chartData}>
@@ -322,12 +322,12 @@ export default function ChatBwPanel({
       </div>
 
       {showSendChartButton && (
-        <div className="shrink-0 border-t border-gray-200 p-3">
+        <div className="shrink-0 border-t border-app-border p-3">
           <button
             type="button"
             onClick={() => void handleSendChartToChat()}
             disabled={!canSendChart || sendingChart}
-            className="flex w-full items-center justify-center gap-2 rounded-xl bg-black px-4 py-2.5 text-sm font-bold text-white transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:bg-gray-300"
+            className="app-btn-primary flex w-full items-center justify-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
           >
             <SendHorizontal className="h-4 w-4" />
             {sendingChart ? "Grafiek versturen..." : "Stuur grafiek in chat"}

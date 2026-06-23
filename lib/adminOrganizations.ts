@@ -4,6 +4,9 @@ export type CoachOrganization = {
   id: string;
   name: string;
   slug: string;
+  head_coach_id: string | null;
+  billing_email: string | null;
+  subscription_status: string;
   created_at: string;
 };
 
@@ -63,6 +66,31 @@ export async function assignCoachOrganization(
 ) {
   return supabase
     .from("profiles")
-    .update({ organization_id: organizationId })
+    .update({ organization_id: organizationId, is_head_coach: false })
     .eq("id", profileId);
+}
+
+export async function assignOrganizationHeadCoach(
+  organizationId: string,
+  coachId: string | null,
+) {
+  await supabase
+    .from("profiles")
+    .update({ is_head_coach: false })
+    .eq("organization_id", organizationId);
+
+  if (coachId) {
+    await supabase
+      .from("profiles")
+      .update({
+        is_head_coach: true,
+        organization_id: organizationId,
+      })
+      .eq("id", coachId);
+  }
+
+  return supabase
+    .from("coach_organizations")
+    .update({ head_coach_id: coachId })
+    .eq("id", organizationId);
 }

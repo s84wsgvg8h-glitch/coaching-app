@@ -64,25 +64,25 @@ export default function PollDetailsPanel({
         type="button"
         aria-label="Sluit poll details"
         onClick={onClose}
-        className="absolute inset-0 bg-black/35"
+        className="absolute inset-0 bg-app-overlay"
       />
 
-      <aside className="absolute right-0 top-0 flex h-full w-full max-w-md flex-col bg-white shadow-2xl">
-        <div className="flex items-start gap-3 border-b border-gray-200 px-4 py-4">
+      <aside className="chat-panel absolute right-0 top-0 w-full max-w-md shadow-2xl">
+        <div className="chat-panel-header items-start">
           <button
             type="button"
             onClick={onClose}
-            className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-200 text-gray-700"
+            className="ui-icon-btn app-focus-ring"
           >
             <X className="h-5 w-5" />
           </button>
 
           <div className="min-w-0 flex-1">
-            <h2 className="text-2xl font-bold text-black">Poll details</h2>
-            <p className="mt-2 text-sm leading-6 text-gray-700">
+            <h2 className="chat-modal-title">Poll details</h2>
+            <p className="mt-2 text-sm leading-6 text-app-muted">
               {payload.question}
             </p>
-            <p className="mt-2 text-sm text-gray-500">
+            <p className="mt-2 text-sm text-app-muted">
               {totalVotes} van {memberCount || totalVotes} leden stemden
             </p>
           </div>
@@ -104,14 +104,14 @@ export default function PollDetailsPanel({
               return (
                 <section key={option.id}>
                   <div className="mb-3 flex items-center justify-between gap-3">
-                    <h3 className="text-lg font-bold text-black">
+                    <h3 className="text-lg font-bold text-app-text">
                       {option.text}
                     </h3>
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                         isWinner
                           ? "bg-green-100 text-green-800"
-                          : "bg-gray-100 text-gray-700"
+                          : "bg-app-surface-hover text-app-muted"
                       }`}
                     >
                       {count} stem{count === 1 ? "" : "men"}
@@ -120,7 +120,7 @@ export default function PollDetailsPanel({
                   </div>
 
                   {optionVotes.length === 0 ? (
-                    <p className="text-sm text-gray-500">Nog geen stemmen.</p>
+                    <p className="text-sm text-app-muted">Nog geen stemmen.</p>
                   ) : (
                     <ul className="space-y-3">
                       {optionVotes.map((vote) => {
@@ -139,13 +139,13 @@ export default function PollDetailsPanel({
                               name={profile?.name || displayName}
                               imageUrl={profile?.avatar_url}
                               className="h-11 w-11"
-                              fallbackClassName="bg-gray-900 text-white"
+                              fallbackClassName="bg-app-surface-elevated text-app-text"
                             />
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-semibold text-black">
+                              <p className="truncate text-sm font-semibold text-app-text">
                                 {displayName}
                               </p>
-                              <p className="text-xs text-gray-500">
+                              <p className="text-xs text-app-muted">
                                 {formatVoteTime(vote.voted_at)}
                               </p>
                             </div>

@@ -1,0 +1,422 @@
+/* ─── Athletes CRM page ─── */
+.athletes-crm-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse 50% 40% at 15% 0%,
+      rgba(79, 140, 255, 0.09),
+      transparent 55%
+    ),
+    radial-gradient(
+      ellipse 40% 30% at 85% 10%,
+      rgba(79, 140, 255, 0.06),
+      transparent 50%
+    );
+}
+
+.athletes-sidebar-panel {
+  border-right: 1px solid var(--glass-surface-border);
+  background: var(--glass-surface-bg);
+  backdrop-filter: blur(18px);
+  -webkit-backdrop-filter: blur(18px);
+  box-shadow: var(--glass-surface-shadow);
+}
+
+.athletes-sidebar-icon-active {
+  background: rgba(79, 140, 255, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(79, 140, 255, 0.28),
+    0 0 18px rgba(79, 140, 255, 0.22);
+}
+
+.athletes-glass-card {
+  border: 1px solid var(--glass-surface-border);
+  border-radius: var(--radius-xl);
+  background: var(--glass-surface-bg);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--glass-surface-shadow);
+}
+
+.athletes-glass-bar {
+  border: 1px solid var(--glass-surface-border);
+  background: var(--glass-surface-bg);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  box-shadow:
+    var(--glass-surface-shadow),
+    inset -1px 0 0 rgba(79, 140, 255, 0.06);
+}
+
+.athletes-glass-input {
+  border: 1px solid rgba(79, 140, 255, 0.18);
+  border-radius: var(--radius-xl);
+  background: var(--glass-input-bg);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  box-shadow:
+    var(--glass-highlight),
+    0 0 0 1px rgba(79, 140, 255, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+.athletes-pill-btn-primary {
+  border: 1px solid rgba(79, 140, 255, 0.45);
+  background: linear-gradient(
+    180deg,
+    rgba(79, 140, 255, 0.95) 0%,
+    rgba(59, 110, 220, 0.95) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(79, 140, 255, 0.2),
+    0 4px 16px rgba(79, 140, 255, 0.28);
+}
+
+.athletes-pill-btn-primary:hover {
+  filter: brightness(1.06);
+}
+
+.athletes-pill-btn-ghost {
+  border-color: var(--glass-surface-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.athletes-pill-btn-ghost:hover {
+  background: var(--glass-hover-bg);
+}
+
+.athletes-status-badge {
+  border-radius: 999px;
+  padding: 0.3rem 0.65rem;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.athletes-status-badge--active {
+  border: 1px solid rgba(79, 140, 255, 0.35);
+  background: rgba(79, 140, 255, 0.12);
+  color: var(--app-accent);
+}
+
+.athletes-status-badge--warning {
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: rgb(252, 211, 77);
+}
+
+.athletes-status-badge--muted {
+  border: 1px solid var(--glass-surface-border);
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
+}
+
+.athletes-filter-tab-active {
+  box-shadow: 0 0 14px rgba(79, 140, 255, 0.15);
+}
+
+.athletes-filter-tab-active--warning {
+  box-shadow: 0 0 14px rgba(245, 158, 11, 0.12);
+}
+
+.athletes-search-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  height: 38px;
+  width: 52px;
+  padding: 0 0.4rem;
+  overflow: hidden;
+  transition: width 0.22s ease, padding 0.22s ease;
+}
+
+.athletes-search-bar--expanded {
+  width: min(320px, 52vw);
+  padding: 0 0.55rem 0 0.4rem;
+}
+
+.athletes-search-bar-input {
+  width: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.18s ease;
+}
+
+.athletes-search-bar--expanded .athletes-search-bar-input {
+  width: auto;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.athletes-revenue-eye {
+  flex-shrink: 0;
+}
+
+.athletes-table-wrap {
+  overflow: hidden;
+}
+
+.athletes-table-head th {
+  padding: 0.55rem 0.55rem;
+  text-align: left;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-subtle);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.athletes-table-head .athletes-th-athlete {
+  padding-left: 0.85rem;
+}
+
+.athletes-table-head .athletes-th-actions {
+  padding-right: 0.85rem;
+  text-align: right;
+}
+
+.athletes-table-head .athletes-th-center {
+  text-align: center;
+}
+
+.athletes-table-head .athletes-th-numeric {
+  padding-left: 0.55rem;
+  padding-right: 0.55rem;
+}
+
+.athletes-table-head .athletes-th-select {
+  width: 44px;
+  padding-left: 0.85rem;
+}
+
+.athletes-table-row td {
+  height: 58px;
+  padding: 0 0.55rem;
+  vertical-align: middle;
+  font-size: 12px;
+  color: var(--app-text);
+  overflow: hidden;
+}
+
+.athletes-table-row td:first-child {
+  padding-left: 0.85rem;
+}
+
+.athletes-table-row td:last-child {
+  padding-right: 0.85rem;
+}
+
+.athletes-td-select {
+  width: 44px;
+  padding-left: 0.85rem !important;
+  text-align: center;
+}
+
+.athletes-select-checkbox {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+}
+
+.athletes-cell-athlete {
+  min-width: 0;
+  padding-left: 0.85rem !important;
+}
+
+.athletes-table-row {
+  border-bottom: 1px solid var(--app-surface-muted);
+  transition: background 0.15s ease;
+}
+
+.athletes-table-row--expanded {
+  background: rgba(79, 140, 255, 0.04);
+}
+
+.athletes-table-row--clickable {
+  cursor: pointer;
+}
+
+.athletes-table-row--clickable:focus-visible {
+  outline: 2px solid rgba(79, 140, 255, 0.45);
+  outline-offset: -2px;
+}
+
+.athletes-data-cell {
+  font-size: 12px;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.athletes-data-cell-inner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 100%;
+}
+
+.athletes-cell-interactive {
+  cursor: pointer;
+  border: 1px solid transparent;
+}
+
+.athletes-cell-interactive:hover {
+  background: rgba(79, 140, 255, 0.1);
+  border-color: rgba(79, 140, 255, 0.28);
+}
+
+.athletes-cell-interactive--active {
+  background: rgba(79, 140, 255, 0.08);
+  border-color: rgba(79, 140, 255, 0.35);
+}
+
+.athletes-table-row--clickable:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.athletes-actions-cell {
+  text-align: right;
+}
+
+.athletes-actions-group {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--app-surface-hover);
+  background: var(--app-surface-muted);
+}
+
+.athletes-action-btn {
+  display: inline-flex;
+  height: 28px;
+  width: 28px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  color: var(--app-accent);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.athletes-action-btn:hover {
+  background: rgba(79, 140, 255, 0.12);
+}
+
+.athletes-action-btn--danger {
+  color: var(--app-muted);
+}
+
+.athletes-action-btn--danger:hover {
+  background: rgba(244, 63, 94, 0.12);
+  color: rgb(251, 113, 133);
+}
+
+.athletes-mobile-card {
+  cursor: pointer;
+  border-bottom: 1px solid var(--app-surface-muted);
+}
+
+.athletes-mobile-card:focus-visible {
+  outline: 2px solid rgba(79, 140, 255, 0.45);
+  outline-offset: -2px;
+}
+
+.athletes-invite-modal {
+  border-radius: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: linear-gradient(
+    165deg,
+    rgb(18, 22, 32) 0%,
+    rgb(12, 15, 22) 100%
+  );
+  box-shadow:
+    0 0 0 1px rgba(79, 140, 255, 0.12),
+    0 24px 80px rgba(0, 0, 0, 0.65),
+    0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.athletes-payment-card {
+  box-shadow: inset 0 1px 0 var(--app-surface-muted);
+}
+
+.athletes-payment-card--paid {
+  box-shadow:
+    inset 0 1px 0 var(--app-surface-hover),
+    0 0 20px rgba(16, 185, 129, 0.08);
+}
+
+.athletes-payment-card--overdue {
+  box-shadow:
+    inset 0 1px 0 var(--app-surface-hover),
+    0 0 20px rgba(244, 63, 94, 0.1);
+}
+
+.athletes-beheer-row {
+  border-top: 1px solid var(--glass-surface-border);
+  background: linear-gradient(
+    180deg,
+    var(--app-surface-muted) 0%,
+    transparent 100%
+  );
+}
+
+.athletes-beheer-row:hover {
+  background: var(--glass-hover-bg);
+}
+
+@media (max-width: 1023px) {
+  .athletes-crm-inner {
+    padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+  }
+}
+
+@media (max-width: 767px) {
+  .app-page-content,
+  .app-shell > section.mobile-scroll {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mobile-card-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.75rem;
+  }
+
+  .page-shell-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .todo-kanban-board {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .todo-composer {
+    flex-wrap: wrap;
+  }
+
+  .todo-composer-submit {
+    width: 100%;
+    justify-content: center;
+  }
+}

@@ -1,3 +1,4 @@
+import { getAppOrigin } from "@/lib/appUrl";
 import { supabase } from "@/lib/supabaseClient";
 
 export type CoachSignupInvite = {
@@ -12,12 +13,7 @@ export type CoachSignupInvite = {
 const DEFAULT_VALID_DAYS = 5;
 
 export function buildCoachSignupUrl(token: string) {
-  const origin =
-    typeof window !== "undefined"
-      ? window.location.origin
-      : "https://coaching-app-tan.vercel.app";
-
-  return `${origin}/signup?coach-signup=${token}`;
+  return `${getAppOrigin()}/signup?coach-signup=${token}`;
 }
 
 export async function loadCoachSignupInvites() {

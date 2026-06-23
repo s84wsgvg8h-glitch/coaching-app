@@ -1,13 +1,27 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import AppSidebar from "@/components/AppSidebar";
+import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
+import { PageLoading } from "@/components/ui/Skeleton";
 import { supabase } from "@/lib/supabaseClient";
-import StatisticsView from "@/components/StatisticsView";
-import RawDataView from "@/components/RawDataView";
+import { isCoachLikeRole } from "@/lib/authRoles";
+import {
+  ComplianceTrendPanelLazy,
+  PerformanceGraphPanelLazy,
+  PrHistoryPanelLazy,
+  RawDataViewLazy,
+  RpeIntensityPanelLazy,
+  StatisticsViewLazy,
+  TeamStatistiekenPanelLazy,
+  VolumeLandmarksPanelLazy,
+} from "@/components/data/DataPageLazyPanels";
+import DeloadSuggestionBanner from "@/components/data/DeloadSuggestionBanner";
+import AthleteProgressTabs from "@/components/data/AthleteProgressTabs";
+import StatsTabs from "@/components/statistics/dashboard/StatsTabs";
 
-type DataTab = "statistieken" | "ruwe-data";
+type DataTab = "statistieken" | "ruwe-data" | "team" | "performance";
 
 function DataPageInner() {
   const router = useRouter();
@@ -15,10 +29,15 @@ function DataPageInner() {
   const embeddedInChat = searchParams.get("embedded") === "chat";
   const tabParam = searchParams.get("tab");
   const [role, setRole] = useState("");
+  const [userId, setUserId] = useState("");
   const [loadingRole, setLoadingRole] = useState(true);
+  const [selectedAthleteId, setSelectedAthleteId] = useState("");
+  const [athletes, setAthletes] = useState<
+    Array<{ id: string; full_name: string | null }>
+  >([]);
 
   useEffect(() => {
-    document.title = "Data & voortgang";
+    document.title = "Data & statistieken";
 
     async function loadRole() {
       const {
@@ -30,6 +49,8 @@ function DataPageInner() {
         return;
       }
 
+      setUserId(user.id);
+
       const { data: profile } = await supabase
         .from("profiles")
         .select("role")
@@ -37,17 +58,45 @@ function DataPageInner() {
         .single();
 
       setRole(profile?.role || "");
+
+      if (isCoachLikeRole(profile?.role)) {
+        const { data: athleteRows } = await supabase
+          .from("profiles")
+          .select("id, full_name")
+          .eq("role", "atleet")
+          .order("full_name", { ascending: true });
+        setAthletes(athleteRows || []);
+        if (athleteRows?.[0]) setSelectedAthleteId(athleteRows[0].id);
+      }
+
       setLoadingRole(false);
     }
 
     void loadRole();
   }, []);
 
-  const isCoach = role === "coach" || role === "admin";
+  const isCoach = isCoachLikeRole(role);
   const activeTab: DataTab =
     tabParam === "ruwe-data" && isCoach
       ? "ruwe-data"
-      : "statistieken";
+      : tabParam === "team" && isCoach
+        ? "team"
+        : tabParam === "performance" && isCoach
+          ? "performance"
+          : "statistieken";
+
+  const tabs: Array<{ id: DataTab; label: string }> = useMemo(
+    () =>
+      isCoach
+        ? [
+            { id: "statistieken", label: "Overzicht" },
+            { id: "ruwe-data", label: "Ruwe data" },
+            { id: "team", label: "Team" },
+            { id: "performance", label: "Performance" },
+          ]
+        : [],
+    [isCoach],
+  );
 
   function switchTab(tab: DataTab) {
     router.replace(`/data?tab=${tab}`, { scroll: false });
@@ -55,74 +104,107 @@ function DataPageInner() {
 
   if (embeddedInChat) {
     return (
-      <main className="min-h-full bg-gray-100">
-        <RawDataView embeddedInUnifiedPage />
+      <main className="min-h-full bg-app-bg">
+        <RawDataViewLazy embeddedInUnifiedPage />
       </main>
     );
   }
 
   if (loadingRole) {
     return (
-      <main className="min-h-[100dvh] bg-gray-100">
-        <section className="flex-1 p-8 pb-24">
-          <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-500 shadow">
-            Data laden...
-          </div>
-        </section>
-        <AppSidebar />
-      </main>
+      <AppShell>
+        <PageContainer size="full">
+          <PageLoading label="Data laden…" />
+        </PageContainer>
+      </AppShell>
     );
   }
 
   return (
-    <main className="min-h-[100dvh] bg-gray-100">
-      <section className="flex-1 p-8 pb-24">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-black">
-            {isCoach ? "Data & statistieken" : "Voortgang"}
-          </h1>
-          <p className="mt-2 text-gray-500">
-            {isCoach
-              ? "Bekijk grafieken, trends en ruwe trainingslogs op één plek."
-              : "Bekijk je statistieken en voortgang."}
-          </p>
-        </div>
+    <AppShell>
+      <PageContainer size="full">
+        <PageHeader
+          title={isCoach ? "Data & statistieken" : "Voortgang & video's"}
+          description={
+            isCoach
+              ? "Bekijk je atleet's trends en voortgang op één plek."
+              : "Bekijk je statistieken en trainingsvideo's."
+          }
+          actions={
+            isCoach && activeTab === "statistieken" ? (
+              <div
+                id="statistics-header-actions"
+                className="flex items-end justify-end"
+              />
+            ) : undefined
+          }
+        />
 
-        {isCoach ? (
-          <div className="mb-6 inline-flex rounded-xl bg-white p-1 shadow">
-            <button
-              type="button"
-              onClick={() => switchTab("statistieken")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                activeTab === "statistieken"
-                  ? "bg-black text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              Statistieken
-            </button>
-            <button
-              type="button"
-              onClick={() => switchTab("ruwe-data")}
-              className={`rounded-lg px-4 py-2 text-sm font-bold transition ${
-                activeTab === "ruwe-data"
-                  ? "bg-black text-white"
-                  : "text-gray-600 hover:bg-gray-50"
-              }`}
-            >
-              Ruwe data
-            </button>
-          </div>
-        ) : null}
+        {!isCoach ? (
+          <AthleteProgressTabs active="data" />
+        ) : (
+          <StatsTabs tabs={tabs} activeTab={activeTab} onChange={switchTab} />
+        )}
 
         {activeTab === "statistieken" ? (
-          <StatisticsView embedded />
+          <>
+            {!isCoach && userId ? (
+              <DeloadSuggestionBanner athleteId={userId} />
+            ) : null}
+            <StatisticsViewLazy embedded />
+          </>
+        ) : activeTab === "ruwe-data" ? (
+          <RawDataViewLazy embeddedInUnifiedPage />
+        ) : activeTab === "team" && isCoach ? (
+          <TeamStatistiekenPanelLazy coachId={userId} role={role} />
+        ) : activeTab === "performance" && isCoach ? (
+          <div className="space-y-4">
+            {athletes.length > 0 ? (
+              <>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <label className="text-[13px] font-medium text-app-muted">
+                    Atleet
+                    <select
+                      value={selectedAthleteId}
+                      onChange={(e) => setSelectedAthleteId(e.target.value)}
+                      className="mt-1.5 block w-full min-h-[44px] rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-[16px] text-app-text outline-none app-focus-ring sm:max-w-xs sm:text-sm"
+                    >
+                      {athletes.map((athlete) => (
+                        <option key={athlete.id} value={athlete.id}>
+                          {athlete.full_name || "Atleet"}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+                {selectedAthleteId ? (
+                  <>
+                    <DeloadSuggestionBanner athleteId={selectedAthleteId} />
+                    <PerformanceGraphPanelLazy
+                      athleteId={selectedAthleteId}
+                      athleteName={
+                        athletes.find((a) => a.id === selectedAthleteId)
+                          ?.full_name || "Atleet"
+                      }
+                    />
+                    <RpeIntensityPanelLazy athleteId={selectedAthleteId} />
+                    <PrHistoryPanelLazy athleteId={selectedAthleteId} />
+                    <ComplianceTrendPanelLazy athleteId={selectedAthleteId} />
+                    <VolumeLandmarksPanelLazy athleteId={selectedAthleteId} />
+                  </>
+                ) : null}
+              </>
+            ) : (
+              <div className="app-card">
+                <p className="text-sm text-app-muted">Geen atleten gevonden.</p>
+              </div>
+            )}
+          </div>
         ) : (
-          <RawDataView embeddedInUnifiedPage />
+          <StatisticsViewLazy embedded />
         )}
-      </section>
-      <AppSidebar />
-    </main>
+      </PageContainer>
+    </AppShell>
   );
 }
 
@@ -130,13 +212,9 @@ export default function DataPage() {
   return (
     <Suspense
       fallback={
-        <main className="min-h-[100dvh] bg-gray-100">
-          <section className="flex-1 p-8 pb-24">
-            <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-500 shadow">
-              Data laden...
-            </div>
-          </section>
-        </main>
+        <AppShell>
+          <PageLoading label="Data laden…" />
+        </AppShell>
       }
     >
       <DataPageInner />

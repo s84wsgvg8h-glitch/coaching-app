@@ -54,6 +54,21 @@ export function splitHighlightedText(text: string, query: string) {
     }));
 }
 
+export function getSearchSnippet(text: string, query: string, radius = 48) {
+  const normalized = query.trim();
+  if (!normalized) return text;
+
+  const lowerText = text.toLowerCase();
+  const index = lowerText.indexOf(normalized.toLowerCase());
+  if (index === -1) return text.slice(0, radius * 2);
+
+  const start = Math.max(0, index - radius);
+  const end = Math.min(text.length, index + normalized.length + radius);
+  const prefix = start > 0 ? "…" : "";
+  const suffix = end < text.length ? "…" : "";
+  return `${prefix}${text.slice(start, end)}${suffix}`;
+}
+
 export async function searchMessagesGlobally(
   userId: string,
   query: string,

@@ -96,7 +96,7 @@ export default function ChatMediaComposer({
               type="button"
               onClick={() => onSend(file, caption.trim())}
               disabled={uploading}
-              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white text-black disabled:opacity-40"
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-app-surface text-app-text disabled:opacity-40"
               aria-label="Versturen"
             >
               <SendHorizontal className="h-4 w-4" />

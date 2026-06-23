@@ -1,22 +1,35 @@
 "use client";
 
+import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { validateCoachInviteToken } from "@/lib/coachInviteLinks";
 import { validateCoachSignupToken } from "@/lib/coachSignupInvites";
+import { validateAdminPlatformInvite } from "@/lib/adminPlatformInvites";
+import AuthShell, { AuthField, AuthInput } from "@/components/auth/AuthShell";
+import AuthLegalLinks from "@/components/legal/AuthLegalLinks";
+import { SkeletonCard } from "@/components/ui/Skeleton";
+
+type InviteMode =
+  | "coach-athlete"
+  | "coach-signup"
+  | "platform-organization"
+  | "platform-athlete"
+  | "none";
 
 function SignupForm() {
   const searchParams = useSearchParams();
   const athleteToken = searchParams.get("coach")?.trim() || "";
   const coachSignupToken = searchParams.get("coach-signup")?.trim() || "";
+  const platformToken = searchParams.get("platform")?.trim() || "";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [inviteValid, setInviteValid] = useState<boolean | null>(
-    athleteToken || coachSignupToken ? null : false,
-  );
+  const [loading, setLoading] = useState(false);
+  const [inviteValid, setInviteValid] = useState<boolean | null>(null);
+  const [inviteMode, setInviteMode] = useState<InviteMode>("none");
   const [inviteLabel, setInviteLabel] = useState("");
 
   useEffect(() => {
@@ -24,8 +37,10 @@ function SignupForm() {
   }, []);
 
   useEffect(() => {
-    if (!athleteToken && !coachSignupToken) {
+    const hasToken = Boolean(athleteToken || coachSignupToken || platformToken);
+    if (!hasToken) {
       setInviteValid(false);
+      setInviteMode("none");
       return;
     }
 
@@ -33,7 +48,30 @@ function SignupForm() {
       if (coachSignupToken) {
         const valid = await validateCoachSignupToken(coachSignupToken);
         setInviteValid(valid);
+        setInviteMode(valid ? "coach-signup" : "none");
         setInviteLabel(valid ? "coach-account" : "");
+        return;
+      }
+
+      if (platformToken) {
+        const platform = await validateAdminPlatformInvite(platformToken);
+        if (!platform) {
+          setInviteValid(false);
+          setInviteMode("none");
+          return;
+        }
+
+        setInviteValid(true);
+        setInviteMode(
+          platform.invite_kind === "organization"
+            ? "platform-organization"
+            : "platform-athlete",
+        );
+        setInviteLabel(
+          platform.invite_kind === "organization"
+            ? "organisatie-coach"
+            : "platform-atleet",
+        );
         return;
       }
 
@@ -41,6 +79,7 @@ function SignupForm() {
 
       if (!coachId) {
         setInviteValid(false);
+        setInviteMode("none");
         return;
       }
 
@@ -48,21 +87,23 @@ function SignupForm() {
         .from("profiles")
         .select("full_name")
         .eq("id", coachId)
-        .single();
+        .maybeSingle();
 
       setInviteLabel(data?.full_name || "je coach");
       setInviteValid(true);
+      setInviteMode("coach-athlete");
     }
 
     void validateInvite();
-  }, [athleteToken, coachSignupToken]);
+  }, [athleteToken, coachSignupToken, platformToken]);
 
   async function signUp() {
-    if ((athleteToken || coachSignupToken) && inviteValid !== true) {
+    if (inviteValid !== true) {
       alert("Deze uitnodigingslink is ongeldig of verlopen.");
       return;
     }
 
+    setLoading(true);
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
@@ -71,9 +112,11 @@ function SignupForm() {
           full_name: fullName,
           invite_token: athleteToken || null,
           coach_signup_token: coachSignupToken || null,
+          platform_invite_token: platformToken || null,
         },
       },
     });
+    setLoading(false);
 
     if (error) {
       alert(error.message);
@@ -81,92 +124,116 @@ function SignupForm() {
     }
 
     if (!data.user) {
-      alert("Geen user aangemaakt");
+      alert("Geen user aangevraagd");
       return;
     }
 
     alert(
-      coachSignupToken
+      inviteMode === "coach-signup"
         ? "Coach-account aangevraagd. Een admin keurt je aanmelding goed."
-        : athleteToken
-          ? "Account aangemaakt. Je kunt nu inloggen."
-          : "Account aanvraag verstuurd",
+        : inviteMode === "platform-organization"
+          ? "Coach-account aangevraagd voor de organisatie. Een admin keurt je aanmelding goed."
+          : inviteMode === "platform-athlete"
+            ? "Atleet-account aangevraagd. Een admin keurt je aanmelding goed."
+            : "Account aangevraagd. Je coach keurt je aanmelding goed — daarna kun je inloggen.",
     );
     window.location.href = "/login";
   }
 
-  if ((athleteToken || coachSignupToken) && inviteValid === null) {
-    return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4">
-        <p className="text-sm text-app-muted">Uitnodiging controleren...</p>
-      </main>
-    );
-  }
+  const subtitle =
+    inviteMode === "coach-signup"
+      ? "Maak je coach-account aan. Een admin keurt je aanmelding daarna goed."
+      : inviteMode === "platform-organization"
+        ? "Maak je coach-account aan voor de organisatie via deze admin-link."
+        : inviteMode === "platform-athlete"
+          ? "Maak je atletenaccount aan via deze admin-link."
+          : inviteMode === "coach-athlete"
+            ? `Maak je atletenaccount aan via ${inviteLabel}.`
+            : "Registreren kan alleen met een geldige uitnodigingslink.";
 
-  if ((athleteToken || coachSignupToken) && inviteValid === false) {
+  if (inviteValid === null) {
     return (
-      <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4 py-8">
-        <div className="w-full max-w-md rounded-2xl bg-app-surface p-8 shadow-xl">
-          <h1 className="mb-2 text-3xl font-bold text-app-text">Ongeldige link</h1>
-          <p className="text-app-muted">
-            Deze uitnodigingslink is ongeldig of verlopen. Vraag om een nieuwe
-            link.
-          </p>
+      <main className="auth-shell flex min-h-[100dvh] items-center justify-center p-6">
+        <div className="w-full max-w-md">
+          <SkeletonCard />
         </div>
       </main>
     );
   }
 
+  if (inviteValid === false) {
+    return (
+      <AuthShell
+        title="Uitnodiging vereist"
+        subtitle="Account aanmaken kan alleen met een geldige link van je coach of admin."
+        footer={
+          <p className="text-center text-[14px] text-app-muted">
+            <Link href="/login" className="font-medium text-app-accent hover:underline">
+              Terug naar inloggen
+            </Link>
+          </p>
+        }
+      >
+        <div />
+      </AuthShell>
+    );
+  }
+
   return (
-    <main className="flex min-h-[100dvh] items-center justify-center bg-app-bg px-4 py-8 pt-safe pb-safe">
-      <div className="w-full max-w-md rounded-2xl bg-app-surface p-6 shadow-xl md:p-8">
-        <h1 className="mb-2 text-3xl font-bold text-app-text">Account maken</h1>
-
-        <p className="mb-6 text-app-muted">
-          {coachSignupToken
-            ? "Maak je coach-account aan. Een admin keurt je aanmelding daarna goed."
-            : athleteToken
-              ? `Maak je atletenaccount aan via ${inviteLabel}.`
-              : "Vraag toegang aan als atleet"}
+    <AuthShell
+      title="Account maken"
+      subtitle={subtitle}
+      footer={
+        <p className="text-center text-[14px] text-app-muted">
+          Heb je al een account?{" "}
+          <Link href="/login" className="font-medium text-app-accent hover:underline">
+            Inloggen
+          </Link>
         </p>
-
-        <input
-          className="mb-3 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle"
-          placeholder="Volledige naam"
+      }
+    >
+      <AuthField label="Volledige naam">
+        <AuthInput
+          placeholder="Je naam"
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
         />
-
-        <input
-          className="mb-3 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle"
-          placeholder="E-mail"
+      </AuthField>
+      <AuthField label="E-mail">
+        <AuthInput
+          placeholder="jij@email.nl"
           type="email"
           autoComplete="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
-
-        <input
-          className="mb-4 w-full rounded-lg border border-app-border bg-app-surface p-3 text-app-text outline-none placeholder:text-app-subtle"
+      </AuthField>
+      <AuthField label="Wachtwoord">
+        <AuthInput
           type="password"
-          placeholder="Wachtwoord"
+          placeholder="••••••••"
           autoComplete="new-password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter") void signUp();
+          }}
         />
-
-        <button
-          onClick={() => void signUp()}
-          className="theme-preserve w-full rounded-lg bg-app-primary p-3 font-semibold text-app-primary-fg transition active:scale-[0.98]"
-        >
-          {coachSignupToken
+      </AuthField>
+      <button
+        type="button"
+        onClick={() => void signUp()}
+        disabled={loading}
+        className="app-btn-primary w-full py-3 disabled:opacity-60"
+      >
+        {loading
+          ? "Bezig..."
+          : inviteMode === "coach-signup" || inviteMode === "platform-organization"
             ? "Coach-account aanvragen"
-            : athleteToken
-              ? "Account aanmaken"
-              : "Account aanvragen"}
-        </button>
-      </div>
-    </main>
+            : "Account aanmaken"}
+      </button>
+      <AuthLegalLinks />
+    </AuthShell>
   );
 }
 
@@ -174,8 +241,10 @@ export default function SignupPage() {
   return (
     <Suspense
       fallback={
-        <main className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
-          <p className="text-sm text-gray-500">Laden...</p>
+        <main className="auth-shell flex min-h-[100dvh] items-center justify-center p-6">
+          <div className="w-full max-w-md">
+            <SkeletonCard />
+          </div>
         </main>
       }
     >

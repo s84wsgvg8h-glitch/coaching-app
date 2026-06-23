@@ -21,7 +21,7 @@ export default function HighlightedText({
         part.highlight ? (
           <mark
             key={`${part.text}-${index}`}
-            className="rounded bg-emerald-200 px-0.5 font-semibold text-emerald-900"
+            className="rounded bg-emerald-500/25 px-0.5 font-semibold text-emerald-200"
           >
             {part.text}
           </mark>

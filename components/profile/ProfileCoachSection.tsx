@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 
 type ProfileCoachSectionProps = {
@@ -135,11 +134,7 @@ export default function ProfileCoachSection({
 
       {!coachId ? (
         <p className="text-sm text-app-muted">
-          Vraag je coach om een uitnodigingslink, of{" "}
-          <Link href="/signup" className="font-semibold underline">
-            maak een account aan
-          </Link>{" "}
-          met die link.
+          Vraag je coach om een uitnodigingslink om je account te koppelen.
         </p>
       ) : null}
     </div>

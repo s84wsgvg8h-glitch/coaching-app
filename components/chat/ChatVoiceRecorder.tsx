@@ -386,7 +386,7 @@ export default function ChatVoiceRecorder({
       type="button"
       disabled={disabled}
       onClick={() => void startRecording()}
-      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-black transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-40"
+      className="mb-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
       aria-label="Spraakbericht opnemen"
     >
       <Mic className="h-5 w-5" />

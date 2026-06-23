@@ -1,28 +1,159 @@
 "use client";
 
-import Link from "next/link";
-import { useEffect, useMemo, useRef, useState } from "react";
-import { Plus, Trash2 } from "lucide-react";
+import "@/styles/todo-kanban.css";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CheckCircle2, ListTodo, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { SkeletonList } from "@/components/ui/Skeleton";
+import EmptyState from "@/components/ui/EmptyState";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import TodoComposer from "@/components/todo/TodoComposer";
+import TodoKanbanCard from "@/components/todo/TodoKanbanCard";
+import TodoKanbanColumn from "@/components/todo/TodoKanbanColumn";
+import TodoSoundToggle from "@/components/todo/TodoSoundToggle";
+import { resolveAthleteIdFromTodoTitle } from "@/lib/todoTitleSuggestions";
+import { parseTodoInput } from "@/lib/todoTitleParser";
+import { playTaskCompleteSound } from "@/lib/todo/playTaskCompleteSound";
+import {
+  TASK_COMPLETE_ANIMATION_MS,
+  TASK_COMPLETE_SOUND_DELAY_MS,
+  TASK_DONE_ENTER_MS,
+  waitMs,
+} from "@/lib/todo/taskCompletionTiming";
+import { useTaskSoundPreference } from "@/hooks/useTaskSoundPreference";
+import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import {
   createCoachTodo,
-  deleteCoachTodo,
-  loadCoachTodos,
+  loadCoachTodosFast,
+  syncCoachTodosInBackground,
   toggleCoachTodo,
+  updateCoachTodoKanbanStatus,
   type CoachTodo,
+  type CoachTodoKanbanStatus,
 } from "@/lib/coachTodos";
+
+const KANBAN_COLUMNS: Array<{
+  id: CoachTodoKanbanStatus;
+  label: string;
+  icon: React.ReactNode;
+}> = [
+  {
+    id: "todo",
+    label: "Todo",
+    icon: <ListTodo className="h-[18px] w-[18px] text-app-muted" aria-hidden="true" />,
+  },
+  {
+    id: "doing",
+    label: "Doing",
+    icon: <Loader2 className="h-[18px] w-[18px] text-app-muted" aria-hidden="true" />,
+  },
+  {
+    id: "done",
+    label: "Done",
+    icon: (
+      <CheckCircle2
+        className="h-[18px] w-[18px] text-[#3b82f6]"
+        aria-hidden="true"
+      />
+    ),
+  },
+];
+
+function sortTodosOpenFirst(items: CoachTodo[]) {
+  return [...items].sort((a, b) => {
+    if (a.completed !== b.completed) return a.completed ? 1 : -1;
+    return 0;
+  });
+}
+
+function resolveKanbanStatus(todo: CoachTodo): CoachTodoKanbanStatus {
+  if (todo.kanban_status) return todo.kanban_status;
+  return todo.completed ? "done" : "todo";
+}
+
+function buildCompletedTodo(todo: CoachTodo): CoachTodo {
+  return {
+    ...todo,
+    completed: true,
+    kanban_status: "done",
+    completed_at: todo.completed_at || new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+}
 
 export default function TodoPage() {
   const [coachId, setCoachId] = useState("");
   const [todos, setTodos] = useState<CoachTodo[]>([]);
   const [loading, setLoading] = useState(true);
+  const [syncing, setSyncing] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
-  const inputRef = useRef<HTMLInputElement>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [completingTodoId, setCompletingTodoId] = useState<string | null>(null);
+  const [enteringDoneIds, setEnteringDoneIds] = useState<Set<string>>(new Set());
+  const [bumpDoneCount, setBumpDoneCount] = useState(false);
+  const [athleteOptions, setAthleteOptions] = useState<
+    Array<{ id: string; full_name: string | null }>
+  >([]);
+  const [mobileKanbanColumn, setMobileKanbanColumn] =
+    useState<CoachTodoKanbanStatus>("todo");
+
+  const reducedMotion = usePrefersReducedMotion();
+  const { soundEnabled, setSoundEnabled } = useTaskSoundPreference();
+  const completionLockRef = useRef(false);
+
+  const athleteNameById = useMemo(
+    () =>
+      Object.fromEntries(
+        athleteOptions.map((athlete) => [athlete.id, athlete.full_name]),
+      ),
+    [athleteOptions],
+  );
+
+  const triggerDoneCountBump = useCallback(() => {
+    if (reducedMotion) return;
+    setBumpDoneCount(true);
+    window.setTimeout(() => setBumpDoneCount(false), 380);
+  }, [reducedMotion]);
+
+  const markEnteringDone = useCallback((todoId: string) => {
+    if (reducedMotion) return;
+    setEnteringDoneIds((current) => new Set(current).add(todoId));
+    window.setTimeout(() => {
+      setEnteringDoneIds((current) => {
+        const next = new Set(current);
+        next.delete(todoId);
+        return next;
+      });
+    }, TASK_DONE_ENTER_MS);
+  }, [reducedMotion]);
+
+  const runCompletionFeedback = useCallback(
+    async (todo: CoachTodo) => {
+      if (completionLockRef.current) return false;
+      completionLockRef.current = true;
+
+      const animationMs = reducedMotion ? 60 : TASK_COMPLETE_ANIMATION_MS;
+
+      if (!reducedMotion) {
+        setCompletingTodoId(todo.id);
+      }
+
+      if (soundEnabled && !reducedMotion) {
+        window.setTimeout(() => playTaskCompleteSound(), TASK_COMPLETE_SOUND_DELAY_MS);
+      }
+
+      await waitMs(animationMs);
+      setCompletingTodoId(null);
+      markEnteringDone(todo.id);
+      completionLockRef.current = false;
+      return true;
+    },
+    [markEnteringDone, reducedMotion, soundEnabled],
+  );
 
   useEffect(() => {
     document.title = "To-do";
@@ -48,40 +179,95 @@ export default function TodoPage() {
         return;
       }
 
+      const admin = profile?.role === "admin";
       setCoachId(user.id);
-      await refreshTodos(user.id, profile?.role === "admin");
+
+      const { data: athletes } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "atleet")
+        .order("full_name", { ascending: true });
+
+      setAthleteOptions(athletes || []);
+
+      const { data, error } = await loadCoachTodosFast(user.id, {
+        includeOldCompleted: true,
+      });
+      if (error) {
+        setErrorMessage(error.message);
+        setTodos([]);
+      } else {
+        setTodos(data);
+      }
+      setLoading(false);
+
+      setSyncing(true);
+      void syncCoachTodosInBackground(user.id, admin).then(async () => {
+        const refreshed = await loadCoachTodosFast(user.id, {
+          includeOldCompleted: true,
+        });
+        if (!refreshed.error) setTodos(refreshed.data);
+        setSyncing(false);
+      });
     }
 
     void init();
   }, []);
 
-  async function refreshTodos(id: string, isAdmin: boolean) {
-    setLoading(true);
-    const { data, error } = await loadCoachTodos(id, isAdmin);
-    if (error) {
-      setErrorMessage(error.message);
-      setTodos([]);
-    } else {
-      setTodos(data);
+  useEffect(() => {
+    function handleSearch(event: Event) {
+      const detail = (event as CustomEvent<string>).detail;
+      setSearchQuery(typeof detail === "string" ? detail : "");
     }
-    setLoading(false);
-  }
 
-  const openTodos = useMemo(
-    () => todos.filter((todo) => !todo.completed),
-    [todos],
-  );
-  const doneTodos = useMemo(
-    () => todos.filter((todo) => todo.completed),
-    [todos],
-  );
+    window.addEventListener("todo-search", handleSearch as EventListener);
+    return () => window.removeEventListener("todo-search", handleSearch as EventListener);
+  }, []);
+
+  const isSearching = searchQuery.trim().length > 0;
+
+  const searchResults = useMemo(() => {
+    const query = searchQuery.trim().toLowerCase();
+    if (!query) return [];
+    return sortTodosOpenFirst(
+      todos.filter((todo) => todo.title.toLowerCase().includes(query)),
+    );
+  }, [searchQuery, todos]);
+
+  const todosByColumn = useMemo(() => {
+    const grouped: Record<CoachTodoKanbanStatus, CoachTodo[]> = {
+      todo: [],
+      doing: [],
+      done: [],
+    };
+
+    for (const todo of todos) {
+      if (completingTodoId === todo.id) {
+        grouped[resolveKanbanStatus(todo)].push(todo);
+        continue;
+      }
+      grouped[resolveKanbanStatus(todo)].push(todo);
+    }
+
+    return grouped;
+  }, [completingTodoId, todos]);
 
   async function handleAdd() {
-    const title = newTitle.trim();
-    if (!title || !coachId || saving) return;
+    const raw = newTitle.trim();
+    if (!raw || !coachId || saving) return;
+
+    const parsed = parseTodoInput(raw);
+    if (!parsed.title) return;
+
+    const athleteId = resolveAthleteIdFromTodoTitle(parsed.title, athleteOptions);
 
     setSaving(true);
-    const { data, error } = await createCoachTodo(coachId, title);
+    const { data, error } = await createCoachTodo(
+      coachId,
+      parsed.title,
+      athleteId,
+      parsed.dueAt,
+    );
     setSaving(false);
 
     if (error) {
@@ -91,13 +277,53 @@ export default function TodoPage() {
 
     if (data) setTodos((current) => [data, ...current]);
     setNewTitle("");
-    inputRef.current?.focus();
   }
 
   async function handleToggle(todo: CoachTodo) {
+    if (completingTodoId === todo.id || completionLockRef.current) return;
+
+    const isCompleting = !todo.completed;
+    const snapshot = todos;
+
+    if (isCompleting) {
+      const played = await runCompletionFeedback(todo);
+      if (!played) return;
+
+      const optimistic = buildCompletedTodo(todo);
+      setTodos((current) =>
+        current.map((item) => (item.id === todo.id ? optimistic : item)),
+      );
+      triggerDoneCountBump();
+
+      const { data, error } = await toggleCoachTodo(todo);
+      if (error) {
+        setErrorMessage(error.message);
+        setTodos(snapshot);
+        return;
+      }
+      if (data) {
+        setTodos((current) =>
+          current.map((item) => (item.id === data.id ? data : item)),
+        );
+      }
+      return;
+    }
+
+    const optimistic: CoachTodo = {
+      ...todo,
+      completed: false,
+      kanban_status: "todo",
+      completed_at: null,
+      updated_at: new Date().toISOString(),
+    };
+    setTodos((current) =>
+      current.map((item) => (item.id === todo.id ? optimistic : item)),
+    );
+
     const { data, error } = await toggleCoachTodo(todo);
     if (error) {
       setErrorMessage(error.message);
+      setTodos(snapshot);
       return;
     }
     if (data) {
@@ -107,128 +333,204 @@ export default function TodoPage() {
     }
   }
 
-  async function handleDelete(todoId: string) {
-    const { error } = await deleteCoachTodo(todoId);
-    if (error) {
-      setErrorMessage(error.message);
+  async function handleKanbanMove(
+    todo: CoachTodo,
+    status: CoachTodoKanbanStatus,
+  ) {
+    if (
+      resolveKanbanStatus(todo) === status ||
+      completingTodoId === todo.id ||
+      completionLockRef.current
+    ) {
       return;
     }
-    setTodos((current) => current.filter((item) => item.id !== todoId));
-  }
 
-  function renderTodo(todo: CoachTodo) {
-    const isAuto = todo.kind === "program_needed";
+    const snapshot = todos;
+    const isCompleting = status === "done" && !todo.completed;
 
-    return (
-      <li
-        key={todo.id}
-        className={`flex items-start gap-3 border-b border-app-border px-4 py-2.5 last:border-b-0 ${
-          todo.completed ? "opacity-60" : ""
-        }`}
-      >
-        <input
-          type="checkbox"
-          checked={todo.completed}
-          onChange={() => void handleToggle(todo)}
-          className="mt-1 h-4 w-4 accent-brand-purple"
-        />
-        <div className="min-w-0 flex-1">
-          <p
-            className={`text-sm font-medium ${
-              todo.completed ? "line-through text-app-muted" : "text-app-text"
-            }`}
-          >
-            {todo.title}
-          </p>
-          {isAuto && todo.athlete_id && (
-            <Link
-              href={`/profile/${todo.athlete_id}?section=programs`}
-              className="text-xs font-semibold text-brand-purple hover:underline"
-            >
-              Naar programma →
-            </Link>
-          )}
-        </div>
-        {!isAuto && (
-          <button
-            type="button"
-            onClick={() => void handleDelete(todo.id)}
-            className="rounded p-1 text-app-muted hover:text-red-500 app-focus-ring"
-            aria-label="Verwijderen"
-          >
-            <Trash2 className="h-4 w-4" />
-          </button>
-        )}
-      </li>
+    if (isCompleting) {
+      const played = await runCompletionFeedback(todo);
+      if (!played) return;
+
+      const optimistic = buildCompletedTodo({ ...todo, kanban_status: "done" });
+      setTodos((current) =>
+        current.map((item) => (item.id === todo.id ? optimistic : item)),
+      );
+      triggerDoneCountBump();
+
+      const { data, error } = await updateCoachTodoKanbanStatus(todo, status);
+      if (error) {
+        setErrorMessage(error.message);
+        setTodos(snapshot);
+        return;
+      }
+      if (data) {
+        setTodos((current) =>
+          current.map((item) => (item.id === data.id ? data : item)),
+        );
+      }
+      return;
+    }
+
+    const optimistic: CoachTodo = {
+      ...todo,
+      kanban_status: status,
+      completed: status === "done",
+      completed_at:
+        status === "done"
+          ? todo.completed_at || new Date().toISOString()
+          : null,
+      updated_at: new Date().toISOString(),
+    };
+    setTodos((current) =>
+      current.map((item) => (item.id === todo.id ? optimistic : item)),
     );
+
+    const { data, error } = await updateCoachTodoKanbanStatus(todo, status);
+    if (error) {
+      setErrorMessage(error.message);
+      setTodos(snapshot);
+      return;
+    }
+    if (data) {
+      setTodos((current) =>
+        current.map((item) => (item.id === data.id ? data : item)),
+      );
+    }
   }
+
+  const cardProps = (todo: CoachTodo) => ({
+    todo,
+    coachId,
+    athleteName: todo.athlete_id ? athleteNameById[todo.athlete_id] : null,
+    onToggle: () => void handleToggle(todo),
+    isCompleting: completingTodoId === todo.id,
+    isEnteringDone: enteringDoneIds.has(todo.id),
+    reducedMotion,
+    toggleDisabled: Boolean(completingTodoId),
+  });
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <h1 className="text-3xl font-bold text-app-text">To-do</h1>
-        <p className="mt-1 text-sm text-app-muted">
-          Taken en automatische meldingen wanneer een block is afgelopen.
-        </p>
+      <PageContainer size="full" className="min-w-0">
+        <PageHeader
+          title="To-do"
+          description="Taken, deadlines en automatische meldingen voor je atleten."
+          actions={
+            <TodoSoundToggle enabled={soundEnabled} onChange={setSoundEnabled} />
+          }
+        />
 
-        <div className="app-card mt-6">
-          <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              value={newTitle}
-              onChange={(event) => setNewTitle(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === "Enter") void handleAdd();
-              }}
-              placeholder="Nieuwe taak..."
-              className="flex-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm outline-none app-focus-ring"
-            />
-            <button
-              type="button"
-              onClick={() => void handleAdd()}
-              disabled={saving || !newTitle.trim()}
-              className="app-btn-primary inline-flex items-center gap-1 disabled:opacity-50"
-            >
-              <Plus className="h-4 w-4" />
-              Toevoegen
-            </button>
-          </div>
+        <TodoComposer
+          value={newTitle}
+          onChange={setNewTitle}
+          onSubmit={() => void handleAdd()}
+          saving={saving}
+          athleteOptions={athleteOptions}
+        />
 
-          {errorMessage && (
-            <p className="mt-3 text-sm text-red-500">{errorMessage}</p>
-          )}
-        </div>
+        {errorMessage ? (
+          <p className="mt-3 text-[13px] text-app-destructive">{errorMessage}</p>
+        ) : null}
+        {syncing ? (
+          <p className="mt-2 text-[12px] text-app-muted">
+            Automatische taken worden bijgewerkt…
+          </p>
+        ) : null}
 
         {loading ? (
-          <div className="app-card mt-4">
+          <div className="mt-4 rounded-2xl border border-white/6 bg-[#0d1118] p-4">
             <SkeletonList rows={6} />
+          </div>
+        ) : isSearching ? (
+          <div className="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-[#0d1118]">
+            <div className="border-b border-white/6 px-4 py-3">
+              <h2 className="text-[13px] font-semibold text-app-text">
+                Zoekresultaten ({searchResults.length})
+              </h2>
+            </div>
+            {searchResults.length === 0 ? (
+              <EmptyState
+                title="Geen resultaten"
+                description="Probeer een andere zoekterm."
+                compact
+              />
+            ) : (
+              <div className="space-y-2 p-3">
+                {searchResults.map((todo) => (
+                  <TodoKanbanCard key={todo.id} {...cardProps(todo)} />
+                ))}
+              </div>
+            )}
           </div>
         ) : (
           <>
-            <section className="app-card mt-4 overflow-hidden p-0">
-              <h2 className="border-b border-app-border px-4 py-3 text-sm font-bold uppercase tracking-wide text-app-muted">
-                Open ({openTodos.length})
-              </h2>
-              {openTodos.length === 0 ? (
-                <p className="px-4 py-6 text-sm text-app-muted">
-                  Geen openstaande taken.
-                </p>
-              ) : (
-                <ul>{openTodos.map(renderTodo)}</ul>
-              )}
-            </section>
+            <div
+              className="todo-kanban-mobile-tabs lg:hidden"
+              role="tablist"
+              aria-label="Kanban kolommen"
+            >
+              {KANBAN_COLUMNS.map((column) => {
+                const count = todosByColumn[column.id].length;
+                const active = mobileKanbanColumn === column.id;
 
-            {doneTodos.length > 0 && (
-              <section className="app-card mt-4 overflow-hidden p-0">
-                <h2 className="border-b border-app-border px-4 py-3 text-sm font-bold uppercase tracking-wide text-app-muted">
-                  Afgerond ({doneTodos.length})
-                </h2>
-                <ul>{doneTodos.map(renderTodo)}</ul>
-              </section>
-            )}
+                return (
+                  <button
+                    key={column.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={active}
+                    className={`todo-kanban-mobile-tab ${active ? "is-active" : ""}`}
+                    onClick={() => setMobileKanbanColumn(column.id)}
+                  >
+                    {column.label}
+                    <span className="todo-kanban-mobile-tab-count">{count}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div
+              className="todo-kanban-board mt-4"
+              data-mobile-column={mobileKanbanColumn}
+            >
+            {KANBAN_COLUMNS.map((column) => {
+              const items = todosByColumn[column.id];
+
+              return (
+                <TodoKanbanColumn
+                  key={column.id}
+                  status={column.id}
+                  label={column.label}
+                  count={items.length}
+                  icon={column.icon}
+                  showDoingMotivation={column.id === "doing"}
+                  countBump={column.id === "done" && bumpDoneCount}
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={(event) => {
+                    event.preventDefault();
+                    const todoId = event.dataTransfer.getData("text/todo-id");
+                    const todo = todos.find((item) => item.id === todoId);
+                    if (todo) void handleKanbanMove(todo, column.id);
+                  }}
+                >
+                  {items.map((todo) => (
+                    <TodoKanbanCard
+                      key={todo.id}
+                      {...cardProps(todo)}
+                      draggable={!completingTodoId}
+                      onDragStart={(event) => {
+                        event.dataTransfer.setData("text/todo-id", todo.id);
+                      }}
+                    />
+                  ))}
+                </TodoKanbanColumn>
+              );
+            })}
+            </div>
           </>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

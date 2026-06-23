@@ -9,6 +9,10 @@ import {
   getPercentageForRpeAndReps,
   RPE_ROWS,
 } from "@/lib/rpeTable";
+import {
+  getRpeCellColor,
+  getRpeCellTextColor,
+} from "@/lib/rpeCellColors";
 
 const repColumns = Array.from({ length: 28 }, (_, index) => index + 1);
 
@@ -48,12 +52,6 @@ const RPE_RIR_LEGEND = [
 
 function formatPercent(value: number) {
   return `${value.toFixed(2)}%`;
-}
-
-function getCellColor(percent: number) {
-  const normalized = Math.max(0, Math.min(1, (percent - 40) / 60));
-  const lightness = 96 - normalized * 36;
-  return `hsl(0, 0%, ${lightness}%)`;
 }
 
 function parseNumberInput(value: string) {
@@ -165,15 +163,21 @@ export default function RpeTablePage() {
                       <td className="sticky left-[44px] z-10 border border-gray-200 bg-gray-50 px-2 py-2 font-bold">
                         {formatRpe(row.rir)}
                       </td>
-                      {row.percentages.map((percent, index) => (
+                      {row.percentages.map((percent, index) => {
+                        const reps = index + 1;
+                        return (
                         <td
                           key={`${row.rpe}-${index}`}
-                          className="border border-gray-200 px-1 py-2 font-semibold text-black"
-                          style={{ backgroundColor: getCellColor(percent) }}
+                          className="border border-gray-200 px-1 py-2 font-semibold dark:border-white/10"
+                          style={{
+                            backgroundColor: getRpeCellColor(row.rpe, reps),
+                            color: getRpeCellTextColor(row.rpe, reps),
+                          }}
                         >
                           {formatPercent(percent)}
                         </td>
-                      ))}
+                        );
+                      })}
                     </tr>
                   ))}
                 </tbody>

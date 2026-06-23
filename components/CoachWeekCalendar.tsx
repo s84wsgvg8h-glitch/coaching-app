@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import CoachAppointmentModal from "@/components/CoachAppointmentModal";
 import {
   getOverlappingBlockStyle,
@@ -13,7 +13,6 @@ import {
   type CoachCalendarEvent,
   type CoachCalendarEventInput,
 } from "@/lib/coachCalendarEvents";
-import { supabase } from "@/lib/supabaseClient";
 import {
   formatAthleteShortName,
   formatCompetitionDateRange,
@@ -24,7 +23,7 @@ import {
 
 type CalendarEvent = {
   id: string;
-  source: "competition_calendar" | "athlete_competition" | "payment" | "appointment";
+  source: "competition_calendar" | "athlete_competition" | "appointment";
   date: string;
   endDate?: string;
   startAt?: string;
@@ -38,17 +37,25 @@ type CalendarEvent = {
   href?: string;
 };
 
-type CalendarFilters = {
-  showPayments: boolean;
-  showAthleteCompetitions: boolean;
-  showCompetitionCalendar: boolean;
+type CoachWeekCalendarProps = {
+  userId: string;
+  variant?: "default" | "embedded" | "compact";
+  defaultExpanded?: boolean;
+  forceExpanded?: boolean;
+  fullPage?: boolean;
+  focusRequest?: {
+    date: string;
+    startAt?: string;
+    appointmentId?: string;
+  } | null;
+  onFocusHandled?: () => void;
 };
 
-const DEFAULT_CALENDAR_FILTERS: CalendarFilters = {
-  showPayments: false,
-  showAthleteCompetitions: true,
-  showCompetitionCalendar: false,
-};
+const ALL_HOURS = Array.from({ length: 24 }, (_, index) => index);
+const HOUR_HEIGHT = 48;
+const COLLAPSED_VIEW_HEIGHT = 380;
+const COLLAPSED_DAY_COUNT = 3;
+const DRAG_THRESHOLD_PX = 8;
 
 type TimedAppointmentBlock = {
   id: string;
@@ -77,16 +84,6 @@ type DragMoveState = {
   durationHours: number;
   grabOffsetHour: number;
 };
-
-type CoachWeekCalendarProps = {
-  userId: string;
-};
-
-const ALL_HOURS = Array.from({ length: 24 }, (_, index) => index);
-const HOUR_HEIGHT = 48;
-const COLLAPSED_VIEW_HEIGHT = 380;
-const COLLAPSED_DAY_COUNT = 4;
-const DRAG_THRESHOLD_PX = 8;
 
 function toDateString(date: Date) {
   const year = date.getFullYear();
@@ -117,24 +114,6 @@ function addMinutes(date: Date, minutes: number) {
   const copy = new Date(date);
   copy.setMinutes(copy.getMinutes() + minutes);
   return copy;
-}
-
-function getNextPaymentDate(dayOfMonth: number, from = new Date()) {
-  const candidate = new Date(
-    from.getFullYear(),
-    from.getMonth(),
-    Math.min(dayOfMonth, 28),
-    12,
-    0,
-    0,
-    0,
-  );
-
-  if (candidate < new Date(from.toDateString())) {
-    candidate.setMonth(candidate.getMonth() + 1);
-  }
-
-  return toDateString(candidate);
 }
 
 function isDateInRange(date: string, start: string, end?: string) {
@@ -238,7 +217,7 @@ function CoachUpcomingEvents({
 }: {
   events: CalendarEvent[];
   loading: boolean;
-  onNavigateToDate: (date: string, startAt?: string) => void;
+  onNavigateToDate: (date: string, startAt?: string, appointmentId?: string) => void;
 }) {
   const grouped = useMemo(() => {
     const today = getTodayDateString();
@@ -276,19 +255,17 @@ function CoachUpcomingEvents({
 
   return (
     <>
-      <h3 className="mb-3 text-[11px] font-bold uppercase tracking-wide text-gray-400">
-        Komende items
-      </h3>
+      <h3 className="ui-label mb-3">Komende items</h3>
 
       {loading ? (
-        <p className="text-xs text-gray-500">Laden...</p>
+        <p className="text-xs text-app-muted">Laden...</p>
       ) : Object.keys(grouped).length === 0 ? (
-        <p className="text-xs text-gray-500">Geen gebeurtenissen.</p>
+        <p className="text-xs text-app-muted">Geen gebeurtenissen.</p>
       ) : (
         <div className="space-y-3">
           {Object.entries(grouped).map(([date, dayEvents]) => (
             <div key={date}>
-              <p className="mb-1.5 text-[10px] font-bold uppercase tracking-wide text-gray-400">
+              <p className="ui-label mb-1.5">
                 {formatUpcomingDayLabel(date, today, tomorrow)}
               </p>
               <div className="space-y-1.5">
@@ -298,11 +275,17 @@ function CoachUpcomingEvents({
                     type="button"
                     onClick={(clickEvent) => {
                       clickEvent.stopPropagation();
-                      onNavigateToDate(date, event.startAt || undefined);
+                      onNavigateToDate(
+                        date,
+                        event.startAt || undefined,
+                        event.source === "appointment"
+                          ? event.id.replace(/^appointment-/, "")
+                          : undefined,
+                      );
                     }}
                     className={`flex w-full items-center gap-1.5 rounded-full px-2 py-1 text-left text-[11px] font-semibold ${event.pillClass}`}
                   >
-                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-white/70 text-[9px]">
+                    <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-app-surface-hover text-[9px]">
                       {event.icon}
                     </span>
                     <span className="truncate">{event.title}</span>
@@ -317,7 +300,18 @@ function CoachUpcomingEvents({
   );
 }
 
-export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
+export default function CoachWeekCalendar({
+  userId,
+  variant = "default",
+  defaultExpanded = false,
+  forceExpanded = false,
+  fullPage = false,
+  focusRequest = null,
+  onFocusHandled,
+}: CoachWeekCalendarProps) {
+  const embedded = variant === "embedded" || variant === "compact";
+  const compact = variant === "compact";
+  const collapsedViewHeight = COLLAPSED_VIEW_HEIGHT;
   const calendarLayoutRef = useRef<HTMLDivElement>(null);
   const calendarCardRef = useRef<HTMLDivElement>(null);
   const timeGridScrollRef = useRef<HTMLDivElement>(null);
@@ -345,7 +339,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   const [events, setEvents] = useState<CalendarEvent[]>([]);
   const [appointments, setAppointments] = useState<CoachCalendarEvent[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expanded, setExpanded] = useState(false);
+  const [expanded, setExpanded] = useState(defaultExpanded || forceExpanded);
   const [now, setNow] = useState(() => new Date());
   const [appointmentDraft, setAppointmentDraft] = useState(
     createDefaultAppointmentDraft(userId, new Date()),
@@ -355,7 +349,9 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   const [dragCreate, setDragCreate] = useState<DragCreateState | null>(null);
   const [dragCreateMoved, setDragCreateMoved] = useState(false);
   const [dragMove, setDragMove] = useState<DragMoveState | null>(null);
-  const [filters, setFilters] = useState<CalendarFilters>(DEFAULT_CALENDAR_FILTERS);
+  const [highlightedAppointmentId, setHighlightedAppointmentId] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -365,12 +361,40 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   useEffect(() => {
     if (!expanded || appointmentModalOpen) return;
 
+    function onKeyDown(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (event.key === "ArrowLeft") {
+        event.preventDefault();
+        setWeekStart((current) => addDays(current, -7));
+      } else if (event.key === "ArrowRight") {
+        event.preventDefault();
+        setWeekStart((current) => addDays(current, 7));
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [expanded, appointmentModalOpen]);
+
+  useEffect(() => {
+    if (!expanded || appointmentModalOpen) return;
+
     function handleOutsideClick(event: MouseEvent) {
       if (
         calendarLayoutRef.current &&
         !calendarLayoutRef.current.contains(event.target as Node)
       ) {
-        setExpanded(false);
+        collapseCalendar();
       }
     }
 
@@ -390,6 +414,28 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   }, [expanded]);
 
   useEffect(() => {
+    if (!focusRequest) return;
+
+    setWeekStart(getMonday(parseDate(focusRequest.date)));
+    setScrollToHour(
+      focusRequest.startAt ? getHourFraction(focusRequest.startAt) : currentHour,
+    );
+    setHighlightedAppointmentId(focusRequest.appointmentId || null);
+    setExpanded(true);
+    onFocusHandled?.();
+  }, [focusRequest, onFocusHandled]);
+
+  useEffect(() => {
+    if (!highlightedAppointmentId) return;
+
+    const timer = window.setTimeout(() => {
+      setHighlightedAppointmentId(null);
+    }, 4000);
+
+    return () => window.clearTimeout(timer);
+  }, [highlightedAppointmentId]);
+
+  useEffect(() => {
     if (!expanded || scrollToHour === null || !timeGridScrollRef.current) return;
 
     window.requestAnimationFrame(() => {
@@ -398,7 +444,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
 
       container.scrollTop = Math.max(
         0,
-        scrollToHour * HOUR_HEIGHT - container.clientHeight / 3,
+        scrollToHour * HOUR_HEIGHT - container.clientHeight / 2,
       );
       setScrollToHour(null);
     });
@@ -434,15 +480,21 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     const athleteCompetitions = await loadCoachAthleteCompetitions(today);
     const athleteNames = athleteCompetitions.map((entry) => entry.athleteName);
 
-    for (const { athleteId, athleteName, competition } of athleteCompetitions) {
+    for (const {
+      athleteId,
+      athleteName,
+      athleteAvailabilityNote,
+      competition,
+    } of athleteCompetitions) {
       const shortName = formatAthleteShortName(athleteName, athleteNames);
+      const availabilitySuffix = athleteAvailabilityNote ? " ⚠️" : "";
 
       calendarEvents.push({
         id: `meet-athlete-${competition.id}-${athleteId}`,
         source: "athlete_competition",
         date: competition.start_date,
         endDate: competition.end_date,
-        title: `${shortName} · ${competition.naam}`,
+        title: `${shortName} · ${competition.naam}${availabilitySuffix}`,
         subtitle: formatCompetitionDateRange(
           competition.start_date,
           competition.end_date,
@@ -475,30 +527,6 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
       });
     }
 
-    const { data: athletes } = await supabase
-      .from("profiles")
-      .select("id, full_name, betaling_dag")
-      .eq("role", "atleet")
-      .not("betaling_dag", "is", null);
-
-    for (const athlete of athletes || []) {
-      if (!athlete.betaling_dag) continue;
-
-      const paymentDate = getNextPaymentDate(Number(athlete.betaling_dag));
-      calendarEvents.push({
-        id: `payment-${athlete.id}-${paymentDate}`,
-        source: "payment",
-        date: paymentDate,
-        title: `Betaling ${athlete.full_name || "Atleet"}`,
-        subtitle: `Betaaldag ${athlete.betaling_dag}`,
-        color: "bg-blue-100 text-blue-800",
-        pillClass: "bg-blue-50 text-blue-800 border border-blue-200",
-        icon: "★",
-        allDay: true,
-        href: `/profile/${athlete.id}`,
-      });
-    }
-
     const loadedAppointments = await loadCoachCalendarEvents(userId);
     setAppointments(loadedAppointments);
     calendarEvents.push(...loadedAppointments.map(mapAppointmentToCalendarEvent));
@@ -516,12 +544,10 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   const visibleEvents = useMemo(() => {
     return events.filter((event) => {
       if (event.source === "appointment") return true;
-      if (event.source === "payment") return filters.showPayments;
-      if (event.source === "athlete_competition") return filters.showAthleteCompetitions;
-      if (event.source === "competition_calendar") return filters.showCompetitionCalendar;
-      return true;
+      if (event.source === "athlete_competition") return true;
+      return false;
     });
-  }, [events, filters]);
+  }, [events]);
 
   const weekDays = useMemo(
     () => Array.from({ length: 7 }, (_, index) => addDays(weekStart, index)),
@@ -529,14 +555,14 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   );
 
   const visibleDays = useMemo(() => {
-    if (expanded) return weekDays;
+    if (forceExpanded || expanded) return weekDays;
 
     const today = new Date();
     today.setHours(12, 0, 0, 0);
     return Array.from({ length: COLLAPSED_DAY_COUNT }, (_, index) =>
       addDays(today, index),
     );
-  }, [expanded, weekDays]);
+  }, [expanded, forceExpanded, weekDays]);
 
   const dayCount = visibleDays.length;
   const gridTemplateColumns = `56px repeat(${dayCount}, minmax(0, 1fr))`;
@@ -549,10 +575,17 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
 
   const collapsedOffset = useMemo(() => {
     const currentTop = currentHour * HOUR_HEIGHT;
-    const maxOffset = Math.max(0, gridHeight - COLLAPSED_VIEW_HEIGHT);
-    const idealOffset = currentTop - COLLAPSED_VIEW_HEIGHT / 2;
+    const maxOffset = Math.max(0, gridHeight - collapsedViewHeight);
+    const idealOffset = currentTop - collapsedViewHeight / 2 + HOUR_HEIGHT / 2;
     return Math.min(maxOffset, Math.max(0, idealOffset));
-  }, [currentHour, gridHeight]);
+  }, [collapsedViewHeight, currentHour, gridHeight]);
+
+  useLayoutEffect(() => {
+    if (expanded) return;
+    const container = collapsedContainerRef.current;
+    if (!container) return;
+    container.scrollTop = collapsedOffset;
+  }, [expanded, collapsedOffset, visibleDays]);
 
   const timedBlocks = useMemo(() => {
     const blocksByDay = new Map<string, TimedAppointmentBlock[]>();
@@ -574,7 +607,9 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
         date,
         startHour,
         endHour,
-        color: event.pillClass.includes("amber") ? "bg-amber-500" : "bg-emerald-600",
+        color: event.pillClass.includes("amber")
+          ? "coach-calendar-appointment coach-calendar-appointment-reminder"
+          : "coach-calendar-appointment",
         column: 0,
         totalColumns: 1,
       };
@@ -635,7 +670,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     if (!container) return 0;
 
     const containerRect = container.getBoundingClientRect();
-    const scrollOffset = expanded ? container.scrollTop : collapsedOffset;
+    const scrollOffset = container.scrollTop;
     const y = clientY - containerRect.top + scrollOffset;
 
     return Math.max(0, Math.min(24, y / HOUR_HEIGHT));
@@ -674,19 +709,34 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     });
   }
 
+  function collapseCalendar() {
+    if (forceExpanded) return;
+    setExpanded(false);
+    setWeekStart(getMonday(new Date()));
+  }
+
   function ensureExpanded() {
     if (!expanded) {
+      setScrollToHour(currentHour);
       setExpanded(true);
     }
   }
 
   function handleSidebarClick(event: React.MouseEvent<HTMLDivElement>) {
     if ((event.target as HTMLElement).closest("button")) return;
-    setExpanded((current) => !current);
+    if (expanded) {
+      collapseCalendar();
+      return;
+    }
+    setScrollToHour(currentHour);
+    setExpanded(true);
   }
 
   function handleCardClick(event: React.MouseEvent<HTMLDivElement>) {
+    if (forceExpanded) return;
     if ((event.target as HTMLElement).closest("button")) return;
+    if (expanded) return;
+    setScrollToHour(currentHour);
     setExpanded(true);
   }
 
@@ -715,14 +765,15 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     return date;
   }
 
-  function navigateToDate(date: string, startAt?: string) {
+  function navigateToDate(
+    date: string,
+    startAt?: string,
+    appointmentId?: string,
+  ) {
     setWeekStart(getMonday(parseDate(date)));
     setExpanded(true);
     setScrollToHour(startAt ? getHourFraction(startAt) : 0);
-  }
-
-  function toggleFilter(key: keyof CalendarFilters) {
-    setFilters((current) => ({ ...current, [key]: !current[key] }));
+    setHighlightedAppointmentId(appointmentId || null);
   }
 
   function handleAppointmentSaved() {
@@ -967,7 +1018,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
   function renderDayHeaders() {
     return (
       <div
-        className="grid border-b border-gray-200"
+        className="grid border-b border-app-border/40"
         style={{ gridTemplateColumns }}
       >
         <div />
@@ -978,15 +1029,14 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
           return (
             <div
               key={dateString}
-              className="flex justify-center border-l border-gray-200 px-2 py-2"
+              className="flex min-h-9 items-center justify-center border-l border-app-border/30 px-2 py-2"
             >
               {isToday ? (
-                <span className="inline-flex h-11 w-11 flex-col items-center justify-center rounded-full bg-red-500 font-bold leading-none text-white">
-                  <span className="text-[10px] uppercase">{formatDayHeader(day)}</span>
-                  <span className="text-sm">{day.getDate()}</span>
+                <span className="inline-flex items-center justify-center whitespace-nowrap rounded-full bg-app-accent px-2.5 py-1 text-[11px] font-semibold uppercase leading-none text-white">
+                  {formatDayHeader(day)} {day.getDate()}
                 </span>
               ) : (
-                <p className="text-xs uppercase text-gray-500">
+                <p className="text-xs uppercase leading-none text-app-muted">
                   {formatDayHeader(day)} {day.getDate()}
                 </p>
               )}
@@ -997,33 +1047,105 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     );
   }
 
+  function appointmentsForDay(date: string) {
+    return visibleEvents.filter((event) => {
+      if (event.source !== "appointment") return false;
+      if (event.startAt) {
+        return toDateString(new Date(event.startAt)) === date;
+      }
+      return isDateInRange(date, event.date, event.endDate);
+    });
+  }
+
+  function renderCollapsedTimedRow() {
+    if (expanded) return null;
+
+    const items = visibleDays.flatMap((day) => {
+      const dateString = toDateString(day);
+      return appointmentsForDay(dateString).map((event) => ({
+        ...event,
+        dateString,
+        appointmentId: event.id.replace(/^appointment-/, ""),
+      }));
+    });
+
+    return (
+      <div
+        className="grid border-b border-app-border/40 bg-app-surface-muted/40"
+        style={{ gridTemplateColumns }}
+      >
+        <div className="space-y-1 border-r border-app-border/30 px-1.5 py-2">
+          <p className="px-0.5 text-[10px] text-app-subtle">afspraken</p>
+          {items.length === 0 ? (
+            <span className="px-0.5 text-[10px] text-app-subtle">Geen afspraken</span>
+          ) : (
+            items.map((event) => (
+              <button
+                key={`${event.id}-${event.dateString}`}
+                type="button"
+                onClick={(clickEvent) => {
+                  clickEvent.stopPropagation();
+                  navigateToDate(
+                    event.dateString,
+                    event.startAt,
+                    event.appointmentId,
+                  );
+                }}
+                className="coach-calendar-appointment flex w-full max-w-[52px] flex-col items-start gap-0.5 rounded-md px-1.5 py-1 text-left app-focus-ring"
+                title={event.title}
+              >
+                <span className="line-clamp-2 text-[9px] font-semibold leading-tight text-white">
+                  {event.title}
+                </span>
+                {event.startAt && !event.allDay ? (
+                  <span className="text-[8px] font-normal text-emerald-100">
+                    {new Date(event.startAt).toLocaleTimeString("nl-NL", {
+                      hour: "2-digit",
+                      minute: "2-digit",
+                    })}
+                  </span>
+                ) : null}
+              </button>
+            ))
+          )}
+        </div>
+        {visibleDays.map((day) => (
+          <div
+            key={`appt-spacer-${toDateString(day)}`}
+            className="min-h-[40px] border-l border-app-border/30"
+          />
+        ))}
+      </div>
+    );
+  }
+
   function renderAllDayRow() {
     return (
       <div
-        className="grid border-b border-gray-200"
+        className="grid border-b border-app-border/40"
         style={{ gridTemplateColumns }}
       >
-        <div className="px-2 py-1.5 text-[10px] text-gray-400">hele dag</div>
+        <div className="px-2 py-1.5 text-[10px] text-app-subtle">hele dag</div>
         {visibleDays.map((day) => {
           const dateString = toDateString(day);
           const dayEvents = eventsForDay(dateString).filter(
-            (event) => event.source !== "appointment" || event.allDay,
+            (event) => event.source !== "appointment",
           );
 
           return (
             <div
               key={`allday-${dateString}`}
-              className="min-h-[34px] space-y-0.5 border-l border-gray-200 p-1"
+              className="min-h-[36px] space-y-1 border-l border-app-border/30 p-1.5"
             >
-              {dayEvents.length > 1 ? (
-                <div className="truncate rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-semibold text-gray-700">
-                  {dayEvents.length} activiteiten die hele dag duren
+              {!expanded && dayEvents.length > 1 ? (
+                <div className="truncate rounded-full bg-app-surface-hover px-2 py-0.5 text-[10px] font-medium text-app-muted">
+                  {dayEvents.length} activiteiten
                 </div>
               ) : (
                 dayEvents.map((event) => (
                   <div
                     key={event.id}
-                    className={`truncate rounded-full px-2 py-0.5 text-[10px] font-semibold ${event.color}`}
+                    className={`truncate rounded-md px-2 py-1 text-[11px] font-medium ${event.color}`}
                     title={event.subtitle}
                   >
                     {event.title}
@@ -1039,6 +1161,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
 
   function renderAppointmentBlock(block: TimedAppointmentBlock, dayIndex: number) {
     const isMoving = dragMove?.appointmentId === block.appointmentId;
+    const isHighlighted = highlightedAppointmentId === block.appointmentId;
     const displayDayIndex = isMoving ? dragMove.dayIndex : dayIndex;
     const displayStartHour = isMoving ? dragMove.startHour : block.startHour;
     const displayEndHour = isMoving ? dragMove.endHour : block.endHour;
@@ -1052,10 +1175,12 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     return (
       <div
         key={block.id}
-        className={`absolute touch-none overflow-hidden rounded-md px-1 py-0.5 text-[10px] font-semibold text-white shadow ${block.color} ${
+        className={`absolute touch-none overflow-hidden rounded-lg px-1.5 py-1 text-[11px] font-medium ${block.color} ${
           isMoving
             ? "z-40 scale-[1.02] opacity-95 shadow-lg ring-2 ring-white/80 transition-none"
-            : "z-20 cursor-grab active:cursor-grabbing"
+            : isHighlighted
+              ? "z-30 shadow-lg ring-2 ring-yellow-300 ring-offset-2 ring-offset-app-bg animate-pulse"
+              : "z-20 cursor-grab active:cursor-grabbing"
         }`}
         style={{
           ...positionStyle,
@@ -1081,7 +1206,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
         {ALL_HOURS.map((hour) => (
           <div key={hour} className="contents">
             <div
-              className="border-t border-gray-200 px-2 text-xs text-gray-400"
+              className="border-t border-app-border/30 px-2 text-[11px] text-app-subtle"
               style={{ height: HOUR_HEIGHT }}
             >
               {String(hour).padStart(2, "0")}:00
@@ -1092,7 +1217,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
               return (
                 <div
                   key={`${hour}-${dateString}`}
-                  className="border-l border-t border-gray-200"
+                  className="border-l border-t border-app-border/25"
                   style={{ height: HOUR_HEIGHT }}
                   onDoubleClick={(event) => {
                     event.stopPropagation();
@@ -1169,61 +1294,54 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
     );
   }
 
-  const minGridWidth = expanded ? 760 : 420;
+  const isExpanded = forceExpanded || expanded;
+  const minGridWidth = isExpanded ? 720 : 380;
+  const timeGridMaxHeight = fullPage
+    ? "calc(100dvh - 12.5rem)"
+    : `${COLLAPSED_VIEW_HEIGHT}px`;
+  const shellClass = fullPage
+    ? "agenda-calendar-full"
+    : embedded
+      ? "ui-panel-calendar"
+      : "ui-card !p-0 overflow-hidden";
 
   return (
     <>
-      <div
-        ref={calendarLayoutRef}
-        className="grid gap-2 xl:grid-cols-[240px_minmax(0,1fr)]"
-      >
-        <div
-          role="button"
-          tabIndex={0}
-          onClick={handleSidebarClick}
-          onKeyDown={(event) => {
-            if (!expanded && (event.key === "Enter" || event.key === " ")) {
-              event.preventDefault();
-              setExpanded(true);
-            }
-          }}
-          className={`rounded-3xl bg-white p-3 text-black shadow-xl ${
-            !expanded ? "cursor-pointer" : ""
-          }`}
-        >
-          <CoachUpcomingEvents
-            events={visibleEvents}
-            loading={loading}
-            onNavigateToDate={navigateToDate}
-          />
-        </div>
-
+      <div ref={calendarLayoutRef} className={fullPage ? "flex min-h-0 flex-1 flex-col" : undefined}>
         <div
           ref={calendarCardRef}
-          role="button"
-          tabIndex={0}
-          onClick={handleCardClick}
-          onKeyDown={(event) => {
-            if (!expanded && (event.key === "Enter" || event.key === " ")) {
-              event.preventDefault();
-              setExpanded(true);
-            }
-          }}
-          className={`overflow-hidden rounded-3xl bg-white text-black shadow-xl ${
-            !expanded ? "cursor-pointer" : ""
-          }`}
+          role={forceExpanded ? undefined : "button"}
+          tabIndex={forceExpanded ? undefined : 0}
+          onClick={forceExpanded ? undefined : handleCardClick}
+          onKeyDown={
+            forceExpanded
+              ? undefined
+              : (event) => {
+                  if (!isExpanded && (event.key === "Enter" || event.key === " ")) {
+                    event.preventDefault();
+                    setScrollToHour(currentHour);
+                    setExpanded(true);
+                  }
+                }
+          }
+          className={`${shellClass} ${fullPage ? "min-h-0 flex-1" : ""} ${!isExpanded && !forceExpanded ? "cursor-pointer" : ""}`}
         >
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-gray-200 px-5 py-4">
+          {!fullPage ? (
+          <div className="flex flex-wrap items-center justify-between gap-2 px-4 py-3 md:px-5">
             <div>
-              <h2 className="text-lg font-bold capitalize text-black">
-                {formatMonthYear(expanded ? weekStart : new Date())}
+              <h2 className="text-[15px] font-semibold capitalize tracking-tight text-app-text">
+                {formatMonthYear(isExpanded ? weekStart : new Date())}
               </h2>
-              <p className="text-sm text-gray-500">
-                {expanded ? "Week" : "Komende 4 dagen"}
+              <p className="mt-0.5 text-[12px] font-normal text-app-muted">
+                {compact
+                  ? "Komende afspraken"
+                  : isExpanded
+                    ? "Weekoverzicht"
+                    : "Komende 3 dagen"}
               </p>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-wrap items-center gap-1.5">
               <button
                 type="button"
                 onClick={(event) => {
@@ -1231,7 +1349,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
                   ensureExpanded();
                   openAppointmentModal(new Date());
                 }}
-                className="flex h-9 w-9 items-center justify-center rounded-lg border border-gray-300 text-lg font-bold hover:bg-gray-50"
+                className="ui-btn-secondary !h-9 !w-9 !p-0 text-lg"
                 title="Nieuwe afspraak"
               >
                 +
@@ -1243,7 +1361,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
                   ensureExpanded();
                   setWeekStart((current) => addDays(current, -7));
                 }}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+                className="ui-btn-secondary !px-3 !py-2 text-sm"
               >
                 ‹
               </button>
@@ -1254,7 +1372,7 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
                   ensureExpanded();
                   setWeekStart(getMonday(new Date()));
                 }}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+                className="ui-btn-secondary !px-3 !py-2 text-sm"
               >
                 Vandaag
               </button>
@@ -1265,77 +1383,77 @@ export default function CoachWeekCalendar({ userId }: CoachWeekCalendarProps) {
                   ensureExpanded();
                   setWeekStart((current) => addDays(current, 7));
                 }}
-                className="rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold hover:bg-gray-50"
+                className="ui-btn-secondary !px-3 !py-2 text-sm"
               >
                 ›
               </button>
             </div>
           </div>
-
-          <div
-            className="flex flex-wrap gap-2 border-b border-gray-200 px-5 py-3"
-            onClick={(event) => event.stopPropagation()}
-          >
-            {(
-              [
-                {
-                  key: "showAthleteCompetitions" as const,
-                  label: "Atleet wedstrijden",
-                },
-                { key: "showPayments" as const, label: "Betalingen" },
-                {
-                  key: "showCompetitionCalendar" as const,
-                  label: "Wedstrijdkalender",
-                },
-              ] as const
-            ).map((filter) => {
-              const active = filters[filter.key];
-
-              return (
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-app-border px-1 py-2 md:px-2">
+              <h2 className="text-sm font-medium capitalize text-app-text">
+                {formatMonthYear(weekStart)}
+              </h2>
+              <div className="flex flex-wrap items-center gap-1.5">
                 <button
-                  key={filter.key}
                   type="button"
-                  onClick={() => toggleFilter(filter.key)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
-                    active
-                      ? "bg-black text-white"
-                      : "border border-gray-300 text-gray-600 hover:bg-gray-50"
-                  }`}
+                  onClick={() => setWeekStart((current) => addDays(current, -7))}
+                  className="ui-btn-secondary !px-3 !py-1.5 text-sm"
                 >
-                  {filter.label}
+                  ‹
                 </button>
-              );
-            })}
-          </div>
+                <button
+                  type="button"
+                  onClick={() => setWeekStart(getMonday(new Date()))}
+                  className="ui-btn-secondary !px-3 !py-1.5 text-sm"
+                >
+                  Vandaag
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setWeekStart((current) => addDays(current, 7))}
+                  className="ui-btn-secondary !px-3 !py-1.5 text-sm"
+                >
+                  ›
+                </button>
+              </div>
+            </div>
+          )}
 
-          <div className="overflow-x-auto">
-            <div style={{ minWidth: minGridWidth }}>
+          <div className={`overflow-x-auto ${fullPage ? "flex min-h-0 flex-1 flex-col" : ""}`}>
+            <div
+              className={fullPage ? "flex min-h-0 flex-1 flex-col" : ""}
+              style={{ minWidth: minGridWidth }}
+            >
               {renderDayHeaders()}
               {renderAllDayRow()}
 
-              {expanded ? (
+              {isExpanded ? (
                 <div
                   ref={timeGridScrollRef}
-                  className="relative max-h-[70vh] overflow-y-auto overscroll-y-contain bg-gray-50"
+                  className={`relative overscroll-y-contain bg-app-bg/20 ${
+                    fullPage ? "min-h-0 flex-1 overflow-y-auto" : "overflow-y-auto"
+                  }`}
+                  style={fullPage ? undefined : { maxHeight: timeGridMaxHeight }}
                 >
                   {renderTimeGrid()}
                 </div>
               ) : (
                 <div
                   ref={collapsedContainerRef}
-                  className="relative overflow-hidden bg-gray-50"
-                  style={{ height: COLLAPSED_VIEW_HEIGHT }}
+                  className="coach-calendar-collapsed-scroll relative bg-app-bg/40"
+                  style={{
+                    height: collapsedViewHeight,
+                  }}
                 >
-                  <div style={{ transform: `translateY(-${collapsedOffset}px)` }}>
-                    {renderTimeGrid()}
-                  </div>
+                  <div>{renderTimeGrid()}</div>
                 </div>
               )}
             </div>
           </div>
 
           {loading && (
-            <p className="border-t border-gray-200 px-5 py-3 text-sm text-gray-500">
+            <p className="px-4 py-2.5 text-[12px] font-normal text-app-muted md:px-5">
               Agenda laden...
             </p>
           )}

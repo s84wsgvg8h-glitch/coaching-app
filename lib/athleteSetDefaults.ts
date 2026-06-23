@@ -44,3 +44,15 @@ export function applyAthleteSetDefaults<T extends SetRowLike>(
     rpe: row.rpe?.trim() ? row.rpe : getCoachRpeDefault(exercise),
   };
 }
+
+/** Apply coach defaults once when loading saved rows (not on every render). */
+export function mergeAthleteSetRowsWithDefaults<
+  T extends SetRowLike & { set_number: number },
+>(exercise: ExerciseLike, savedRows: T[], setCount: number): T[] {
+  return Array.from({ length: setCount }, (_, index) => {
+    const setNumber = index + 1;
+    const saved = savedRows.find((row) => row.set_number === setNumber);
+    const shell = (saved ?? { set_number: setNumber, reps: "", rpe: "" }) as T;
+    return applyAthleteSetDefaults(exercise, shell);
+  });
+}

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { ScrollText, UserCheck } from "lucide-react";
 import {
   insertCoachApprovalReview,
   loadCoachApprovalReviews,
@@ -8,12 +10,24 @@ import {
 } from "@/lib/adminCoachReviews";
 import { supabase } from "@/lib/supabaseClient";
 import type { AdminUser } from "@/components/admin/AdminUsersTab";
+import {
+  AdminPageHeader,
+  AdminSummaryCard,
+} from "@/components/admin/AdminPageParts";
+import {
+  AdminEmptyState,
+  AdminPanel,
+  AdminRoleBadge,
+} from "@/components/admin/AdminUi";
 
 type AdminCoachesTabProps = {
   users: AdminUser[];
   adminId: string;
   onReload: () => Promise<void>;
-  onDeleteUser: (userId: string) => Promise<void>;
+  onDeleteUser: (
+    userId: string,
+    options?: { skipConfirm?: boolean },
+  ) => Promise<void>;
 };
 
 export default function AdminCoachesTab({
@@ -24,6 +38,7 @@ export default function AdminCoachesTab({
 }: AdminCoachesTabProps) {
   const [reviews, setReviews] = useState<CoachApprovalReview[]>([]);
   const [notesDraft, setNotesDraft] = useState<Record<string, string>>({});
+  const [processingId, setProcessingId] = useState<string | null>(null);
 
   const pendingCoaches = useMemo(
     () =>
@@ -33,11 +48,22 @@ export default function AdminCoachesTab({
     [users],
   );
 
+  const acceptedCount = useMemo(
+    () => reviews.filter((r) => r.action === "accepted").length,
+    [reviews],
+  );
+
+  const rejectedCount = useMemo(
+    () => reviews.filter((r) => r.action === "rejected").length,
+    [reviews],
+  );
+
   useEffect(() => {
     void loadCoachApprovalReviews().then(setReviews);
   }, [users]);
 
   async function acceptCoach(userId: string) {
+    setProcessingId(userId);
     const notes = notesDraft[userId]?.trim() || null;
 
     const { error } = await supabase
@@ -47,6 +73,7 @@ export default function AdminCoachesTab({
 
     if (error) {
       alert(error.message);
+      setProcessingId(null);
       return;
     }
 
@@ -59,9 +86,15 @@ export default function AdminCoachesTab({
 
     await onReload();
     setReviews(await loadCoachApprovalReviews());
+    setProcessingId(null);
   }
 
   async function rejectCoach(userId: string) {
+    if (!window.confirm("Coach-aanmelding afwijzen en account verwijderen?")) {
+      return;
+    }
+
+    setProcessingId(userId);
     const notes = notesDraft[userId]?.trim() || null;
 
     await insertCoachApprovalReview({
@@ -71,34 +104,76 @@ export default function AdminCoachesTab({
       notes,
     });
 
-    await onDeleteUser(userId);
+    await onDeleteUser(userId, { skipConfirm: true });
     setReviews(await loadCoachApprovalReviews());
+    setProcessingId(null);
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-black">Coach-aanmeldingen</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Keur coaches goed of af. Optionele notities worden opgeslagen in de
-          reviewgeschiedenis.
-        </p>
+    <div className="admin-tab-page">
+      <AdminPageHeader
+        title="Coach-goedkeuring"
+        subtitle="Keur coach-aanmeldingen goed of af. Notities worden opgeslagen in de auditlog."
+        icon={UserCheck}
+        actions={
+          <Link href="/admin?tab=audit" className="admin-btn admin-btn--ghost">
+            <ScrollText className="h-4 w-4" />
+            Auditlog
+          </Link>
+        }
+      />
 
+      <div className="admin-summary-grid admin-summary-grid--4">
+        <AdminSummaryCard
+          label="Wachtend"
+          value={pendingCoaches.length}
+          subtext="Openstaande aanmeldingen"
+          icon={UserCheck}
+          tone="amber"
+        />
+        <AdminSummaryCard
+          label="Goedgekeurd"
+          value={acceptedCount}
+          subtext="Totaal reviews"
+          icon={UserCheck}
+          tone="green"
+        />
+        <AdminSummaryCard
+          label="Afgewezen"
+          value={rejectedCount}
+          subtext="Totaal reviews"
+          icon={UserCheck}
+          tone="red"
+        />
+        <AdminSummaryCard
+          label="Reviews"
+          value={reviews.length}
+          subtext="Alle tijden"
+          icon={ScrollText}
+          tone="blue"
+        />
+      </div>
+
+      <AdminPanel>
+        <h2 className="admin-panel-title">Openstaande aanmeldingen</h2>
         {pendingCoaches.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">Geen openstaande aanmeldingen.</p>
+          <AdminEmptyState
+            title="Geen openstaande aanmeldingen"
+            description="Nieuwe coach-aanmeldingen verschijnen hier."
+          />
         ) : (
-          <div className="mt-4 space-y-4">
+          <div className="mt-4 space-y-3">
             {pendingCoaches.map((user) => (
-              <div
-                key={user.id}
-                className="rounded-xl border border-gray-200 p-4"
-              >
-                <p className="font-semibold text-black">
-                  {user.full_name || "Naamloos"}
-                </p>
-                <p className="text-sm text-gray-500">{user.email || "—"}</p>
-                <label className="mt-3 block text-sm">
-                  <span className="text-gray-500">Reviewnotities (optioneel)</span>
+              <div key={user.id} className="admin-card">
+                <div className="flex flex-wrap items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="admin-strong">{user.full_name || "Naamloos"}</p>
+                    <p className="text-[13px] admin-muted">{user.email || "—"}</p>
+                  </div>
+                  <AdminRoleBadge role="pending" pendingKind="coach" />
+                </div>
+                <label className="admin-field block">
+                  <span className="admin-label">Notities (optioneel)</span>
                   <textarea
                     value={notesDraft[user.id] || ""}
                     onChange={(event) =>
@@ -108,22 +183,24 @@ export default function AdminCoachesTab({
                       }))
                     }
                     rows={2}
-                    className="mt-1 w-full rounded-xl border border-gray-300 px-3 py-2"
-                    placeholder="Bijv. ervaring, specialisatie..."
+                    className="admin-textarea mt-1"
+                    placeholder="Bijv. ervaring, specialisatie…"
                   />
                 </label>
-                <div className="mt-3 flex gap-2">
+                <div className="mt-3 flex flex-wrap gap-2">
                   <button
                     type="button"
                     onClick={() => void acceptCoach(user.id)}
-                    className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+                    disabled={processingId === user.id}
+                    className="admin-btn admin-btn--primary"
                   >
-                    Accepteren
+                    {processingId === user.id ? "Bezig…" : "Accepteren"}
                   </button>
                   <button
                     type="button"
                     onClick={() => void rejectCoach(user.id)}
-                    className="rounded-xl bg-red-500 px-4 py-2 text-sm font-semibold text-white"
+                    disabled={processingId === user.id}
+                    className="admin-btn admin-btn--danger"
                   >
                     Afwijzen
                   </button>
@@ -132,32 +209,7 @@ export default function AdminCoachesTab({
             ))}
           </div>
         )}
-      </section>
-
-      <section className="rounded-3xl bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-black">Reviewgeschiedenis</h2>
-        {reviews.length === 0 ? (
-          <p className="mt-3 text-sm text-gray-500">Nog geen reviews.</p>
-        ) : (
-          <div className="mt-4 divide-y divide-gray-100">
-            {reviews.map((review) => (
-              <div key={review.id} className="py-3 text-sm">
-                <p className="font-semibold text-black">
-                  {review.profile_name || "Onbekend"} ·{" "}
-                  {review.action === "accepted" ? "Goedgekeurd" : "Afgewezen"}
-                </p>
-                <p className="text-gray-500">
-                  Door {review.admin_name || "admin"} ·{" "}
-                  {new Date(review.created_at).toLocaleString("nl-NL")}
-                </p>
-                {review.notes ? (
-                  <p className="mt-1 text-gray-700">{review.notes}</p>
-                ) : null}
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
+      </AdminPanel>
     </div>
   );
 }

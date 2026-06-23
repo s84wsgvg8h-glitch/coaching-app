@@ -23,8 +23,11 @@
 # local knowledge base (copyrighted PDF extracts — run npm run ingest:ess)
 /data/knowledge-local.json
 
+# local code export (npm run export:code)
+/coaching-app-export.zip
+/coaching-app-source.txt
+
 # misc
-.cursor/
 .DS_Store
 *.pem
 
@@ -39,6 +42,20 @@ yarn-error.log*
 
 # vercel
 .vercel
+
+# cursor / local tooling
+.cursor/
+.playwright-mcp/
+
+# audit screenshots (local QA only)
+/audit-*.png
+/public/e2e-audit/
+/public/mobile-audit-*/
+/public/ui-audit/
+/public/ui-mockups/
+
+# supabase local temp
+supabase/.temp/
 
 # typescript
 *.tsbuildinfo

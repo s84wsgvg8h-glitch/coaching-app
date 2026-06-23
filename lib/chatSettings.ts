@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { notifyChatUnreadChanged } from "@/lib/chatUnread";
+import { resetDirectReadState, resetGroupReadState } from "@/lib/chatReadState";
 
 export type ChatConversationSettings = {
   id: string;
@@ -286,11 +287,14 @@ export async function markConversationUnread(
 
     if (error) return { error };
 
+    await resetDirectReadState(userId, target.peerUserId);
     notifyChatUnreadChanged();
     return { error: null };
   }
 
   const clearedAt = new Date(Date.now() - 60_000).toISOString();
+
+  await resetGroupReadState(userId, target.groupId!);
 
   const { error } = await supabase.from("chat_group_read_states").upsert(
     {

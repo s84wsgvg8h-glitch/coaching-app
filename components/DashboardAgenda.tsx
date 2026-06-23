@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Calendar, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 import CoachWeekCalendar from "@/components/CoachWeekCalendar";
 import { supabase } from "@/lib/supabaseClient";
@@ -11,7 +12,7 @@ import {
   getTodayDateString,
   isUpcomingCompetition,
   loadCompetitions,
-  loadAthleteCompetitionIds,
+  loadAthleteCompetitionNotes,
 } from "@/lib/competitions";
 import {
   formatAthleteEventRange,
@@ -24,12 +25,12 @@ type AgendaItem = {
   date: string;
   title: string;
   subtitle?: string;
-  href?: string;
 };
 
 type DashboardAgendaProps = {
   role: string;
   userId: string;
+  variant?: "default" | "athlete";
 };
 
 function formatAgendaDate(date: string) {
@@ -55,7 +56,13 @@ function getNextPaymentDate(dayOfMonth: number) {
   return candidate.toISOString().slice(0, 10);
 }
 
-function AthleteAgenda({ userId }: { userId: string }) {
+function AthleteAgenda({
+  userId,
+  variant = "default",
+}: {
+  userId: string;
+  variant?: "default" | "athlete";
+}) {
   const [items, setItems] = useState<AgendaItem[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -69,20 +76,33 @@ function AthleteAgenda({ userId }: { userId: string }) {
       );
 
       const agendaItems: AgendaItem[] = [];
-      const { data: selectedIds } = await loadAthleteCompetitionIds(userId);
+      const { data: registrations } = await loadAthleteCompetitionNotes(userId);
       const coachEvents = await loadAthleteCalendarEvents(userId);
 
       upcoming
-        .filter((competition) => selectedIds.includes(competition.id))
+        .filter((competition) =>
+          registrations.some((entry) => entry.competitionId === competition.id),
+        )
         .forEach((competition) => {
+          const registration = registrations.find(
+            (entry) => entry.competitionId === competition.id,
+          );
+          const noteParts = [
+            formatCompetitionDateRange(
+              competition.start_date,
+              competition.end_date,
+            ),
+            registration?.goals ? `Doelen: ${registration.goals}` : null,
+            registration?.coachNotes
+              ? `Coach: ${registration.coachNotes}`
+              : null,
+          ].filter(Boolean);
+
           agendaItems.push({
             id: `meet-${competition.id}`,
             date: competition.start_date,
             title: competition.naam,
-            subtitle: formatCompetitionDateRange(
-              competition.start_date,
-              competition.end_date,
-            ),
+            subtitle: noteParts.join(" · "),
           });
         });
 
@@ -129,18 +149,73 @@ function AthleteAgenda({ userId }: { userId: string }) {
     }, {});
   }, [items]);
 
-  return (
-    <div className="rounded-3xl bg-white p-6 shadow-xl">
-      <div className="mb-4 flex items-center justify-between gap-3">
-        <div>
-          <h2 className="text-lg font-bold text-black">Agenda</h2>
-          <p className="text-sm text-gray-500">
-            Aankomende wedstrijden en belangrijke datums
-          </p>
+  if (variant === "athlete") {
+    return (
+      <div className="athlete-dashboard-card athlete-dashboard-card--agenda">
+        <div className="flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2">
+            <Calendar className="h-4 w-4 text-app-muted" aria-hidden="true" />
+            <h2 className="text-[15px] font-semibold text-app-text">Agenda</h2>
+          </div>
+          <Link
+            href="/meet-week"
+            className="text-[13px] font-medium text-[#3b82f6] hover:underline"
+          >
+            Kalender
+          </Link>
         </div>
+
+        {loading ? (
+          <div className="mt-4 h-20 animate-pulse rounded-xl bg-white/5" />
+        ) : items.length === 0 ? (
+          <p className="mt-4 text-[13px] text-app-muted">
+            Geen afspraken gepland.
+          </p>
+        ) : (
+          <div className="mt-4 space-y-4">
+            {Object.entries(grouped).map(([date, dayItems]) => (
+              <div key={date}>
+                <p className="mb-2 text-[12px] font-medium text-app-muted">
+                  {formatAgendaDate(date)}
+                </p>
+                <div className="space-y-2">
+                  {dayItems.map((item) => (
+                    <div key={item.id} className="athlete-dashboard-agenda-item">
+                      <div className="athlete-dashboard-agenda-item-icon">
+                        <Calendar className="h-3.5 w-3.5" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-medium text-app-text">
+                          {item.title}
+                        </p>
+                        {item.subtitle ? (
+                          <p className="mt-0.5 text-[12px] text-app-muted">
+                            {item.subtitle}
+                          </p>
+                        ) : null}
+                      </div>
+                      <ChevronRight
+                        className="h-4 w-4 shrink-0 text-app-muted"
+                        aria-hidden="true"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="ui-panel">
+      <div className="mb-4 flex items-center justify-between gap-3">
+        <h2 className="text-[15px] font-semibold text-app-text">Agenda</h2>
         <Link
           href="/wedstrijd-kalender"
-          className="text-sm font-semibold text-black underline-offset-2 hover:underline"
+          className="text-[13px] font-medium text-app-accent hover:underline"
         >
           Kalender
         </Link>
@@ -158,18 +233,22 @@ function AthleteAgenda({ userId }: { userId: string }) {
         <div className="space-y-4">
           {Object.entries(grouped).map(([date, dayItems]) => (
             <div key={date}>
-              <p className="mb-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+              <p className="mb-2 text-[12px] font-medium text-app-muted">
                 {formatAgendaDate(date)}
               </p>
               <div className="space-y-2">
                 {dayItems.map((item) => (
                   <div
                     key={item.id}
-                    className="rounded-xl border border-gray-200 px-3 py-2"
+                    className="rounded-xl bg-app-surface-hover/60 px-3 py-2.5"
                   >
-                    <p className="text-sm font-semibold text-black">{item.title}</p>
+                    <p className="text-[13px] font-medium text-app-text">
+                      {item.title}
+                    </p>
                     {item.subtitle && (
-                      <p className="text-xs text-gray-500">{item.subtitle}</p>
+                      <p className="mt-0.5 text-[12px] font-normal text-app-muted">
+                        {item.subtitle}
+                      </p>
                     )}
                   </div>
                 ))}
@@ -182,10 +261,14 @@ function AthleteAgenda({ userId }: { userId: string }) {
   );
 }
 
-export default function DashboardAgenda({ role, userId }: DashboardAgendaProps) {
+export default function DashboardAgenda({
+  role,
+  userId,
+  variant = "default",
+}: DashboardAgendaProps) {
   if (isCoachLikeRole(role)) {
     return <CoachWeekCalendar userId={userId} />;
   }
 
-  return <AthleteAgenda userId={userId} />;
+  return <AthleteAgenda userId={userId} variant={variant} />;
 }

@@ -133,15 +133,15 @@ export default function ChatVolumePanel({
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-app-border px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">Volume</h3>
-          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+          <h3 className="truncate chat-panel-title truncate">Volume</h3>
+          <p className="truncate chat-panel-subtitle truncate">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          className="shrink-0 rounded-xl p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="Volume sluiten"
         >
           <X className="h-4 w-4" />
@@ -150,14 +150,14 @@ export default function ChatVolumePanel({
 
       <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain p-4">
         <div className="mb-4">
-          <p className="text-xs font-black uppercase text-gray-500">
+          <p className="text-xs font-black uppercase text-app-muted">
             SBD volume
           </p>
-          <h4 className="text-lg font-black text-black">
+          <h4 className="text-lg font-black text-app-text">
             {hasWeekFilter ? "Gefilterde periode" : "Alle weken"}
           </h4>
           {startDate && endDate && (
-            <p className="mt-1 text-xs text-gray-500">
+            <p className="mt-1 chat-panel-subtitle truncate">
               {formatShortDate(startDate)} – {formatShortDate(endDate)}
             </p>
           )}
@@ -180,25 +180,25 @@ export default function ChatVolumePanel({
         )}
 
         {loading && (
-          <div className="flex flex-1 items-center justify-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center text-sm text-app-muted">
             Volume laden...
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-red-600">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-destructive">
             {error}
           </div>
         )}
 
         {!loading && !error && rows.length === 0 && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Nog geen SBD volume voor deze atleet.
           </div>
         )}
 
         {!loading && !error && rows.length > 0 && filteredRows.length === 0 && (
-          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-gray-500">
+          <div className="flex flex-1 items-center justify-center px-2 text-center text-sm text-app-muted">
             Geen volume in deze periode.
           </div>
         )}
@@ -209,27 +209,27 @@ export default function ChatVolumePanel({
               {SBD_LIFTS.map((lift) => (
                 <div
                   key={lift}
-                  className="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center"
+                  className="chat-card-elevated-muted p-3 text-center"
                 >
-                  <p className="text-[10px] font-black uppercase text-gray-400">
+                  <p className="text-[10px] font-black uppercase text-app-subtle">
                     {formatLiftLabel(lift)}
                   </p>
-                  <p className="mt-1 text-2xl font-black text-black">
+                  <p className="mt-1 text-2xl font-black text-app-text">
                     {totals[lift].sets}
                   </p>
-                  <p className="text-[10px] font-bold uppercase text-gray-500">
+                  <p className="text-[10px] font-bold uppercase text-app-muted">
                     sets
                   </p>
-                  <p className="mt-2 text-lg font-black text-black">
+                  <p className="mt-2 text-lg font-black text-app-text">
                     {totals[lift].reps}
                   </p>
-                  <p className="text-[10px] font-bold uppercase text-gray-500">
+                  <p className="text-[10px] font-bold uppercase text-app-muted">
                     reps
                   </p>
-                  <p className="mt-2 text-sm font-black text-black">
+                  <p className="mt-2 text-sm font-black text-app-text">
                     {formatTonnage(totals[lift].tonnage)}
                   </p>
-                  <p className="text-[10px] font-bold uppercase text-gray-500">
+                  <p className="text-[10px] font-bold uppercase text-app-muted">
                     tonnage
                   </p>
                 </div>
@@ -245,13 +245,13 @@ export default function ChatVolumePanel({
               return (
                 <div
                   key={lift}
-                  className="rounded-3xl border border-gray-200 bg-white p-3 shadow-sm"
+                  className="rounded-3xl border border-app-border bg-app-surface p-3 shadow-sm"
                 >
                   <div className="mb-3 px-1">
-                    <p className="text-xs font-black uppercase text-gray-500">
+                    <p className="text-xs font-black uppercase text-app-muted">
                       Tonnage per week
                     </p>
-                    <h5 className="text-sm font-black text-black">
+                    <h5 className="text-sm font-black text-app-text">
                       {formatLiftLabel(lift)}
                     </h5>
                   </div>
@@ -286,9 +286,9 @@ export default function ChatVolumePanel({
               );
             })}
 
-            <div className="overflow-hidden rounded-2xl border border-gray-200">
+            <div className="overflow-hidden rounded-2xl border border-app-border">
               <table className="w-full text-left text-sm">
-                <thead className="bg-gray-50 text-[10px] font-black uppercase text-gray-500">
+                <thead className="bg-app-surface-muted text-[10px] font-black uppercase text-app-muted">
                   <tr>
                     <th className="px-3 py-2">Week</th>
                     <th className="px-3 py-2">Squat</th>
@@ -298,23 +298,23 @@ export default function ChatVolumePanel({
                 </thead>
                 <tbody>
                   {filteredRows.map((row) => (
-                    <tr key={row.id} className="border-t border-gray-100">
+                    <tr key={row.id} className="border-t border-app-border">
                       <td className="px-3 py-2 align-top">
-                        <p className="font-bold text-black">{row.weekTitle}</p>
-                        <p className="text-[10px] text-gray-500">
+                        <p className="font-bold text-app-text">{row.weekTitle}</p>
+                        <p className="text-[10px] text-app-muted">
                           {row.blockTitle}
                         </p>
                       </td>
                       {SBD_LIFTS.map((lift) => (
                         <td key={lift} className="px-3 py-2 align-top">
-                          <p className="font-bold text-black">
+                          <p className="font-bold text-app-text">
                             {row[lift].sets} sets
                           </p>
-                          <p className="text-xs text-gray-500">
+                          <p className="chat-panel-subtitle truncate">
                             {row[lift].reps} reps
                           </p>
                           {row[lift].tonnage > 0 && (
-                            <p className="text-xs text-gray-400">
+                            <p className="text-xs text-app-subtle">
                               {formatTonnage(row[lift].tonnage)}
                             </p>
                           )}

@@ -1694,6 +1694,51 @@ function RawDataPageContent({
     );
   }
 
+  function downloadCsv() {
+    const lines = ["block,week,day,exercise,set,reps,weight,rpe,bw,recovery,fatigue"];
+
+    for (const rawBlock of filteredRawBlocks) {
+      for (const rawWeek of rawBlock.weeks) {
+        for (const rawDay of rawWeek.days) {
+          for (const row of rawDay.exercises) {
+            const setRows =
+              row.setRows.length > 0
+                ? row.setRows
+                : [{ set_number: 1, reps: "", weight: "", rpe: "" }];
+
+            for (const setRow of setRows) {
+              lines.push(
+                [
+                  rawBlock.block.title,
+                  rawWeek.week.title,
+                  rawDay.day.title,
+                  row.exercise.name,
+                  setRow.set_number,
+                  setRow.reps || "",
+                  setRow.weight || "",
+                  setRow.rpe || "",
+                  rawDay.checkin?.bw || "",
+                  rawDay.checkin?.recovery ?? "",
+                  rawDay.checkin?.fatigue ?? "",
+                ]
+                  .map((cell) => `"${String(cell).replace(/"/g, '""')}"`)
+                  .join(","),
+              );
+            }
+          }
+        }
+      }
+    }
+
+    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const anchor = document.createElement("a");
+    anchor.href = url;
+    anchor.download = "ruwe-data-export.csv";
+    anchor.click();
+    URL.revokeObjectURL(url);
+  }
+
   const selectedLeftWeek = viewMode === "week" ? getSelectedWeek(leftSelection) : null;
   const selectedRightWeek = viewMode === "week" ? getSelectedWeek(rightSelection) : null;
 
@@ -1733,25 +1778,34 @@ function RawDataPageContent({
             </div>
 
             {!compactShell && (
-              <div className="min-w-[280px]">
-                <p className="text-xs font-black text-gray-500 uppercase mb-1">
-                  Atleet
-                </p>
-
-                <select
-                  value={selectedAthleteId}
-                  onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+              <div className="flex items-end gap-2">
+                <button
+                  type="button"
+                  onClick={downloadCsv}
+                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-black shadow hover:bg-gray-50"
                 >
-                  {!selectedAthleteId && (
-                    <option value="">Kies atleet</option>
-                  )}
-                  {athleteOptions.map((athlete) => (
-                    <option key={athlete.id} value={athlete.id}>
-                      {athlete.name}
-                    </option>
-                  ))}
-                </select>
+                  Export CSV
+                </button>
+                <div className="min-w-[280px]">
+                  <p className="text-xs font-black text-gray-500 uppercase mb-1">
+                    Atleet
+                  </p>
+
+                  <select
+                    value={selectedAthleteId}
+                    onChange={(e) => setSelectedAthleteId(e.target.value)}
+                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                  >
+                    {!selectedAthleteId && (
+                      <option value="">Kies atleet</option>
+                    )}
+                    {athleteOptions.map((athlete) => (
+                      <option key={athlete.id} value={athlete.id}>
+                        {athlete.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
             )}
 

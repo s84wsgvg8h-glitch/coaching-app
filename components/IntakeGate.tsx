@@ -4,8 +4,10 @@ import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { needsIntakeCompletion } from "@/lib/intakeForm";
+import { isDemoMode } from "@/lib/demo/demoMode";
+import { SkeletonCard } from "@/components/ui/Skeleton";
 
-const ALLOWED_PATHS = ["/intake", "/login", "/signup"];
+const ALLOWED_PATHS = ["/intake", "/login", "/signup", "/privacy", "/voorwaarden"];
 
 export default function IntakeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -27,6 +29,14 @@ export default function IntakeGate({ children }: { children: React.ReactNode }) 
       }
 
       if (authLoading) return;
+
+      if (isDemoMode()) {
+        if (!cancelled) {
+          setBlocked(false);
+          setChecked(true);
+        }
+        return;
+      }
 
       if (!userId) {
         if (!cancelled) {

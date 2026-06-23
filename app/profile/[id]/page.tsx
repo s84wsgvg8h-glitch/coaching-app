@@ -3,7 +3,8 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import { getRealSupabase } from "@/lib/supabaseClient";
+import { loadAuthenticatedProfile } from "@/lib/profileAuth";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
@@ -16,10 +17,11 @@ import ProfileSettingsLayout, {
 import CoachAthleteNotesSection, {
   canViewCoachNotes,
 } from "@/components/profile/CoachAthleteNotesSection";
-import AthleteGoalsSection from "@/components/profile/AthleteGoalsSection";
+import ProfileAdvancedSettingsPanel from "@/components/profile/ProfileAdvancedSettingsPanel";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { getChatReturnRoute } from "@/lib/chatNavigation";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { type BlockIntakeWizard } from "@/lib/blockIntakeWizard";
 
 type Profile = {
   id: string;
@@ -27,6 +29,7 @@ type Profile = {
   role: string | null;
   lidnummer: string | null;
   geboortedatum: string | null;
+  goals_text: string | null;
 };
 
 function UserProfilePageContent() {
@@ -35,39 +38,39 @@ function UserProfilePageContent() {
   const searchParams = useSearchParams();
   const profileId = params.id as string;
   const activeSection = searchParams.get("section") || "athlete";
+  const highlightField = searchParams.get("focus");
 
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [viewerId, setViewerId] = useState("");
   const [viewerRole, setViewerRole] = useState("");
   const [chatBackHref, setChatBackHref] = useState("/chat");
+  const [blockIntakeWizard, setBlockIntakeWizard] =
+    useState<BlockIntakeWizard | null>(null);
 
   async function loadProfile() {
     setLoading(true);
 
+    const client = getRealSupabase();
     const {
       data: { user },
-    } = await supabase.auth.getUser();
+    } = await client.auth.getUser();
 
     if (!user) {
       window.location.href = "/login";
       return;
     }
 
-    const { data: viewerProfile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .single();
+    const viewerProfile = await loadAuthenticatedProfile(user.id);
 
     setViewerId(user.id);
     setViewerRole(viewerProfile?.role || "");
 
-    const { data, error } = await supabase
+    const { data, error } = await client
       .from("profiles")
-      .select("id, full_name, role, lidnummer, geboortedatum")
+      .select("id, full_name, role, lidnummer, geboortedatum, goals_text")
       .eq("id", profileId)
-      .single();
+      .maybeSingle();
 
     if (error || !data) {
       setProfile(null);
@@ -76,6 +79,16 @@ function UserProfilePageContent() {
     }
 
     setProfile(data);
+
+    const { data: wizard } = await client
+      .from("block_intake_wizard")
+      .select("*")
+      .eq("athlete_id", profileId)
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    setBlockIntakeWizard((wizard as BlockIntakeWizard) || null);
     setLoading(false);
   }
 
@@ -99,7 +112,7 @@ function UserProfilePageContent() {
     profile && isCoachLikeRole(viewerRole) && profile.role === "atleet",
   );
   const backHref = isCoachLikeRole(viewerRole)
-    ? "/athletes?tab=profielen"
+    ? "/athletes"
     : chatBackHref;
   const backLabel = isCoachLikeRole(viewerRole)
     ? "← Terug naar atleten"
@@ -111,10 +124,17 @@ function UserProfilePageContent() {
         { id: "athlete", label: "Atleetgegevens", group: "Algemeen" },
         { id: "settings", label: "Instellingen", group: "Algemeen" },
         { id: "maxes", label: "Current maxes & RPE", group: "Training" },
-        { id: "goals", label: "Doelen", group: "Training" },
         { id: "intake", label: "Intake", group: "Training" },
         { id: "injuries", label: "Blessures", group: "Training" },
       ];
+
+      if (canEditAthleteAdminFields) {
+        base.splice(2, 0, {
+          id: "advanced",
+          label: "Geavanceerde instellingen",
+          group: "Algemeen",
+        });
+      }
 
       if (canViewCoachNotes(viewerRole, viewerId, profile.id)) {
         base.splice(2, 0, {
@@ -128,7 +148,7 @@ function UserProfilePageContent() {
     }
 
     return [{ id: "overview", label: "Overzicht", group: "Algemeen" }];
-  }, [profile?.role, profile?.id, viewerId, viewerRole]);
+  }, [profile?.role, profile?.id, viewerId, viewerRole, canEditAthleteAdminFields]);
 
   function setSection(sectionId: string) {
     router.replace(`/profile/${profileId}?section=${sectionId}`);
@@ -160,15 +180,16 @@ function UserProfilePageContent() {
     "Profiel";
 
   return (
-    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6">
+    <AppShell contentClassName="flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3">
       <Link
         href={backHref}
-        className="mb-4 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black shadow"
+        className="mb-3 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black shadow"
       >
         {backLabel}
       </Link>
 
       <ProfileSettingsLayout
+        fullWidth
         title={sectionTitle}
         subtitle={`${profile.full_name || "Onbekende gebruiker"} · ${roleLabel}`}
         sections={sections}
@@ -186,10 +207,14 @@ function UserProfilePageContent() {
             athleteId={profile.id}
             canEdit={canEdit}
             canEditStartingPrs={canEditAthleteAdminFields}
-            canEditCompetitions={canEditAthleteAdminFields}
+            canEditCompetitions={false}
             canEditPayment={canEditPayment}
+            canEditVideoSettings={canEditAthleteAdminFields}
             initialGeboortedatum={profile.geboortedatum}
             initialLidnummer={profile.lidnummer}
+            initialGoalsText={profile.goals_text}
+            blockIntakeWizard={blockIntakeWizard}
+            highlightField={highlightField}
             onSaved={() => void loadProfile()}
           />
         )}
@@ -201,6 +226,12 @@ function UserProfilePageContent() {
               coachUserId={viewerId}
               athleteId={profile.id}
             />
+          )}
+
+        {activeSection === "advanced" &&
+          profile.role === "atleet" &&
+          canEditAthleteAdminFields && (
+            <ProfileAdvancedSettingsPanel athleteId={profile.id} />
           )}
 
         {activeSection === "maxes" && profile.role === "atleet" && (
@@ -222,13 +253,6 @@ function UserProfilePageContent() {
               athleteId={profile.id}
             />
           )}
-
-        {activeSection === "goals" && profile.role === "atleet" && (
-          <AthleteGoalsSection
-            athleteId={profile.id}
-            canEdit={viewerId === profile.id || canEditAthleteAdminFields}
-          />
-        )}
 
         {activeSection === "injuries" && profile.role === "atleet" && (
           <BodyAreaDiagram athleteId={profile.id} canEdit={canEdit} />

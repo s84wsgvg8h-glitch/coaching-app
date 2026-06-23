@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import {
   DEFAULT_INTAKE_FIELDS,
@@ -29,6 +30,7 @@ export default function ProfileSettingsPanel({
   coachUserId,
   athleteId = null,
 }: ProfileSettingsPanelProps) {
+  const router = useRouter();
   const isAthleteOverride = Boolean(athleteId);
   const [checklistSections, setChecklistSections] = useState<
     CompetitionChecklistSection[]
@@ -129,52 +131,50 @@ export default function ProfileSettingsPanel({
     setChecklistScope("global");
   }
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push("/login");
+  }
+
   if (loading) {
     return <p className="text-sm text-app-muted">Instellingen laden...</p>;
   }
 
   return (
     <div className="space-y-10">
-      <div>
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
-          <p className="text-sm text-app-muted">
-            {checklistStatus === "saving" && "Checklist opslaan..."}
-            {checklistStatus === "saved" && "Checklist opgeslagen"}
-            {checklistStatus === "error" && "Checklist opslaan mislukt"}
-            {checklistStatus === "idle" &&
-              "Checklist wijzigingen worden automatisch opgeslagen"}
-          </p>
-          {isAthleteOverride && checklistScope === "athlete" ? (
-            <button
-              type="button"
-              onClick={() => void resetAthleteChecklistToGlobal()}
-              className="rounded-xl border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50"
-            >
-              Terug naar algemene checklist
-            </button>
-          ) : null}
+      {isAthleteOverride ? (
+        <div className="profile-settings-panel-block text-sm text-app-muted">
+          De wedstrijd-checklist voor deze atleet pas je aan onder{" "}
+          <strong className="text-app-text">Geavanceerde instellingen</strong> in
+          het profiel.
         </div>
+      ) : (
+        <>
+          <div>
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-app-muted">
+                {checklistStatus === "saving" && "Checklist opslaan..."}
+                {checklistStatus === "saved" && "Checklist opgeslagen"}
+                {checklistStatus === "error" && "Checklist opslaan mislukt"}
+                {checklistStatus === "idle" &&
+                  "Checklist wijzigingen worden automatisch opgeslagen"}
+              </p>
+            </div>
 
-        <CompetitionChecklistEditor
-          compact
-          title={
-            isAthleteOverride
-              ? "Checklist voor deze atleet"
-              : "Algemene wedstrijd checklist"
-          }
-          description={
-            isAthleteOverride
-              ? "Pas de checklist alleen voor deze atleet aan. Andere atleten gebruiken de algemene checklist."
-              : "Deze checklist geldt voor alle atleten zonder eigen override."
-          }
-          sections={checklistSections}
-          onChange={setChecklistSections}
-        />
-      </div>
+            <CompetitionChecklistEditor
+              compact
+              title="Algemene wedstrijd checklist"
+              description="Deze checklist geldt voor alle atleten zonder eigen override."
+              sections={checklistSections}
+              onChange={setChecklistSections}
+            />
+          </div>
+        </>
+      )}
 
       {!isAthleteOverride ? (
-        <div className="border-t border-gray-200 pt-8">
-          <h2 className="text-xl font-bold text-app-text">Intakeformulier</h2>
+        <div className="profile-settings-panel-block">
+          <h2 className="text-base font-semibold text-app-text">Intakeformulier</h2>
           <p className="mt-1 text-sm text-app-muted">
             Labels en verplichte velden voor nieuwe atleten.
           </p>
@@ -183,9 +183,9 @@ export default function ProfileSettingsPanel({
             {intakeFields.map((field, index) => (
               <div
                 key={field.key}
-                className="grid gap-2 rounded-xl border border-gray-200 bg-gray-50/60 px-3 py-2 md:grid-cols-[120px_minmax(0,1fr)_auto]"
+                className="grid gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2 md:grid-cols-[120px_minmax(0,1fr)_auto]"
               >
-                <span className="text-xs font-bold uppercase text-gray-400">
+                <span className="text-xs font-bold uppercase text-app-subtle">
                   {field.key}
                 </span>
                 <input
@@ -200,7 +200,7 @@ export default function ProfileSettingsPanel({
                       ),
                     )
                   }
-                  className="rounded-lg border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-black"
+                  className="profile-field-input !py-2"
                 />
                 <label className="flex items-center gap-2 text-xs font-semibold">
                   <input
@@ -235,6 +235,20 @@ export default function ProfileSettingsPanel({
               <span className="text-sm text-app-muted">{intakeMessage}</span>
             ) : null}
           </div>
+        </div>
+      ) : null}
+
+      {!isAthleteOverride ? (
+        <div className="profile-settings-panel-block">
+          <h2 className="text-base font-semibold text-app-text">Account</h2>
+          <p className="mt-1 text-sm text-app-muted">Log uit op dit apparaat.</p>
+          <button
+            type="button"
+            onClick={() => void handleLogout()}
+            className="app-btn-secondary mt-4 app-focus-ring"
+          >
+            Uitloggen
+          </button>
         </div>
       ) : null}
     </div>

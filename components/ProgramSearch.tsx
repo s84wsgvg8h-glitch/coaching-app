@@ -9,10 +9,13 @@ import {
   type ProgramSearchContext,
   type ProgramSearchItem,
 } from "@/lib/programSearch";
+import { getApiAuthHeaders } from "@/lib/apiClient";
+import { isDemoMode } from "@/lib/demo/demoMode";
 
 type ProgramSearchProps = {
   context: ProgramSearchContext;
   className?: string;
+  variant?: "default" | "coach-dark";
 };
 
 type AiResult = {
@@ -26,6 +29,7 @@ type AiResult = {
 export default function ProgramSearch({
   context,
   className = "",
+  variant = "default",
 }: ProgramSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
@@ -88,10 +92,16 @@ export default function ProgramSearch({
     setAiResult(null);
     setOpen(true);
 
+    if (isDemoMode()) {
+      setAiError("AI is niet beschikbaar in demo-modus.");
+      setAiLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch("/api/dashboard-ai", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: await getApiAuthHeaders({ "Content-Type": "application/json" }),
         body: JSON.stringify({
           query: question,
           role: "coach",
@@ -175,6 +185,8 @@ export default function ProgramSearch({
   const showAiSection =
     aiLoading || aiError || aiResult || (query.trim().length > 0 && results.length === 0);
 
+  const isCoachDark = variant === "coach-dark";
+
   return (
     <div ref={containerRef} className={`relative ${className}`}>
       <input
@@ -187,11 +199,21 @@ export default function ProgramSearch({
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder="Zoek oefeningen in dit programma of stel een AI-vraag..."
-        className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+        className={
+          isCoachDark
+            ? "coach-program-search-input w-full"
+            : "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+        }
       />
 
       {open && (
-        <div className="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl">
+        <div
+          className={
+            isCoachDark
+              ? "coach-program-search-dropdown absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden"
+              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+          }
+        >
           {results.length > 0 && (
             <ul className="max-h-64 overflow-y-auto py-1">
               {results.map((item, index) => (
@@ -201,7 +223,13 @@ export default function ProgramSearch({
                     onMouseDown={(event) => event.preventDefault()}
                     onClick={() => selectItem(item)}
                     className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition ${
-                      index === activeIndex ? "bg-gray-100" : "hover:bg-gray-50"
+                      isCoachDark
+                        ? index === activeIndex
+                          ? "bg-white/8"
+                          : "hover:bg-white/5"
+                        : index === activeIndex
+                          ? "bg-gray-100"
+                          : "hover:bg-gray-50"
                     }`}
                   >
                     <span className="text-base">
@@ -214,10 +242,18 @@ export default function ProgramSearch({
                             : "📄"}
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block font-semibold text-black">
+                      <span
+                        className={`block font-semibold ${
+                          isCoachDark ? "text-app-text" : "text-black"
+                        }`}
+                      >
                         {item.title}
                       </span>
-                      <span className="block truncate text-xs text-gray-500">
+                      <span
+                        className={`block truncate text-xs ${
+                          isCoachDark ? "text-app-muted" : "text-gray-500"
+                        }`}
+                      >
                         {item.description}
                       </span>
                     </span>

@@ -14,7 +14,7 @@ export default function ChatAvatar({
   name,
   imageUrl,
   className = "h-12 w-12",
-  fallbackClassName = "bg-black text-white",
+  fallbackClassName = "chat-avatar-fallback",
   children,
 }: ChatAvatarProps) {
   if (imageUrl) {

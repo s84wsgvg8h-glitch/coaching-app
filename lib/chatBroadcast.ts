@@ -3,12 +3,19 @@ import { supabase } from "@/lib/supabaseClient";
 export async function broadcastMessageToAthletes(
   coachId: string,
   body: string,
+  athleteIds?: string[] | null,
 ) {
-  const { data: athletes, error: athletesError } = await supabase
+  let query = supabase
     .from("profiles")
     .select("id")
     .eq("role", "atleet")
     .eq("coach_id", coachId);
+
+  if (athleteIds?.length) {
+    query = query.in("id", athleteIds);
+  }
+
+  const { data: athletes, error: athletesError } = await query;
 
   if (athletesError || !athletes?.length) {
     return { sent: 0, error: athletesError?.message || "Geen atleten gevonden" };

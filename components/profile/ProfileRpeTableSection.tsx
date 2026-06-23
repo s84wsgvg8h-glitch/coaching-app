@@ -27,11 +27,10 @@ function formatPercent(value: number) {
   return `${value.toFixed(1)}%`;
 }
 
-function getCellColor(percent: number) {
-  const normalized = Math.max(0, Math.min(1, (percent - 40) / 60));
-  const lightness = 96 - normalized * 36;
-  return `hsl(0, 0%, ${lightness}%)`;
-}
+import {
+  getRpeCellColor,
+  getRpeCellTextColor,
+} from "@/lib/rpeCellColors";
 
 type ProfileRpeTableSectionProps = {
   athleteId: string;
@@ -240,7 +239,7 @@ export default function ProfileRpeTableSection({
         </div>
 
         {!activeMax && showWeights ? (
-          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+          <p className="mt-4 rounded-2xl border border-amber-500/35 bg-amber-500/15 px-4 py-3 text-sm font-medium text-amber-950 dark:border-amber-400/30 dark:bg-amber-400/12 dark:text-amber-100">
             Vul eerst een current max in voor {SBD_LIFT_LABELS[selectedLift]} om
             gewichten te berekenen.
           </p>
@@ -275,12 +274,18 @@ export default function ProfileRpeTableSection({
                     {row.cells.map((cell) => (
                       <td
                         key={`${row.rpe}-${cell.reps}`}
-                        className="border border-gray-200 px-1 py-2"
-                        style={{ backgroundColor: getCellColor(cell.percent) }}
+                        className="border border-gray-200 px-1 py-2 dark:border-white/10"
+                        style={{
+                          backgroundColor: getRpeCellColor(row.rpe, cell.reps),
+                          color: getRpeCellTextColor(row.rpe, cell.reps),
+                        }}
                       >
                         <div className="font-semibold">{formatPercent(cell.percent)}</div>
                         {showWeights && cell.weight !== null ? (
-                          <div className="mt-0.5 text-[10px] font-bold text-black">
+                          <div
+                            className="mt-0.5 text-[10px] font-bold"
+                            style={{ color: getRpeCellTextColor(row.rpe, cell.reps) }}
+                          >
                             {cell.weight} kg
                           </div>
                         ) : null}

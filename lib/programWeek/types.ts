@@ -21,6 +21,7 @@ export type ProgramDay = {
   program_week_id: string;
   notes: string | null;
   warmup: string | null;
+  scheduled_date?: string | null;
 };
 
 export type ProgramExercise = {
@@ -35,6 +36,9 @@ export type ProgramExercise = {
   exercise_number: number | null;
   priority?: string | null;
   exercise_library_id?: string | null;
+  exercise_format?: string | null;
+  superset_group?: string | null;
+  rest_seconds?: number | null;
 };
 
 export type AthleteExerciseSet = {

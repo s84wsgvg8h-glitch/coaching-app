@@ -95,10 +95,12 @@ export async function POST(request: Request) {
       );
     }
 
-    const { error: profileError } = await adminClient
-      .from("profiles")
-      .update({ full_name: fullName, role: "coach" })
-      .eq("id", created.user.id);
+    const { error: profileError } = await adminClient.from("profiles").upsert({
+      id: created.user.id,
+      full_name: fullName,
+      role: "coach",
+      pending_kind: null,
+    });
 
     if (profileError) {
       return NextResponse.json({ error: profileError.message }, { status: 500 });

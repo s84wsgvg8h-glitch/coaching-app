@@ -132,31 +132,31 @@ export default function ChatProgramPanel({
 
   return (
     <aside className={CHAT_SIDE_PANEL_CLASS}>
-      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-gray-200 px-4 py-3">
+      <div className="flex shrink-0 items-start justify-between gap-3 border-b border-app-border px-4 py-3">
         <div className="min-w-0">
-          <h3 className="truncate text-base font-bold text-black">Programma</h3>
-          <p className="truncate text-xs text-gray-500">{athleteName}</p>
+          <h3 className="truncate chat-panel-title truncate">Programma</h3>
+          <p className="truncate chat-panel-subtitle truncate">{athleteName}</p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="shrink-0 rounded-xl p-2 text-gray-500 hover:bg-gray-100 hover:text-black"
+          className="shrink-0 rounded-xl p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="Programma sluiten"
         >
           <X className="h-4 w-4" />
         </button>
       </div>
 
-      <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-gray-200 px-3 py-3">
+      <div className="grid shrink-0 grid-cols-2 gap-2 border-b border-app-border px-3 py-3">
         <div className="min-w-0">
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Block
           </label>
           <select
             value={selectedBlockId}
             onChange={(event) => handleBlockChange(event.target.value)}
             disabled={loading || blocks.length === 0}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
+            className="w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm font-semibold text-app-text outline-none"
           >
             {blocks.map((block) => (
               <option key={block.id} value={block.id}>
@@ -167,14 +167,14 @@ export default function ChatProgramPanel({
         </div>
 
         <div className="min-w-0">
-          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-gray-400">
+          <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-subtle">
             Week
           </label>
           <select
             value={selectedWeekId}
             onChange={(event) => setSelectedWeekId(event.target.value)}
             disabled={loading || weeksForSelectedBlock.length === 0}
-            className="w-full rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm font-semibold text-black outline-none"
+            className="w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm font-semibold text-app-text outline-none"
           >
             {weeksForSelectedBlock.map((week) => (
               <option key={week.id} value={week.id}>
@@ -185,21 +185,21 @@ export default function ChatProgramPanel({
         </div>
       </div>
 
-      <div className="relative min-h-0 flex-1 bg-gray-100">
+      <div className="relative min-h-0 flex-1 bg-app-surface-hover">
         {loading && (
-          <div className="flex h-full items-center justify-center text-sm text-gray-500">
+          <div className="flex h-full items-center justify-center text-sm text-app-muted">
             Programma laden...
           </div>
         )}
 
         {!loading && error && (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-red-600">
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-app-destructive">
             {error}
           </div>
         )}
 
         {!loading && !error && blocks.length === 0 && (
-          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-gray-500">
+          <div className="flex h-full items-center justify-center px-4 text-center text-sm text-app-muted">
             Nog geen programma voor deze atleet.
           </div>
         )}
@@ -209,7 +209,7 @@ export default function ChatProgramPanel({
             key={iframeSrc}
             title={`Programma ${athleteName}`}
             src={iframeSrc}
-            className="h-full w-full border-0 bg-gray-100"
+            className="h-full w-full border-0 bg-app-surface-hover"
           />
         )}
       </div>

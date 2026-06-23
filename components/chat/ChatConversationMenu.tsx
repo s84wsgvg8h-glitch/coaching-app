@@ -34,10 +34,10 @@ export default function ChatConversationMenu({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="rounded-xl p-2 hover:bg-gray-100"
+        className="ui-icon-btn app-focus-ring"
         aria-label="Chat opties"
       >
-        <MoreVertical className="h-5 w-5 text-black" />
+        <MoreVertical className="h-5 w-5" />
       </button>
 
       {open && (
@@ -48,39 +48,39 @@ export default function ChatConversationMenu({
             className="fixed inset-0 z-10"
             onClick={() => setOpen(false)}
           />
-          <div className="absolute right-0 top-11 z-20 min-w-[220px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-lg">
+          <div className="chat-menu-dropdown absolute right-0 top-11 z-20 min-w-[220px]">
             <button
               type="button"
               onClick={() => run(onPin)}
-              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+              className="chat-menu-item"
             >
               {pinned ? "Losmaken" : "Vastpinnen"}
             </button>
             <button
               type="button"
               onClick={() => run(onMute)}
-              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+              className="chat-menu-item"
             >
               {muted ? "Dempen uit" : "Dempen"}
             </button>
             <button
               type="button"
               onClick={() => run(onMarkUnread)}
-              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+              className="chat-menu-item"
             >
               Ongelezen markeren
             </button>
             <button
               type="button"
               onClick={() => run(onClear)}
-              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+              className="chat-menu-item"
             >
               Chat wissen
             </button>
             <button
               type="button"
               onClick={() => run(onDelete)}
-              className="flex w-full px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+              className="chat-menu-item chat-menu-item-danger"
             >
               Chat verwijderen
             </button>

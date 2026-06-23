@@ -18,75 +18,19 @@ export function getNavLinks(
       href: "/dashboard",
       icon: "🏠",
       title: "Dashboard",
-      description: "Ga terug naar het dashboard.",
+      description: "Kies een atleet en start met coachen.",
     },
     {
       href: "/kennisbank",
       icon: "📚",
-      title: "Kennisbank",
-      description: "Bekijk alle AI-kennis chunks.",
+      title: "Kennisbank & AI-vragen",
+      description: "Curated kennis en atleten-AI vragen.",
     },
     {
-      href: "/ai-vragen",
-      icon: "✨",
-      title: "AI-vragen",
-      description: "Bekijk atleten-AI vragen en ontbrekende kennis.",
-    },
-    {
-      href: "/atleten-overzicht",
-      icon: "📋",
-      title: "Atleten overzicht",
-      description: "Filter atleten op invulscore en bodyweight.",
-    },
-    {
-      href: "/todo",
-      icon: "✅",
-      title: "To-do",
-      description: "Taken en programma-meldingen.",
-    },
-    {
-      href: "/athletes",
-      icon: "👥",
-      title: "Atleten",
-      description: "Beheer atleten, profielen en uitnodigingen.",
-      badge: pendingCount,
-    },
-    {
-      href: "/programs",
-      icon: "🏋️",
-      title: "Programma's",
-      description: "Maak trainingsschema's aan.",
-    },
-    {
-      href: "/video-gallery",
-      icon: "🎥",
-      title: "Video gallery",
-      description: "Bekijk alle video's.",
-    },
-    {
-      href: "/oefeningenbibliotheek",
-      icon: "📖",
-      title: "Oefeningenbibliotheek",
-      description: "Uitlegvideo's per oefening.",
-    },
-    {
-      href: "/data",
-      icon: "📈",
-      title: "Data",
-      description: "Statistieken, grafieken en ruwe data.",
-    },
-    {
-      href: "/merch",
-      icon: "👕",
-      title: "Merch",
-      description: "Teamkleding en merchandise.",
-    },
-    {
-      href: "/chat",
-      icon: "💬",
-      title: "Chat",
-      description: "Stuur berichten naar atleten.",
-      badge: chatUnreadCount,
+      href: "/agenda",
+      icon: "🗓️",
+      title: "Agenda",
+      description: "Afspraken en planning.",
     },
     {
       href: "/wedstrijd-kalender",
@@ -95,10 +39,10 @@ export function getNavLinks(
       description: "Bekijk en beheer wedstrijden.",
     },
     {
-      href: "/limitless-data",
-      icon: "📊",
-      title: "Limitless Data",
-      description: "Voeg atleten toe en beheer lidgegevens.",
+      href: "/data",
+      icon: "📈",
+      title: "Data",
+      description: "Statistieken, grafieken en ruwe data.",
     },
     {
       href: "/leaderboard",
@@ -107,10 +51,28 @@ export function getNavLinks(
       description: "Bekijk rankings en prestaties.",
     },
     {
-      href: "/invulscore",
+      href: "/oefeningenbibliotheek",
+      icon: "📖",
+      title: "Oefeningenbibliotheek",
+      description: "Uitlegvideo's per oefening.",
+    },
+    {
+      href: "/betalingen",
+      icon: "💳",
+      title: "Betalingen",
+      description: "Maandprijzen en Stripe-koppeling.",
+    },
+    {
+      href: "/merch",
+      icon: "👕",
+      title: "Merch",
+      description: "Teamkleding en merchandise.",
+    },
+    {
+      href: "/limitless-data",
       icon: "📊",
-      title: "Invulscore",
-      description: "Programma invulscore per atleet.",
+      title: "Limitless Data",
+      description: "Voeg atleten toe en beheer lidgegevens.",
     },
   ];
 
@@ -128,40 +90,22 @@ export function getNavLinks(
       description: "Bekijk je trainingsprogramma's.",
     },
     {
-      href: "/video-gallery",
-      icon: "🎥",
-      title: "Video gallery",
-      description: "Bekijk je video's.",
-    },
-    {
-      href: "/oefeningenbibliotheek",
-      icon: "📖",
-      title: "Oefening uitleg",
-      description: "Bekijk uitlegvideo's van oefeningen.",
-    },
-    {
       href: "/data",
       icon: "📈",
-      title: "Voortgang",
-      description: "Bekijk je statistieken.",
+      title: "Voortgang & video's",
+      description: "Statistieken en trainingsvideo's.",
     },
     {
-      href: "/doelen",
-      icon: "🎯",
-      title: "Doelen",
-      description: "Stel liftdoelen en volg je voortgang.",
-    },
-    {
-      href: "/wedstrijd-checklist",
-      icon: "✅",
-      title: "Wedstrijd checklist",
-      description: "Paklijst voor powerlifting wedstrijden.",
+      href: "/meet-week",
+      icon: "🏁",
+      title: "Meet-week",
+      description: "Countdown, checklist en wedstrijdinfo.",
     },
     {
       href: "/merch",
       icon: "👕",
       title: "Merch",
-      description: "Teamkleding en merchandise.",
+      description: "Teamkleding bestellen.",
     },
     {
       href: "/chat",
@@ -169,18 +113,6 @@ export function getNavLinks(
       title: "Chat met coach",
       description: "Stel vragen aan je coach.",
       badge: chatUnreadCount,
-    },
-    {
-      href: "/kennisbank",
-      icon: "📚",
-      title: "Kennisbank",
-      description: "Onderwerpen voor de AI-assistent in chat.",
-    },
-    {
-      href: "/wedstrijd-kalender",
-      icon: "📅",
-      title: "Wedstrijd kalender",
-      description: "Bekijk je aankomende wedstrijden.",
     },
     {
       href: "/leaderboard",
@@ -205,10 +137,13 @@ export function getNavLinks(
       "/limitless-data",
       "/programs",
       "/invulscore",
-      "/atleten-overzicht",
       "/data",
       "/merch",
       "/athletes",
+      "/oefeningenbibliotheek",
+      "/video-review",
+      "/leaderboard",
+      "/meet-week",
     ]);
 
     return [
@@ -218,6 +153,52 @@ export function getNavLinks(
   }
 
   return isCoachLikeRole(role) ? coachLinks : athleteLinks;
+}
+
+export type NavGroup = {
+  label: string;
+  links: NavLink[];
+};
+
+const COACH_GROUP_MAP: Record<string, NavGroup["label"]> = {
+  "/dashboard": "Main",
+  "/kennisbank": "Coaching",
+  "/wedstrijd-kalender": "Coaching",
+  "/planning": "Coaching",
+  "/meet-week": "Coaching",
+  "/data": "Data",
+  "/leaderboard": "Data",
+  "/oefeningenbibliotheek": "Data",
+  "/video-review": "Data",
+  "/video-gallery": "Data",
+  "/programs": "Data",
+  "/merch": "Admin",
+  "/limitless-data": "Admin",
+  "/admin": "Admin",
+};
+
+export function getNavGroups(
+  role: string,
+  pendingCount = 0,
+  chatUnreadCount = 0,
+): NavGroup[] {
+  const links = getNavLinks(role, pendingCount, chatUnreadCount);
+  const order: NavGroup["label"][] = ["Main", "Coaching", "Data", "Admin"];
+  const buckets = new Map<NavGroup["label"], NavLink[]>();
+
+  for (const link of links) {
+    const label = COACH_GROUP_MAP[link.href] || "Main";
+    if (!buckets.has(label)) buckets.set(label, []);
+    buckets.get(label)!.push(link);
+  }
+
+  if (!isCoachLikeRole(role)) {
+    return [{ label: "Main", links }];
+  }
+
+  return order
+    .filter((label) => (buckets.get(label)?.length || 0) > 0)
+    .map((label) => ({ label, links: buckets.get(label)! }));
 }
 
 export function isActiveNavPath(pathname: string, href: string) {
@@ -236,17 +217,43 @@ export function isActiveNavPath(pathname: string, href: string) {
   if (href === "/athletes") {
     return (
       pathname === "/athletes" ||
+      pathname.startsWith("/athletes/") ||
+      pathname === "/atleten-overzicht" ||
       pathname === "/athlete-profiles" ||
       pathname.startsWith("/profile/")
     );
+  }
+
+  if (href === "/kennisbank") {
+    return pathname === "/kennisbank" || pathname === "/ai-vragen";
   }
 
   if (href === "/data") {
     return (
       pathname === "/data" ||
       pathname === "/statistics" ||
-      pathname === "/raw-data"
+      pathname === "/raw-data" ||
+      pathname === "/video-gallery" ||
+      pathname === "/video-review" ||
+      pathname === "/programs" ||
+      pathname.startsWith("/programs/")
     );
+  }
+
+  if (href === "/agenda") {
+    return pathname === "/agenda" || pathname.startsWith("/agenda/");
+  }
+
+  if (href === "/meet-week") {
+    return (
+      pathname === "/meet-week" ||
+      pathname === "/wedstrijd-kalender" ||
+      pathname === "/wedstrijd-checklist"
+    );
+  }
+
+  if (href === "/programs") {
+    return pathname === "/programs" || pathname.startsWith("/programs/");
   }
 
   if (href === "/settings/competition-checklist") {
@@ -257,4 +264,37 @@ export function isActiveNavPath(pathname: string, href: string) {
   }
 
   return pathname === href || pathname.startsWith(`${href}/`);
+}
+
+const PAGE_TITLE_OVERRIDES: Record<string, string> = {
+  "/intake": "Intake",
+  "/signup": "Account",
+  "/login": "Inloggen",
+  "/agenda": "Agenda",
+  "/invulscore": "Invulscore",
+  "/doelen": "Doelen",
+  "/planning": "Planning",
+  "/atleten-overzicht": "Atleten overzicht",
+  "/athlete-profiles": "Atleten profielen",
+  "/ai-vragen": "AI-vragen",
+  "/statistics": "Statistieken",
+  "/raw-data": "Ruwe data",
+};
+
+export function getPageTitle(pathname: string, role: string) {
+  const links = getNavLinks(role);
+  const match = links.find((link) => isActiveNavPath(pathname, link.href));
+  if (match) return match.title;
+
+  for (const [prefix, title] of Object.entries(PAGE_TITLE_OVERRIDES)) {
+    if (pathname === prefix || pathname.startsWith(`${prefix}/`)) {
+      return title;
+    }
+  }
+
+  if (pathname.startsWith("/profile/")) return "Atleet profiel";
+  if (pathname.startsWith("/programs/")) return "Programma";
+  if (pathname.startsWith("/athletes/")) return "Atleet hub";
+
+  return "Dashboard";
 }

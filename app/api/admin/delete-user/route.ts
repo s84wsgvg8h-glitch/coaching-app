@@ -67,6 +67,17 @@ export async function DELETE(request: Request) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
 
+    const {
+      data: { user: adminUser },
+    } = await getSupabaseForRequest(request).auth.getUser();
+
+    if (adminUser?.id === userId) {
+      return NextResponse.json(
+        { error: "Je kunt je eigen admin-account niet verwijderen." },
+        { status: 400 },
+      );
+    }
+
     const { error } = await access.admin.auth.admin.deleteUser(userId);
 
     if (error) {

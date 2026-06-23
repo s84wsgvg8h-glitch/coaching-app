@@ -28,26 +28,26 @@ export default function ThemeToggle({
         <button
           type="button"
           onClick={() => setTheme("light")}
-          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-lg px-3 py-2 text-xs font-bold transition sm:min-w-0 ${
             !isDark
               ? "bg-app-primary text-app-primary-fg shadow-sm"
               : "text-app-muted hover:text-app-text"
           }`}
           aria-pressed={!isDark}
         >
-          Light
+          Licht
         </button>
         <button
           type="button"
           onClick={() => setTheme("dark")}
-          className={`rounded-lg px-3 py-1.5 text-xs font-bold transition ${
+          className={`min-h-[44px] min-w-[44px] rounded-lg px-3 py-2 text-xs font-bold transition sm:min-w-0 ${
             isDark
               ? "bg-app-primary text-app-primary-fg shadow-sm"
               : "text-app-muted hover:text-app-text"
           }`}
           aria-pressed={isDark}
         >
-          Dark
+          Donker
         </button>
       </div>
     </div>

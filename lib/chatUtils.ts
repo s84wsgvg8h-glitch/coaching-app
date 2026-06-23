@@ -222,8 +222,71 @@ export function shouldShowDateDivider(
   return currentDate !== previousDate;
 }
 
+const MESSAGE_GROUP_WINDOW_MS = 5 * 60 * 1000;
+
+export function shouldGroupWithPrevious(
+  current: ChatMessage | undefined,
+  previous: ChatMessage | undefined,
+) {
+  if (!current || !previous) return false;
+  if (current.sender_id !== previous.sender_id) return false;
+  if (shouldShowDateDivider(current, previous)) return false;
+
+  const gap =
+    new Date(current.created_at).getTime() -
+    new Date(previous.created_at).getTime();
+  return gap <= MESSAGE_GROUP_WINDOW_MS;
+}
+
+export function shouldShowMessageTimestamp(
+  current: ChatMessage,
+  next: ChatMessage | undefined,
+) {
+  if (!next) return true;
+  if (current.sender_id !== next.sender_id) return true;
+  if (shouldShowDateDivider(next, current)) return true;
+
+  const gap =
+    new Date(next.created_at).getTime() -
+    new Date(current.created_at).getTime();
+  return gap > MESSAGE_GROUP_WINDOW_MS;
+}
+
+export function getMessageBubbleRadiusClass(
+  isMine: boolean,
+  groupedWithPrevious: boolean,
+  groupedWithNext: boolean,
+) {
+  if (!groupedWithPrevious && !groupedWithNext) return "";
+
+  if (isMine) {
+    if (groupedWithPrevious && groupedWithNext) {
+      return "rounded-l-2xl rounded-r-md";
+    }
+    if (groupedWithPrevious) {
+      return "rounded-l-2xl rounded-tr-md rounded-br-[6px]";
+    }
+    if (groupedWithNext) {
+      return "rounded-l-2xl rounded-tr-2xl rounded-br-md";
+    }
+  }
+
+  if (groupedWithPrevious && groupedWithNext) {
+    return "rounded-r-2xl rounded-l-md";
+  }
+  if (groupedWithPrevious) {
+    return "rounded-r-2xl rounded-tl-md rounded-bl-[6px]";
+  }
+  if (groupedWithNext) {
+    return "rounded-r-2xl rounded-tl-2xl rounded-bl-md";
+  }
+
+  return "";
+}
+
 export async function sendExerciseVideoMessageToCoach(params: {
   athleteId: string;
+  coachId?: string | null;
   videoUrl: string;
   thumbnailUrl: string | null;
   caption: string | null;
@@ -235,17 +298,18 @@ export async function sendExerciseVideoMessageToCoach(params: {
   rpe: string | null;
   priority?: string | null;
 }) {
-  const { data: coaches, error: coachError } = await supabase
-    .from("profiles")
-    .select("id")
-    .eq("role", "coach")
-    .limit(1);
-
-  if (coachError) {
-    return { error: coachError };
-  }
-
-  const coachId = coaches?.[0]?.id;
+  const coachId =
+    params.coachId ||
+    (
+      await supabase
+        .from("profiles")
+        .select("coach_id")
+        .eq("id", params.athleteId)
+        .maybeSingle()
+    ).data?.coach_id ||
+    (
+      await supabase.from("profiles").select("id").eq("role", "coach").limit(1)
+    ).data?.[0]?.id;
 
   if (!coachId) {
     return { error: new Error("Geen coach gevonden") };

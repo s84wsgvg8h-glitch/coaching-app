@@ -1,4 +1,12 @@
 import { supabase } from "@/lib/supabaseClient";
+import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
+
+export const NO_ATHLETE_PROGRAM_MESSAGE =
+  "Vraag je coach om je programma in te zetten.";
+
+export function isNoAthleteProgramMessage(error: string | null | undefined) {
+  return error === NO_ATHLETE_PROGRAM_MESSAGE;
+}
 
 export type ProgramBlockRow = {
   id: string;
@@ -21,10 +29,52 @@ export type ResolvedProgramEntry = {
   athleteId: string;
 };
 
+function toDateOnly(value: string | null | undefined) {
+  if (!value) return null;
+  const date = new Date(`${value}T12:00:00`);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
+function pickCurrentBlock(blocks: ProgramBlockRow[]) {
+  if (blocks.length === 0) return null;
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  return (
+    [...blocks]
+      .reverse()
+      .find((block) => {
+        const start = toDateOnly(block.start_date);
+        return start ? start <= today : false;
+      }) || blocks[blocks.length - 1]
+  );
+}
+
+function pickCurrentWeek(
+  weeks: ProgramWeekRow[],
+  blockStartDate: string | null | undefined,
+) {
+  if (weeks.length === 0) return null;
+
+  const blockStart = toDateOnly(blockStartDate);
+  if (!blockStart) return weeks[weeks.length - 1];
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+  const diffDays = Math.floor(
+    (today.getTime() - blockStart.getTime()) / (1000 * 60 * 60 * 24),
+  );
+  const weekIndex = Math.max(0, Math.floor(diffDays / 7));
+  return weeks[Math.min(weekIndex, weeks.length - 1)];
+}
+
 export async function resolveProgramEntryForAthlete(
   athleteId: string,
   actingUserId: string,
 ): Promise<{ data: ResolvedProgramEntry | null; error: string | null }> {
+  const isAthleteViewingOwnProgram = actingUserId === athleteId;
+
   const { data: blocks, error: blocksError } = await supabase
     .from("program_blocks")
     .select("id, title, athlete_id, start_date")
@@ -35,25 +85,39 @@ export async function resolveProgramEntryForAthlete(
     return { data: null, error: blocksError.message };
   }
 
-  let block: ProgramBlockRow | null = (blocks?.[0] as ProgramBlockRow) || null;
+  let block: ProgramBlockRow | null = pickCurrentBlock(
+    (blocks || []) as ProgramBlockRow[],
+  );
 
   if (!block) {
-    const { data: createdBlock, error: createBlockError } = await supabase
-      .from("program_blocks")
-      .insert({
-        title: "Block 1",
-        description: "",
-        start_date: new Date().toISOString().split("T")[0],
-        athlete_id: athleteId,
-        created_by: actingUserId,
-      })
-      .select("id, title, athlete_id, start_date")
-      .single();
+    if (isAthleteViewingOwnProgram) {
+      return { data: null, error: NO_ATHLETE_PROGRAM_MESSAGE };
+    }
 
-    if (createBlockError || !createdBlock) {
+    const { blockId, error: createError } = await createProgramBlockForAthlete({
+      athleteId,
+      title: "Block 1",
+      description: "",
+      startDate: new Date().toISOString().split("T")[0],
+    });
+
+    if (createError || !blockId) {
       return {
         data: null,
-        error: createBlockError?.message || "Block kon niet worden aangemaakt",
+        error: createError || "Programma kon niet worden aangemaakt.",
+      };
+    }
+
+    const { data: createdBlock, error: loadBlockError } = await supabase
+      .from("program_blocks")
+      .select("id, title, athlete_id, start_date")
+      .eq("id", blockId)
+      .maybeSingle();
+
+    if (loadBlockError || !createdBlock) {
+      return {
+        data: null,
+        error: loadBlockError?.message || "Programma kon niet worden geladen.",
       };
     }
 
@@ -70,7 +134,10 @@ export async function resolveProgramEntryForAthlete(
     return { data: null, error: weeksError.message };
   }
 
-  let week: ProgramWeekRow | null = (weeks?.[0] as ProgramWeekRow) || null;
+  let week: ProgramWeekRow | null = pickCurrentWeek(
+    (weeks || []) as ProgramWeekRow[],
+    block.start_date,
+  );
 
   if (!week) {
     const { data: createdWeek, error: createWeekError } = await supabase

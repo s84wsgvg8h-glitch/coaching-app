@@ -1,11 +1,13 @@
 "use client";
 
+import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 export type ProfileSettingsSection = {
   id: string;
   label: string;
   group?: string;
+  icon?: LucideIcon;
 };
 
 type ProfileSettingsLayoutProps = {
@@ -15,6 +17,8 @@ type ProfileSettingsLayoutProps = {
   activeSection: string;
   onSectionChange: (sectionId: string) => void;
   headerExtra?: ReactNode;
+  mobileHeaderExtra?: ReactNode;
+  fullWidth?: boolean;
   children: ReactNode;
 };
 
@@ -25,6 +29,8 @@ export default function ProfileSettingsLayout({
   activeSection,
   onSectionChange,
   headerExtra,
+  mobileHeaderExtra,
+  fullWidth = false,
   children,
 }: ProfileSettingsLayoutProps) {
   const groups = sections.reduce<string[]>((acc, section) => {
@@ -34,31 +40,43 @@ export default function ProfileSettingsLayout({
   }, []);
 
   return (
-    <div className="mx-auto flex max-w-6xl flex-col gap-6 lg:flex-row lg:items-start">
-      <nav className="w-full shrink-0 rounded-3xl bg-app-sidebar p-4 shadow-xl lg:sticky lg:top-6 lg:w-64">
+    <div
+      className={`profile-settings-root flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5 ${
+        fullWidth ? "w-full max-w-none" : "mx-auto max-w-6xl"
+      }`}
+    >
+      {mobileHeaderExtra ? (
+        <div className="order-first lg:hidden">{mobileHeaderExtra}</div>
+      ) : null}
+
+      <nav
+        className="profile-settings-sidebar w-full shrink-0 lg:sticky lg:top-4 lg:w-56 xl:w-60"
+        aria-label="Profiel navigatie"
+      >
         {groups.map((group) => (
-          <div key={group} className="mb-4 last:mb-0">
-            <p className="mb-2 px-3 text-xs font-bold uppercase tracking-wide text-app-muted">
-              {group}
-            </p>
-            <div className="space-y-1">
+          <div key={group} className="profile-settings-sidebar-group">
+            <p className="profile-settings-sidebar-label">{group}</p>
+            <div className="space-y-0.5">
               {sections
                 .filter((section) => (section.group || "Algemeen") === group)
                 .map((section) => {
                   const active = section.id === activeSection;
+                  const Icon = section.icon;
 
                   return (
                     <button
                       key={section.id}
                       type="button"
                       onClick={() => onSectionChange(section.id)}
-                      className={`app-focus-ring w-full rounded-xl px-3 py-2.5 text-left text-sm font-semibold transition ${
-                        active
-                          ? "bg-app-primary text-app-primary-fg"
-                          : "text-app-text hover:bg-app-surface-hover"
+                      className={`profile-settings-nav-btn app-focus-ring ${
+                        active ? "is-active" : ""
                       }`}
+                      aria-current={active ? "page" : undefined}
                     >
-                      {section.label}
+                      {Icon ? (
+                        <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden="true" />
+                      ) : null}
+                      <span className="min-w-0 truncate">{section.label}</span>
                     </button>
                   );
                 })}
@@ -67,12 +85,12 @@ export default function ProfileSettingsLayout({
         ))}
       </nav>
 
-      <div className="min-w-0 flex-1 rounded-3xl bg-app-surface p-6 shadow-xl md:p-8">
-        <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-app-text">{title}</h1>
+      <div className="profile-settings-main">
+        <div className="profile-settings-main-header">
+          <div className="min-w-0">
+            <h1 className="profile-settings-title">{title}</h1>
             {subtitle ? (
-              <p className="mt-2 text-sm text-app-muted">{subtitle}</p>
+              <p className="profile-settings-subtitle">{subtitle}</p>
             ) : null}
           </div>
           {headerExtra}

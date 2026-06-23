@@ -36,3 +36,18 @@ export function SkeletonList({ rows = 4 }: { rows?: number }) {
     </div>
   );
 }
+
+export function PageLoading({ label = "Laden…" }: { label?: string }) {
+  return (
+    <div
+      className="flex min-h-[32vh] flex-col items-center justify-center gap-4 py-10"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="w-full max-w-md px-4">
+        <SkeletonList rows={4} />
+      </div>
+      <p className="text-[13px] text-app-muted">{label}</p>
+    </div>
+  );
+}

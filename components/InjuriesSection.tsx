@@ -136,20 +136,20 @@ export default function InjuriesSection({
 
       {canEdit && selectedArea && (
         <div
-          className={`mx-auto rounded-2xl border border-gray-200 bg-white p-4 shadow-sm ${
+          className={`mx-auto rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm ${
             compact ? "mt-4 max-w-[420px]" : "mt-6 max-w-[532px]"
           }`}
         >
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+          <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
             Blessure toevoegen
           </p>
-          <p className="mt-1 text-sm font-semibold text-black">
+          <p className="mt-1 text-sm font-semibold text-app-text">
             {selectedArea.labelNl}
           </p>
 
           <div className="mt-4 space-y-3">
             <div>
-              <label className="mb-1 block text-xs font-semibold text-gray-600">
+              <label className="mb-1 block text-xs font-semibold text-app-muted">
                 Naam
               </label>
               <input
@@ -157,24 +157,24 @@ export default function InjuriesSection({
                 value={name}
                 onChange={(event) => setName(event.target.value)}
                 placeholder="Bijv. spierblessure rechtsboven"
-                className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black"
+                className="w-full rounded-xl border border-app-border bg-app-input-bg px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-app-accent"
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">
+                <label className="mb-1 block text-xs font-semibold text-app-muted">
                   Datum
                 </label>
                 <input
                   type="date"
                   value={injuryDate}
                   onChange={(event) => setInjuryDate(event.target.value)}
-                  className="w-full rounded-xl border border-gray-200 px-3 py-2 text-sm text-black outline-none focus:ring-2 focus:ring-black"
+                  className="w-full rounded-xl border border-app-border bg-app-input-bg px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-app-accent"
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs font-semibold text-gray-600">
+                <label className="mb-1 block text-xs font-semibold text-app-muted">
                   Urgentie
                 </label>
                 <select
@@ -182,7 +182,7 @@ export default function InjuriesSection({
                   onChange={(event) =>
                     setUrgency(event.target.value as InjuryUrgency)
                   }
-                  className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-black outline-none focus:ring-2 focus:ring-black"
+                  className="w-full rounded-xl border border-app-border bg-app-input-bg px-3 py-2 text-sm font-semibold text-app-text outline-none focus:ring-2 focus:ring-app-accent"
                 >
                   {INJURY_URGENCY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -198,7 +198,7 @@ export default function InjuriesSection({
                 type="button"
                 onClick={() => void handleAddInjury()}
                 disabled={saving || !name.trim()}
-                className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white transition hover:opacity-90 disabled:opacity-50"
+                className="rounded-xl bg-app-primary px-4 py-2 text-sm font-semibold text-app-primary-fg transition hover:opacity-90 disabled:opacity-50"
               >
                 {saving ? "Opslaan..." : "Blessure opslaan"}
               </button>
@@ -208,7 +208,7 @@ export default function InjuriesSection({
                   setSelectedAreaId(null);
                   setName("");
                 }}
-                className="rounded-xl bg-gray-100 px-4 py-2 text-sm font-semibold text-black transition hover:bg-gray-200"
+                className="rounded-xl bg-app-surface-muted px-4 py-2 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover"
               >
                 Annuleren
               </button>
@@ -223,30 +223,30 @@ export default function InjuriesSection({
         }`}
       >
         <div className="mb-3 flex items-center justify-between gap-3">
-          <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500">
+          <h3 className="text-sm font-bold uppercase tracking-wide text-app-muted">
             Blessures
           </h3>
           {!loading && (
-            <span className="text-xs font-semibold text-gray-400">
+            <span className="text-xs font-semibold text-app-muted">
               {injuries.length}
             </span>
           )}
         </div>
 
         {loading && (
-          <p className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          <p className="rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-muted">
             Blessures laden...
           </p>
         )}
 
         {!loading && error && (
-          <p className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-600">
+          <p className="rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-500">
             {error}
           </p>
         )}
 
         {!loading && !error && injuries.length === 0 && (
-          <p className="rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm text-gray-500">
+          <p className="rounded-2xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-muted">
             Nog geen blessures geregistreerd.
           </p>
         )}
@@ -259,21 +259,21 @@ export default function InjuriesSection({
               return (
                 <div
                   key={injury.id}
-                  className="flex items-start justify-between gap-3 rounded-2xl border border-gray-200 bg-white px-4 py-3"
+                  className="flex items-start justify-between gap-3 rounded-2xl border border-app-border bg-app-surface px-4 py-3"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-semibold text-black">{injury.name}</p>
-                    <p className="mt-1 text-xs text-gray-500">
+                    <p className="truncate font-semibold text-app-text">{injury.name}</p>
+                    <p className="mt-1 text-xs text-app-muted">
                       {area?.labelNl || injury.muscle_area_id} ·{" "}
                       {formatInjuryDate(injury.injury_date)}
                     </p>
                     <span
                       className={`mt-2 inline-flex rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide ${
                         injury.urgency === "hoog"
-                          ? "bg-red-100 text-red-700"
+                          ? "bg-red-500/15 text-red-500 dark:bg-red-500/20 dark:text-red-300"
                           : injury.urgency === "medium"
-                            ? "bg-orange-100 text-orange-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            ? "bg-orange-500/15 text-orange-600 dark:bg-orange-500/20 dark:text-orange-300"
+                            : "bg-yellow-500/15 text-yellow-700 dark:bg-yellow-500/20 dark:text-yellow-300"
                       }`}
                     >
                       {getInjuryUrgencyLabel(injury.urgency)}
@@ -285,7 +285,7 @@ export default function InjuriesSection({
                       type="button"
                       onClick={() => void handleDeleteInjury(injury.id)}
                       disabled={saving}
-                      className="shrink-0 rounded-xl p-2 text-gray-400 transition hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      className="shrink-0 rounded-xl p-2 text-app-muted transition hover:bg-red-500/10 hover:text-red-500 disabled:opacity-50"
                       aria-label="Blessure verwijderen"
                     >
                       <Trash2 className="h-4 w-4" />

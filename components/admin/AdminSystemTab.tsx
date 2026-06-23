@@ -1,8 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
+import {
+  AlertTriangle,
+  Database,
+  RefreshCw,
+  Server,
+} from "lucide-react";
 import { adminFetch } from "@/lib/adminFetch";
 import type { CalendarSyncLogEntry } from "@/lib/calendarSyncLog";
+import AdminProductionPanel from "@/components/admin/AdminProductionPanel";
+import AdminDemoPanel from "@/components/admin/AdminDemoPanel";
+import { AdminPageHeader } from "@/components/admin/AdminPageParts";
+import {
+  AdminLoading,
+  AdminPanel,
+  AdminPanelHeader,
+  AdminStat,
+} from "@/components/admin/AdminUi";
 
 type HealthPayload = {
   tableCounts: Record<string, number>;
@@ -15,9 +31,31 @@ type HealthPayload = {
   };
 };
 
+const TABLE_LABELS: Record<string, string> = {
+  profiles: "Profielen",
+  messages: "Berichten",
+  chat_groups: "Chatgroepen",
+  program_blocks: "Programmablokken",
+  coach_invite_links: "Coach-uitnodigingen",
+  coach_signup_invites: "Coach-aanmeldingen",
+  wedstrijden: "Wedstrijden",
+  calendar_sync_logs: "Sync logs",
+  admin_knowledge_chunks: "Kennisbank",
+};
+
+const HEALTH_CHECKS = [
+  { key: "supabaseConfigured" as const, label: "Supabase" },
+  { key: "serviceRolePresent" as const, label: "Service role" },
+  { key: "cronSecretPresent" as const, label: "Cron secret" },
+];
+
 export default function AdminSystemTab() {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState<HealthPayload | null>(null);
+  const [rangeDays, setRangeDays] = useState(7);
+  const [statusFilter, setStatusFilter] = useState<"all" | "success" | "error">(
+    "all",
+  );
 
   useEffect(() => {
     void adminFetch<HealthPayload>("/api/admin/health").then((result) => {
@@ -27,86 +65,200 @@ export default function AdminSystemTab() {
     });
   }, []);
 
+  const filteredLogs = useMemo(() => {
+    if (!data) return [];
+    if (statusFilter === "all") return data.syncLogs;
+    return data.syncLogs.filter((log) => log.status === statusFilter);
+  }, [data, statusFilter]);
+
   if (loading || !data) {
-    return <p className="text-sm text-gray-500">Systeemstatus laden...</p>;
+    return <AdminLoading label="Systeemstatus laden…" />;
   }
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-3xl bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-black">Supabase health</h2>
-        <div className="mt-4 grid gap-2 sm:grid-cols-3">
-          <Check label="Supabase URL" ok={data.checks.supabaseConfigured} />
-          <Check label="Service role" ok={data.checks.serviceRolePresent} />
-          <Check label="Cron secret" ok={data.checks.cronSecretPresent} />
-        </div>
-        <div className="mt-4 grid gap-2 sm:grid-cols-2">
-          {Object.entries(data.tableCounts).map(([table, count]) => (
-            <div
-              key={table}
-              className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm"
+    <div className="admin-tab-page">
+      <AdminPageHeader
+        title="Systeem"
+        subtitle="Health checks, database-statistieken en synchronisatielogs."
+        icon={Server}
+        actions={
+          <>
+            <select
+              value={rangeDays}
+              onChange={(e) => setRangeDays(Number(e.target.value))}
+              className="admin-select admin-dashboard-range w-full sm:w-auto"
+              aria-label="Periode"
             >
-              <span className="text-gray-600">{table}</span>
-              <span className="font-bold text-black">{count}</span>
+              <option value={7}>7 dagen</option>
+              <option value={14}>14 dagen</option>
+              <option value={30}>30 dagen</option>
+            </select>
+            <Link
+              href="/admin?tab=settings"
+              className="admin-btn admin-btn--primary w-full sm:w-auto"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Synchronisatie uitvoeren
+            </Link>
+          </>
+        }
+      />
+
+      <AdminProductionPanel />
+
+      <AdminDemoPanel />
+
+      <div className="admin-health-strip">
+        {HEALTH_CHECKS.map((check) => {
+          const ok = data.checks[check.key];
+          return (
+            <div key={check.key} className="admin-health-card">
+              <span
+                className={`admin-health-dot ${ok ? "admin-health-dot--ok" : "admin-health-dot--bad"}`}
+              />
+              <div className="min-w-0">
+                <p className="admin-strong text-[13px]">{check.label}</p>
+                <p className={`text-[12px] ${ok ? "admin-status-ok" : "text-red-400"}`}>
+                  {ok ? "Operationeel" : "Ontbreekt"}
+                </p>
+              </div>
             </div>
+          );
+        })}
+      </div>
+
+      {!data.checks.cronSecretPresent ? (
+        <AdminPanel className="admin-alert-banner">
+          <div className="flex flex-wrap items-start gap-3">
+            <span className="admin-alert-icon">
+              <AlertTriangle className="h-5 w-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="admin-strong text-[14px]">Cron secret ontbreekt</p>
+              <p className="admin-muted mt-1 text-[13px]">
+                Geplande taken (herinneringen, broadcasts) werken niet zonder{" "}
+                <code className="text-amber-200">CRON_SECRET</code>. Stel deze in
+                via Vercel environment variables.
+              </p>
+            </div>
+            <Link
+              href="/admin?tab=settings"
+              className="admin-btn admin-btn--ghost admin-btn--sm shrink-0"
+            >
+              Naar instellingen
+            </Link>
+          </div>
+        </AdminPanel>
+      ) : null}
+
+      <AdminPanel>
+        <div className="mb-4 flex items-center gap-2">
+          <Database className="h-4 w-4 text-app-muted" />
+          <h2 className="admin-panel-title">Database-statistieken</h2>
+        </div>
+        <div className="admin-stat-grid admin-stat-grid--4">
+          {Object.entries(data.tableCounts).map(([table, count]) => (
+            <AdminStat
+              key={table}
+              label={TABLE_LABELS[table] || table}
+              value={count.toLocaleString("nl-NL")}
+            />
           ))}
         </div>
-      </section>
+      </AdminPanel>
 
-      <section className="rounded-3xl bg-white p-5 shadow-xl">
-        <h2 className="text-lg font-bold text-black">Kalender sync logs</h2>
-        {data.lastSync ? (
-          <p className="mt-2 text-sm text-gray-600">
-            Laatste sync:{" "}
-            {new Date(data.lastSync.created_at).toLocaleString("nl-NL")} ·{" "}
-            {data.lastSync.status} · {data.lastSync.inserted_count} toegevoegd
-          </p>
-        ) : (
-          <p className="mt-2 text-sm text-gray-500">Nog geen sync-logs.</p>
-        )}
-        <div className="mt-4 overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="text-left text-xs uppercase text-gray-500">
-                <th className="py-2">Tijd</th>
-                <th className="py-2">Status</th>
-                <th className="py-2">Opgehaald</th>
-                <th className="py-2">Toegevoegd</th>
-                <th className="py-2">Overgeslagen</th>
-                <th className="py-2">Fout</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.syncLogs.map((log) => (
-                <tr key={log.id} className="border-t border-gray-100">
-                  <td className="py-2">
-                    {new Date(log.created_at).toLocaleString("nl-NL")}
-                  </td>
-                  <td className="py-2">{log.status}</td>
-                  <td className="py-2">{log.fetched_count}</td>
-                  <td className="py-2">{log.inserted_count}</td>
-                  <td className="py-2">{log.skipped_count}</td>
-                  <td className="py-2 text-red-600">
-                    {log.error_message || "—"}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      <AdminPanel flush>
+        <div className="admin-table-toolbar">
+          <div>
+            <h2 className="admin-panel-title">Sync logs</h2>
+            {data.lastSync ? (
+              <p className="admin-muted mt-0.5 text-[12px]">
+                Laatste sync:{" "}
+                {new Date(data.lastSync.created_at).toLocaleString("nl-NL")} ·{" "}
+                {data.lastSync.inserted_count} toegevoegd
+              </p>
+            ) : (
+              <p className="admin-muted mt-0.5 text-[12px]">Nog geen sync-logs.</p>
+            )}
+          </div>
+          <select
+            value={statusFilter}
+            onChange={(e) =>
+              setStatusFilter(e.target.value as "all" | "success" | "error")
+            }
+            className="admin-select admin-toolbar-select !w-auto text-[12px]"
+            aria-label="Filter op status"
+          >
+            <option value="all">Alle statussen</option>
+            <option value="success">Succes</option>
+            <option value="error">Fout</option>
+          </select>
         </div>
-      </section>
-    </div>
-  );
-}
 
-function Check({ label, ok }: { label: string; ok: boolean }) {
-  return (
-    <div
-      className={`rounded-xl px-3 py-2 text-sm font-semibold ${
-        ok ? "bg-emerald-50 text-emerald-800" : "bg-red-50 text-red-800"
-      }`}
-    >
-      {label}: {ok ? "OK" : "Ontbreekt"}
+        {filteredLogs.length === 0 ? (
+          <p className="admin-empty px-4">Geen sync-logregels voor dit filter.</p>
+        ) : (
+          <div className="admin-table-wrap">
+            <table className="admin-table">
+              <thead>
+                <tr>
+                  <th>Tijd</th>
+                  <th>Status</th>
+                  <th className="admin-col-hide-sm">Bron</th>
+                  <th>Opgehaald</th>
+                  <th>Toegevoegd</th>
+                  <th className="admin-col-hide-sm">Overgeslagen</th>
+                  <th className="admin-col-hide-sm">Fout</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredLogs.map((log) => (
+                  <tr key={log.id}>
+                    <td className="whitespace-nowrap">
+                      {new Date(log.created_at).toLocaleString("nl-NL")}
+                    </td>
+                    <td>
+                      <span
+                        className={`admin-badge ${
+                          log.status === "success"
+                            ? "admin-badge--success"
+                            : "admin-badge--danger"
+                        }`}
+                      >
+                        {log.status === "success" ? "Succes" : "Fout"}
+                      </span>
+                    </td>
+                    <td className="admin-col-hide-sm admin-muted">
+                      {log.source || "—"}
+                    </td>
+                    <td>{log.fetched_count}</td>
+                    <td>{log.inserted_count}</td>
+                    <td className="admin-col-hide-sm">{log.skipped_count}</td>
+                    <td className="admin-col-hide-sm max-w-[200px] truncate">
+                      {log.error_message ? (
+                        <span className="admin-badge admin-badge--danger">
+                          {log.error_message}
+                        </span>
+                      ) : (
+                        "—"
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        <div className="border-t border-white/6 px-4 py-3">
+          <Link
+            href="/admin?tab=settings"
+            className="text-[13px] font-semibold text-blue-400 hover:text-blue-300"
+          >
+            Bekijk alle sync logs →
+          </Link>
+        </div>
+      </AdminPanel>
     </div>
   );
 }

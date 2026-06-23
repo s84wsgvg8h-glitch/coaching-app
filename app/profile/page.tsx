@@ -1,23 +1,36 @@
 "use client";
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
+import {
+  ClipboardList,
+  Dumbbell,
+  HeartPulse,
+  IdCard,
+  Settings2,
+  SlidersHorizontal,
+  User,
+} from "lucide-react";
+import { getRealSupabase } from "@/lib/supabaseClient";
+import { loadAuthenticatedProfile } from "@/lib/profileAuth";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
 import ChatAvatar from "@/components/chat/ChatAvatar";
 import IntakeAnswersSection from "@/components/IntakeAnswersSection";
 import AvatarCropModal from "@/components/AvatarCropModal";
-import AthleteGoalsSection from "@/components/profile/AthleteGoalsSection";
 import ThemeToggle from "@/components/ThemeToggle";
+import PushNotificationPrompt from "@/components/notifications/PushNotificationPrompt";
 import ProfileRpeTableSection from "@/components/profile/ProfileRpeTableSection";
 import ProfileSettingsPanel from "@/components/profile/ProfileSettingsPanel";
+import ProfileLogoutButton from "@/components/profile/ProfileLogoutButton";
 import ProfileSettingsLayout, {
   type ProfileSettingsSection,
 } from "@/components/profile/ProfileSettingsLayout";
 import { updateProfileAvatar, uploadAvatar } from "@/lib/chatAvatars";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import "@/styles/profile-settings.css";
 
 function ProfilePageContent() {
   const router = useRouter();
@@ -29,6 +42,7 @@ function ProfilePageContent() {
   const [email, setEmail] = useState("");
   const [geboortedatum, setGeboortedatum] = useState("");
   const [lidnummer, setLidnummer] = useState("");
+  const [goalsText, setGoalsText] = useState("");
   const [businessName, setBusinessName] = useState("");
   const [editedFullName, setEditedFullName] = useState("");
   const [editedEmail, setEditedEmail] = useState("");
@@ -43,9 +57,10 @@ function ProfilePageContent() {
 
   useEffect(() => {
     async function getProfile() {
+      const client = getRealSupabase();
       const {
         data: { user },
-      } = await supabase.auth.getUser();
+      } = await client.auth.getUser();
 
       if (!user) {
         window.location.href = "/login";
@@ -56,19 +71,29 @@ function ProfilePageContent() {
       setEmail(user.email || "");
       setEditedEmail(user.email || "");
 
-      const { data } = await supabase
+      const authProfile = await loadAuthenticatedProfile(user.id);
+      if (authProfile?.role) {
+        setRole(authProfile.role);
+      }
+
+      const { data } = await client
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (data) {
         setEditedFullName(data.full_name || "");
-        setRole(data.role || "");
+        setRole(data.role || authProfile?.role || "");
         setLidnummer(data.lidnummer || "");
         setGeboortedatum(data.geboortedatum || "");
+        setGoalsText((data.goals_text as string | null) || "");
         setAvatarUrl(data.avatar_url || null);
-        setBusinessName(data.business_name || "");
+        setBusinessName(data.business_name || authProfile?.business_name || "");
+      } else if (authProfile) {
+        setEditedFullName(authProfile.full_name || "");
+        setRole(authProfile.role || "");
+        setBusinessName(authProfile.business_name || "");
       }
 
       setProfileLoaded(true);
@@ -110,20 +135,19 @@ function ProfilePageContent() {
   const sections = useMemo<ProfileSettingsSection[]>(() => {
     if (role === "atleet") {
       return [
-        { id: "account", label: "Account", group: "Algemeen" },
-        { id: "maxes", label: "Current maxes & RPE", group: "Training" },
-        { id: "athlete", label: "Atleetgegevens", group: "Training" },
-        { id: "intake", label: "Intake", group: "Training" },
-        { id: "injuries", label: "Blessures", group: "Training" },
-        { id: "goals", label: "Doelen", group: "Training" },
-        { id: "preferences", label: "Voorkeuren", group: "Algemeen" },
+        { id: "account", label: "Account", group: "Algemeen", icon: User },
+        { id: "maxes", label: "Maxes & RPE", group: "Training", icon: Dumbbell },
+        { id: "athlete", label: "Atleetgegevens", group: "Training", icon: IdCard },
+        { id: "intake", label: "Intake", group: "Training", icon: ClipboardList },
+        { id: "injuries", label: "Blessures", group: "Training", icon: HeartPulse },
+        { id: "preferences", label: "Voorkeuren", group: "Algemeen", icon: Settings2 },
       ];
     }
 
     return [
-      { id: "account", label: "Account", group: "Algemeen" },
-      { id: "settings", label: "Instellingen", group: "Algemeen" },
-      { id: "preferences", label: "Voorkeuren", group: "Algemeen" },
+      { id: "account", label: "Account", group: "Algemeen", icon: User },
+      { id: "settings", label: "Instellingen", group: "Platform", icon: SlidersHorizontal },
+      { id: "preferences", label: "Voorkeuren", group: "Algemeen", icon: Settings2 },
     ];
   }, [role]);
 
@@ -140,7 +164,7 @@ function ProfilePageContent() {
     setSaving(true);
     setMessage("");
 
-    const { error: profileError } = await supabase
+    const { error: profileError } = await getRealSupabase()
       .from("profiles")
       .update({
         full_name: editedFullName.trim(),
@@ -167,7 +191,7 @@ function ProfilePageContent() {
     }
 
     if (Object.keys(authUpdates).length > 0) {
-      const { error: authError } = await supabase.auth.updateUser(authUpdates);
+      const { error: authError } = await getRealSupabase().auth.updateUser(authUpdates);
 
       if (authError) {
         setSaving(false);
@@ -229,92 +253,116 @@ function ProfilePageContent() {
   const sectionTitle =
     sections.find((section) => section.id === activeSection)?.label || "Profiel";
 
+  const sectionSubtitle =
+    activeSection === "account"
+      ? "Naam, e-mail en profielfoto."
+      : activeSection === "preferences"
+        ? "Thema, weergave en notificaties."
+        : activeSection === "settings"
+          ? "Checklist, intake en coach-instellingen."
+          : "Beheer je traininggegevens en profiel.";
+
   return (
-    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6">
+    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
       <ProfileSettingsLayout
         title={sectionTitle}
-        subtitle="Beheer je account en traininginstellingen."
+        subtitle={sectionSubtitle}
         sections={sections}
         activeSection={activeSection}
         onSectionChange={setSection}
+        fullWidth
+        headerExtra={
+          <div className="flex shrink-0 items-center gap-2">
+            {isCoachLikeRole(role) ? (
+              <Link
+                href="/dashboard"
+                className="profile-dashboard-link app-focus-ring hidden sm:inline-flex"
+              >
+                Dashboard
+              </Link>
+            ) : null}
+            <div className="hidden sm:block">
+              <ProfileLogoutButton />
+            </div>
+          </div>
+        }
+        mobileHeaderExtra={<ProfileLogoutButton />}
       >
         {activeSection === "account" && (
           <div className="space-y-6">
-            <div className="flex items-center gap-4">
+            <div className="profile-account-hero">
               <ChatAvatar
                 name={editedFullName}
                 imageUrl={avatarUrl}
-                className="h-20 w-20 text-2xl"
+                className="h-16 w-16 text-xl sm:h-20 sm:w-20 sm:text-2xl"
               />
-              <label className="cursor-pointer rounded-2xl bg-gray-100 px-4 py-2 text-sm font-semibold text-black hover:bg-gray-200">
-                Profielfoto wijzigen
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(event) => void handleAvatarUpload(event)}
-                  className="hidden"
-                />
-              </label>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-base font-semibold text-app-text">
+                  {editedFullName || "Naamloos"}
+                </p>
+                <p className="truncate text-sm text-app-muted">{email || "—"}</p>
+                <label className="profile-avatar-btn mt-3">
+                  Profielfoto wijzigen
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => void handleAvatarUpload(event)}
+                    className="hidden"
+                  />
+                </label>
+              </div>
             </div>
 
-            <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Volledige naam
-                </label>
+            <div className="profile-field-grid">
+              <label className="profile-field">
+                <span className="profile-field-label">Volledige naam</span>
                 <input
                   type="text"
                   value={editedFullName}
                   onChange={(event) => setEditedFullName(event.target.value)}
-                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                  className="profile-field-input"
                 />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold">Email</label>
+              </label>
+              <label className="profile-field">
+                <span className="profile-field-label">E-mail</span>
                 <input
                   type="email"
                   value={editedEmail}
                   onChange={(event) => setEditedEmail(event.target.value)}
-                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                  className="profile-field-input"
                 />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold">
-                  Nieuw wachtwoord
-                </label>
+              </label>
+              <label className="profile-field">
+                <span className="profile-field-label">Nieuw wachtwoord</span>
                 <input
                   type="password"
                   value={editedPassword}
                   onChange={(event) => setEditedPassword(event.target.value)}
                   onBlur={() => void savePasswordOnBlur()}
-                  placeholder="Laat leeg als je niks wilt wijzigen"
-                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                  placeholder="Laat leeg om niet te wijzigen"
+                  className="profile-field-input"
                 />
-              </div>
-              <div>
-                <label className="mb-2 block text-sm font-semibold">Rol</label>
-                <div className="w-full rounded-2xl bg-gray-100 px-4 py-3 capitalize text-gray-600">
-                  {role}
-                </div>
+              </label>
+              <div className="profile-field">
+                <span className="profile-field-label">Rol</span>
+                <div className="profile-field-readonly">{role}</div>
               </div>
               {isCoachLikeRole(role) ? (
-                <div className="md:col-span-2">
-                  <label className="mb-2 block text-sm font-semibold">
-                    Business name
-                  </label>
+                <label className="profile-field md:col-span-2">
+                  <span className="profile-field-label">Bedrijfsnaam</span>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(event) => setBusinessName(event.target.value)}
                     placeholder="Naam van je coachingbedrijf"
-                    className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                    className="profile-field-input"
                   />
-                </div>
+                </label>
               ) : null}
             </div>
 
-            <div className="flex min-h-6 items-center gap-3 text-sm text-gray-500">
-              {saving ? <span>Opslaan...</span> : null}
+            <div className="profile-save-status">
+              {saving ? <span>Opslaan…</span> : null}
               {message ? <span>{message}</span> : null}
               {!saving && !message ? (
                 <span>Wijzigingen worden automatisch opgeslagen</span>
@@ -338,16 +386,18 @@ function ProfilePageContent() {
             canEditCompetitions={false}
             initialGeboortedatum={geboortedatum}
             initialLidnummer={lidnummer}
+            initialGoalsText={goalsText}
             onSaved={async () => {
-              const { data } = await supabase
+              const { data } = await getRealSupabase()
                 .from("profiles")
-                .select("geboortedatum, lidnummer")
+                .select("geboortedatum, lidnummer, goals_text")
                 .eq("id", userId)
-                .single();
+                .maybeSingle();
 
               if (data) {
                 setGeboortedatum(data.geboortedatum || "");
                 setLidnummer(data.lidnummer || "");
+                setGoalsText((data.goals_text as string | null) || "");
               }
             }}
           />
@@ -361,15 +411,28 @@ function ProfilePageContent() {
           <BodyAreaDiagram athleteId={userId} />
         ) : null}
 
-        {activeSection === "goals" && userId && role === "atleet" ? (
-          <AthleteGoalsSection athleteId={userId} />
-        ) : null}
-
         {activeSection === "preferences" && (
-          <div className="space-y-4">
-            <h2 className="text-xl font-bold text-app-text">Voorkeuren</h2>
-            <p className="text-sm text-app-muted">Thema en weergave-instellingen.</p>
-            <ThemeToggle />
+          <div className="space-y-3">
+            <div className="profile-pref-card">
+              <p className="profile-pref-card-title">Weergave</p>
+              <p className="profile-pref-card-desc">
+                Kies tussen light en dark mode voor de hele app.
+              </p>
+              <div className="profile-pref-card-body">
+                <ThemeToggle compact />
+              </div>
+            </div>
+            {userId ? (
+              <div className="profile-pref-card">
+                <p className="profile-pref-card-title">Pushnotificaties</p>
+                <p className="profile-pref-card-desc">
+                  Ontvang meldingen over berichten en belangrijke updates.
+                </p>
+                <div className="profile-pref-card-body">
+                  <PushNotificationPrompt userId={userId} />
+                </div>
+              </div>
+            ) : null}
           </div>
         )}
       </ProfileSettingsLayout>

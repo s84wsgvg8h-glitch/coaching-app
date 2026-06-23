@@ -58,3 +58,22 @@ export async function loadRecentCalendarSyncLogs(
 
   return (data || []) as CalendarSyncLogEntry[];
 }
+
+export async function getLastSuccessfulCalendarSync(
+  supabase: SupabaseClient,
+): Promise<CalendarSyncLogEntry | null> {
+  const { data, error } = await supabase
+    .from("calendar_sync_logs")
+    .select("*")
+    .eq("status", "success")
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) {
+    console.error("calendar_sync_logs laatste sync laden mislukt:", error.message);
+    return null;
+  }
+
+  return (data || null) as CalendarSyncLogEntry | null;
+}

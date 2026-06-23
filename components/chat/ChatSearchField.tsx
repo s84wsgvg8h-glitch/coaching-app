@@ -23,27 +23,25 @@ export default function ChatSearchField({
 
   return (
     <div
-      className={`relative flex items-center gap-2 rounded-xl border px-3 py-2 ${
-        accent
-          ? "border-emerald-500 bg-white"
-          : "border-gray-200 bg-gray-50"
+      className={`chat-search-field ${
+        accent ? "chat-search-field-accent" : ""
       } ${className}`}
     >
       <Search
-        className={`h-4 w-4 shrink-0 ${accent ? "text-emerald-600" : "text-gray-500"}`}
+        className={`h-4 w-4 shrink-0 ${accent ? "text-app-accent" : "text-app-subtle"}`}
       />
       <input
         value={value}
         onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
         autoFocus={autoFocus}
-        className="min-w-0 flex-1 bg-transparent text-sm text-black outline-none placeholder:text-gray-400"
+        className="chat-search-input"
       />
       {hasValue && (
         <button
           type="button"
           onClick={() => onChange("")}
-          className="shrink-0 p-0.5 text-gray-400 transition hover:text-gray-700"
+          className="shrink-0 p-0.5 text-app-subtle transition hover:text-app-text"
           aria-label="Zoekopdracht wissen"
         >
           <X className="h-3.5 w-3.5 stroke-[2]" />

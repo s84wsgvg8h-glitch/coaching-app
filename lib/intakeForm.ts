@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getRealSupabase, supabase } from "@/lib/supabaseClient";
 
 export const DEFAULT_INTAKE_TEMPLATE_ID = "a0000000-0000-4000-8000-000000000001";
 
@@ -360,6 +360,11 @@ export async function saveIntakeTemplate(fields: IntakeFormField[]) {
   return { error };
 }
 
+export async function athleteNeedsIntake(athleteId: string) {
+  const response = await loadAthleteIntakeResponse(athleteId);
+  return !response?.completed_at;
+}
+
 export async function loadAthleteIntakeResponse(
   athleteId: string,
 ): Promise<AthleteIntakeResponse | null> {
@@ -375,6 +380,30 @@ export async function loadAthleteIntakeResponse(
     ...data,
     answers: (data.answers || {}) as Record<string, string>,
   };
+}
+
+async function syncIntakeProfileFields(
+  athleteId: string,
+  answers: Record<string, string>,
+) {
+  const updates: { geboortedatum?: string; lidnummer?: string | null } = {};
+
+  if (answers.birthdate?.trim()) {
+    updates.geboortedatum = answers.birthdate.trim();
+  }
+
+  if (answers.knkf_lidnummer?.trim()) {
+    updates.lidnummer = answers.knkf_lidnummer.trim();
+  }
+
+  if (Object.keys(updates).length === 0) return { error: null };
+
+  const { error } = await getRealSupabase()
+    .from("profiles")
+    .update(updates)
+    .eq("id", athleteId);
+
+  return { error };
 }
 
 export async function saveAthleteIntakeResponse(
@@ -398,12 +427,27 @@ export async function saveAthleteIntakeResponse(
     if (responseError) return { error: responseError };
 
     if (complete) {
+      const profileSync = await syncIntakeProfileFields(athleteId, answers);
+      if (profileSync.error) return { error: profileSync.error };
+
       const { error: profileError } = await supabase
         .from("profiles")
         .update({ intake_completed_at: now })
         .eq("id", athleteId);
 
       if (profileError) return { error: profileError };
+
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("full_name")
+        .eq("id", athleteId)
+        .maybeSingle();
+
+      const { syncIntakeSubmittedTodo } = await import("@/lib/coachTodoSync");
+      await syncIntakeSubmittedTodo(
+        athleteId,
+        (profile?.full_name as string) || "Atleet",
+      );
     }
 
     return { error: null };
@@ -420,12 +464,27 @@ export async function saveAthleteIntakeResponse(
   if (insertError) return { error: insertError };
 
   if (complete) {
+    const profileSync = await syncIntakeProfileFields(athleteId, answers);
+    if (profileSync.error) return { error: profileSync.error };
+
     const { error: profileError } = await supabase
       .from("profiles")
       .update({ intake_completed_at: now })
       .eq("id", athleteId);
 
     if (profileError) return { error: profileError };
+
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("full_name")
+      .eq("id", athleteId)
+      .maybeSingle();
+
+    const { syncIntakeSubmittedTodo } = await import("@/lib/coachTodoSync");
+    await syncIntakeSubmittedTodo(
+      athleteId,
+      (profile?.full_name as string) || "Atleet",
+    );
   }
 
   return { error: null };
@@ -474,13 +533,15 @@ export function formatIntakeAnswer(field: IntakeFormField, value: string) {
 }
 
 export async function needsIntakeCompletion(userId: string) {
-  const { data, error } = await supabase
+  const { data, error } = await getRealSupabase()
     .from("profiles")
-    .select("role, intake_completed_at")
+    .select("role, intake_completed_at, intake_required")
     .eq("id", userId)
-    .single();
+    .maybeSingle();
 
   if (error || !data) return false;
+  if (data.role !== "atleet") return false;
+  if (data.intake_required === false) return false;
 
-  return data.role === "atleet" && !data.intake_completed_at;
+  return !data.intake_completed_at;
 }

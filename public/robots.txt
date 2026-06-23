@@ -1,0 +1,13 @@
+User-agent: *
+Allow: /login
+Allow: /signup
+Allow: /privacy
+Allow: /voorwaarden
+Disallow: /admin
+Disallow: /api/
+Disallow: /dashboard
+Disallow: /chat
+Disallow: /athletes
+Disallow: /programs
+
+Sitemap: https://limitlesscoaching.app/sitemap.xml

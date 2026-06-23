@@ -1,4 +1,3 @@
-const TOOLS_PREFIX = "/tools";
 const PROGRAM_PREFIX = "/program";
 const BW_PREFIX = "/bw";
 const EXTERNALS_PREFIX = "/externals";
@@ -21,11 +20,6 @@ export type ChatSlashCommand = {
 };
 
 export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
-  {
-    command: TOOLS_PREFIX,
-    label: "Tools",
-    description: "Zoek pagina's, chats en programma's",
-  },
   {
     command: PROGRAM_PREFIX,
     label: "Programma",
@@ -97,9 +91,8 @@ export const CHAT_SLASH_COMMANDS: ChatSlashCommand[] = [
   {
     command: AGENDA_PREFIX,
     label: "Agenda",
-    description: "Agenda-items voor deze atleet beheren",
+    description: "Bekijk je volledige coachagenda",
     coachOnly: true,
-    requiresDirectChat: true,
   },
 ];
 
@@ -170,7 +163,6 @@ function isOtherSlashCommand(message: string, prefix: string) {
   const normalized = normalizeChatCommand(message);
 
   return (
-    (prefix !== TOOLS_PREFIX && normalized.startsWith(TOOLS_PREFIX)) ||
     (prefix !== PROGRAM_PREFIX && normalized.startsWith(PROGRAM_PREFIX)) ||
     (prefix !== BW_PREFIX && normalized.startsWith(BW_PREFIX)) ||
     (prefix !== EXTERNALS_PREFIX && normalized.startsWith(EXTERNALS_PREFIX)) ||
@@ -185,17 +177,6 @@ function isOtherSlashCommand(message: string, prefix: string) {
     (prefix !== TODO_PREFIX && normalized.startsWith(TODO_PREFIX)) ||
     (prefix !== AGENDA_PREFIX && normalized.startsWith(AGENDA_PREFIX))
   );
-}
-
-export function parseToolsCommand(message: string) {
-  if (!message.startsWith(TOOLS_PREFIX) || isOtherSlashCommand(message, TOOLS_PREFIX)) {
-    return { active: false, query: "" };
-  }
-
-  const rest = message.slice(TOOLS_PREFIX.length);
-  const query = rest.startsWith(" ") ? rest.trimStart() : rest.trim();
-
-  return { active: true, query };
 }
 
 export function parseProgramCommand(message: string) {

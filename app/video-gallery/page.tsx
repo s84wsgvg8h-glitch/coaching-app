@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
+import AthleteProgressTabs from "@/components/data/AthleteProgressTabs";
 import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
 import ExerciseVideoBadge from "@/components/ExerciseVideoBadge";
 import { supabase } from "@/lib/supabaseClient";
@@ -93,7 +94,22 @@ const defaultTransform: VideoTransform = {
 };
 
 export default function VideoGalleryPage() {
+  return (
+    <Suspense
+      fallback={
+        <AppShell>
+          <div className="app-card">Video&apos;s laden...</div>
+        </AppShell>
+      }
+    >
+      <VideoGalleryPageInner />
+    </Suspense>
+  );
+}
+
+function VideoGalleryPageInner() {
   const [userId, setUserId] = useState("");
+  const [isAthleteViewer, setIsAthleteViewer] = useState(false);
 
   const [athletes, setAthletes] = useState<Athlete[]>([]);
   const [selectedAthleteId, setSelectedAthleteId] = useState("");
@@ -163,6 +179,26 @@ export default function VideoGalleryPage() {
     }
 
     setUserId(user.id);
+
+    const { data: myProfile } = await supabase
+      .from("profiles")
+      .select("role, full_name")
+      .eq("id", user.id)
+      .single();
+
+    if (myProfile?.role === "atleet") {
+      setIsAthleteViewer(true);
+      setAthletes([
+        {
+          id: user.id,
+          full_name: myProfile.full_name || "Atleet",
+          role: myProfile.role,
+        },
+      ]);
+      setSelectedAthleteId(user.id);
+      setLoading(false);
+      return;
+    }
 
     const { data, error } = await supabase
       .from("profiles")
@@ -1002,9 +1038,8 @@ export default function VideoGalleryPage() {
     );
   }
 
-  return (
-    <AppShell contentClassName="flex min-h-0 flex-1 flex-col p-4 pb-24 md:p-6 lg:pb-6">
-      <div className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
+  const galleryInner = (
+    <div className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
         {!compareMode && (
           <CollapsibleFilterSidebar title="Weeks">
             <div className="mb-2 flex items-center justify-between px-1">
@@ -1039,17 +1074,25 @@ export default function VideoGalleryPage() {
         )}
 
         <section className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
-          <div className="mb-6">
-            <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-              <h1 className="text-3xl font-bold text-app-text md:text-4xl">
-                Video galerij
-              </h1>
+          {!isAthleteViewer && (
+            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-app-text md:text-3xl">
+                  Video galerij
+                </h1>
+                <p className="mt-1 text-sm text-app-muted">
+                  {visibleVideos.length} video&apos;s
+                  {selectedAthleteId
+                    ? ` · ${athletes.find((a) => a.id === selectedAthleteId)?.full_name || "Atleet"}`
+                    : ""}
+                </p>
+              </div>
 
-              <div className="flex flex-col gap-3 md:flex-row">
+              <div className="flex flex-wrap items-center gap-2">
                 <select
                   value={selectedAthleteId}
                   onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="rounded-xl border border-app-border bg-app-surface p-3 outline-none app-focus-ring"
+                  className="min-w-[180px] rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none app-focus-ring"
                 >
                   {athletes.map((athlete) => (
                     <option key={athlete.id} value={athlete.id}>
@@ -1059,99 +1102,94 @@ export default function VideoGalleryPage() {
                 </select>
 
                 <button
+                  type="button"
                   onClick={() => setCompareMode(!compareMode)}
-                  className="app-btn-primary"
+                  className="app-btn-primary text-sm"
                 >
-                  {compareMode ? "Normale view" : "Compare view"}
+                  {compareMode ? "Galerij" : "Vergelijken"}
                 </button>
 
-                {compareMode && (
+                {compareMode ? (
                   <div className="flex rounded-xl bg-app-surface-muted p-1">
                     {[2, 3, 4].map((count) => (
                       <button
                         key={count}
+                        type="button"
                         onClick={() => setCompareCount(count as 2 | 3 | 4)}
-                        className={`rounded-lg px-4 py-2 text-sm font-bold ${
+                        className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
                           compareCount === count
                             ? "bg-brand-purple text-white"
                             : "text-app-text"
                         }`}
                       >
-                        {count} compare
+                        {count}
                       </button>
                     ))}
                   </div>
-                )}
+                ) : null}
               </div>
             </div>
+          )}
 
             {!compareMode && (
-              <div className="mt-5 space-y-4">
-                <div>
-                  <label className="mb-2 block text-sm font-bold text-app-muted">
-                    Zoeken
-                  </label>
-                  <div className="relative">
-                    <input
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      placeholder="Zoek bijv. squat, rpe 7, 5 reps, 120 kg, block 1, b1w1"
-                      className="w-full rounded-2xl border border-app-border bg-app-surface px-4 py-3 pr-11 outline-none app-focus-ring"
-                    />
-                    {search && (
-                      <button
-                        onClick={() => setSearch("")}
-                        className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-app-surface-muted text-sm font-bold"
-                      >
-                        ×
-                      </button>
-                    )}
-                  </div>
+              <div className="app-card mb-5 space-y-4 p-4">
+                <div className="relative">
+                  <input
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Zoek oefening, RPE, reps, gewicht, block..."
+                    className="w-full rounded-xl border border-app-border bg-app-surface px-4 py-2.5 pr-10 text-sm outline-none app-focus-ring"
+                  />
+                  {search ? (
+                    <button
+                      type="button"
+                      onClick={() => setSearch("")}
+                      className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-app-surface-muted text-sm font-bold text-app-muted"
+                    >
+                      ×
+                    </button>
+                  ) : null}
                 </div>
 
-                <div>
-                  <p className="mb-2 text-sm font-bold text-app-muted">Filters</p>
-                  <div className="flex flex-wrap gap-2">
-                    {[
-                      { id: "primary", label: "Primary" },
-                      { id: "secondary", label: "Secondary" },
-                    ].map((filter) => (
-                      <button
-                        key={filter.id}
-                        type="button"
-                        onClick={() => togglePriorityFilter(filter.id)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                          priorityFilters.includes(filter.id)
-                            ? "bg-brand-purple text-white"
-                            : "bg-app-surface-muted text-app-text"
-                        }`}
-                      >
-                        {filter.label}
-                      </button>
-                    ))}
-                    {[
-                      { id: "squat", label: "Squat" },
-                      { id: "bench", label: "Bench" },
-                      { id: "deadlift", label: "Deadlift" },
-                    ].map((filter) => (
-                      <button
-                        key={filter.id}
-                        type="button"
-                        onClick={() => toggleLiftFilter(filter.id)}
-                        className={`rounded-full px-3 py-1.5 text-xs font-bold ${
-                          liftFilters.includes(filter.id)
-                            ? "bg-brand-purple text-white"
-                            : "bg-app-surface-muted text-app-text"
-                        }`}
-                      >
-                        {filter.label}
-                      </button>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { id: "primary", label: "Primary" },
+                    { id: "secondary", label: "Secondary" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => togglePriorityFilter(filter.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                        priorityFilters.includes(filter.id)
+                          ? "bg-brand-purple text-white"
+                          : "bg-app-surface-muted text-app-text"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
+                  {[
+                    { id: "squat", label: "Squat" },
+                    { id: "bench", label: "Bench" },
+                    { id: "deadlift", label: "Deadlift" },
+                  ].map((filter) => (
+                    <button
+                      key={filter.id}
+                      type="button"
+                      onClick={() => toggleLiftFilter(filter.id)}
+                      className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                        liftFilters.includes(filter.id)
+                          ? "bg-brand-purple text-white"
+                          : "bg-app-surface-muted text-app-text"
+                      }`}
+                    >
+                      {filter.label}
+                    </button>
+                  ))}
                 </div>
               </div>
             )}
-          </div>
 
           {loading ? (
             <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">Laden...</div>
@@ -1177,6 +1215,22 @@ export default function VideoGalleryPage() {
           )}
         </section>
       </div>
+  );
+
+  return (
+    <>
+      <AppShell contentClassName="flex min-h-0 flex-1 flex-col p-4 pb-24 md:p-6 lg:pb-6">
+        {isAthleteViewer ? (
+          <div className="mx-auto mb-4 w-full max-w-6xl">
+            <h1 className="text-3xl font-bold text-app-text">Voortgang & video&apos;s</h1>
+            <p className="mt-2 text-app-muted">
+              Bekijk je statistieken en trainingsvideo&apos;s.
+            </p>
+            <AthleteProgressTabs active="video" />
+          </div>
+        ) : null}
+        {galleryInner}
+      </AppShell>
 
       {fullscreenVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4">
@@ -1215,6 +1269,6 @@ export default function VideoGalleryPage() {
           </div>
         </div>
       )}
-    </AppShell>
+    </>
   );
 }

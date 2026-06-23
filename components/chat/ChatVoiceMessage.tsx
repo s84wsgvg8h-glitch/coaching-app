@@ -74,7 +74,7 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
         type="button"
         onClick={() => void togglePlay()}
         className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
-          isMine ? "bg-white/20 text-white" : "bg-black text-white"
+          isMine ? "bg-white/20 text-white" : "bg-app-accent text-white"
         }`}
         aria-label={playing ? "Pauzeer spraakbericht" : "Speel spraakbericht af"}
       >
@@ -84,19 +84,19 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
       <div className="min-w-0 flex-1">
         <div
           className={`relative h-1.5 overflow-hidden rounded-full ${
-            isMine ? "bg-white/25" : "bg-gray-200"
+            isMine ? "bg-white/25" : "bg-app-surface-hover"
           }`}
         >
           <div
             className={`absolute left-0 top-0 h-full rounded-full ${
-              isMine ? "bg-white" : "bg-black"
+              isMine ? "bg-app-surface" : "bg-app-accent"
             }`}
             style={{ width: `${progress}%` }}
           />
         </div>
         <div className="mt-1 flex items-center gap-1">
-          <Mic className={`h-3 w-3 ${isMine ? "text-white/70" : "text-gray-400"}`} />
-          <span className={`text-[11px] ${isMine ? "text-white/70" : "text-gray-500"}`}>
+          <Mic className={`h-3 w-3 ${isMine ? "text-white/70" : "text-app-subtle"}`} />
+          <span className={`text-[11px] ${isMine ? "text-white/70" : "text-app-muted"}`}>
             {formatDuration(playing ? currentTime : duration || 0)}
           </span>
         </div>

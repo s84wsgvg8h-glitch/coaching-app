@@ -44,6 +44,23 @@ function scoreChunk(chunk: KnowledgeChunk, queryTokens: string[], rawQuery: stri
     score += 6;
   }
 
+  const chunkTokens = tokenize(chunkText);
+  const querySet = new Set(queryTokens);
+  let overlap = 0;
+  for (const token of chunkTokens) {
+    if (querySet.has(token)) overlap += 1;
+  }
+  if (queryTokens.length > 0) {
+    score += Math.round((overlap / queryTokens.length) * 10);
+  }
+
+  // Semantic-ish boost for multi-word phrase overlap
+  if (normalizedQuery.length > 4) {
+    const queryWords = normalizedQuery.split(/\s+/).filter((w) => w.length > 2);
+    const matchedPhrases = queryWords.filter((word) => chunkText.includes(word)).length;
+    score += matchedPhrases * 3;
+  }
+
   // Prefer curated app/ESS summaries over raw local PDF excerpts when scores tie.
   if (!chunk.id.startsWith("ess-local")) {
     score += 3;

@@ -88,14 +88,14 @@ export default function ChatMessageMenu({
   function EmojiRow({ className = "" }: { className?: string }) {
     return (
       <div
-        className={`flex flex-wrap items-center justify-center gap-2 border-b border-gray-100 px-4 py-3 ${className}`}
+        className={`flex flex-wrap items-center justify-center gap-2 border-b border-app-border px-4 py-3 ${className}`}
       >
         {QUICK_REACTION_EMOJIS.map((emoji) => (
           <button
             key={emoji}
             type="button"
             onClick={() => run(() => onReact(emoji))}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-gray-100"
+            className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-app-surface-hover"
             aria-label={`Reageer met ${emoji}`}
           >
             {emoji}
@@ -113,15 +113,15 @@ export default function ChatMessageMenu({
         <button
           type="button"
           aria-label="Menu sluiten"
-          className="absolute inset-0 bg-black/45"
+          className="absolute inset-0 bg-app-overlay"
           onClick={onClose}
         />
-        <div className="absolute inset-x-0 bottom-0 rounded-t-3xl bg-white pb-[max(16px,env(safe-area-inset-bottom))] shadow-2xl">
+        <div className="chat-sheet absolute inset-x-0 bottom-0 pb-[max(16px,env(safe-area-inset-bottom))]">
           <EmojiRow />
           <button
             type="button"
             onClick={() => run(onReply)}
-            className="flex w-full items-center gap-3 px-5 py-4 text-left text-base font-semibold text-black"
+            className="chat-menu-item"
           >
             <Reply className="h-5 w-5" />
             Beantwoorden
@@ -129,7 +129,7 @@ export default function ChatMessageMenu({
           <button
             type="button"
             onClick={() => run(onPin)}
-            className="flex w-full items-center gap-3 px-5 py-4 text-left text-base font-semibold text-black"
+            className="chat-menu-item"
           >
             <Pin className="h-5 w-5" />
             {isPinned ? "Losmaken" : "Vastpinnen"}
@@ -138,7 +138,7 @@ export default function ChatMessageMenu({
             <button
               type="button"
               onClick={() => run(onDelete)}
-              className="flex w-full items-center gap-3 px-5 py-4 text-left text-base font-semibold text-red-600"
+              className="chat-menu-item chat-menu-item-danger"
             >
               <Trash2 className="h-5 w-5" />
               Verwijderen
@@ -160,13 +160,13 @@ export default function ChatMessageMenu({
       <div
         ref={menuRef}
         style={{ top: position.top, left: position.left }}
-        className="fixed z-[90] min-w-[200px] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+        className="chat-menu-dropdown fixed z-[90] min-w-[200px]"
       >
         <EmojiRow />
         <button
           type="button"
           onClick={() => run(onReply)}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+          className="chat-menu-item"
         >
           <Reply className="h-4 w-4" />
           Beantwoorden
@@ -174,7 +174,7 @@ export default function ChatMessageMenu({
         <button
           type="button"
           onClick={() => run(onPin)}
-          className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-black hover:bg-gray-50"
+          className="chat-menu-item"
         >
           <Pin className="h-4 w-4" />
           {isPinned ? "Losmaken" : "Vastpinnen"}
@@ -183,7 +183,7 @@ export default function ChatMessageMenu({
           <button
             type="button"
             onClick={() => run(onDelete)}
-            className="flex w-full items-center gap-3 px-4 py-3 text-left text-sm font-semibold text-red-600 hover:bg-red-50"
+            className="chat-menu-item chat-menu-item-danger"
           >
             <Trash2 className="h-4 w-4" />
             Verwijderen
@@ -208,8 +208,8 @@ export function ChatMessageMenuTrigger({
         event.stopPropagation();
         onOpen(event);
       }}
-      className={`absolute top-1 flex h-6 w-6 items-center justify-center rounded-full opacity-70 md:opacity-0 md:transition md:group-hover:opacity-100 ${
-        isMine ? "left-1 text-white/80 hover:bg-white/15" : "right-1 text-gray-400 hover:bg-gray-100"
+      className={`absolute top-1 hidden h-6 w-6 items-center justify-center rounded-full opacity-70 md:flex md:opacity-0 md:transition md:group-hover:opacity-100 ${
+        isMine ? "left-1 text-white/80 hover:bg-white/15" : "right-1 text-app-subtle hover:bg-app-surface-hover"
       }`}
       aria-label="Berichtopties"
     >
