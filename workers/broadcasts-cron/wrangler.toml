@@ -1,0 +1,11 @@
+name = "limitless-broadcasts-cron"
+main = "src/index.ts"
+compatibility_date = "2024-06-01"
+
+[triggers]
+crons = ["*/15 * * * *"]
+
+[vars]
+APP_URL = "https://limitlesscoaching.app"
+
+# Set secret via: npx wrangler secret put CRON_SECRET
