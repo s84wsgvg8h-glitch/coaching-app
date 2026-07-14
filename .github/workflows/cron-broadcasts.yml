@@ -1,0 +1,38 @@
+name: Cron — scheduled broadcasts
+
+on:
+  schedule:
+    # Every 15 minutes (external cron for Vercel Hobby — sub-daily not allowed on Vercel)
+    - cron: "*/15 * * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: cron-broadcasts
+  cancel-in-progress: false
+
+jobs:
+  process-broadcasts:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Trigger /api/cron/broadcasts
+        env:
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          APP_URL: ${{ vars.APP_URL || 'https://limitlesscoaching.app' }}
+        run: |
+          if [ -z "$CRON_SECRET" ]; then
+            echo "CRON_SECRET is not configured in GitHub repository secrets."
+            exit 1
+          fi
+
+          status=$(curl -sS -o /tmp/broadcasts-response.json -w "%{http_code}" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Accept: application/json" \
+            "${APP_URL}/api/cron/broadcasts")
+
+          echo "HTTP ${status}"
+          cat /tmp/broadcasts-response.json
+
+          if [ "$status" -lt 200 ] || [ "$status" -ge 300 ]; then
+            exit 1
+          fi

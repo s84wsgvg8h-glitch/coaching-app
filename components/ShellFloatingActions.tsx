@@ -5,6 +5,7 @@ import { Bell } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { getAthleteNotificationCount, getUnreadMessageCount, CHAT_UNREAD_CHANGED_EVENT } from "@/lib/chatUnread";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ShellFloatingActionsProps = {
   onSearchClick: () => void;
@@ -27,7 +28,9 @@ export default function ShellFloatingActions({
   const [unread, setUnread] = useState(notificationCount);
 
   useEffect(() => {
-    setUnread(notificationCount);
+    deferEffectUpdate(() => {
+      setUnread(notificationCount);
+    });
   }, [notificationCount]);
 
   useEffect(() => {

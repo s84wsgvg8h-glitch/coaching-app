@@ -46,7 +46,7 @@ export default function VideoPlaybackControls({
 
   return (
     <div
-      className={`flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-white/95 px-3 py-2 ${className}`}
+      className={`flex flex-wrap items-center gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2 ${className}`}
     >
       <button
         type="button"
@@ -64,7 +64,7 @@ export default function VideoPlaybackControls({
           className={`rounded-lg px-2 py-1 text-xs font-bold ${
             speed === option
               ? "bg-brand-purple text-white"
-              : "bg-gray-100 text-app-text hover:bg-gray-200"
+              : "bg-app-surface-muted text-app-text hover:bg-app-surface-hover"
           }`}
         >
           {option}x

@@ -1,6 +1,12 @@
 "use client";
 
 import { supabase } from "@/lib/supabaseClient";
+import {
+  getNativePushEnabled,
+  isNativePushAvailable,
+  subscribeToNativePush,
+  unsubscribeFromNativePush,
+} from "@/lib/nativePush";
 
 function urlBase64ToUint8Array(base64String: string) {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -13,7 +19,7 @@ function urlBase64ToUint8Array(base64String: string) {
   return output;
 }
 
-export function isPushSupported() {
+export function isWebPushSupported() {
   return (
     typeof window !== "undefined" &&
     "serviceWorker" in navigator &&
@@ -22,13 +28,29 @@ export function isPushSupported() {
   );
 }
 
+/** Web or native (Capacitor iOS) push availability. */
+export async function isPushAvailable(): Promise<boolean> {
+  if (await isNativePushAvailable()) return true;
+  return isWebPushSupported();
+}
+
+export async function isPushEnabledForUser(userId: string): Promise<boolean> {
+  if (await isNativePushAvailable()) {
+    return getNativePushEnabled(userId);
+  }
+  if (!isWebPushSupported()) return false;
+  const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+  const subscription = await registration?.pushManager.getSubscription();
+  return Boolean(subscription);
+}
+
 export async function registerServiceWorker() {
-  if (!isPushSupported()) return null;
+  if (!isWebPushSupported()) return null;
   return navigator.serviceWorker.register("/sw.js");
 }
 
-export async function subscribeToPush(userId: string) {
-  if (!isPushSupported()) {
+async function subscribeToWebPush(userId: string) {
+  if (!isWebPushSupported()) {
     return { error: new Error("Push notificaties worden niet ondersteund.") };
   }
 
@@ -64,11 +86,18 @@ export async function subscribeToPush(userId: string) {
     { onConflict: "user_id,endpoint" },
   );
 
-  return { error };
+  return { error: error ? new Error(error.message) : null };
 }
 
-export async function unsubscribeFromPush(userId: string) {
-  if (!isPushSupported()) return { error: null };
+export async function subscribeToPush(userId: string) {
+  if (await isNativePushAvailable()) {
+    return subscribeToNativePush(userId);
+  }
+  return subscribeToWebPush(userId);
+}
+
+async function unsubscribeFromWebPush(userId: string) {
+  if (!isWebPushSupported()) return { error: null };
 
   const registration = await navigator.serviceWorker.getRegistration("/sw.js");
   const subscription = await registration?.pushManager.getSubscription();
@@ -82,4 +111,16 @@ export async function unsubscribeFromPush(userId: string) {
   }
 
   return { error: null };
+}
+
+export async function unsubscribeFromPush(userId: string) {
+  if (await isNativePushAvailable()) {
+    return unsubscribeFromNativePush(userId);
+  }
+  return unsubscribeFromWebPush(userId);
+}
+
+/** @deprecated Use isPushAvailable() */
+export function isPushSupported() {
+  return isWebPushSupported();
 }

@@ -9,11 +9,11 @@ import {
   MoreHorizontal,
   Percent,
   Plus,
-  Search,
   UserCheck,
   Users,
   UserX,
 } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import {
   assignCoachOrganization,
@@ -24,6 +24,7 @@ import {
   slugifyOrgName,
   type CoachOrganization,
 } from "@/lib/adminOrganizations";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import type { AdminUser } from "@/components/admin/AdminUsersTab";
 import { AdminLoading, AdminPanel } from "@/components/admin/AdminUi";
 import {
@@ -118,7 +119,9 @@ export default function AdminOrganizationsTab({
   }
 
   useEffect(() => {
-    void reloadOrgs();
+    deferEffectUpdate(() => {
+      void reloadOrgs();
+    });
   }, []);
 
   const stats = useMemo(() => {
@@ -173,7 +176,9 @@ export default function AdminOrganizationsTab({
   }, [filteredOrgs, page, pageSize]);
 
   useEffect(() => {
-    setPage(1);
+    deferEffectUpdate(() => {
+      setPage(1);
+    });
   }, [query, statusFilter, sortDir, pageSize]);
 
   async function handleCreate() {
@@ -334,15 +339,12 @@ export default function AdminOrganizationsTab({
       </div>
 
       <AdminFilterBar>
-        <div className="admin-search-wrap">
-          <Search className="h-4 w-4 shrink-0 text-app-muted" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Zoek op naam of slug…"
-            className="admin-search-input"
-          />
-        </div>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Zoek op naam of slug…"
+          variant="rounded"
+        />
         <select
           value={statusFilter}
           onChange={(event) => setStatusFilter(event.target.value)}
@@ -457,7 +459,7 @@ export default function AdminOrganizationsTab({
                               onClick={() =>
                                 setExpandedOrgId(isExpanded ? null : org.id)
                               }
-                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-[#93c5fd] hover:bg-white/5"
+                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-[#93c5fd] hover:bg-app-surface-hover"
                             >
                               <UserCheck className="h-3.5 w-3.5" />
                               {orgCoaches.length}
@@ -554,7 +556,7 @@ export default function AdminOrganizationsTab({
                                     {orgCoaches.map((coach) => (
                                       <li
                                         key={coach.id}
-                                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-white/6 bg-white/2 px-3 py-2"
+                                        className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-app-border bg-app-surface px-3 py-2"
                                       >
                                         <div className="flex items-center gap-2">
                                           <AdminAvatar

@@ -67,6 +67,11 @@ export type AthleteExerciseVideo = {
   video_path: string | null;
   file_name: string | null;
   caption: string | null;
+  storage_provider?: string | null;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
+  storage_content_type?: string | null;
+  storage_size_bytes?: number | null;
 };
 
 export type AthleteDayCheckin = {

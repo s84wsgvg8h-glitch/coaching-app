@@ -103,6 +103,60 @@ export function formatPaymentDay(value: number | null) {
   return `Elke maand op dag ${value}`;
 }
 
+export function isPaymentDashInput(value: string) {
+  const trimmed = value.trim();
+  return trimmed === "-" || trimmed === "—" || trimmed === "–";
+}
+
+export function formatPaymentPriceFieldValue(
+  price: number | null | undefined,
+) {
+  if (price === null || price === undefined || Number.isNaN(price)) return "—";
+  return String(price);
+}
+
+export function formatPaymentDayFieldValue(
+  price: number | null | undefined,
+  day: number | null | undefined,
+) {
+  if (price === null || price === undefined || Number.isNaN(price)) {
+    return "—";
+  }
+  if (day === null || day === undefined || Number.isNaN(day)) return "";
+  return String(day);
+}
+
+export function parsePaymentPriceInput(value: string): number | null {
+  if (isPaymentDashInput(value)) return null;
+
+  const trimmed = value.trim().replace(",", ".");
+  if (!trimmed) return null;
+
+  const parsed = Number.parseFloat(trimmed);
+  if (Number.isNaN(parsed) || parsed < 0) return null;
+  return parsed;
+}
+
+export function isValidPaymentPriceInput(value: string) {
+  if (isPaymentDashInput(value)) return true;
+
+  const trimmed = value.trim().replace(",", ".");
+  if (!trimmed) return true;
+
+  const parsed = Number.parseFloat(trimmed);
+  return !Number.isNaN(parsed) && parsed >= 0;
+}
+
+export function paymentPriceInputHasAmount(value: string) {
+  if (isPaymentDashInput(value)) return false;
+
+  const trimmed = value.trim().replace(",", ".");
+  if (!trimmed) return false;
+
+  const parsed = Number.parseFloat(trimmed);
+  return !Number.isNaN(parsed) && parsed >= 0;
+}
+
 export type MonthlyPaymentStatus = "paid" | "overdue" | "planned";
 
 export type MonthlyPaymentEntry = {
@@ -195,12 +249,28 @@ export function buildMonthlyPaymentHistory(
 }
 
 export function parsePaymentDayInput(value: string): number | null {
+  if (isPaymentDashInput(value)) return null;
+
   const trimmed = value.trim();
   if (!trimmed) return null;
 
   const day = Number.parseInt(trimmed, 10);
   if (Number.isNaN(day) || day < 1 || day > 31) return null;
   return day;
+}
+
+export function isValidPaymentDayInput(
+  dayInput: string,
+  priceInput: string,
+) {
+  if (isPaymentDashInput(dayInput)) {
+    return !paymentPriceInputHasAmount(priceInput);
+  }
+
+  const trimmed = dayInput.trim();
+  if (!trimmed) return true;
+
+  return parsePaymentDayInput(dayInput) !== null;
 }
 
 export async function loadAthletePayment(athleteId: string): Promise<{

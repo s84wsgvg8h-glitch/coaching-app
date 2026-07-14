@@ -16,6 +16,7 @@ import AthleteDailyTrackingGrid, {
   AthleteDailyTrackingHeader,
 } from "@/components/coach/AthleteDailyTrackingGrid";
 import AthletePaymentTimeline from "@/components/coach/athletes/AthletePaymentTimeline";
+import AthleteWeeksOutHover from "@/components/coach/athletes/AthleteWeeksOutHover";
 import FillScoreSparkline from "@/components/coach/FillScoreSparkline";
 import {
   buildMonthlyPaymentHistory,
@@ -167,15 +168,15 @@ function ExpandableValue({
         stopRowNav(event);
         onClick?.();
       }}
-      className={`athletes-cell-interactive inline-flex items-center gap-0.5 rounded-md px-1.5 py-1 transition app-focus-ring ${alignClass} ${active ? "athletes-cell-interactive--active" : ""}`}
+      className={`athletes-cell-interactive inline-flex items-center gap-1 rounded-[10px] px-2 py-1 transition app-focus-ring ${alignClass} ${active ? "athletes-cell-interactive--active" : ""}`}
     >
       <span
-        className={`border-b border-dotted border-app-subtle/60 text-[11px] font-medium tabular-nums ${toneClass}`}
+        className={`border-b border-dotted border-app-subtle/50 text-[11px] font-medium tabular-nums ${toneClass}`}
       >
         {value}
       </span>
       <ChevronDown
-        className={`h-3 w-3 shrink-0 text-app-subtle transition ${active ? "rotate-180 text-app-accent" : ""}`}
+        className={`h-3.5 w-3.5 shrink-0 text-app-subtle/80 transition ${active ? "rotate-180 text-app-accent" : ""}`}
       />
     </button>
   );
@@ -278,7 +279,7 @@ export function AthleteOverviewTableHead({
 }) {
   return (
     <thead className={TABLE_HEAD}>
-      <tr className="border-b border-app-border/40 bg-black/10">
+      <tr className="border-b border-white/[0.08] bg-black/10">
         {selectionMode ? <th className="athletes-th-select" aria-hidden /> : null}
         <th className="athletes-th-athlete">Atleet</th>
         <th className="athletes-th-numeric athletes-th-center">Prijs</th>
@@ -396,21 +397,21 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
           <div className="flex min-w-0 items-center gap-2.5">
             <ChatAvatar
               name={displayName}
-              className="h-9 w-9 shrink-0 text-[11px]"
+              className="h-10 w-10 shrink-0 text-[11px]"
               fallbackClassName="bg-app-accent/15 text-app-accent ring-1 ring-app-accent/20"
             />
             <span className="min-w-0">
               <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="truncate text-[14px] font-semibold text-app-text">
+                <span className="truncate text-[14px] font-bold text-app-text">
                   {displayName}
                 </span>
                 <span
-                  className={`ui-badge shrink-0 !px-1.5 !py-0 text-[10px] ${statusMeta.badgeClass}`}
+                  className={`ui-badge shrink-0 rounded-full !px-2 !py-0.5 text-[10px] ${statusMeta.badgeClass}`}
                 >
                   {statusMeta.label}
                 </span>
               </span>
-              <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-app-subtle">
+              <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-app-subtle/75">
                 <span className="truncate">{handle}</span>
                 {activityLabel ? (
                   <>
@@ -448,7 +449,11 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
           {scoresLoading ? (
             <span className="text-app-muted">…</span>
           ) : row.weeksOut !== null ? (
-            <span className="tabular-nums">{row.weeksOut}w</span>
+            <AthleteWeeksOutHover
+              weeksOut={row.weeksOut}
+              competitions={row.upcomingCompetitions}
+              onPointerDown={stopRowNav}
+            />
           ) : (
             <EmptyCell />
           )}
@@ -472,15 +477,15 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
                 stopRowNav(event);
                 toggleSection("fillScore");
               }}
-              className={`athletes-cell-interactive inline-flex items-center justify-center gap-0.5 rounded-md px-1.5 py-1 transition app-focus-ring ${expanded === "fillScore" ? "athletes-cell-interactive--active" : ""}`}
+              className={`athletes-cell-interactive inline-flex items-center justify-center gap-1 rounded-[10px] px-2 py-1 transition app-focus-ring ${expanded === "fillScore" ? "athletes-cell-interactive--active" : ""}`}
             >
               <span
-                className={`border-b border-dotted border-app-subtle/60 text-[12px] font-semibold tabular-nums ${scoreTone}`}
+                className={`border-b border-dotted border-app-subtle/50 text-[12px] font-semibold tabular-nums tracking-tight ${scoreTone}`}
               >
                 {row.fillScore}%
               </span>
               <ChevronDown
-                className={`h-3 w-3 shrink-0 text-app-subtle transition ${expanded === "fillScore" ? "rotate-180 text-app-accent" : ""}`}
+                className={`h-3.5 w-3.5 shrink-0 text-app-subtle/80 transition ${expanded === "fillScore" ? "rotate-180 text-app-accent" : ""}`}
               />
             </button>
           )}
@@ -719,6 +724,19 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
         ) : null}
         {row.betalingDag !== null ? (
           <span className="rounded-md px-2 py-1 text-[11px] text-app-muted">Dag {row.betalingDag}</span>
+        ) : null}
+        {row.weeksOut !== null ? (
+          <span
+            className="rounded-md px-2 py-1 text-[11px] text-app-muted"
+            onClick={stopRowNav}
+            onPointerDown={stopRowNav}
+          >
+            <AthleteWeeksOutHover
+              weeksOut={row.weeksOut}
+              competitions={row.upcomingCompetitions}
+              onPointerDown={stopRowNav}
+            />
+          </span>
         ) : null}
         <button type="button" onClick={() => toggleSection("fillScore")} className={`rounded-md px-2 py-1 text-[11px] ${scoreTone}`}>
           {scoresLoading ? "…" : `${row.fillScore}%`}

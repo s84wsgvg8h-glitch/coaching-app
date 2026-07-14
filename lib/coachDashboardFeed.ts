@@ -1,6 +1,9 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getTodayDateString } from "@/lib/competitions";
-import { loadAthleteLastActivities } from "@/lib/athleteLastActivity";
+import {
+  loadAthleteLastActivities,
+  type AthleteLastActivity,
+} from "@/lib/athleteLastActivity";
 import { getAthleteStatus } from "@/lib/athleteStatus";
 
 export type CoachDashboardMetrics = {
@@ -88,6 +91,9 @@ export async function loadCoachDashboardFeed(
     CoachDashboardMetrics,
     "newVideos" | "competitionsThisWeek" | "messagesLast24h" | "activeAthletes" | "attentionAthletes"
   >,
+  options?: {
+    preloadedActivityMap?: Map<string, AthleteLastActivity>;
+  },
 ): Promise<{
   metrics: CoachDashboardMetrics;
   inbox: CoachInboxItem[];
@@ -190,7 +196,9 @@ export async function loadCoachDashboardFeed(
       isDateInWeek(row.end_date as string, week.start, week.end),
   ).length;
 
-  const activityMap = await loadAthleteLastActivities(athleteIds);
+  const activityMap =
+    options?.preloadedActivityMap ??
+    (await loadAthleteLastActivities(athleteIds));
   let activeAthletes = 0;
   let attentionAthletes = 0;
 

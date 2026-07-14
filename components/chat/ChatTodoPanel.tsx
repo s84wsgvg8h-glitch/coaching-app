@@ -22,6 +22,7 @@ import {
   resolveAthleteIdFromTodoTitle,
 } from "@/lib/todoTitleSuggestions";
 import { parseTodoInput } from "@/lib/todoTitleParser";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ChatTodoPanelProps = {
   coachId: string;
@@ -40,8 +41,26 @@ export default function ChatTodoPanel({ coachId, onClose }: ChatTodoPanelProps) 
   >([]);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
+  async function refreshTodos() {
+    setLoading(true);
+    setErrorMessage("");
+
+    const { data, error } = await loadCoachTodosFast(coachId);
+
+    if (error) {
+      setErrorMessage(error.message);
+      setTodos([]);
+    } else {
+      setTodos(data);
+    }
+
+    setLoading(false);
+  }
+
   useEffect(() => {
-    void refreshTodos();
+    deferEffectUpdate(() => {
+      void refreshTodos();
+    });
   }, [coachId]);
 
   useEffect(() => {
@@ -58,22 +77,6 @@ export default function ChatTodoPanel({ coachId, onClose }: ChatTodoPanelProps) 
     () => getTodoTitleSuggestions(newTitle, athleteOptions),
     [newTitle, athleteOptions],
   );
-
-  async function refreshTodos() {
-    setLoading(true);
-    setErrorMessage("");
-
-    const { data, error } = await loadCoachTodosFast(coachId);
-
-    if (error) {
-      setErrorMessage(error.message);
-      setTodos([]);
-    } else {
-      setTodos(data);
-    }
-
-    setLoading(false);
-  }
 
   async function handleAddTodo() {
     const raw = newTitle.trim();

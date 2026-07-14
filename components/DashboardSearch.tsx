@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import SearchInput from "@/components/ui/SearchInput";
 import {
   buildDashboardSearchItems,
   filterDashboardSearchItems,
@@ -17,6 +18,7 @@ import {
   type TrainingSnapshot,
 } from "@/lib/aiTrainingSnapshot";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import { getApiAuthHeaders } from "@/lib/apiClient";
 import { isDemoMode } from "@/lib/demo/demoMode";
 
@@ -91,9 +93,11 @@ export default function DashboardSearch({
   );
 
   useEffect(() => {
-    setActiveIndex(0);
-    setAiResult(null);
-    setAiError("");
+    deferEffectUpdate(() => {
+      setActiveIndex(0);
+      setAiResult(null);
+      setAiError("");
+    });
   }, [query]);
 
   useEffect(() => {
@@ -229,11 +233,10 @@ export default function DashboardSearch({
 
   return (
     <div ref={containerRef} className="relative">
-      <input
-        type="search"
+      <SearchInput
         value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
+        onChange={(next) => {
+          setQuery(next);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
@@ -243,11 +246,9 @@ export default function DashboardSearch({
             ? "Zoek modules, oefeningen of programmadagen..."
             : "Zoek pagina's, atleten, typ / voor commands, of stel een vraag..."
         }
-        className={
-          isAthleteVariant
-            ? "athlete-dashboard-search-input w-full"
-            : "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
-        }
+        variant="rounded"
+        showClear={false}
+        className="w-full"
       />
 
       {open && (
@@ -255,7 +256,7 @@ export default function DashboardSearch({
           className={
             isAthleteVariant
               ? "athlete-dashboard-search-dropdown absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden"
-              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-xl"
           }
         >
           {results.length > 0 && (
@@ -269,32 +270,24 @@ export default function DashboardSearch({
                     className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition ${
                       isAthleteVariant
                         ? index === activeIndex
-                          ? "bg-white/8"
-                          : "hover:bg-white/5"
+                          ? "bg-app-surface-hover"
+                          : "hover:bg-app-surface-hover"
                         : index === activeIndex
-                          ? "bg-gray-100"
-                          : "hover:bg-gray-50"
+                          ? "bg-app-surface-hover"
+                          : "hover:bg-app-surface-hover"
                     }`}
                   >
                     <span className="text-base">{item.icon}</span>
                     <span className="min-w-0 flex-1">
-                      <span
-                        className={`block font-semibold ${
-                          isAthleteVariant ? "text-app-text" : "text-black"
-                        }`}
-                      >
+                      <span className="block font-semibold text-app-text">
                         {item.command || item.title}
                       </span>
-                      <span
-                        className={`block truncate text-xs ${
-                          isAthleteVariant ? "text-app-muted" : "text-gray-500"
-                        }`}
-                      >
+                      <span className="block truncate text-xs text-app-muted">
                         {item.description}
                       </span>
                     </span>
                     {item.kind === "command" && item.requiresChat && (
-                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-gray-400">
+                      <span className="shrink-0 text-[10px] font-semibold uppercase tracking-wide text-app-muted">
                         Chat
                       </span>
                     )}
@@ -308,21 +301,19 @@ export default function DashboardSearch({
             <div
               className={`px-4 py-3 ${
                 results.length > 0
-                  ? isAthleteVariant
-                    ? "border-t border-white/8"
-                    : "border-t border-gray-100"
+                  ? "border-t border-app-border"
                   : ""
               }`}
             >
               <div className="mb-2 flex items-center justify-between gap-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
                   AI assistent
                 </p>
                 {!aiLoading && query.trim() && results.length > 0 ? (
                   <button
                     type="button"
                     onClick={() => void askAi()}
-                    className="text-xs font-semibold text-black hover:underline"
+                    className="text-xs font-semibold text-app-accent hover:underline"
                   >
                     Vraag AI
                   </button>
@@ -330,20 +321,20 @@ export default function DashboardSearch({
               </div>
 
               {aiLoading ? (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-app-muted">
                   {isTrainingDataQuestion(query.trim())
                     ? "Trainingsdata laden en analyseren..."
                     : "AI denkt na..."}
                 </p>
               ) : aiError ? (
-                <p className="text-sm text-red-600">{aiError}</p>
+                <p className="text-sm text-app-destructive">{aiError}</p>
               ) : aiResult ? (
                 <div className="space-y-3">
-                  <p className="whitespace-pre-line text-sm text-gray-700">
+                  <p className="whitespace-pre-line text-sm text-app-text">
                     {aiResult.answer}
                   </p>
                   {aiResult.sources && aiResult.sources.length > 0 ? (
-                    <p className="text-[11px] text-gray-400">
+                    <p className="text-[11px] text-app-muted">
                       Bronnen: {aiResult.sources.join(" · ")}
                     </p>
                   ) : null}
@@ -351,7 +342,7 @@ export default function DashboardSearch({
                     <button
                       type="button"
                       onClick={openAiSuggestion}
-                      className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+                      className="rounded-xl bg-app-accent px-4 py-2 text-sm font-semibold text-white"
                     >
                       {aiResult.label ||
                         (aiResult.command ? `Open ${aiResult.command}` : "Ga naar pagina")}
@@ -359,7 +350,7 @@ export default function DashboardSearch({
                   )}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-app-muted">
                   Druk Enter om AI te vragen, bijv. &quot;open het programma van Lisa&quot; of
                   &quot;waar zie ik BW grafieken?&quot;
                 </p>
@@ -367,19 +358,9 @@ export default function DashboardSearch({
             </div>
           )}
 
-          <div
-            className={`border-t px-4 py-2 text-[11px] ${
-              isAthleteVariant
-                ? "border-white/8 text-app-muted"
-                : "border-gray-100 text-gray-400"
-            }`}
-          >
+          <div className="border-t border-app-border px-4 py-2 text-[11px] text-app-muted">
             Pijltjes + Enter voor resultaten. Enter zonder match = AI. Typ{" "}
-            <code
-              className={`rounded px-1 ${
-                isAthleteVariant ? "bg-white/8" : "bg-gray-100"
-              }`}
-            >
+            <code className="rounded bg-app-surface-hover px-1">
               /
             </code>{" "}
             voor commands.

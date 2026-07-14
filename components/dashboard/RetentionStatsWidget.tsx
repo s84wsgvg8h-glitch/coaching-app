@@ -1,9 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { SectionHeader } from "@/components/ui/design-system";
-import { loadTeamFillScores } from "@/lib/athleteFillScoreHistory";
+import { useTeamFillScores } from "@/hooks/useTeamFillScores";
 import { isAdminRole } from "@/lib/authRoles";
 
 type RetentionStatsWidgetProps = {
@@ -41,52 +40,38 @@ export default function RetentionStatsWidget({
   coachId,
   role,
 }: RetentionStatsWidgetProps) {
-  const [loading, setLoading] = useState(true);
-  const [avgFill, setAvgFill] = useState(0);
-  const [activeCount, setActiveCount] = useState(0);
-  const [atRiskCount, setAtRiskCount] = useState(0);
-  const [total, setTotal] = useState(0);
+  const { data: rows = [], isLoading } = useTeamFillScores(
+    coachId,
+    isAdminRole(role),
+  );
 
-  useEffect(() => {
-    async function load() {
-      setLoading(true);
-      const rows = await loadTeamFillScores(coachId, isAdminRole(role));
-      setTotal(rows.length);
-      setActiveCount(rows.filter((row) => row.fillScore >= 70).length);
-      setAtRiskCount(
-        rows.filter((row) => row.fillScore > 0 && row.fillScore < 50).length,
-      );
-      setAvgFill(
-        rows.length
-          ? Math.round(
-              rows.reduce((sum, row) => sum + row.fillScore, 0) / rows.length,
-            )
-          : 0,
-      );
-      setLoading(false);
-    }
-    void load();
-  }, [coachId, role]);
-
-  if (loading) {
+  if (isLoading) {
     return <SkeletonCard />;
   }
 
+  const total = rows.length;
+  const activeCount = rows.filter((row) => row.fillScore >= 70).length;
+  const atRiskCount = rows.filter(
+    (row) => row.fillScore > 0 && row.fillScore < 50,
+  ).length;
+  const avgFill = total
+    ? Math.round(rows.reduce((sum, row) => sum + row.fillScore, 0) / total)
+    : 0;
   const missedCheckIns = Math.max(total - activeCount, 0);
 
   return (
-    <div className="ui-panel">
+    <div className="ui-panel dashboard-cockpit-retention-panel h-full">
       <SectionHeader
         title="Retentie & engagement"
         description="Team gezondheid op basis van invulscore"
       />
-      <div className="grid gap-4 sm:grid-cols-2">
+      <div className="grid min-h-0 flex-1 gap-2 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <div className="mb-2 flex items-end justify-between gap-2">
-            <p className="text-[12px] font-medium text-app-muted">
+          <div className="mb-1 flex items-end justify-between gap-2">
+            <p className="text-[11px] font-medium text-app-muted">
               Gem. invulscore
             </p>
-            <p className="text-[22px] font-semibold leading-none text-app-text">
+            <p className="text-lg font-semibold leading-none text-app-text">
               {avgFill}%
             </p>
           </div>

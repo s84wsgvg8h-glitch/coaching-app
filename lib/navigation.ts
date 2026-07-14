@@ -63,6 +63,12 @@ export function getNavLinks(
       description: "Maandprijzen en Stripe-koppeling.",
     },
     {
+      href: "/organisatie",
+      icon: "🏢",
+      title: "Organisatie",
+      description: "Geboortedata en lidnummers van alle atleten.",
+    },
+    {
       href: "/merch",
       icon: "👕",
       title: "Merch",
@@ -173,6 +179,8 @@ const COACH_GROUP_MAP: Record<string, NavGroup["label"]> = {
   "/video-gallery": "Data",
   "/programs": "Data",
   "/merch": "Admin",
+  "/betalingen": "Admin",
+  "/organisatie": "Admin",
   "/limitless-data": "Admin",
   "/admin": "Admin",
 };
@@ -276,6 +284,7 @@ const PAGE_TITLE_OVERRIDES: Record<string, string> = {
   "/planning": "Planning",
   "/atleten-overzicht": "Atleten overzicht",
   "/athlete-profiles": "Atleten profielen",
+  "/organisatie": "Organisatie",
   "/ai-vragen": "AI-vragen",
   "/statistics": "Statistieken",
   "/raw-data": "Ruwe data",

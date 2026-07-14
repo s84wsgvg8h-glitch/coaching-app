@@ -10,6 +10,7 @@ import { validateAdminPlatformInvite } from "@/lib/adminPlatformInvites";
 import AuthShell, { AuthField, AuthInput } from "@/components/auth/AuthShell";
 import AuthLegalLinks from "@/components/legal/AuthLegalLinks";
 import { SkeletonCard } from "@/components/ui/Skeleton";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type InviteMode =
   | "coach-athlete"
@@ -39,8 +40,10 @@ function SignupForm() {
   useEffect(() => {
     const hasToken = Boolean(athleteToken || coachSignupToken || platformToken);
     if (!hasToken) {
-      setInviteValid(false);
-      setInviteMode("none");
+      deferEffectUpdate(() => {
+        setInviteValid(false);
+        setInviteMode("none");
+      });
       return;
     }
 
@@ -125,6 +128,17 @@ function SignupForm() {
 
     if (!data.user) {
       alert("Geen user aangevraagd");
+      return;
+    }
+
+    const pendingSignup =
+      inviteMode === "coach-athlete" ||
+      inviteMode === "coach-signup" ||
+      inviteMode === "platform-organization" ||
+      inviteMode === "platform-athlete";
+
+    if (data.session && pendingSignup) {
+      window.location.href = "/pending-approval";
       return;
     }
 

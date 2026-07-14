@@ -1,37 +1,41 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
-import DashboardSearch from "@/components/DashboardSearch";
-import DashboardAgenda from "@/components/DashboardAgenda";
-import CoachDashboardWidgets from "@/components/dashboard/CoachDashboardWidgets";
+import { useAthleteFillScore } from "@/hooks/useAthleteFillScore";
+import { useAthleteProgramEntry } from "@/hooks/useAthleteProgramEntry";
 import CoachInboxPanel from "@/components/dashboard/CoachInboxPanel";
 import CoachCockpitHeader from "@/components/dashboard/CoachCockpitHeader";
 import CoachDashboardApps from "@/components/dashboard/CoachDashboardApps";
 import type { AttentionAthleteRow } from "@/components/dashboard/TodaysFocus";
 import TodayAgendaTimeline from "@/components/dashboard/TodayAgendaTimeline";
 import TodaysFocusWidget from "@/components/dashboard/TodaysFocusWidget";
-import CoachInvitePanel from "@/components/dashboard/CoachInvitePanel";
-import CoachAiCopilotWidget from "@/components/dashboard/CoachAiCopilotWidget";
+import dynamic from "next/dynamic";
+const CoachAiCopilotWidget = dynamic(
+  () => import("@/components/dashboard/CoachAiCopilotWidget"),
+  { ssr: false, loading: () => <div className="h-32 animate-pulse rounded-2xl bg-app-surface" /> },
+);
 import CoachAlertsWidget from "@/components/dashboard/CoachAlertsWidget";
-import TeamEngagementWidget from "@/components/dashboard/TeamEngagementWidget";
-import AthleteCountWidget from "@/components/dashboard/AthleteCountWidget";
+import CoachAttentionWidget from "@/components/dashboard/CoachAttentionWidget";
+import CoachDashboardKpiRow from "@/components/dashboard/CoachDashboardKpiRow";
+import CoachDashboardQuickActions from "@/components/dashboard/CoachDashboardQuickActions";
+import CoachMobileAgendaSheet from "@/components/dashboard/CoachMobileAgendaSheet";
+import ClientNotesWidget from "@/components/dashboard/ClientNotesWidget";
+import FocusAreasWidget from "@/components/dashboard/FocusAreasWidget";
+import RetentionStatsWidget from "@/components/dashboard/RetentionStatsWidget";
 import AthleteDashboard from "@/components/dashboard/AthleteDashboard";
-import { SkeletonCard } from "@/components/ui/Skeleton";
 import { loadTotalAthleteIncome } from "@/lib/athletePayments";
 import { isAdminRole, isCoachLikeRole } from "@/lib/authRoles";
 import {
   applyAthleteScope,
   loadCoachOrgContext,
 } from "@/lib/orgAthleteScope";
-import { loadAthleteWeeklyFillScore } from "@/lib/athleteWeeklyFillScore";
-import { loadCoachTodos } from "@/lib/coachTodos";
+import { loadCoachTodosFast, syncCoachTodosInBackground } from "@/lib/coachTodos";
 import { countCoachTodosDueToday } from "@/lib/todoDueToday";
 import { processDueBroadcasts } from "@/lib/scheduledBroadcasts";
-import { detectAndInsertPeriodizationAlerts } from "@/lib/periodizationAlerts";
+import { schedulePeriodizationAlertDetection } from "@/lib/periodizationAlertScheduler";
 import {
   loadAthleteLastActivities,
 } from "@/lib/athleteLastActivity";
@@ -67,9 +71,6 @@ export default function DashboardPage() {
   const [payingAthleteCount, setPayingAthleteCount] = useState(0);
   const [athletes, setAthletes] = useState<DashboardAthlete[]>([]);
   const [coachSnapshot, setCoachSnapshot] = useState<CoachSnapshot | undefined>();
-  const [weeklyFillScore, setWeeklyFillScore] = useState<number | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [dashboardEditing, setDashboardEditing] = useState(false);
   const [openTodoCount, setOpenTodoCount] = useState(0);
   const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [upcomingCompetitionCount, setUpcomingCompetitionCount] = useState(0);
@@ -83,29 +84,21 @@ export default function DashboardPage() {
     AttentionAthleteRow[]
   >([]);
 
-  useEffect(() => {
-    if (authLoading || !userId) return;
+  const isAthlete = role === "atleet";
+  const fillScoreQuery = useAthleteFillScore(
+    userId,
+    fullName,
+    isAthlete && !authLoading && Boolean(userId),
+  );
+  const programEntryQuery = useAthleteProgramEntry(
+    userId,
+    userId,
+    isAthlete && !authLoading && Boolean(userId),
+  );
 
-    let cancelled = false;
-
-    async function bootstrap() {
-      if (role === "atleet") {
-        const score = await loadAthleteWeeklyFillScore(
-          userId,
-          fullName || "Atleet",
-        );
-        if (!cancelled) setWeeklyFillScore(score.percentage);
-      }
-
-      if (!cancelled) setLoading(false);
-    }
-
-    void bootstrap();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [authLoading, userId, role, fullName]);
+  const weeklyFillScore = fillScoreQuery.data?.percentage ?? null;
+  const athleteProgramHref = programEntryQuery.data?.href ?? null;
+  const athleteHasProgram = programEntryQuery.data?.hasProgram ?? true;
 
   useEffect(() => {
     if (!userId || !isCoachLikeRole(role)) return;
@@ -113,7 +106,12 @@ export default function DashboardPage() {
     let cancelled = false;
 
     async function loadCoachData() {
-      const ctx = await loadCoachOrgContext(userId);
+      const [ctx, incomeResult, competitionsResult] = await Promise.all([
+        loadCoachOrgContext(userId),
+        loadTotalAthleteIncome(userId, role),
+        loadCompetitions(),
+      ]);
+
       let athletesQuery = supabase
         .from("profiles")
         .select("id, full_name, lidnummer, betaling_prijs, betaling_dag")
@@ -135,30 +133,21 @@ export default function DashboardPage() {
             .eq("role", "pending")
             .eq("coach_id", userId);
 
-      const [{ count }, incomeResult, athletesResult] = await Promise.all([
+      const [{ count }, athletesResult] = await Promise.all([
         pendingQuery,
-        loadTotalAthleteIncome(userId, role),
         athletesQuery,
       ]);
 
       const athleteRows = (athletesResult.error
-        ? (
-            await supabase
-              .from("profiles")
-              .select("id, full_name, lidnummer")
-              .eq("role", "atleet")
-              .order("full_name", { ascending: true })
-          ).data
+        ? []
         : athletesResult.data) as DashboardAthlete[] | null;
 
       const rows = athleteRows || [];
 
-      const [activityMap, chatUnread, competitionsResult, todosResult] =
-        await Promise.all([
+      const [activityMap, chatUnread, todosResult] = await Promise.all([
           loadAthleteLastActivities(rows.map((athlete) => athlete.id)),
           getUnreadMessageCount(userId),
-          loadCompetitions(),
-          loadCoachTodos(userId, role === "admin"),
+          loadCoachTodosFast(userId),
         ]);
 
       if (cancelled) return;
@@ -222,6 +211,7 @@ export default function DashboardPage() {
           unreadMessages: chatUnread,
           upcomingCompetitions: upcomingCount,
         },
+        { preloadedActivityMap: activityMap },
       );
 
       if (cancelled) return;
@@ -230,9 +220,10 @@ export default function DashboardPage() {
       setInboxItems(feed.inbox);
       setActivityItems(feed.activity);
 
+      void syncCoachTodosInBackground(userId, role === "admin");
       void syncPaymentMissingTodos(userId, role === "admin");
       void processDueBroadcasts(userId);
-      void detectAndInsertPeriodizationAlerts(userId, role);
+      schedulePeriodizationAlertDetection(userId, role);
     }
 
     void loadCoachData();
@@ -242,15 +233,8 @@ export default function DashboardPage() {
     };
   }, [role, userId]);
 
-  if (authLoading || loading || !userId) {
-    return (
-      <AppShell contentClassName="flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3">
-        <div className="mx-auto w-full max-w-none space-y-3">
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
-      </AppShell>
-    );
+  if (!userId) {
+    return null;
   }
 
   if (!role) {
@@ -316,210 +300,91 @@ export default function DashboardPage() {
       fullName={fullName}
       role={role}
       weeklyFillScore={weeklyFillScore}
+      programHref={athleteProgramHref}
+      programLoading={
+        isAthlete &&
+        programEntryQuery.isFetching &&
+        Boolean(programEntryQuery.data)
+      }
+      hasProgram={athleteHasProgram}
     />
   ) : null;
 
   const coachContent = userId && coachMainProps ? (
-    <div className="dashboard-shell w-full pb-2">
-      <CoachCockpitHeader fullName={fullName} />
-
-      <div className="dashboard-coach-body">
-        <div className="dashboard-coach-main space-y-2.5">
-          <CoachDashboardApps
-            userId={userId}
-            openTodoCount={openTodoCount}
-            pendingAthleteCount={pendingCount}
-          />
-
-          <div className="dashboard-widget-row">
-            <TeamEngagementWidget coachId={userId} role={role} />
-            <TodaysFocusWidget coachId={userId} athletes={athletes} />
-            <AthleteCountWidget
-              count={coachMetrics.athleteCount}
-              activeCount={coachMetrics.activeAthletes}
-            />
-          </div>
-
-          <CoachDashboardWidgets
-        coachId={userId}
-        editing={dashboardEditing}
-        widgets={{
-          apps: null,
-          engagement: null,
-          todaysFocusPanel: null,
-          athleteCountMetric: null,
-          agenda: null,
-          welcome: null,
-          focus: null,
-          kpi: null,
-          inbox: <CoachInboxPanel items={inboxItems} compact />,
-          activity: null,
-          newVideos: (
-            <div className="ui-panel">
-              <p className="ui-label">Nieuwe video&apos;s</p>
-              <p className="ui-metric-value mt-2 text-app-text">
-                {coachMetrics.newVideos}
-              </p>
-              <Link
-                href="/video-review"
-                className="mt-3 inline-block text-[13px] font-medium text-app-accent hover:underline"
-              >
-                Naar video review →
-              </Link>
-            </div>
-          ),
-          leaderboard: (
-            <div className="ui-panel">
-              <p className="text-[15px] font-semibold text-app-text">
-                Leaderboard
-              </p>
-              <p className="mt-2 text-[13px] font-normal text-app-muted">
-                Bekijk rankings en prestaties van je team.
-              </p>
-              <Link href="/leaderboard" className="app-btn-secondary mt-4">
-                Open leaderboard
-              </Link>
-            </div>
-          ),
-          bwTrends: (
-            <div className="ui-panel">
-              <p className="text-[15px] font-semibold text-app-text">
-                BW Trends
-              </p>
-              <p className="mt-2 text-[13px] font-normal text-app-muted">
-                Widget beschikbaar in een volgende update.
-              </p>
-            </div>
-          ),
-          search: (
-            <div className="ui-panel">
-              <h2 className="ui-section-title mb-4">Zoeken</h2>
-              <DashboardSearch
-                role={role}
-                pendingCount={pendingCount}
-                athletes={athletes}
-                coachSnapshot={coachSnapshot}
-              />
-            </div>
-          ),
-          invites: <CoachInvitePanel coachId={userId} />,
-          income: totalIncome !== null ? (
-            <div className="ui-panel">
-              <p className="ui-label">Maandelijkse inkomsten</p>
-              <p className="ui-metric-value mt-3 text-app-accent">
-                € {totalIncome.toFixed(2)}
-              </p>
-              <p className="mt-1 text-sm text-app-muted">
-                {payingAthleteCount} betalende atleten
-              </p>
-            </div>
-          ) : null,
-          pending: (
-            <div className="ui-panel">
-              <p className="ui-label">Openstaande aanmeldingen</p>
-              <p className="ui-metric-value mt-3 text-app-text">
-                {pendingCount}
-              </p>
-              <Link
-                href="/athletes"
-                className="mt-3 inline-block text-sm font-medium text-app-accent hover:underline"
-              >
-                Naar atleten beheren →
-              </Link>
-            </div>
-          ),
-          todo: (
-            <div className="ui-panel">
-              <p className="ui-label">Openstaande taken</p>
-              <p className="ui-metric-value mt-3 text-app-text">
-                {openTodoCount}
-              </p>
-              <Link
-                href="/todo"
-                className="mt-3 inline-block text-sm font-medium text-app-accent hover:underline"
-              >
-                Naar to-do →
-              </Link>
-            </div>
-          ),
-          copilot: (
-            <CoachAiCopilotWidget coachId={userId} role={role} />
-          ),
-          alerts: (
-            <CoachAlertsWidget coachId={userId} role={role} />
-          ),
-          athletes: (
-            <div className="ui-panel">
-              <p className="ui-label">Mijn atleten</p>
-              <p className="ui-metric-value mt-3 text-app-text">
-                {athletes.length}
-              </p>
-              <ul className="mt-3 space-y-1">
-                {athletes.slice(0, 5).map((athlete) => (
-                  <li key={athlete.id}>
-                    <Link
-                      href={`/athletes/${athlete.id}`}
-                      className="text-sm font-medium text-app-accent hover:underline"
-                    >
-                      {athlete.full_name || "Naamloos"}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-              {athletes.length > 5 && (
-                <Link
-                  href="/athletes"
-                  className="mt-2 inline-block text-xs font-semibold text-app-muted hover:underline"
-                >
-                  + {athletes.length - 5} meer
-                </Link>
-              )}
-            </div>
-          ),
-          quicklinks: (
-            <div className="ui-panel">
-              <p className="ui-label mb-3">Snelkoppelingen</p>
-              <div className="flex flex-wrap gap-2">
-                <Link href="/athletes" className="app-btn-secondary text-xs">
-                  Atleten hub
-                </Link>
-                <Link href="/athletes" className="app-btn-secondary text-xs">
-                  Invulscore
-                </Link>
-                <Link href="/data" className="app-btn-secondary text-xs">
-                  Data
-                </Link>
-                <Link href="/leaderboard" className="app-btn-secondary text-xs">
-                  Leaderboard
-                </Link>
-              </div>
-            </div>
-          ),
-        }}
+    <div className="dashboard-cockpit premium-coach-dashboard w-full min-w-0">
+      <CoachCockpitHeader
+        fullName={fullName}
+        athleteCount={coachMetrics.athleteCount}
       />
 
-      <div className="flex justify-center border-t border-app-border/60 pt-6 pb-2">
-        <button
-          type="button"
-          onClick={() => setDashboardEditing((value) => !value)}
-          className={`dashboard-edit-btn app-focus-ring ${
-            dashboardEditing ? "dashboard-edit-btn-active" : ""
-          }`}
-        >
-          {dashboardEditing ? "Klaar met layout" : "Layout aanpassen"}
-        </button>
+      <CoachDashboardApps
+        userId={userId}
+        openTodoCount={openTodoCount}
+        pendingAthleteCount={pendingCount}
+      />
+
+      <div className="dashboard-cockpit-kpi">
+        <CoachDashboardKpiRow
+          coachId={userId}
+          role={role}
+          athleteCount={coachMetrics.athleteCount}
+          activeAthleteCount={coachMetrics.activeAthletes}
+          openTodoCount={openTodoCount}
+          unreadMessages={coachMetrics.unreadMessages}
+        />
       </div>
+
+      <div className="dashboard-cockpit-main">
+        <div className="dashboard-cockpit-col dashboard-cockpit-col--focus">
+          <TodaysFocusWidget coachId={userId} athletes={athletes} />
         </div>
 
-        <aside className="dashboard-coach-agenda-rail">
+        <div className="dashboard-cockpit-col dashboard-cockpit-col--center">
+          <div className="dashboard-cockpit-panel dashboard-cockpit-panel--quick premium-card glass-accent-card">
+            <p className="dashboard-cockpit-panel-label">Snelle acties</p>
+            <CoachDashboardQuickActions variant="cockpit" />
+          </div>
+          <div className="dashboard-cockpit-panel dashboard-cockpit-panel--inbox dashboard-cockpit-panel--inbox-desktop premium-card glass-accent-card">
+            <CoachInboxPanel items={inboxItems} compact />
+          </div>
+          <div className="dashboard-cockpit-panel dashboard-cockpit-panel--alerts">
+            <CoachAttentionWidget coachId={userId} role={role} compact />
+            <CoachAlertsWidget coachId={userId} role={role} />
+          </div>
+        </div>
+
+        <div className="dashboard-cockpit-col dashboard-cockpit-col--agenda">
           <TodayAgendaTimeline coachId={userId} variant="rail" />
-        </aside>
+        </div>
       </div>
+
+      <div className="dashboard-cockpit-bottom">
+        <div className="dashboard-cockpit-bottom-primary">
+          <CoachInboxPanel items={inboxItems} compact />
+          <div className="dashboard-cockpit-retention min-h-0">
+            <RetentionStatsWidget coachId={userId} role={role} />
+          </div>
+        </div>
+
+        <div className="dashboard-cockpit-secondary">
+          <div className="dashboard-cockpit-secondary-item">
+            <FocusAreasWidget coachId={userId} role={role} />
+          </div>
+          <div className="dashboard-cockpit-secondary-item">
+            <ClientNotesWidget coachId={userId} role={role} />
+          </div>
+          <div className="dashboard-cockpit-secondary-item">
+            <CoachAiCopilotWidget coachId={userId} role={role} />
+          </div>
+        </div>
+      </div>
+
+      <CoachMobileAgendaSheet coachId={userId} />
     </div>
   ) : null;
 
   return (
-    <AppShell>
+    <AppShell contentClassName="app-page-content dashboard-page-content px-2 md:px-3 lg:px-4">
       {isCoachLikeRole(role) ? coachContent : athleteContent}
     </AppShell>
   );

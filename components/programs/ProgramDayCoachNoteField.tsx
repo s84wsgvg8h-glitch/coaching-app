@@ -82,7 +82,7 @@ export default function ProgramDayCoachNoteField({
           }
           rows={2}
           placeholder="Notities voor deze trainingsdag..."
-          className="mt-2 w-full rounded-lg border border-violet-200 bg-white px-2 py-1.5 text-sm outline-none focus:ring-2 focus:ring-violet-400"
+          className="mt-2 w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-1.5 text-sm text-app-text outline-none focus:border-app-accent"
         />
       ) : (
         <p className="mt-1 whitespace-pre-wrap text-sm text-violet-950">{note}</p>

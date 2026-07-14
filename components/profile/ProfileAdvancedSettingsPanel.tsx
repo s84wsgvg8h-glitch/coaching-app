@@ -105,7 +105,7 @@ export default function ProfileAdvancedSettingsPanel({
         </p>
       </div>
 
-      <div className="rounded-2xl border border-app-border bg-white p-4">
+      <div className="rounded-2xl border border-app-border bg-app-surface p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
             <p className="text-sm font-bold text-app-text">e1RM na elke set</p>
@@ -128,7 +128,7 @@ export default function ProfileAdvancedSettingsPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-app-border bg-white">
+      <div className="rounded-2xl border border-app-border bg-app-surface">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
             <p className="text-sm font-bold text-app-text">Meet-checklist</p>
@@ -144,7 +144,7 @@ export default function ProfileAdvancedSettingsPanel({
               <button
                 type="button"
                 onClick={() => void resetToGlobal()}
-                className="rounded-xl border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50"
+                className="rounded-xl border border-app-border px-3 py-1.5 text-xs font-semibold text-app-muted hover:bg-app-surface-hover"
               >
                 Terug naar algemene checklist
               </button>

@@ -1,0 +1,329 @@
+/* Athlete dashboard desktop cockpit — matches coach shell layout (lg+) */
+
+@media (min-width: 1024px) {
+  .premium-athlete-ui .mobile-scroll:has(.athlete-dashboard-cockpit) {
+    overflow: hidden;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+
+  .athlete-dashboard-cockpit {
+    display: flex;
+    height: calc(100dvh - var(--coach-shell-topbar-height) - 0.9rem);
+    max-height: calc(100dvh - var(--coach-shell-topbar-height) - 0.9rem);
+    min-height: 0;
+    flex-direction: column;
+    gap: var(--dashboard-cockpit-gap);
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-kpi {
+    flex-shrink: 0;
+  }
+
+  .athlete-dashboard-kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: var(--dashboard-cockpit-gap);
+  }
+
+  .athlete-dashboard-kpi-row .dashboard-kpi-card,
+  .athlete-dashboard-kpi-row .athlete-dashboard-kpi-slot {
+    min-height: 88px;
+    height: 100%;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-kpi-slot {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.55rem 0.65rem;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-kpi-slot .athlete-dashboard-card {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    transform: none !important;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-kpi-slot .athlete-dashboard-card::before {
+    display: none;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-kpi-slot .athlete-dashboard-card:hover {
+    transform: none;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-eyebrow {
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-card-desc {
+    display: none;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-fill-layout {
+    margin-top: auto;
+    justify-content: flex-start;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-fill-ring {
+    height: 44px;
+    width: 44px;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-bw-row {
+    margin-top: auto;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-bw-input-shell {
+    min-height: 36px;
+    padding: 0 8px;
+  }
+
+  .athlete-dashboard-kpi-row .athlete-dashboard-log-btn--compact {
+    min-height: 36px;
+    min-width: 48px;
+    padding: 6px 12px;
+    font-size: 11px;
+  }
+
+  .athlete-dashboard-cockpit-grid {
+    display: grid;
+    min-height: 0;
+    flex: 1 1 auto;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.82fr) var(
+        --dashboard-agenda-rail-width
+      );
+    grid-template-rows: minmax(0, 1fr) minmax(0, 0.72fr);
+    gap: var(--dashboard-cockpit-gap);
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-cta {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-inbox {
+    grid-column: 2;
+    grid-row: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-agenda {
+    grid-column: 3;
+    grid-row: 1;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-goals {
+    grid-column: 1;
+    grid-row: 2;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-todos {
+    grid-column: 2 / 4;
+    grid-row: 2;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .athlete-dashboard-cockpit-cta .athlete-dashboard-card--cta-desktop {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 1rem 1.15rem;
+    box-shadow: none;
+  }
+
+  .athlete-dashboard-cockpit-cta .athlete-dashboard-card--cta-desktop::before {
+    display: none;
+  }
+
+  .athlete-dashboard-cockpit-cta .athlete-dashboard-card--cta-desktop:hover {
+    transform: none;
+  }
+
+  .athlete-dashboard-cta-clipboard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 96px;
+    flex-shrink: 0;
+    opacity: 0.35;
+    color: var(--app-accent);
+  }
+
+  .athlete-dashboard-cockpit-goals .athlete-dashboard-card--goals {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.75rem 0.85rem;
+    box-shadow: none;
+  }
+
+  .athlete-dashboard-cockpit-goals .athlete-dashboard-card--goals::before {
+    display: none;
+  }
+
+  .athlete-dashboard-cockpit-goals .athlete-dashboard-card--goals:hover {
+    transform: none;
+  }
+
+  .athlete-dashboard-cockpit-todos .athlete-dashboard-todos-widget {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.65rem 0.75rem;
+    box-shadow: none;
+  }
+
+  .athlete-dashboard-cockpit-todos .athlete-dashboard-todos-widget::before {
+    display: none;
+  }
+
+  .athlete-dashboard-cockpit-todos .athlete-dashboard-todos-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+  }
+
+  .athlete-dashboard-cockpit-agenda .athlete-dashboard-card,
+  .athlete-dashboard-cockpit-agenda .ui-panel-compact {
+    display: flex;
+    height: 100%;
+    min-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.55rem 0.65rem;
+    box-shadow: none;
+  }
+
+  .athlete-dashboard-cockpit-agenda .athlete-dashboard-card::before {
+    display: none;
+  }
+
+  .athlete-inbox-panel {
+    height: 100%;
+    min-height: 0;
+  }
+
+  .athlete-inbox-open-btn {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 9999px;
+    border: 1px solid var(--glass-surface-border);
+    background: var(--app-panel-inset);
+    padding: 0.35rem 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--app-text);
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .athlete-inbox-open-btn:hover {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: var(--app-accent-muted);
+  }
+
+  .athlete-dashboard-cockpit-apps {
+    flex-shrink: 0;
+  }
+
+  .athlete-dashboard-cockpit-apps-label {
+    margin: 0 0 0.35rem;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--app-subtle);
+  }
+
+  .athlete-dashboard-app-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .athlete-dashboard-app-pill {
+    display: inline-flex;
+    min-height: 36px;
+    align-items: center;
+    gap: 0.4rem;
+    border-radius: 9999px;
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.35rem 0.75rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--app-text);
+    text-decoration: none;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .athlete-dashboard-app-pill:hover {
+    border-color: rgba(59, 130, 246, 0.28);
+    background: var(--app-accent-muted);
+  }
+
+  .athlete-dashboard-app-pill svg {
+    height: 14px;
+    width: 14px;
+    color: var(--app-accent);
+  }
+
+  .premium-athlete-ui .shell-topbar--dashboard .shell-topbar-inner {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr) minmax(0, 1fr);
+  }
+
+  .premium-athlete-ui .athlete-app-layout {
+    max-width: none;
+    margin: 0;
+    padding: 0;
+  }
+}

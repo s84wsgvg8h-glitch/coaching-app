@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ToastProps = {
   message: string | null;
@@ -12,11 +13,15 @@ export default function Toast({ message, onDismiss }: ToastProps) {
 
   useEffect(() => {
     if (!message) {
-      setVisible(false);
+      deferEffectUpdate(() => {
+        setVisible(false);
+      });
       return;
     }
 
-    setVisible(true);
+    deferEffectUpdate(() => {
+      setVisible(true);
+    });
     const timer = window.setTimeout(() => {
       setVisible(false);
       onDismiss?.();

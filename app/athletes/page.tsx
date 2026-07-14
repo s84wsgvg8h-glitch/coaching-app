@@ -5,6 +5,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import { useAuth } from "@/components/AuthProvider";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import {
   buildCoachInviteUrl,
@@ -31,9 +32,8 @@ function AthletesPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab");
+  const { userId, role, loading: authLoading } = useAuth();
 
-  const [userId, setUserId] = useState("");
-  const [role, setRole] = useState("");
   const [profiles, setProfiles] = useState<Profile[]>([]);
   const [inviteLinks, setInviteLinks] = useState<CoachInviteLink[]>([]);
   const [creatingLink, setCreatingLink] = useState(false);
@@ -48,38 +48,20 @@ function AthletesPageContent() {
 
   useEffect(() => {
     document.title = "Atleten";
-
-    async function init() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
-
-      setUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      const viewerRole = profile?.role || "";
-      setRole(viewerRole);
-
-      if (viewerRole !== "coach" && viewerRole !== "admin") {
-        window.location.href = "/dashboard";
-        return;
-      }
-
-      await loadProfiles(viewerRole, user.id);
-    }
-
-    void init();
   }, []);
+
+  useEffect(() => {
+    if (authLoading) return;
+    if (!userId) {
+      window.location.href = "/login";
+      return;
+    }
+    if (role !== "coach" && role !== "admin") {
+      router.replace("/dashboard");
+      return;
+    }
+    void loadProfiles(role, userId);
+  }, [authLoading, role, router, userId]);
 
   async function loadProfiles(viewerRole: string, viewerId: string) {
     let query = supabase.from("profiles").select("*").order("created_at", {
@@ -208,6 +190,16 @@ function AthletesPageContent() {
     id: profile.id,
     fullName: profile.full_name || "Geen naam",
   }));
+
+  if (authLoading || !userId) {
+    return (
+      <AppShell contentClassName="!px-0 md:!px-0 lg:!px-0">
+        <AthletesCrmLayout>
+          <SkeletonCard />
+        </AthletesCrmLayout>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell contentClassName="!px-0 md:!px-0 lg:!px-0">

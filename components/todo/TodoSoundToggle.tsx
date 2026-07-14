@@ -12,7 +12,7 @@ export default function TodoSoundToggle({
   onChange,
 }: TodoSoundToggleProps) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-1.5">
+    <div className="flex items-center gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-1.5">
       {enabled ? (
         <Volume2 className="h-3.5 w-3.5 text-app-muted" aria-hidden="true" />
       ) : (
@@ -26,7 +26,7 @@ export default function TodoSoundToggle({
         aria-label="Taak-geluiden"
         onClick={() => onChange(!enabled)}
         className={`relative h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ${
-          enabled ? "bg-[#3b82f6]" : "bg-white/12"
+          enabled ? "bg-app-accent" : "bg-app-surface-hover"
         }`}
       >
         <span

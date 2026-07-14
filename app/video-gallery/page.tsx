@@ -4,8 +4,10 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import AthleteProgressTabs from "@/components/data/AthleteProgressTabs";
 import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
+import SearchInput from "@/components/ui/SearchInput";
 import ExerciseVideoBadge from "@/components/ExerciseVideoBadge";
 import { supabase } from "@/lib/supabaseClient";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type Athlete = {
   id: string;
@@ -135,6 +137,7 @@ function VideoGalleryPageInner() {
   const [moveEnabledSlots, setMoveEnabledSlots] = useState<Record<number, boolean>>({});
   const [comparePlayingByVideoId, setComparePlayingByVideoId] = useState<Record<string, boolean>>({});
   const [compareProgressByVideoId, setCompareProgressByVideoId] = useState<Record<string, number>>({});
+  const [compareDurationByVideoId, setCompareDurationByVideoId] = useState<Record<string, number>>({});
   const [videoTransforms, setVideoTransforms] = useState<Record<string, VideoTransform>>({});
 
   const compareVideoRefs = useRef<Record<string, HTMLVideoElement | null>>({});
@@ -146,25 +149,6 @@ function VideoGalleryPageInner() {
     baseX: number;
     baseY: number;
   } | null>(null);
-
-  useEffect(() => {
-    loadProfileAndAthletes();
-  }, []);
-
-  useEffect(() => {
-    if (selectedAthleteId) {
-      loadWeekFilters(selectedAthleteId);
-      loadVideos(selectedAthleteId);
-    }
-  }, [selectedAthleteId]);
-
-  useEffect(() => {
-    videos.slice(0, 24).forEach((video) => {
-      if (video.video_url && !thumbnailByVideoId[video.id]) {
-        captureFirstFrame(video);
-      }
-    });
-  }, [videos]);
 
   async function loadProfileAndAthletes() {
     setLoading(true);
@@ -543,6 +527,28 @@ function VideoGalleryPageInner() {
     }
   }
 
+  useEffect(() => {
+    deferEffectUpdate(() => {
+      void loadProfileAndAthletes();
+    });
+  }, []);
+
+  useEffect(() => {
+    if (!selectedAthleteId) return;
+    deferEffectUpdate(() => {
+      void loadWeekFilters(selectedAthleteId);
+      void loadVideos(selectedAthleteId);
+    });
+  }, [selectedAthleteId]);
+
+  useEffect(() => {
+    videos.slice(0, 24).forEach((video) => {
+      if (video.video_url && !thumbnailByVideoId[video.id]) {
+        void captureFirstFrame(video);
+      }
+    });
+  }, [videos, thumbnailByVideoId]);
+
   function cleanValue(value: string | null | undefined) {
     return (value || "").toString().trim();
   }
@@ -875,23 +881,16 @@ function VideoGalleryPageInner() {
     const transform = selectedVideo ? getVideoTransform(selectedVideo.id) : defaultTransform;
 
     return (
-      <div className="min-w-0 rounded-3xl bg-white p-2 shadow-xl">
+      <div className="min-w-0 rounded-3xl border border-app-border bg-app-surface p-2 shadow-xl">
         <div className="relative mb-3">
-          <input
+          <SearchInput
             value={query}
-            onChange={(e) => updateCompareSearch(slot, e.target.value)}
+            onChange={(next) => updateCompareSearch(slot, next)}
             placeholder="Zoek: squat, rpe 7, 5 reps, 120 kg, b1w1"
-            className="w-full rounded-2xl border bg-white px-4 py-3 pr-11 text-black outline-none"
+            variant="rounded"
+            tone="light"
+            className="w-full"
           />
-
-          {query && (
-            <button
-              onClick={() => updateCompareSearch(slot, "")}
-              className="absolute right-3 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-gray-100 text-sm font-bold text-gray-600 hover:bg-gray-200"
-            >
-              ×
-            </button>
-          )}
         </div>
 
         <div className="mb-3 grid max-h-[260px] grid-cols-2 gap-2 overflow-y-auto pr-2">
@@ -941,6 +940,13 @@ function VideoGalleryPageInner() {
                 style={{
                   transform: `translate(${transform.x}px, ${transform.y}px) scale(${transform.scale})`,
                   transformOrigin: "center center",
+                }}
+                onLoadedMetadata={(event) => {
+                  const duration = event.currentTarget.duration || 0;
+                  setCompareDurationByVideoId((current) => ({
+                    ...current,
+                    [selectedVideo.id]: duration,
+                  }));
                 }}
                 onTimeUpdate={(e) => {
                   setCompareProgressByVideoId((current) => ({
@@ -1019,7 +1025,7 @@ function VideoGalleryPageInner() {
                   <input
                     type="range"
                     min="0"
-                    max={compareVideoRefs.current[selectedVideo.id]?.duration || 0}
+                    max={compareDurationByVideoId[selectedVideo.id] || 0}
                     step="0.01"
                     value={compareProgressByVideoId[selectedVideo.id] || 0}
                     onChange={(e) => handleCompareSeek(selectedVideo.id, e.target.value)}
@@ -1133,23 +1139,13 @@ function VideoGalleryPageInner() {
 
             {!compareMode && (
               <div className="app-card mb-5 space-y-4 p-4">
-                <div className="relative">
-                  <input
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                    placeholder="Zoek oefening, RPE, reps, gewicht, block..."
-                    className="w-full rounded-xl border border-app-border bg-app-surface px-4 py-2.5 pr-10 text-sm outline-none app-focus-ring"
-                  />
-                  {search ? (
-                    <button
-                      type="button"
-                      onClick={() => setSearch("")}
-                      className="absolute right-2 top-1/2 flex h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full bg-app-surface-muted text-sm font-bold text-app-muted"
-                    >
-                      ×
-                    </button>
-                  ) : null}
-                </div>
+                <SearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Zoek oefening, RPE, reps, gewicht, block..."
+                  variant="rounded"
+                  className="w-full"
+                />
 
                 <div className="flex flex-wrap gap-2">
                   {[
@@ -1192,9 +1188,9 @@ function VideoGalleryPageInner() {
             )}
 
           {loading ? (
-            <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">Laden...</div>
+            <div className="app-card p-8 text-center text-app-muted">Laden...</div>
           ) : loadingVideos ? (
-            <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">Video&apos;s laden...</div>
+            <div className="app-card p-8 text-center text-app-muted">Video&apos;s laden...</div>
           ) : compareMode ? (
             <div
               className={`grid gap-2 overflow-x-auto ${
@@ -1207,7 +1203,7 @@ function VideoGalleryPageInner() {
               {compareCount >= 4 && renderComparePane(3)}
             </div>
           ) : visibleVideos.length === 0 ? (
-            <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">Geen video&apos;s gevonden.</div>
+            <div className="app-card p-8 text-center text-app-muted">Geen video&apos;s gevonden.</div>
           ) : (
             <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
               {visibleVideos.map((video) => renderVideoCard(video))}

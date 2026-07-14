@@ -11,6 +11,7 @@ import {
 } from "@/lib/chatUnread";
 import { getChatReturnRoute } from "@/lib/chatNavigation";
 import { useAuth } from "@/components/AuthProvider";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type AppSidebarProps = {
   className?: string;
@@ -56,7 +57,9 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
   }, [pathname, userId]);
 
   useEffect(() => {
-    setChatHref(getChatReturnRoute());
+    deferEffectUpdate(() => {
+      setChatHref(getChatReturnRoute());
+    });
   }, [pathname]);
 
   useEffect(() => {
@@ -70,7 +73,9 @@ export default function AppSidebar({ className = "" }: AppSidebarProps) {
   }, []);
 
   useEffect(() => {
-    setMenuOpen(false);
+    deferEffectUpdate(() => {
+      setMenuOpen(false);
+    });
   }, [pathname]);
 
   useEffect(() => {

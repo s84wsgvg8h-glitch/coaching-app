@@ -1,5 +1,5 @@
 const STORAGE_KEY = "coach-dashboard-widget-layout";
-export const DASHBOARD_LAYOUT_VERSION = 10;
+export const DASHBOARD_LAYOUT_VERSION = 13;
 
 export const COACH_WIDGET_CATALOG = {
   apps: {
@@ -112,6 +112,26 @@ export const COACH_WIDGET_CATALOG = {
     description: "Openstaande video reviews",
     icon: "🎥",
   },
+  retention: {
+    label: "Team voortgang",
+    description: "Invulscore en retentie van je team",
+    icon: "📊",
+  },
+  sessions: {
+    label: "Sessies deze week",
+    description: "Geplande afspraken en gelogde trainingen",
+    icon: "📅",
+  },
+  focusAreas: {
+    label: "Focusgebieden",
+    description: "Breakdown van team engagement",
+    icon: "🎯",
+  },
+  clientNotes: {
+    label: "Cliëntnotities",
+    description: "Recente oefening- en check-in notities",
+    icon: "📝",
+  },
 } as const;
 
 export type CoachWidgetId = keyof typeof COACH_WIDGET_CATALOG;
@@ -127,7 +147,17 @@ export type StoredCoachWidgetLayout = {
   items: CoachWidgetLayoutItem[];
 };
 
-export const DEFAULT_COACH_WIDGET_LAYOUT: CoachWidgetLayoutItem[] = [];
+export const DEFAULT_COACH_WIDGET_LAYOUT: CoachWidgetLayoutItem[] = [
+  { id: "inbox", width: "half" },
+  { id: "retention", width: "half" },
+  { id: "focusAreas", width: "half" },
+  { id: "clientNotes", width: "full" },
+  { id: "copilot", width: "half" },
+  { id: "alerts", width: "half" },
+];
+
+/** Fixed dashboard layout — no user customization. */
+export const FIXED_COACH_DASHBOARD_LAYOUT = DEFAULT_COACH_WIDGET_LAYOUT;
 
 function isValidLayoutItem(item: unknown): item is CoachWidgetLayoutItem {
   if (!item || typeof item !== "object") return false;
@@ -209,6 +239,7 @@ export function resolveCoachWidgetLayout(
   const items = sanitizeLayout(
     Array.isArray(stored) ? stored : stored?.items,
   );
+  if (items.length === 0) return DEFAULT_COACH_WIDGET_LAYOUT;
   return items;
 }
 

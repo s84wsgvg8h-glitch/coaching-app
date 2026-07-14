@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/adminApiAuth";
 import { getAppUrl, getAuthRedirectUrls } from "@/lib/appUrl";
+import { adminConfigureAuthSchema, parseJsonBody } from "@/lib/apiValidation";
 
 const PROJECT_REF = "dgryvmvfwyixscidmzrc";
 
@@ -21,10 +22,12 @@ export async function POST(request: Request) {
     );
   }
 
-  const body = (await request.json().catch(() => ({}))) as {
-    siteUrl?: string;
-  };
-  const appUrl = (body.siteUrl?.trim() || getAppUrl()).replace(/\/$/, "");
+  const parsed = await parseJsonBody(request, adminConfigureAuthSchema);
+  if (!parsed.success) {
+    return parsed.response;
+  }
+
+  const appUrl = (parsed.data.siteUrl?.trim() || getAppUrl()).replace(/\/$/, "");
   const redirectUrls = getAuthRedirectUrls().map((url) =>
     url.replace("https://limitlesscoaching.app", appUrl).replace(
       "https://coaching-app-tan.vercel.app",

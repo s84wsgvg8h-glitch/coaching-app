@@ -51,7 +51,7 @@ export default function ExerciseVideoMessage({
         <button
           type="button"
           onClick={() => setFullscreenOpen(true)}
-          className="relative block w-full overflow-hidden rounded-[16px] text-left"
+          className="chat-media-card relative block w-full overflow-hidden text-left"
           aria-label={`Video openen: ${payload.exerciseName}`}
         >
           <ExerciseVideoBadge
@@ -63,7 +63,7 @@ export default function ExerciseVideoMessage({
             <img
               src={payload.thumbnailUrl}
               alt={`${payload.exerciseName} set ${payload.setNumber}`}
-              className="max-h-80 w-full object-cover"
+              className="max-h-[35dvh] w-full object-cover"
               loading="lazy"
             />
           ) : (

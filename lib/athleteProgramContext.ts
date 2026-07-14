@@ -35,7 +35,7 @@ export async function loadAthleteProgramPosition(
   const today = new Date();
   today.setHours(12, 0, 0, 0);
 
-  let currentBlock =
+  const currentBlock =
     [...blocks]
       .reverse()
       .find((block) => {

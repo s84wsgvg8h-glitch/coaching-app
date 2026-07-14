@@ -4,9 +4,8 @@ import type { ReactNode } from "react";
 import { useState } from "react";
 import AdminTabNav, { type AdminTabId } from "@/components/admin/AdminTabNav";
 import AdminTopBar from "@/components/admin/AdminTopBar";
-import CommandPalette, {
-  useCommandPaletteHotkey,
-} from "@/components/dashboard/CommandPalette";
+import CommandPalette from "@/components/dashboard/CommandPalette";
+import { useCommandPaletteHotkey } from "@/hooks/useCommandPaletteHotkey";
 
 type AdminAppShellProps = {
   activeTab: AdminTabId;

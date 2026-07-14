@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Package, Search, Truck } from "lucide-react";
+import { Package, Truck } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import MerchMetricCard from "@/components/merch/MerchMetricCard";
 import MerchPickupList from "@/components/merch/MerchPickupList";
 import OrderDetailDrawer from "@/components/merch/OrderDetailDrawer";
@@ -265,15 +266,13 @@ export default function MerchOrdersTab({
             </div>
           ) : null}
 
-          <div className="relative mb-4">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-app-muted" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Zoek op atleet, product, order-ID of maat..."
-              className="ui-auth-input w-full pl-10"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Zoek op atleet, product, order-ID of maat..."
+            variant="rounded"
+            className="mb-4 w-full"
+          />
 
           {loading ? (
             <div className="grid gap-2">

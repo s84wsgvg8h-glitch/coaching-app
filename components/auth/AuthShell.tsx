@@ -1,7 +1,6 @@
 "use client";
 
 import type { ReactNode } from "react";
-import ThemeToggle from "@/components/ThemeToggle";
 
 type AuthShellProps = {
   title: string;
@@ -17,11 +16,8 @@ export default function AuthShell({
   footer,
 }: AuthShellProps) {
   return (
-    <main className="auth-shell relative flex min-h-[100dvh] items-center justify-center overflow-hidden px-4 py-8 pt-safe pb-safe">
+    <main className="auth-shell relative flex h-full min-h-0 w-full flex-col items-center justify-center overflow-y-auto overscroll-contain px-4 py-6 pb-safe sm:min-h-[100dvh] sm:py-8">
       <div className="auth-shell-glow pointer-events-none" aria-hidden="true" />
-      <div className="absolute right-4 top-4 z-10 pt-safe sm:right-6 sm:top-6">
-        <ThemeToggle compact />
-      </div>
       <div className="ui-auth-card animate-fade-in w-full max-w-[420px]">
         <p className="text-[12px] font-medium tracking-wide text-app-accent">
           Limitless Coaching

@@ -12,6 +12,10 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Build / native artifacts (not app source)
+    ".vercel/**",
+    "ios/**",
+    "capacitor-www/**",
   ]),
 ]);
 

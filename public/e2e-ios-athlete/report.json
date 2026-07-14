@@ -1,0 +1,72 @@
+[
+  {
+    "section": "login-layout",
+    "ok": true,
+    "detail": "form top=0px"
+  },
+  {
+    "section": "login",
+    "ok": true,
+    "detail": "→ https://limitlesscoaching.app/dashboard"
+  },
+  {
+    "section": "dashboard-bw",
+    "ok": true,
+    "detail": "root Δ0px (659→659)"
+  },
+  {
+    "section": "todos-quicklinks",
+    "ok": true,
+    "detail": "overlap 0px"
+  },
+  {
+    "section": "dark-layout-meta",
+    "ok": true,
+    "detail": "ok"
+  },
+  {
+    "section": "dark-segments",
+    "ok": true,
+    "detail": "ok"
+  },
+  {
+    "section": "dark-quicknav-tab-gap",
+    "ok": true,
+    "detail": "gap=12px"
+  },
+  {
+    "section": "light-layout-meta",
+    "ok": true,
+    "detail": "fill=false bw=false"
+  },
+  {
+    "section": "light-segments",
+    "ok": true,
+    "detail": "segments=false"
+  },
+  {
+    "section": "light-todos-layout",
+    "ok": true,
+    "detail": "flex"
+  },
+  {
+    "section": "light-quicknav",
+    "ok": true,
+    "detail": "grid cards=4"
+  },
+  {
+    "section": "light-quicknav-tab-gap",
+    "ok": true,
+    "detail": "gap=12px"
+  },
+  {
+    "section": "chat-header",
+    "ok": true,
+    "detail": "top=0"
+  },
+  {
+    "section": "chat-compose",
+    "ok": true,
+    "detail": "bottom=325 vv=362 sync=true"
+  }
+]

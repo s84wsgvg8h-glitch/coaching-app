@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import LegalPageShell from "@/components/legal/LegalPageShell";
+import { getSupportEmail, getSupportMailto } from "@/lib/supportContact";
 
 export const metadata: Metadata = {
   title: "Privacybeleid · Limitless Coaching",
@@ -64,8 +65,9 @@ export default function PrivacyPage() {
         <h2 className="text-lg font-semibold">6. Jouw rechten</h2>
         <p className="mt-2 text-app-muted">
           Je hebt recht op inzage, rectificatie, verwijdering, beperking,
-          dataportabiliteit en bezwaar. Neem contact op via je coach of
-          platformbeheerder om een verzoek in te dienen.
+          dataportabiliteit en bezwaar. Je kunt je account zelf verwijderen via
+          Profiel → Account → Account verwijderen. Voor andere verzoeken kun je
+          contact opnemen via je coach of platformbeheerder.
         </p>
       </section>
 
@@ -81,8 +83,15 @@ export default function PrivacyPage() {
       <section>
         <h2 className="text-lg font-semibold">8. Contact</h2>
         <p className="mt-2 text-app-muted">
-          Vragen over privacy? Neem contact op via je coach of het admin-team van
-          Limitless Coaching.
+          Vragen over privacy? Neem contact op via{" "}
+          <a href={getSupportMailto()} className="font-medium text-app-text underline">
+            {getSupportEmail()}
+          </a>{" "}
+          of onze{" "}
+          <a href="/support" className="font-medium text-app-text underline">
+            supportpagina
+          </a>
+          .
         </p>
       </section>
     </LegalPageShell>

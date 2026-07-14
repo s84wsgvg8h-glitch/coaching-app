@@ -29,6 +29,7 @@ import {
   removeExerciseLibraryStorage,
   uploadExerciseLibraryVideo,
 } from "@/lib/exerciseLibraryVideos";
+import { toStorageMetadata } from "@/lib/storage/types";
 import ExerciseVideoRecorder from "@/components/ExerciseVideoRecorder";
 import ExerciseLibraryVideoModal from "@/components/ExerciseLibraryVideoModal";
 
@@ -45,6 +46,11 @@ function emptyDraft(): Omit<
     video_url: "",
     video_path: "",
     thumbnail_url: "",
+    storage_provider: "supabase",
+    storage_bucket: null,
+    storage_path: null,
+    storage_content_type: null,
+    storage_size_bytes: null,
     active: true,
     sort_order: 0,
   };
@@ -294,7 +300,7 @@ export default function ExerciseLibraryPage() {
     setUploadingVideo(true);
     setMessage("");
 
-    const { videoUrl, videoPath, thumbnailUrl, error } =
+    const { videoUrl, videoPath, thumbnailUrl, storage, error } =
       await uploadExerciseLibraryVideo(userId, file);
 
     setUploadingVideo(false);
@@ -305,14 +311,20 @@ export default function ExerciseLibraryPage() {
     }
 
     if (draft.video_path && draft.video_path !== videoPath) {
-      await removeExerciseLibraryStorage([draft.video_path]);
+      await removeExerciseLibraryStorage([draft.video_path], {
+        provider: draft.storage_provider,
+        bucket: draft.storage_bucket || undefined,
+      });
     }
+
+    const storageMeta = storage ? toStorageMetadata(storage) : null;
 
     setDraft((current) => ({
       ...current,
       video_url: videoUrl,
       video_path: videoPath,
       thumbnail_url: thumbnailUrl || current.thumbnail_url,
+      ...(storageMeta || {}),
     }));
   }
 
@@ -413,7 +425,7 @@ export default function ExerciseLibraryPage() {
           <button
             type="button"
             onClick={() => setShowCreateForm(true)}
-            className="mb-6 rounded-2xl bg-black px-5 py-3 text-sm font-semibold text-white hover:bg-gray-900"
+            className="app-btn-primary app-focus-ring mb-6"
           >
             Nieuwe oefening aanmaken
           </button>
@@ -422,9 +434,9 @@ export default function ExerciseLibraryPage() {
         {isCoach && showCreateForm && (
           <form
             onSubmit={handleSubmit}
-            className="mb-6 rounded-3xl bg-white p-5 shadow-xl"
+            className="app-card mb-6 p-5"
           >
-            <h2 className="mb-4 text-lg font-bold">
+            <h2 className="mb-4 text-lg font-bold text-app-text">
               {editingId ? "Oefening bewerken" : "Nieuwe oefening"}
             </h2>
 
@@ -438,7 +450,7 @@ export default function ExerciseLibraryPage() {
                   }))
                 }
                 placeholder="Oefeningnaam"
-                className="rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
                 required
               />
 
@@ -451,7 +463,7 @@ export default function ExerciseLibraryPage() {
                     subcategory: "",
                   }))
                 }
-                className="rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none"
               >
                 {categoryOptions.map((category) => (
                   <option key={category} value={category}>
@@ -470,7 +482,7 @@ export default function ExerciseLibraryPage() {
                   }))
                 }
                 placeholder="Subcategorie (optioneel), bijv. arch"
-                className="rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
               />
               <datalist id="exercise-subcategories">
                 {subcategoryOptions.map((subcategory) => (
@@ -488,7 +500,7 @@ export default function ExerciseLibraryPage() {
                 }
                 placeholder="Uitleg over de oefening"
                 rows={3}
-                className="md:col-span-2 rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="app-focus-ring md:col-span-2 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
               />
 
               <textarea
@@ -501,7 +513,7 @@ export default function ExerciseLibraryPage() {
                 }
                 placeholder="Coaching cues (bijv. brace, knieën uit, etc.)"
                 rows={3}
-                className="md:col-span-2 rounded-xl border border-gray-300 px-4 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="app-focus-ring md:col-span-2 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
               />
 
               <div className="md:col-span-2">
@@ -518,7 +530,7 @@ export default function ExerciseLibraryPage() {
                 />
 
                 {draft.video_url ? (
-                  <div className="rounded-2xl border border-gray-200 bg-gray-50 p-4">
+                  <div className="rounded-2xl border border-app-border bg-app-surface-muted p-4">
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
                       {draft.thumbnail_url ? (
                         <img
@@ -527,15 +539,15 @@ export default function ExerciseLibraryPage() {
                           className="h-24 w-40 rounded-xl object-cover"
                         />
                       ) : (
-                        <div className="flex h-24 w-40 items-center justify-center rounded-xl bg-gray-100 text-sm text-gray-500">
+                        <div className="flex h-24 w-40 items-center justify-center rounded-xl bg-app-surface text-sm text-app-muted">
                           Video klaar
                         </div>
                       )}
                       <div className="flex-1">
-                        <p className="text-sm font-semibold text-black">
+                        <p className="text-sm font-semibold text-app-text">
                           Uitlegvideo geüpload
                         </p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-app-muted">
                           Vervang via filmrol of maak een nieuwe video.
                         </p>
                       </div>
@@ -544,14 +556,14 @@ export default function ExerciseLibraryPage() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-white"
+                        className="app-btn-secondary text-sm"
                       >
                         Haal uit filmrol
                       </button>
                       <button
                         type="button"
                         onClick={() => setRecorderOpen(true)}
-                        className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white"
+                        className="app-btn-primary text-sm"
                       >
                         Maak video
                       </button>
@@ -563,13 +575,13 @@ export default function ExerciseLibraryPage() {
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingVideo}
-                      className="rounded-2xl border-2 border-dashed border-gray-300 bg-white p-5 text-center hover:border-black hover:bg-gray-50 disabled:opacity-60"
+                      className="app-focus-ring rounded-2xl border-2 border-dashed border-app-border bg-app-surface-muted p-5 text-center transition hover:border-app-accent/40 hover:bg-app-surface-hover disabled:opacity-60"
                     >
                       <span className="text-3xl">▣</span>
-                      <p className="mt-2 text-sm font-semibold text-black">
+                      <p className="mt-2 text-sm font-semibold text-app-text">
                         Haal uit filmrol
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-app-muted">
                         Kies een bestaande video
                       </p>
                     </button>
@@ -577,13 +589,13 @@ export default function ExerciseLibraryPage() {
                       type="button"
                       onClick={() => setRecorderOpen(true)}
                       disabled={uploadingVideo}
-                      className="rounded-2xl border-2 border-dashed border-gray-300 bg-white p-5 text-center hover:border-black hover:bg-gray-50 disabled:opacity-60"
+                      className="app-focus-ring rounded-2xl border-2 border-dashed border-app-border bg-app-surface-muted p-5 text-center transition hover:border-app-accent/40 hover:bg-app-surface-hover disabled:opacity-60"
                     >
                       <span className="text-3xl">🎥</span>
-                      <p className="mt-2 text-sm font-semibold text-black">
+                      <p className="mt-2 text-sm font-semibold text-app-text">
                         Maak video
                       </p>
-                      <p className="mt-1 text-xs text-gray-500">
+                      <p className="mt-1 text-xs text-app-muted">
                         Zelfde camera als atleten
                       </p>
                     </button>
@@ -591,11 +603,11 @@ export default function ExerciseLibraryPage() {
                 )}
 
                 {uploadingVideo && (
-                  <p className="mt-2 text-sm text-gray-500">Video uploaden...</p>
+                  <p className="mt-2 text-sm text-app-muted">Video uploaden...</p>
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-semibold text-gray-700">
+              <label className="flex items-center gap-2 text-sm font-semibold text-app-text">
                 <input
                   type="checkbox"
                   checked={draft.active}
@@ -614,7 +626,7 @@ export default function ExerciseLibraryPage() {
               <button
                 type="submit"
                 disabled={saving || uploadingVideo}
-                className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+                className="app-btn-primary disabled:opacity-60"
               >
                 {saving
                   ? "Opslaan..."
@@ -625,14 +637,14 @@ export default function ExerciseLibraryPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+                className="app-btn-secondary"
               >
                 Annuleren
               </button>
             </div>
 
             {message && (
-              <p className="mt-3 text-sm font-semibold text-gray-600">{message}</p>
+              <p className="mt-3 text-sm font-semibold text-app-muted">{message}</p>
             )}
           </form>
         )}
@@ -643,10 +655,10 @@ export default function ExerciseLibraryPage() {
               key={category}
               type="button"
               onClick={() => setCategoryFilter(category)}
-              className={`rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+              className={`app-focus-ring rounded-full px-3 py-1.5 text-xs font-semibold transition ${
                 categoryFilter === category
-                  ? "bg-black text-white"
-                  : "border border-gray-300 text-gray-600 hover:bg-gray-50"
+                  ? "bg-app-accent text-white"
+                  : "border border-app-border text-app-muted hover:bg-app-surface-hover"
               }`}
             >
               {category}
@@ -655,10 +667,10 @@ export default function ExerciseLibraryPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-gray-500">Laden...</p>
+          <p className="text-sm text-app-muted">Laden...</p>
         ) : filteredItems.length === 0 ? (
-          <div className="rounded-3xl bg-white p-8 text-center shadow-xl">
-            <p className="text-gray-500">
+          <div className="app-card p-8 text-center">
+            <p className="text-app-muted">
               {isCoach
                 ? emptyCategoryMessage(categoryFilter)
                 : categoryFilter === "Alle"
@@ -682,8 +694,8 @@ export default function ExerciseLibraryPage() {
                   setCompactDragImage(event, item.name);
                 }}
                 onDragEnd={() => setDraggingItemId(null)}
-                className={`group relative overflow-hidden rounded-3xl bg-white shadow-xl ${
-                  draggingItemId === item.id ? "opacity-40" : ""
+                className={`group relative overflow-hidden rounded-2xl border border-app-border bg-app-surface transition ${
+                  draggingItemId === item.id ? "opacity-40" : "hover:border-app-accent/30 hover:shadow-lg"
                 } ${isCoach ? "cursor-grab active:cursor-grabbing" : ""}`}
               >
                 <button
@@ -699,47 +711,47 @@ export default function ExerciseLibraryPage() {
                       className="aspect-video w-full object-cover"
                     />
                   ) : (
-                    <div className="flex aspect-video items-center justify-center bg-gray-100 text-4xl">
+                    <div className="flex aspect-video items-center justify-center bg-app-surface-muted text-4xl">
                       🎥
                     </div>
                   )}
                   {!item.active && isCoach && (
-                    <span className="absolute left-3 top-3 z-20 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <span className="absolute left-3 top-3 z-20 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
                       Verborgen
                     </span>
                   )}
                 </button>
 
-                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/50 group-hover:opacity-100">
-                  <span className="rounded-lg bg-black px-3 py-1.5 text-sm font-semibold text-white shadow-lg">
+                <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/60 group-hover:opacity-100">
+                  <span className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
                     Bekijk uitleg
                   </span>
                 </div>
 
                 <div className="relative z-0 p-4">
-                  <p className="text-[11px] font-bold uppercase tracking-wide text-gray-400">
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-app-muted">
                     {item.category}
                   </p>
-                  <h3 className="mt-1 text-lg font-bold text-black">{item.name}</h3>
+                  <h3 className="mt-1 text-base font-bold text-app-text">{item.name}</h3>
                   {item.description && (
-                    <p className="mt-2 line-clamp-2 text-sm text-gray-600">
+                    <p className="mt-1.5 line-clamp-2 text-sm text-app-muted">
                       {item.description}
                     </p>
                   )}
 
                   {isCoach && (
-                    <div className="mt-4 flex gap-2">
+                    <div className="mt-3 flex gap-2">
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className="rounded-xl border border-gray-300 px-3 py-1.5 text-xs font-semibold hover:bg-gray-50"
+                        className="app-focus-ring rounded-lg border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover"
                       >
                         Bewerken
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleDelete(item)}
-                        className="rounded-xl border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-600 hover:bg-red-50"
+                        className="app-focus-ring rounded-lg border border-app-destructive/30 px-3 py-1.5 text-xs font-semibold text-app-destructive transition hover:bg-app-destructive/10"
                       >
                         Verwijderen
                       </button>

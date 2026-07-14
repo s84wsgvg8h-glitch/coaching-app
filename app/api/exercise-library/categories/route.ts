@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { assertCoachLike } from "@/lib/coachApiAuth";
+import {
+  exerciseLibraryCategorySchema,
+  parseJsonBody,
+} from "@/lib/apiValidation";
 import { nextExerciseLibraryCategorySortOrder } from "@/lib/exerciseLibrary";
 
 export async function GET(request: NextRequest) {
@@ -27,19 +31,13 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: access.error }, { status: 403 });
   }
 
-  let body: { name?: string; parentId?: string | null };
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 });
+  const parsed = await parseJsonBody(request, exerciseLibraryCategorySchema);
+  if (!parsed.success) {
+    return parsed.response;
   }
 
-  const name = (body.name || "").trim();
-  if (!name) {
-    return NextResponse.json({ error: "Vul een categorienaam in." }, { status: 400 });
-  }
-
-  const parentId = body.parentId || null;
+  const name = parsed.data.name.trim();
+  const parentId = parsed.data.parentId || null;
 
   let existingQuery = access.db
     .from("exercise_library_categories")

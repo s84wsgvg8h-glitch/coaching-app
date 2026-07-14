@@ -22,11 +22,11 @@ export default function AthletesHeader({
   onInvite,
 }: AthletesHeaderProps) {
   return (
-    <header className="mb-6">
+    <header className="mb-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[28px] font-semibold tracking-tight text-app-text md:text-[34px] md:leading-none">
+            <h1 className="text-[28px] font-bold tracking-tight text-app-text md:text-[34px] md:leading-none">
               Atleten
             </h1>
             {pendingCount > 0 ? (
@@ -35,7 +35,7 @@ export default function AthletesHeader({
               </span>
             ) : null}
           </div>
-          <p className="mt-2 max-w-2xl text-[13px] leading-relaxed text-app-muted md:text-[14px]">
+          <p className="mt-2.5 max-w-2xl text-[13px] leading-relaxed text-app-subtle/90 md:text-[14px]">
             Overzicht van al je atleten en hun voortgang, betalingen en engagement.
           </p>
         </div>

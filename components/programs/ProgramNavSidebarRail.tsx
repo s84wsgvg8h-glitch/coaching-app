@@ -37,6 +37,7 @@ export default function ProgramNavSidebarRail({
           <button
             key={week.id}
             type="button"
+            onMouseDown={(event) => event.preventDefault()}
             onClick={() => onSelectWeek(week.id)}
             className={`program-nav-sidebar-rail-week ${
               week.isActive ? "is-active" : ""

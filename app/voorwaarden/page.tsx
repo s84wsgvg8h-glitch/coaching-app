@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function VoorwaardenPage() {
   return (
-    <LegalPageShell title="Algemene voorwaarden" updated="22 juni 2026">
+    <LegalPageShell title="Algemene voorwaarden" updated="9 juli 2026">
       <section>
         <h2 className="text-lg font-semibold">1. Toepasselijkheid</h2>
         <p className="mt-2 text-app-muted">
@@ -38,7 +38,23 @@ export default function VoorwaardenPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">4. Gebruik van content</h2>
+        <h2 className="text-lg font-semibold">4. Gebruikerscontent en chat</h2>
+        <p className="mt-2 text-app-muted">
+          Chatberichten, video&apos;s en andere uploads zijn user-generated content
+          (UGC). Je bent zelf verantwoordelijk voor wat je deelt. Het is verboden om
+          spam, intimidatie, haatdragende taal, ongepaste content of illegaal materiaal
+          te verspreiden.
+        </p>
+        <p className="mt-2 text-app-muted" id="ugc">
+          Je kunt ongepaste berichten melden via het menu op een bericht of gesprek.
+          Je kunt andere gebruikers blokkeren om geen directe berichten meer te
+          ontvangen. Meldingen worden binnen 24 uur beoordeeld; bij schending kunnen
+          accounts worden gewaarschuwd, opgeschort of verwijderd.
+        </p>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-semibold">5. Gebruik van content</h2>
         <p className="mt-2 text-app-muted">
           Trainingsvideo&apos;s, chatberichten en programma-inhoud blijven eigendom
           van de uploadende gebruiker. Je verleent het platform een beperkte
@@ -48,7 +64,7 @@ export default function VoorwaardenPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">5. Betalingen (merch)</h2>
+        <h2 className="text-lg font-semibold">6. Betalingen (merch)</h2>
         <p className="mt-2 text-app-muted">
           Merch-bestellingen worden verwerkt via Stripe. Prijzen, levering en
           retourbeleid worden bepaald door de coach/organisatie. Limitless
@@ -57,7 +73,7 @@ export default function VoorwaardenPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">6. Aansprakelijkheid</h2>
+        <h2 className="text-lg font-semibold">7. Aansprakelijkheid</h2>
         <p className="mt-2 text-app-muted">
           Coaching en trainingsadvies vallen onder de verantwoordelijkheid van de
           coach. Het platform wordt geleverd &quot;as is&quot;. Wij zijn niet
@@ -67,7 +83,7 @@ export default function VoorwaardenPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">7. Beëindiging</h2>
+        <h2 className="text-lg font-semibold">8. Beëindiging</h2>
         <p className="mt-2 text-app-muted">
           Accounts kunnen worden opgeschort of verwijderd bij schending van deze
           voorwaarden of op verzoek van de gebruiker/beheerder. Na beëindiging
@@ -76,7 +92,7 @@ export default function VoorwaardenPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">8. Wijzigingen</h2>
+        <h2 className="text-lg font-semibold">9. Wijzigingen</h2>
         <p className="mt-2 text-app-muted">
           Wij kunnen deze voorwaarden wijzigen. Bij materiële wijzigingen informeren
           wij gebruikers via het platform. Voortgezet gebruik geldt als

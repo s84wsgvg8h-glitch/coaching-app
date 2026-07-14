@@ -24,17 +24,17 @@ export default function ExerciseFormatBadges({
   return (
     <div className="mb-2 flex flex-wrap gap-1.5">
       {formatLabel ? (
-        <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-bold text-orange-800">
+        <span className="rounded-full bg-orange-500/15 px-2 py-0.5 text-[10px] font-bold text-orange-400">
           {formatLabel}
         </span>
       ) : null}
       {exercise.superset_group?.trim() ? (
-        <span className="rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-bold text-sky-800">
+        <span className="rounded-full bg-sky-500/15 px-2 py-0.5 text-[10px] font-bold text-sky-400">
           Groep {exercise.superset_group.trim()}
         </span>
       ) : null}
       {rest ? (
-        <span className="rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-bold text-gray-700">
+        <span className="rounded-full bg-app-surface-muted px-2 py-0.5 text-[10px] font-bold text-app-muted">
           {rest}
         </span>
       ) : null}

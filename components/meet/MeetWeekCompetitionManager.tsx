@@ -121,11 +121,11 @@ export default function MeetWeekCompetitionManager({
   }
 
   return (
-    <div className="app-card mt-4">
+    <div className="mt-4 rounded-2xl border border-app-border bg-app-surface">
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex w-full items-center justify-between gap-3 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3 text-left"
       >
         <span>
           <span className="block text-sm font-bold text-app-text">

@@ -1,42 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
+import { assertAuthenticatedActive } from "@/lib/apiAuth";
+import {
+  merchValidateDiscountSchema,
+  parseJsonBody,
+} from "@/lib/apiValidation";
 import { validateMerchDiscountForCheckout } from "@/lib/merchDiscounts";
 import { normalizeMerchItem } from "@/lib/merch";
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-
-  if (!token) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const auth = await assertAuthenticatedActive(request);
+  if (auth.error || !auth.user || !auth.supabase) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } },
-  );
+  const { supabase, user } = auth;
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const parsed = await parseJsonBody(request, merchValidateDiscountSchema);
+  if (!parsed.success) {
+    return parsed.response;
   }
 
-  const body = (await request.json()) as {
-    merchItemId?: string;
-    discountCode?: string;
-  };
-
-  if (!body.merchItemId || !body.discountCode?.trim()) {
-    return NextResponse.json(
-      { error: "Product en kortingscode zijn verplicht." },
-      { status: 400 },
-    );
-  }
-
+  const body = parsed.data;
   const { data: athleteProfile } = await supabase
     .from("profiles")
     .select("coach_id")

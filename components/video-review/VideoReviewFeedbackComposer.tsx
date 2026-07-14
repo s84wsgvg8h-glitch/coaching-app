@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Plus, X } from "lucide-react";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
-import { supabase } from "@/lib/supabaseClient";
+import { uploadFileViaApi } from "@/lib/storage/clientUpload";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 export type FeedbackMediaItem = {
   type: "image" | "video" | "uitleg";
@@ -45,8 +46,10 @@ export default function VideoReviewFeedbackComposer({
   const galleryRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    setText(initialText);
-    setMedia(initialMedia);
+    deferEffectUpdate(() => {
+      setText(initialText);
+      setMedia(initialMedia);
+    });
   }, [initialText, initialMedia, reviewId]);
 
   const uitlegQuery = useMemo(() => {
@@ -69,20 +72,25 @@ export default function VideoReviewFeedbackComposer({
   async function uploadFeedbackFile(file: File) {
     setUploading(true);
     try {
-      const extension = file.name.split(".").pop() || "bin";
-      const path = `${coachId}/review-feedback/${reviewId}/${Date.now()}.${extension}`;
-      const { error } = await supabase.storage
-        .from("exercise-videos")
-        .upload(path, file, { upsert: true, contentType: file.type });
+      const result = await uploadFileViaApi({
+        file,
+        filename: file.name,
+        uploadType: "exercise-videos",
+        context: {
+          reviewId,
+        },
+        upsert: true,
+      });
 
-      if (error) throw error;
+      if (result.error || !result.url) {
+        throw result.error || new Error("Upload mislukt");
+      }
 
-      const { data } = supabase.storage.from("exercise-videos").getPublicUrl(path);
       const type = file.type.startsWith("video/") ? "video" : "image";
 
       setMedia((current) => [
         ...current,
-        { type, url: data.publicUrl, title: file.name },
+        { type, url: result.url, title: file.name },
       ]);
     } catch (error) {
       alert(error instanceof Error ? error.message : "Upload mislukt");
@@ -178,8 +186,8 @@ export default function VideoReviewFeedbackComposer({
       </div>
 
       {uitlegSuggestions.length > 0 ? (
-        <div className="rounded-xl border border-violet-200 bg-violet-50 p-2">
-          <p className="px-2 text-xs font-bold uppercase tracking-wide text-violet-800">
+        <div className="rounded-xl border border-app-accent/20 bg-app-accent/5 p-2">
+          <p className="px-2 text-xs font-bold uppercase tracking-wide text-app-accent">
             Uitlegvideo&apos;s
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
@@ -188,7 +196,7 @@ export default function VideoReviewFeedbackComposer({
                 key={item.id}
                 type="button"
                 onClick={() => addUitlegVideo(item)}
-                className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-violet-900 hover:bg-violet-100"
+                className="rounded-full border border-app-border bg-app-surface px-3 py-1 text-xs font-semibold text-app-text hover:bg-app-surface-hover"
               >
                 {item.name}
               </button>
@@ -225,7 +233,7 @@ export default function VideoReviewFeedbackComposer({
                 />
               )}
               {item.title ? (
-                <p className="max-w-[8rem] truncate bg-white px-2 py-1 text-[10px] font-semibold">
+                <p className="max-w-[8rem] truncate bg-app-surface px-2 py-1 text-[10px] font-semibold text-app-text">
                   {item.title}
                 </p>
               ) : null}

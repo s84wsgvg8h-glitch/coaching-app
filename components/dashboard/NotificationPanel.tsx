@@ -17,6 +17,7 @@ import {
 import { countCoachTodosDueToday } from "@/lib/todoDueToday";
 import { loadAthleteCoachChatPreview } from "@/lib/athleteChatPreview";
 import EmptyState from "@/components/ui/EmptyState";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type NotificationPanelProps = {
   open: boolean;
@@ -128,9 +129,11 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
     } else if (isCoachLikeRole(role)) {
       void loadCoachNotifications();
     } else {
-      setInbox([]);
-      setActivity([]);
-      setLoading(false);
+      deferEffectUpdate(() => {
+        setInbox([]);
+        setActivity([]);
+        setLoading(false);
+      });
     }
 
     return () => {
@@ -150,7 +153,11 @@ export default function NotificationPanel({ open, onClose }: NotificationPanelPr
   }, [open, onClose]);
 
   useEffect(() => {
-    if (!open) setFilter("all");
+    if (!open) {
+      deferEffectUpdate(() => {
+        setFilter("all");
+      });
+    }
   }, [open]);
 
   const filteredInbox = useMemo(() => {

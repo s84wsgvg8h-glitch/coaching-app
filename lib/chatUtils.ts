@@ -239,17 +239,10 @@ export function shouldGroupWithPrevious(
 }
 
 export function shouldShowMessageTimestamp(
-  current: ChatMessage,
-  next: ChatMessage | undefined,
+  _current: ChatMessage,
+  _next: ChatMessage | undefined,
 ) {
-  if (!next) return true;
-  if (current.sender_id !== next.sender_id) return true;
-  if (shouldShowDateDivider(next, current)) return true;
-
-  const gap =
-    new Date(next.created_at).getTime() -
-    new Date(current.created_at).getTime();
-  return gap > MESSAGE_GROUP_WINDOW_MS;
+  return true;
 }
 
 export function getMessageBubbleRadiusClass(

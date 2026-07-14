@@ -1,5 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
+import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
+import { buildProgramWeekDayDates } from "@/lib/programWeek/dateFormatting";
+import type { ProgramBlock, ProgramDay } from "@/lib/programWeek/types";
 
 export const NO_ATHLETE_PROGRAM_MESSAGE =
   "Vraag je coach om je programma in te zetten.";
@@ -27,6 +30,7 @@ export type ResolvedProgramEntry = {
   blockId: string;
   weekId: string;
   athleteId: string;
+  dayId?: string | null;
 };
 
 function toDateOnly(value: string | null | undefined) {
@@ -67,6 +71,59 @@ function pickCurrentWeek(
   );
   const weekIndex = Math.max(0, Math.floor(diffDays / 7));
   return weeks[Math.min(weekIndex, weeks.length - 1)];
+}
+
+export function pickClosestProgramDayId(
+  days: Pick<ProgramDay, "id" | "day_number" | "scheduled_date" | "title">[],
+  block: ProgramBlockRow,
+  week: ProgramWeekRow,
+) {
+  if (days.length === 0) return null;
+
+  const today = new Date();
+  today.setHours(12, 0, 0, 0);
+
+  let closestDay = days[0];
+  let closestDiff = Number.POSITIVE_INFINITY;
+
+  const dayDates = buildProgramWeekDayDates(
+    block as ProgramBlock,
+    week,
+    days as ProgramDay[],
+  );
+
+  for (const day of days) {
+    const date = dayDates.get(day.id);
+    if (!date) continue;
+
+    const dayDate = new Date(date);
+    dayDate.setHours(12, 0, 0, 0);
+    const diff = Math.abs(dayDate.getTime() - today.getTime());
+
+    if (diff < closestDiff) {
+      closestDiff = diff;
+      closestDay = day;
+    }
+  }
+
+  return closestDay.id;
+}
+
+async function loadClosestDayIdForWeek(
+  week: ProgramWeekRow,
+  block: ProgramBlockRow,
+) {
+  const { data: days, error } = await supabase
+    .from("program_days")
+    .select("id, day_number, scheduled_date, title")
+    .eq("program_week_id", week.id)
+    .order("day_number", { ascending: true });
+
+  if (error || !days || days.length === 0) {
+    return null;
+  }
+
+  return pickClosestProgramDayId(days, block, week);
 }
 
 export async function resolveProgramEntryForAthlete(
@@ -140,31 +197,101 @@ export async function resolveProgramEntryForAthlete(
   );
 
   if (!week) {
-    const { data: createdWeek, error: createWeekError } = await supabase
-      .from("program_weeks")
-      .insert({
+    const { week: createdWeek, error: createWeekError } =
+      await createProgramWeekForBlock({
+        blockId: block.id,
         title: "Week 1",
-        week_number: 1,
-        program_block_id: block.id,
-      })
-      .select("id, title, week_number, program_block_id")
-      .single();
+        weekNumber: 1,
+      });
 
     if (createWeekError || !createdWeek) {
       return {
         data: null,
-        error: createWeekError?.message || "Week kon niet worden aangemaakt",
+        error: createWeekError || "Week kon niet worden aangemaakt",
       };
     }
 
     week = createdWeek as ProgramWeekRow;
   }
 
+  const dayId = await loadClosestDayIdForWeek(week, block);
+
   return {
     data: {
       blockId: block.id,
       weekId: week.id,
       athleteId,
+      dayId,
+    },
+    error: null,
+  };
+}
+
+export async function resolveProgramEntryForAthleteAtPosition(
+  athleteId: string,
+  actingUserId: string,
+  context: {
+    blockTitle?: string | null;
+    weekNumber?: number | null;
+  },
+): Promise<{ data: ResolvedProgramEntry | null; error: string | null }> {
+  const { data: blocks, error: blocksError } = await supabase
+    .from("program_blocks")
+    .select("id, title, athlete_id, start_date")
+    .eq("athlete_id", athleteId)
+    .order("start_date", { ascending: true });
+
+  if (blocksError) {
+    return { data: null, error: blocksError.message };
+  }
+
+  if (!blocks || blocks.length === 0) {
+    return resolveProgramEntryForAthlete(athleteId, actingUserId);
+  }
+
+  const normalizedTitle = context.blockTitle?.trim() || "";
+  const block =
+    (normalizedTitle
+      ? blocks.find((item) => item.title?.trim() === normalizedTitle)
+      : null) || pickCurrentBlock(blocks as ProgramBlockRow[]);
+
+  if (!block) {
+    return resolveProgramEntryForAthlete(athleteId, actingUserId);
+  }
+
+  const { data: weeks, error: weeksError } = await supabase
+    .from("program_weeks")
+    .select("id, title, week_number, program_block_id")
+    .eq("program_block_id", block.id)
+    .order("week_number", { ascending: true });
+
+  if (weeksError) {
+    return { data: null, error: weeksError.message };
+  }
+
+  const weekRows = (weeks || []) as ProgramWeekRow[];
+  let week: ProgramWeekRow | null = null;
+
+  if (context.weekNumber != null) {
+    week = weekRows.find((item) => item.week_number === context.weekNumber) || null;
+  }
+
+  if (!week) {
+    week = pickCurrentWeek(weekRows, block.start_date);
+  }
+
+  if (!week) {
+    return resolveProgramEntryForAthlete(athleteId, actingUserId);
+  }
+
+  const dayId = await loadClosestDayIdForWeek(week, block as ProgramBlockRow);
+
+  return {
+    data: {
+      blockId: block.id,
+      weekId: week.id,
+      athleteId,
+      dayId,
     },
     error: null,
   };
@@ -175,10 +302,18 @@ export function buildProgramWeekPath(
   options?: { coachViewingAthlete?: boolean },
 ) {
   const base = `/programs/${entry.blockId}/weeks/${entry.weekId}`;
+  const queryParts: string[] = [];
+
   if (options?.coachViewingAthlete) {
-    return `${base}?athlete=${entry.athleteId}`;
+    queryParts.push(`athlete=${encodeURIComponent(entry.athleteId)}`);
   }
-  return base;
+
+  if (entry.dayId) {
+    queryParts.push(`focusDay=${encodeURIComponent(entry.dayId)}`);
+  }
+
+  const query = queryParts.length > 0 ? `?${queryParts.join("&")}` : "";
+  return `${base}${query}`;
 }
 
 export async function resolveProgramEntryFromBlockId(
@@ -206,22 +341,25 @@ export async function resolveProgramEntryFromBlockId(
 
   const { data: weeks, error: weeksError } = await supabase
     .from("program_weeks")
-    .select("id")
+    .select("id, title, week_number, program_block_id")
     .eq("program_block_id", blockId)
-    .order("week_number", { ascending: true })
-    .limit(1);
+    .order("week_number", { ascending: true });
 
   if (weeksError) {
     return { data: null, error: weeksError.message };
   }
 
-  const weekId = weeks?.[0]?.id;
-  if (!weekId) {
+  const blockRow = block as ProgramBlockRow;
+  const week = pickCurrentWeek((weeks || []) as ProgramWeekRow[], blockRow.start_date);
+
+  if (!week) {
     return { data: null, error: "Geen week gevonden in dit programma." };
   }
 
+  const dayId = await loadClosestDayIdForWeek(week, blockRow);
+
   return {
-    data: { blockId, weekId, athleteId },
+    data: { blockId, weekId: week.id, athleteId, dayId },
     error: null,
   };
 }

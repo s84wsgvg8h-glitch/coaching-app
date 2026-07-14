@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/adminApiAuth";
 import type { AppSettings, SystemBannerRow } from "@/lib/adminSettings";
+import { adminSettingsPatchSchema, parseJsonBody } from "@/lib/apiValidation";
 
 export async function GET(request: Request) {
   try {
@@ -39,13 +40,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
 
-    const body = (await request.json()) as {
-      settings?: Partial<AppSettings>;
-      banner?: Partial<SystemBannerRow> & { id?: string };
-      deleteBannerId?: string;
-      createBanner?: Omit<SystemBannerRow, "id" | "created_at" | "created_by">;
-    };
+    const parsed = await parseJsonBody(request, adminSettingsPatchSchema);
+    if (!parsed.success) {
+      return parsed.response;
+    }
 
+    const body = parsed.data;
     if (body.settings) {
       const { error } = await access.admin
         .from("app_settings")

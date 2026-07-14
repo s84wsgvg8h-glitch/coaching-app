@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Bell, Search } from "lucide-react";
+import { Bell } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
-import ThemeToggle from "@/components/ThemeToggle";
+import { SearchFieldTrigger } from "@/components/ui/SearchInput";
 
 type AdminTopBarProps = {
   onSearchClick?: () => void;
@@ -20,18 +20,16 @@ export default function AdminTopBar({ onSearchClick }: AdminTopBarProps) {
 
   return (
     <header className="admin-topbar">
-      <button
-        type="button"
+      <SearchFieldTrigger
         onClick={onSearchClick}
+        placeholder="Zoek overal…"
+        kbd={<kbd className="admin-topbar-kbd">⌘ K</kbd>}
+        kbdPosition="end"
+        variant="rounded"
         className="admin-topbar-search app-focus-ring"
-      >
-        <Search className="h-4 w-4 shrink-0 text-app-muted" />
-        <span className="admin-topbar-search-text">Zoek overal…</span>
-        <kbd className="admin-topbar-kbd">⌘ K</kbd>
-      </button>
+      />
 
       <div className="admin-topbar-actions">
-        <ThemeToggle compact className="shrink-0" />
         <button
           type="button"
           className="admin-topbar-icon-btn app-focus-ring"

@@ -2,10 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
-import {
-  loadCoachCalendarEvents,
-  type CoachCalendarEvent,
-} from "@/lib/coachCalendarEvents";
+import { useCoachCalendarEvents } from "@/hooks/useCoachCalendarEvents";
 import {
   AGENDA_DAY_END_HOUR,
   AGENDA_DAY_START_HOUR,
@@ -13,9 +10,9 @@ import {
   filterTodayAppointments,
   formatAgendaDayHeading,
   formatAgendaTimeRange,
+  getAppointmentStatus,
   getHourFraction,
   getTimelineBlockStyle,
-  isAppointmentActiveNow,
 } from "@/lib/coachAgendaDisplay";
 import {
   layoutOverlappingEvents,
@@ -40,35 +37,24 @@ const BLOCK_TONES = [
   "today-agenda-block-tone-4",
 ];
 
+const STATUS_TONE_CLASS = {
+  past: "today-agenda-block--past",
+  active: "today-agenda-block-active",
+  upcoming: "today-agenda-block--upcoming",
+} as const;
+
 const TIMELINE_VIEW_HEIGHT = 380;
 
 export default function TodayAgendaTimeline({
   coachId,
   variant = "default",
 }: TodayAgendaTimelineProps) {
-  const [appointments, setAppointments] = useState<CoachCalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const calendarQuery = useCoachCalendarEvents(coachId);
+  const appointments = calendarQuery.data ?? [];
+  const loading = calendarQuery.isPending;
   const [now, setNow] = useState(() => new Date());
   const [hourHeight, setHourHeight] = useState(AGENDA_HOUR_HEIGHT);
   const scrollRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const rows = await loadCoachCalendarEvents(coachId);
-      if (!cancelled) {
-        setAppointments(rows);
-        setLoading(false);
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [coachId]);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(new Date()), 60_000);
@@ -107,14 +93,22 @@ export default function TodayAgendaTimeline({
       .map((block, index) => {
         const appointment = byId.get(block.id);
         if (!appointment) return null;
+        const status = getAppointmentStatus(appointment, now);
         return {
           appointment,
           startHour: block.startHour,
           endHour: block.endHour,
           column: block.column,
           totalColumns: block.totalColumns,
-          tone: BLOCK_TONES[index % BLOCK_TONES.length],
-          active: isAppointmentActiveNow(appointment, now),
+          tone:
+            status === "active"
+              ? STATUS_TONE_CLASS.active
+              : status === "past"
+                ? STATUS_TONE_CLASS.past
+                : STATUS_TONE_CLASS.upcoming,
+          fallbackTone: BLOCK_TONES[index % BLOCK_TONES.length],
+          active: status === "active",
+          status,
         };
       })
       .filter((block): block is NonNullable<typeof block> => block !== null);
@@ -208,7 +202,7 @@ export default function TodayAgendaTimeline({
                 <div
                   key={block.appointment.id}
                   className={`today-agenda-block ${block.tone} ${
-                    block.active ? "today-agenda-block-active" : ""
+                    block.status === "upcoming" ? block.fallbackTone : ""
                   }`}
                   style={{
                     ...getTimelineBlockStyle(block.column, block.totalColumns),
@@ -227,6 +221,13 @@ export default function TodayAgendaTimeline({
                       block.appointment.start_at,
                       block.appointment.end_at,
                     )}
+                  </p>
+                  <p className="mt-0.5 text-[9px] font-semibold uppercase tracking-wide opacity-90">
+                    {block.status === "past"
+                      ? "Afgerond"
+                      : block.status === "active"
+                        ? "Nu bezig"
+                        : "Gepland"}
                   </p>
                 </div>
               ))}

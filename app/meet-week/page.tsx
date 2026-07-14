@@ -219,17 +219,18 @@ function MeetWeekContent() {
   return (
     <AppShell>
       <div className="mx-auto max-w-3xl">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-app-text">Meet-week hub</h1>
-            <p className="mt-1 text-sm text-app-muted">
+            <p className="text-xs font-bold uppercase tracking-wider text-app-muted">Meet-week</p>
+            <h1 className="mt-1 text-3xl font-bold text-app-text">Meet-week hub</h1>
+            <p className="mt-2 text-sm text-app-muted">
               Countdown, checklist, attempts en wedstrijdvoorbereiding.
             </p>
           </div>
           {isCoach && targetAthleteId ? (
             <Link
               href={`/athletes/${targetAthleteId}`}
-              className="text-sm font-semibold text-brand-purple hover:underline"
+              className="app-focus-ring inline-flex items-center gap-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
             >
               ← Atleet hub
             </Link>
@@ -249,7 +250,7 @@ function MeetWeekContent() {
                   <select
                     value={targetAthleteId}
                     onChange={(event) => void handleAthleteChange(event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+                    className="mt-2 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
                   >
                     {athletes.length === 0 ? (
                       <option value="">Geen atleten</option>
@@ -306,8 +307,8 @@ function MeetWeekContent() {
                             : "Wedstrijdweek"}
                         </p>
                         {entryPhase ? (
-                          <p className="mt-2 inline-block rounded-full bg-violet-100 px-3 py-1 text-xs font-bold text-violet-900">
-                            Fase: {entryPhase}
+                          <p className="mt-2 inline-block rounded-full bg-app-accent/10 px-3 py-1 text-xs font-bold text-app-accent">
+                            {entryPhase}
                           </p>
                         ) : null}
                         <p className="mt-3 text-sm text-app-text">

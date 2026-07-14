@@ -10,12 +10,12 @@ import {
   GitBranch,
   LayoutList,
   MoreHorizontal,
-  Search,
   Shield,
   SlidersHorizontal,
   UserRound,
   Users,
 } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import {
   buildPlatformHierarchy,
@@ -26,6 +26,7 @@ import {
   loadCoachOrganizations,
   type CoachOrganization,
 } from "@/lib/adminOrganizations";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import type { AdminUser } from "@/components/admin/AdminUsersTab";
 import {
   AdminAvatar,
@@ -201,7 +202,11 @@ function HierarchyTreeNodeV2({
   const hasChildren = Boolean(node.children?.length);
 
   useEffect(() => {
-    if (forceOpen) setOpen(true);
+    if (forceOpen) {
+      deferEffectUpdate(() => {
+        setOpen(true);
+      });
+    }
   }, [forceOpen]);
 
   const isOrg =
@@ -459,16 +464,13 @@ export default function AdminHierarchyTab({ users }: AdminHierarchyTabProps) {
       )}
 
       <AdminFilterBar>
-        <div className="admin-search-wrap">
-          <Search className="h-4 w-4 shrink-0 text-app-muted" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Zoek op naam, e-mail of rol…"
-            className="admin-search-input"
-            aria-label="Zoek in hiërarchie"
-          />
-        </div>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Zoek op naam, e-mail of rol…"
+          variant="rounded"
+          aria-label="Zoek in hiërarchie"
+        />
         <select
           value={roleFilter}
           onChange={(event) => setRoleFilter(event.target.value)}

@@ -1,7 +1,8 @@
 import { supabase } from "@/lib/supabaseClient";
 import { getReplyText, type ChatMessage } from "@/lib/chatUtils";
+import { uploadFileViaApi } from "@/lib/storage/clientUpload";
+import type { StorageMetadataFields } from "@/lib/storage/types";
 
-const BUCKET = "chat-media";
 const MAX_SIZE_MB = 100;
 
 export type ChatMediaFileType = "image" | "video" | "audio";
@@ -29,6 +30,7 @@ export async function uploadChatMedia(userId: string, file: File) {
     return {
       url: null as string | null,
       fileType: null as ChatMediaFileType | null,
+      storage: null,
       error: new Error("Kies een foto of video"),
     };
   }
@@ -39,31 +41,30 @@ export async function uploadChatMedia(userId: string, file: File) {
     return {
       url: null as string | null,
       fileType: null as ChatMediaFileType | null,
+      storage: null,
       error: new Error(`Bestand is te groot. Maximaal ${MAX_SIZE_MB} MB.`),
     };
   }
 
-  const extension =
-    file.name.split(".").pop() ||
-    (fileType === "image" ? "jpg" : fileType === "video" ? "mp4" : "webm");
-  const filePath = `${userId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.${extension}`;
+  const result = await uploadFileViaApi({
+    file,
+    filename: file.name,
+    uploadType: "chat-media",
+  });
 
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(filePath, file, {
-      upsert: false,
-      contentType: file.type || undefined,
-    });
-
-  if (uploadError) {
-    return { url: null as string | null, fileType: null as ChatMediaFileType | null, error: uploadError };
+  if (result.error || !result.url) {
+    return {
+      url: null as string | null,
+      fileType: null as ChatMediaFileType | null,
+      storage: null,
+      error: result.error || new Error("Upload mislukt."),
+    };
   }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
   return {
-    url: data.publicUrl,
+    url: result.url,
     fileType,
+    storage: result,
     error: null as Error | null,
   };
 }
@@ -102,6 +103,7 @@ export async function insertChatMediaMessage(params: {
   receiverId?: string;
   groupId?: string;
   replyTo?: ChatMessage | null;
+  storage?: StorageMetadataFields | null;
 }) {
   const base = {
     sender_id: params.userId,
@@ -112,6 +114,7 @@ export async function insertChatMediaMessage(params: {
     reply_to_body: params.replyTo ? getReplyText(params.replyTo) : null,
     reply_to_file_type: params.replyTo?.file_type || null,
     reply_to_sender_id: params.replyTo?.sender_id || null,
+    ...(params.storage || {}),
   };
 
   if (params.groupId) {

@@ -56,12 +56,12 @@ export default function CoachAlertsWidget({
         {alerts.slice(0, 5).map((alert) => (
           <li
             key={alert.id}
-            className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2"
+            className="flex items-start gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2"
           >
             <div className="min-w-0 flex-1">
               <Link
                 href={`/profile/${alert.athlete_id}`}
-                className="text-sm font-semibold text-app-text hover:text-brand-purple"
+                className="text-sm font-semibold text-app-text hover:text-app-accent"
               >
                 {alert.athlete_name || "Atleet"}
               </Link>

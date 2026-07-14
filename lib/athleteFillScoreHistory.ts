@@ -1,4 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
+import { isDayInPastWeek } from "@/lib/athleteFillScore";
+import { loadFillScoresForAthletes } from "@/lib/athleteFillScoreLoader";
 
 export type WeeklyFillScorePoint = {
   label: string;
@@ -57,20 +59,21 @@ export async function loadTeamFillScores(coachId: string, isAdmin = false) {
   if (!isAdmin) query = query.eq("coach_id", coachId);
 
   const { data: athletes } = await query;
-  const { loadAthleteWeeklyFillScore } = await import("@/lib/athleteWeeklyFillScore");
+  if (!athletes?.length) return [];
 
-  const rows = [];
-  for (const athlete of athletes || []) {
-    const result = await loadAthleteWeeklyFillScore(
-      athlete.id as string,
-      (athlete.full_name as string) || "Atleet",
-    );
-    rows.push({
-      athleteId: athlete.id as string,
-      athleteName: (athlete.full_name as string) || "Atleet",
-      fillScore: result.percentage,
-    });
-  }
+  const scores = await loadFillScoresForAthletes(
+    athletes.map((athlete) => athlete.id as string),
+    athletes.map((athlete) => ({
+      id: athlete.id as string,
+      full_name: athlete.full_name as string | null,
+    })),
+    ({ block, week, day }) =>
+      isDayInPastWeek(block.start_date, week.week_number, day.day_number),
+  );
 
-  return rows;
+  return scores.map((score) => ({
+    athleteId: score.athleteId,
+    athleteName: score.athleteName,
+    fillScore: score.percentage,
+  }));
 }

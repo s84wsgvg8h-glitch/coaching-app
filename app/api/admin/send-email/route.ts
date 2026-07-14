@@ -1,43 +1,22 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-
-type SendEmailBody = {
-  to: string;
-  subject: string;
-  html: string;
-  templateKey?: string;
-};
+import { assertAdmin } from "@/lib/adminApiAuth";
+import { adminSendEmailSchema, parseJsonBody } from "@/lib/apiValidation";
 
 export async function POST(request: Request) {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const access = await assertAdmin(request);
+  if (!access.admin) {
+    return NextResponse.json(
+      { error: access.error ?? "Geen toegang." },
+      { status: access.error === "Niet ingelogd." ? 401 : 403 },
+    );
   }
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-  const admin = createClient(supabaseUrl, serviceKey);
-
-  const token = authHeader.slice(7);
-  const {
-    data: { user },
-  } = await admin.auth.getUser(token);
-
-  if (!user) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const parsed = await parseJsonBody(request, adminSendEmailSchema);
+  if (!parsed.success) {
+    return parsed.response;
   }
 
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "admin") {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
-
-  const body = (await request.json()) as SendEmailBody;
+  const body = parsed.data;
   const resendKey = process.env.RESEND_API_KEY;
 
   if (!resendKey) {

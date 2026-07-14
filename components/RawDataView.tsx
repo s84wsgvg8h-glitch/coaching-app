@@ -13,6 +13,7 @@ import {
   type ProgramExercise,
   type ProgramWeek,
 } from "@/lib/programData";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type AthleteExerciseNote = {
   id?: string;
@@ -56,7 +57,7 @@ export default function RawDataView({
   return (
     <Suspense
       fallback={
-        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-gray-500 shadow">
+        <div className="rounded-2xl border border-app-border bg-app-surface p-6 text-app-muted">
           Data laden...
         </div>
       }
@@ -91,7 +92,9 @@ function RawDataPageContent({
   const [selectedProgressionBlockId, setSelectedProgressionBlockId] = useState("");
 
   useEffect(() => {
-    loadRawData();
+    deferEffectUpdate(() => {
+      void loadRawData();
+    });
   }, []);
 
   const athleteOptions = useMemo(() => {
@@ -111,7 +114,9 @@ function RawDataPageContent({
   useEffect(() => {
     if (!embeddedAthleteId) return;
 
-    setSelectedAthleteId(embeddedAthleteId);
+    deferEffectUpdate(() => {
+      setSelectedAthleteId(embeddedAthleteId);
+    });
   }, [embeddedAthleteId]);
 
   useEffect(() => {
@@ -128,9 +133,11 @@ function RawDataPageContent({
     );
 
     if (!selectedAthleteId) {
-      setSelectedAthleteId(
-        savedAthleteStillExists ? savedAthleteId : athleteOptions[0].id,
-      );
+      deferEffectUpdate(() => {
+        setSelectedAthleteId(
+          savedAthleteStillExists ? savedAthleteId : athleteOptions[0].id,
+        );
+      });
       return;
     }
 
@@ -139,7 +146,9 @@ function RawDataPageContent({
     );
 
     if (!currentAthleteStillExists) {
-      setSelectedAthleteId(athleteOptions[0].id);
+      deferEffectUpdate(() => {
+        setSelectedAthleteId(athleteOptions[0].id);
+      });
     }
   }, [athleteOptions, selectedAthleteId]);
 
@@ -172,30 +181,38 @@ function RawDataPageContent({
   }, [allWeeks]);
 
   useEffect(() => {
-    setLeftSelection("");
-    setRightSelection("");
-    setDisabledExerciseNames([]);
-    setDisabledDayKeys([]);
-    setSelectedProgressionBlockId("");
+    deferEffectUpdate(() => {
+      setLeftSelection("");
+      setRightSelection("");
+      setDisabledExerciseNames([]);
+      setDisabledDayKeys([]);
+      setSelectedProgressionBlockId("");
+    });
   }, [selectedAthleteId]);
 
   useEffect(() => {
     if (viewMode === "week") {
-      if (!leftSelection && allWeeks[0]) setLeftSelection(allWeeks[0].week.id);
-      if (!rightSelection && allWeeks[1]) setRightSelection(allWeeks[1].week.id);
+      deferEffectUpdate(() => {
+        if (!leftSelection && allWeeks[0]) setLeftSelection(allWeeks[0].week.id);
+        if (!rightSelection && allWeeks[1]) setRightSelection(allWeeks[1].week.id);
+      });
     }
   }, [viewMode, allWeeks, leftSelection, rightSelection]);
 
   useEffect(() => {
-    setDisabledExerciseNames([]);
-    setDisabledDayKeys([]);
+    deferEffectUpdate(() => {
+      setDisabledExerciseNames([]);
+      setDisabledDayKeys([]);
+    });
   }, [leftSelection, rightSelection, viewMode]);
 
   useEffect(() => {
     if (viewMode !== "progression") return;
     if (selectedProgressionBlockId) return;
     if (filteredRawBlocks[0]) {
-      setSelectedProgressionBlockId(filteredRawBlocks[0].block.id);
+      deferEffectUpdate(() => {
+        setSelectedProgressionBlockId(filteredRawBlocks[0].block.id);
+      });
     }
   }, [viewMode, filteredRawBlocks, selectedProgressionBlockId]);
 
@@ -608,10 +625,6 @@ function RawDataPageContent({
     return row.rpe?.trim() || exercise.rpe?.trim() || "-";
   }
 
-  function roundToNearestTwoPointFive(value: number) {
-    return Math.round(value / 2.5) * 2.5;
-  }
-
   function getEstimatedOneRepMaxNumber(
     exercise: ProgramExercise,
     row: AthleteExerciseSet,
@@ -630,7 +643,10 @@ function RawDataPageContent({
       return null;
     }
 
-    return roundToNearestTwoPointFive(weight * (1 + reps / 30));
+    // Brzycki formula — rounded to whole number
+    const denominator = 1.0278 - 0.0278 * reps;
+    if (denominator <= 0) return null;
+    return Math.round(weight / denominator);
   }
 
   function getEstimatedOneRepMax(exercise: ProgramExercise, row: AthleteExerciseSet) {
@@ -687,7 +703,7 @@ function RawDataPageContent({
 
     if (displayRows.length === 0) {
       return (
-        <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500">
+        <div className="bg-app-surface-muted rounded-xl p-3 text-xs text-app-muted">
           Geen oefeningen.
         </div>
       );
@@ -701,7 +717,7 @@ function RawDataPageContent({
       <div className="overflow-visible">
         <div className="w-full">
           <div
-            className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-gray-100 rounded-lg text-[10px] font-black text-gray-500 uppercase leading-none`}
+            className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-hover rounded-lg text-[10px] font-black text-app-muted uppercase leading-none`}
           >
             <div>Oefening</div>
             <div>Set</div>
@@ -722,7 +738,7 @@ function RawDataPageContent({
               return (
                 <div
                   key={`${exercise.id}-${setRow.set_number}`}
-                  className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-[12px] leading-tight text-black items-start`}
+                  className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-muted border border-app-border rounded-lg text-[12px] leading-tight text-black items-start`}
                 >
                   <div className="font-bold break-words">
                     {exercise.name || "Oefening"}
@@ -735,25 +751,25 @@ function RawDataPageContent({
                   <div>{getEstimatedOneRepMax(exercise, setRow)}</div>
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-gray-700 whitespace-pre-wrap">
+                    <div className="text-[11px] leading-tight text-app-text whitespace-pre-wrap">
                       {athleteNote || "-"}
                     </div>
                   )}
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-gray-700 whitespace-pre-wrap">
+                    <div className="text-[11px] leading-tight text-app-text whitespace-pre-wrap">
                       {exercise.notes?.trim() || "-"}
                     </div>
                   )}
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-gray-700 font-bold">
+                    <div className="text-[11px] leading-tight text-app-text font-bold">
                       {getSetTonnage(exercise, setRow)}
                     </div>
                   )}
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-gray-700 font-bold">
+                    <div className="text-[11px] leading-tight text-app-text font-bold">
                       {getSetIntensity(exercise, setRow)}
                     </div>
                   )}
@@ -771,12 +787,12 @@ function RawDataPageContent({
     if (filterExercisesForView(rawDay.exercises).length === 0) return null;
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow p-4 w-full">
+      <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
         <div className="mb-3">
-          <p className="text-xs text-gray-500 font-semibold">
+          <p className="text-xs text-app-muted font-semibold">
             {rawWeek.athleteName} · {rawWeek.block.title} · {rawWeek.week.title}
           </p>
-          <h3 className="text-xl font-black text-black">{rawDay.day.title}</h3>
+          <h3 className="text-xl font-black text-app-text">{rawDay.day.title}</h3>
         </div>
 
         {showNotes && rawDay.day.warmup?.trim() && (
@@ -815,15 +831,15 @@ function RawDataPageContent({
 
     if (visibleDays.length === 0) {
       return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow p-4 w-full">
+        <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
           <div className="mb-4">
-            <p className="text-xs text-gray-500 font-semibold">
+            <p className="text-xs text-app-muted font-semibold">
               {rawWeek.block.title}
             </p>
-            <h3 className="text-xl font-black text-black">{rawWeek.week.title}</h3>
+            <h3 className="text-xl font-black text-app-text">{rawWeek.week.title}</h3>
           </div>
 
-          <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500">
+          <div className="bg-app-surface-muted rounded-xl p-3 text-xs text-app-muted">
             Geen dagen met deze oefening(en).
           </div>
         </div>
@@ -831,19 +847,19 @@ function RawDataPageContent({
     }
 
     return (
-      <div className="bg-white rounded-2xl border border-gray-200 shadow p-4 w-full">
+      <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
         <div className="mb-4">
-          <p className="text-xs text-gray-500 font-semibold">
+          <p className="text-xs text-app-muted font-semibold">
             {rawWeek.athleteName} · {rawWeek.block.title}
             {rawWeek.block.start_date
               ? ` · start ${formatDate(rawWeek.block.start_date)}`
               : ""}
           </p>
-          <h3 className="text-xl font-black text-black">{rawWeek.week.title}</h3>
+          <h3 className="text-xl font-black text-app-text">{rawWeek.week.title}</h3>
         </div>
 
         {visibleDays.length === 0 ? (
-          <div className="bg-gray-50 rounded-xl p-3 text-xs text-gray-500">
+          <div className="bg-app-surface-muted rounded-xl p-3 text-xs text-app-muted">
             Geen dagen in deze week.
           </div>
         ) : (
@@ -1066,16 +1082,15 @@ function RawDataPageContent({
 
           /*
             Belangrijk:
-            De key bevat dag + volgorde + voorschrift.
-            Daardoor worden twee benchpress varianten in dezelfde week NIET samengevoegd.
-            Bijvoorbeeld:
-            - Benchpress ma 1x3
-            - Benchpress ma 4x5
+            De key bevat dag + volgorde + voorschrift + exercise_number.
+            Meerdere rijen met hetzelfde voorschrift (bijv. drie 1x2 bench)
+            blijven apart; varianten met ander voorschrift ook (1x3 vs 4x5).
           */
           const key = [
             cleanName,
             rawDay.day.day_number,
             prescription.toLowerCase(),
+            String(exerciseNumber),
           ].join("__");
 
           if (!rowMap.has(key)) {
@@ -1150,7 +1165,7 @@ function RawDataPageContent({
 
     if (!rawBlock) {
       return (
-        <div className="bg-white rounded-2xl border border-gray-200 shadow p-6 text-gray-500">
+        <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
           Geen block gevonden voor deze atleet.
         </div>
       );
@@ -1166,12 +1181,12 @@ function RawDataPageContent({
     return (
       <div className={compact ? "space-y-3" : "space-y-5"}>
         <div
-          className={`bg-white rounded-2xl border border-gray-200 shadow ${
+          className={`bg-app-surface rounded-2xl border border-app-border shadow ${
             compact ? "p-2.5" : "p-4"
           }`}
         >
           <p
-            className={`font-black text-gray-500 uppercase ${
+            className={`font-black text-app-muted uppercase ${
               compact ? "mb-1.5 text-[10px]" : "mb-2 text-xs"
             }`}
           >
@@ -1192,7 +1207,7 @@ function RawDataPageContent({
                   } ${
                     active
                       ? "bg-black text-white border-black"
-                      : "bg-gray-50 text-gray-700 border-gray-200 hover:border-black"
+                      : "bg-app-surface-muted text-app-text border-app-border hover:border-black"
                   }`}
                 >
                   {blockItem.block.title || "Block"}
@@ -1202,9 +1217,9 @@ function RawDataPageContent({
           </div>
         </div>
 
-        <div className="bg-white rounded-3xl border border-gray-200 shadow overflow-hidden">
+        <div className="bg-app-surface rounded-3xl border border-app-border shadow overflow-hidden">
           <div
-            className={`border-b border-gray-200 ${compact ? "p-3" : "p-5"}`}
+            className={`border-b border-app-border ${compact ? "p-3" : "p-5"}`}
           >
             <h2
               className={`font-black text-black ${
@@ -1215,7 +1230,7 @@ function RawDataPageContent({
             </h2>
 
             <p
-              className={`text-gray-500 ${compact ? "mt-0.5 text-[11px]" : "mt-1 text-sm"}`}
+              className={`text-app-muted ${compact ? "mt-0.5 text-[11px]" : "mt-1 text-sm"}`}
             >
               {rawBlock.athleteName}
               {rawBlock.block.start_date
@@ -1226,7 +1241,7 @@ function RawDataPageContent({
 
           {weeks.length === 0 || progressionRows.length === 0 ? (
             <div
-              className={`text-gray-500 ${compact ? "p-3 text-xs" : "p-5 text-sm"}`}
+              className={`text-app-muted ${compact ? "p-3 text-xs" : "p-5 text-sm"}`}
             >
               Geen progression data gevonden in dit block.
             </div>
@@ -1246,7 +1261,7 @@ function RawDataPageContent({
                 }}
               >
                 <div
-                  className={`sticky top-0 left-0 z-30 bg-gray-100 border-b border-r border-gray-300 font-black text-gray-600 uppercase ${
+                  className={`sticky top-0 left-0 z-30 bg-app-surface-hover border-b border-r border-gray-300 font-black text-app-muted uppercase ${
                     compact
                       ? "px-1 py-1 text-[9px] leading-tight"
                       : "p-3 text-xs"
@@ -1258,7 +1273,7 @@ function RawDataPageContent({
                 {weeks.map((rawWeek) => (
                   <div
                     key={rawWeek.week.id}
-                    className={`sticky top-0 z-20 bg-gray-100 border-b border-r border-gray-300 font-black text-gray-600 uppercase ${
+                    className={`sticky top-0 z-20 bg-app-surface-hover border-b border-r border-gray-300 font-black text-app-muted uppercase ${
                       compact
                         ? "px-1 py-1 text-[9px] leading-tight"
                         : "p-3 text-xs"
@@ -1271,13 +1286,13 @@ function RawDataPageContent({
                 {progressionRows.map((row, rowIndex) => (
                   <div key={row.key} className="contents">
                     <div
-                      className={`sticky left-0 z-10 border-r border-b border-gray-200 border-l-4 ${getProgressionExerciseColorClass(
+                      className={`sticky left-0 z-10 border-r border-b border-app-border border-l-4 ${getProgressionExerciseColorClass(
                         row.baseName,
                       )} font-black text-black ${
                         compact
                           ? "px-1 py-1 text-[10px] leading-tight"
                           : "p-3 text-sm"
-                      } ${rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"}`}
+                      } ${rowIndex % 2 === 0 ? "bg-app-surface" : "bg-gray-50"}`}
                     >
                       {row.name}
                     </div>
@@ -1288,13 +1303,13 @@ function RawDataPageContent({
                       return (
                         <div
                           key={`${row.key}-${rawWeek.week.id}`}
-                          className={`border-r border-b border-gray-200 leading-tight whitespace-pre-wrap ${
+                          className={`border-r border-b border-app-border leading-tight whitespace-pre-wrap ${
                             compact
                               ? "px-1 py-1 text-[9px]"
                               : "p-3 text-xs"
                           } ${
-                            rowIndex % 2 === 0 ? "bg-white" : "bg-gray-50"
-                          } ${rows.length === 0 ? "text-gray-400" : "text-black"}`}
+                            rowIndex % 2 === 0 ? "bg-app-surface" : "bg-gray-50"
+                          } ${rows.length === 0 ? "text-app-muted" : "text-app-text"}`}
                         >
                           {getProgressionCellText(rows)}
                         </div>
@@ -1325,7 +1340,7 @@ function RawDataPageContent({
     const notes = checkin?.notes?.trim() || "-";
 
     return (
-      <div className="mb-2 rounded-lg border border-gray-200 bg-gray-50 px-2 py-1 text-[10px] leading-tight text-gray-600">
+      <div className="mb-2 rounded-lg border border-app-border bg-app-surface-muted px-2 py-1 text-[10px] leading-tight text-app-muted">
         <span className="font-black text-gray-800">bw:</span> {bw}
         <span className="mx-1 text-gray-300">|</span>
         <span className="font-black text-gray-800">herstel:</span> {recovery}
@@ -1343,14 +1358,14 @@ function RawDataPageContent({
         {filteredRawBlocks.map((rawBlock) => (
           <div
             key={rawBlock.block.id}
-            className="bg-white rounded-3xl border border-gray-200 shadow p-6"
+            className="bg-app-surface rounded-3xl border border-app-border shadow p-6"
           >
             <div className="mb-6">
-              <h2 className="text-2xl font-black text-black">
+              <h2 className="text-2xl font-black text-app-text">
                 {rawBlock.block.title || "Block"}
               </h2>
 
-              <p className="text-sm text-gray-500 mt-1">
+              <p className="text-sm text-app-muted mt-1">
                 {rawBlock.athleteName}
                 {rawBlock.block.start_date
                   ? ` · start ${formatDate(rawBlock.block.start_date)}`
@@ -1359,19 +1374,19 @@ function RawDataPageContent({
             </div>
 
             {rawBlock.weeks.length === 0 ? (
-              <div className="bg-gray-50 rounded-2xl p-4 text-sm text-gray-500">
+              <div className="bg-app-surface-muted rounded-2xl p-4 text-sm text-app-muted">
                 Geen weken in dit block.
               </div>
             ) : (
               <div className="space-y-8">
                 {rawBlock.weeks.map((rawWeek) => (
                   <div key={rawWeek.week.id} className="space-y-5">
-                    <h3 className="text-xl font-black text-black">
+                    <h3 className="text-xl font-black text-app-text">
                       {rawWeek.week.title || `Week ${rawWeek.week.week_number}`}
                     </h3>
 
                     {rawWeek.days.length === 0 ? (
-                      <div className="bg-gray-50 rounded-2xl p-4 text-sm text-gray-500">
+                      <div className="bg-app-surface-muted rounded-2xl p-4 text-sm text-app-muted">
                         Geen dagen in deze week.
                       </div>
                     ) : (
@@ -1539,9 +1554,9 @@ function RawDataPageContent({
     if (days.length === 0) return null;
 
     return (
-      <div className="mt-4 border-t border-gray-200 pt-4">
+      <div className="mt-4 border-t border-app-border pt-4">
         <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-xs font-black text-gray-500 uppercase">
+          <p className="text-xs font-black text-app-muted uppercase">
             Dagen filteren
           </p>
 
@@ -1549,7 +1564,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={selectAllComparableDays}
-              className="text-[11px] font-bold bg-gray-100 hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
             >
               Alles aan
             </button>
@@ -1557,7 +1572,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={hideAllComparableDays}
-              className="text-[11px] font-bold bg-gray-100 hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
             >
               Alles uit
             </button>
@@ -1576,7 +1591,7 @@ function RawDataPageContent({
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
                   active
                     ? "bg-black text-white border-black"
-                    : "bg-white text-gray-500 border-gray-200 hover:border-black"
+                    : "bg-app-surface text-app-muted border-app-border hover:border-black"
                 }`}
               >
                 {day.title}
@@ -1596,9 +1611,9 @@ function RawDataPageContent({
     if (exerciseNames.length === 0) return null;
 
     return (
-      <div className="mt-4 border-t border-gray-200 pt-4">
+      <div className="mt-4 border-t border-app-border pt-4">
         <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-xs font-black text-gray-500 uppercase">
+          <p className="text-xs font-black text-app-muted uppercase">
             Oefeningen filteren
           </p>
 
@@ -1606,7 +1621,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={selectAllComparableExercises}
-              className="text-[11px] font-bold bg-gray-100 hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
             >
               Alles aan
             </button>
@@ -1614,7 +1629,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={hideAllComparableExercises}
-              className="text-[11px] font-bold bg-gray-100 hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
             >
               Alles uit
             </button>
@@ -1633,7 +1648,7 @@ function RawDataPageContent({
                 className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
                   active
                     ? "bg-black text-white border-black"
-                    : "bg-white text-gray-500 border-gray-200 hover:border-black"
+                    : "bg-app-surface text-app-muted border-app-border hover:border-black"
                 }`}
               >
                 {name}
@@ -1665,11 +1680,11 @@ function RawDataPageContent({
 
     return (
       <div className="flex-1 min-w-[320px]">
-        <p className="text-xs font-black text-gray-500 uppercase mb-2">
+        <p className="text-xs font-black text-app-muted uppercase mb-2">
           {side === "left" ? "Links" : "Rechts"}
         </p>
 
-        <div className="max-h-[92px] overflow-y-auto rounded-xl border border-gray-200 bg-gray-50 p-2 grid grid-cols-1 gap-1">
+        <div className="max-h-[92px] overflow-y-auto rounded-xl border border-app-border bg-app-surface-muted p-2 grid grid-cols-1 gap-1">
           {getPickerItems().map((item: RawWeek) => {
             const id = getPickerItemId(item);
             const active = selectedValue === id;
@@ -1682,7 +1697,7 @@ function RawDataPageContent({
                 className={`w-full text-left rounded-lg px-3 py-2 text-xs font-semibold transition ${
                   active
                     ? "bg-black text-white"
-                    : "bg-white text-gray-700 hover:bg-gray-100"
+                    : "bg-app-surface text-app-text hover:bg-gray-100"
                 }`}
               >
                 {getPickerItemLabel(item)}
@@ -1769,7 +1784,7 @@ function RawDataPageContent({
                     Raw Data
                   </h1>
                   {!compactShell && (
-                    <p className="text-gray-500 mt-2">
+                    <p className="text-app-muted mt-2">
                       Bekijk alle data, vergelijk weken of bekijk progression per block.
                     </p>
                   )}
@@ -1782,19 +1797,19 @@ function RawDataPageContent({
                 <button
                   type="button"
                   onClick={downloadCsv}
-                  className="rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-black shadow hover:bg-gray-50"
+                  className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-black shadow hover:bg-gray-50"
                 >
                   Export CSV
                 </button>
                 <div className="min-w-[280px]">
-                  <p className="text-xs font-black text-gray-500 uppercase mb-1">
+                  <p className="text-xs font-black text-app-muted uppercase mb-1">
                     Atleet
                   </p>
 
                   <select
                     value={selectedAthleteId}
                     onChange={(e) => setSelectedAthleteId(e.target.value)}
-                    className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                    className="w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
                   >
                     {!selectedAthleteId && (
                       <option value="">Kies atleet</option>
@@ -1823,13 +1838,13 @@ function RawDataPageContent({
           {embeddedInUnifiedPage && (
             <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
               <div className="min-w-[280px]">
-                <p className="text-xs font-black text-gray-500 uppercase mb-1">
+                <p className="text-xs font-black text-app-muted uppercase mb-1">
                   Atleet
                 </p>
                 <select
                   value={selectedAthleteId}
                   onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="w-full bg-white border border-gray-200 rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                  className="w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
                 >
                   {!selectedAthleteId && <option value="">Kies atleet</option>}
                   {athleteOptions.map((athlete) => (
@@ -1850,7 +1865,7 @@ function RawDataPageContent({
           )}
 
           {loading && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow p-6 text-gray-500">
+            <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
               Data laden...
             </div>
           )}
@@ -1862,27 +1877,27 @@ function RawDataPageContent({
           )}
 
           {!loading && !errorMessage && rawBlocks.length === 0 && (
-            <div className="bg-white rounded-2xl border border-gray-200 shadow p-6 text-gray-500">
+            <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
               Geen raw data gevonden.
             </div>
           )}
 
           {!loading && !errorMessage && rawBlocks.length > 0 && (
             <>
-              <div className="bg-white rounded-2xl border border-gray-200 shadow p-4 mb-6">
+              <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 mb-6">
                 <div className="flex flex-wrap items-end gap-3">
                   <div>
-                    <p className="text-xs font-black text-gray-500 uppercase mb-1">
+                    <p className="text-xs font-black text-app-muted uppercase mb-1">
                       Weergave
                     </p>
-                    <div className="flex bg-gray-100 rounded-xl p-1">
+                    <div className="flex bg-app-surface-hover rounded-xl p-1">
                       <button
                         type="button"
                         onClick={() => switchMode("all")}
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
                           viewMode === "all"
                             ? "bg-black text-white"
-                            : "text-gray-600 hover:bg-white"
+                            : "text-app-muted hover:bg-app-surface"
                         }`}
                       >
                         Alle data
@@ -1894,7 +1909,7 @@ function RawDataPageContent({
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
                           viewMode === "week"
                             ? "bg-black text-white"
-                            : "text-gray-600 hover:bg-white"
+                            : "text-app-muted hover:bg-app-surface"
                         }`}
                       >
                         2 weken vergelijken
@@ -1906,7 +1921,7 @@ function RawDataPageContent({
                         className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
                           viewMode === "progression"
                             ? "bg-black text-white"
-                            : "text-gray-600 hover:bg-white"
+                            : "text-app-muted hover:bg-app-surface"
                         }`}
                       >
                         Progression view
@@ -1925,7 +1940,7 @@ function RawDataPageContent({
                       className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
                         showNotes
                           ? "bg-black text-white"
-                          : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                          : "bg-app-surface-hover text-app-muted hover:bg-gray-200"
                       }`}
                     >
                       Notes aan/uit

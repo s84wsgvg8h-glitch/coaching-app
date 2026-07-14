@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
 import { SendHorizontal, X } from "lucide-react";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ChatMediaComposerProps = {
   open: boolean;
@@ -28,7 +29,9 @@ export default function ChatMediaComposer({
 
   useEffect(() => {
     if (!open) {
-      setCaption("");
+      deferEffectUpdate(() => {
+        setCaption("");
+      });
     }
   }, [open]);
 

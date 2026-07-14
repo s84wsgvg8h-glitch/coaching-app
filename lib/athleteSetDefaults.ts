@@ -8,6 +8,7 @@ type ExerciseLike = {
 type SetRowLike = {
   reps?: string | null;
   rpe?: string | null;
+  weight?: string | null;
 };
 
 export function isSbdExercise(name: string) {
@@ -34,14 +35,23 @@ export function getCoachRpeDefault(exercise: ExerciseLike) {
   return numeric || programmedRpe;
 }
 
+export function getCoachWeightDefault(exercise: ExerciseLike) {
+  const load = exercise.load?.trim() || "";
+  if (!load || load.includes("%")) return "";
+  return load.replace(/kg/gi, "").trim();
+}
+
 export function applyAthleteSetDefaults<T extends SetRowLike>(
   exercise: ExerciseLike,
   row: T,
 ): T {
+  const weightDefault = getCoachWeightDefault(exercise);
+
   return {
     ...row,
     reps: row.reps?.trim() ? row.reps : getCoachRepsDefault(exercise),
     rpe: row.rpe?.trim() ? row.rpe : getCoachRpeDefault(exercise),
+    weight: row.weight?.trim() ? row.weight : weightDefault,
   };
 }
 
@@ -52,7 +62,12 @@ export function mergeAthleteSetRowsWithDefaults<
   return Array.from({ length: setCount }, (_, index) => {
     const setNumber = index + 1;
     const saved = savedRows.find((row) => row.set_number === setNumber);
-    const shell = (saved ?? { set_number: setNumber, reps: "", rpe: "" }) as T;
+    const shell = (saved ?? {
+      set_number: setNumber,
+      reps: "",
+      rpe: "",
+      weight: "",
+    }) as T;
     return applyAthleteSetDefaults(exercise, shell);
   });
 }

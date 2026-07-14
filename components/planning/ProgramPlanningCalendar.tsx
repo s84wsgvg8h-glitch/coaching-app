@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
+import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
 import { getProgramDayDate } from "@/lib/athleteFillScore";
 import { loadProgramMacrocycles, createProgramMacrocycle } from "@/lib/programMacrocycles";
 import { loadAthleteUpcomingCompetitions } from "@/lib/competitions";
@@ -637,15 +638,15 @@ export default function ProgramPlanningCalendar({
         : 1;
 
     setCreating(true);
-    const { error } = await supabase.from("program_weeks").insert({
+    const { error } = await createProgramWeekForBlock({
+      blockId: addingWeekBlockId,
       title: newWeekTitle.trim(),
-      week_number: nextWeekNumber,
-      program_block_id: addingWeekBlockId,
+      weekNumber: nextWeekNumber,
     });
     setCreating(false);
 
     if (error) {
-      alert(error.message);
+      alert(error);
       return;
     }
 
@@ -945,14 +946,14 @@ export default function ProgramPlanningCalendar({
           ) : null}
 
           <div
-            className="relative grid rounded-2xl border border-app-border bg-white"
+            className="relative grid rounded-2xl border border-app-border bg-app-surface"
             style={{
               gridTemplateColumns,
               minWidth: gridMinWidth,
             }}
           >
             <div
-              className="flex items-end border-b border-r border-gray-200 bg-white px-2 py-2 text-[10px] font-bold uppercase text-gray-500"
+              className="flex items-end border-b border-r border-app-border bg-app-surface px-2 py-2 text-[10px] font-bold uppercase text-app-muted"
               style={{ gridRow: 1, gridColumn: 1 }}
             >
               Week
@@ -984,10 +985,10 @@ export default function ProgramPlanningCalendar({
                 >
                   <Link
                     href={getColumnHref(column)}
-                    className={`flex min-h-[72px] flex-col items-center justify-center border-b border-r border-gray-200 px-1 py-2 text-center hover:opacity-90 ${
+                    className={`flex min-h-[72px] flex-col items-center justify-center border-b border-r border-app-border px-1 py-2 text-center hover:opacity-90 ${
                       isMeetColumn
                         ? MEET_COLUMN_CLASS
-                        : "bg-gray-50 hover:bg-violet-50"
+                        : "bg-app-surface-muted hover:bg-app-accent/5"
                     }`}
                     title={weekLabel}
                   >
@@ -1005,7 +1006,7 @@ export default function ProgramPlanningCalendar({
             })}
 
             <div
-              className="flex items-center border-b border-r border-gray-200 px-2 py-2 text-[10px] font-bold uppercase text-blue-700"
+              className="flex items-center border-b border-r border-app-border px-2 py-2 text-[10px] font-bold uppercase text-blue-400"
               style={{ gridRow: 2, gridColumn: 1 }}
             >
               Blocks
@@ -1016,7 +1017,7 @@ export default function ProgramPlanningCalendar({
               return (
                 <div
                   key={`block-bg-${column.key}`}
-                  className={`h-10 border-b border-r border-gray-200 ${
+                  className={`h-10 border-b border-r border-app-border ${
                     isMeetColumn
                       ? MEET_COLUMN_CLASS
                       : `${getColumnBlockColor(column, blockColorIndex).border} ${getColumnBlockColor(column, blockColorIndex).bg}`
@@ -1060,7 +1061,7 @@ export default function ProgramPlanningCalendar({
             ))}
 
             <div
-              className="flex items-center border-b border-r border-gray-200 px-2 py-2 text-[10px] font-bold uppercase text-violet-700"
+              className="flex items-center border-b border-r border-app-border px-2 py-2 text-[10px] font-bold uppercase text-app-accent"
               style={{ gridRow: 3, gridColumn: 1 }}
             >
               Macro
@@ -1070,12 +1071,12 @@ export default function ProgramPlanningCalendar({
               const primary = getPrimaryEntry(column);
               const macroClassName = primary?.macroId
                 ? "border-violet-300 bg-violet-100"
-                : "border-dashed border-gray-200 bg-gray-50 text-gray-400";
+                : "border-dashed border-app-border bg-app-surface-muted text-app-muted";
 
               return (
                 <div
                   key={`macro-bg-${column.key}`}
-                  className={`flex h-10 items-center justify-center border-b border-r border-gray-200 text-[11px] ${
+                  className={`flex h-10 items-center justify-center border-b border-r border-app-border text-[11px] ${
                     isMeetColumn ? MEET_COLUMN_CLASS : macroClassName
                   }`}
                   style={{ gridRow: 3, gridColumn: index + 2 }}
@@ -1101,7 +1102,7 @@ export default function ProgramPlanningCalendar({
             {meetColumnIndices.size > 0 ? (
               <>
                 <div
-                  className="flex items-center border-r border-gray-200 px-2 py-2 text-[10px] font-bold uppercase text-amber-800"
+                  className="flex items-center border-r border-app-border px-2 py-2 text-[10px] font-bold uppercase text-amber-400"
                   style={{ gridRow: 4, gridColumn: 1 }}
                 >
                   Meet
@@ -1112,7 +1113,7 @@ export default function ProgramPlanningCalendar({
                     return (
                       <div
                         key={`meet-empty-${column.key}`}
-                        className="h-10 border-r border-gray-200 bg-white"
+                        className="h-10 border-r border-gray-200 bg-app-surface"
                         style={{ gridRow: 4, gridColumn: index + 2 }}
                       />
                     );
@@ -1125,7 +1126,7 @@ export default function ProgramPlanningCalendar({
                     <Link
                       key={`meet-${column.key}`}
                       href={getMeetWeekHref(athleteId, primaryMeet.id)}
-                      className={`flex h-10 items-center justify-center border-r border-gray-200 px-1 text-center text-[10px] font-semibold transition-colors ${MEET_COLUMN_CLASS}`}
+                      className={`flex h-10 items-center justify-center border-r border-app-border px-1 text-center text-[10px] font-semibold transition-colors ${MEET_COLUMN_CLASS}`}
                       style={{ gridRow: 4, gridColumn: index + 2 }}
                       title={`${meetLabel} — open meet-week hub`}
                     >

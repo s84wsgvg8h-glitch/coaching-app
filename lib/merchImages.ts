@@ -1,30 +1,32 @@
-import { supabase } from "@/lib/supabaseClient";
-
-const BUCKET = "chat-media";
+import { uploadFileViaApi } from "@/lib/storage/clientUpload";
 
 export async function uploadMerchImage(userId: string, file: File) {
   if (!file.type.startsWith("image/")) {
     return {
       url: null as string | null,
+      storage: null,
       error: new Error("Alleen afbeeldingen zijn toegestaan."),
     };
   }
 
-  const extension = file.name.split(".").pop() || "jpg";
-  const filePath = `merch/${userId}/${Date.now()}.${extension}`;
+  const result = await uploadFileViaApi({
+    file,
+    filename: file.name,
+    uploadType: "merch-images",
+    upsert: true,
+  });
 
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(filePath, file, {
-      upsert: true,
-      contentType: file.type || "image/jpeg",
-    });
-
-  if (uploadError) {
-    return { url: null as string | null, error: uploadError };
+  if (result.error || !result.url) {
+    return {
+      url: null as string | null,
+      storage: null,
+      error: result.error || new Error("Upload mislukt."),
+    };
   }
 
-  const { data } = supabase.storage.from(BUCKET).getPublicUrl(filePath);
-
-  return { url: data.publicUrl, error: null as Error | null };
+  return {
+    url: result.url,
+    storage: result,
+    error: null as Error | null,
+  };
 }

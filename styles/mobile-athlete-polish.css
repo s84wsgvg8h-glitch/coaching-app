@@ -1,0 +1,390 @@
+/* ─── Mobile athlete polish (dark + light, ≤1023px) ─── */
+
+@media (max-width: 1023px) {
+  /* ── Touch & interaction ── */
+  .app-focus-ring:focus-visible {
+    outline: 2px solid var(--app-accent);
+    outline-offset: 2px;
+  }
+
+  button,
+  a,
+  [role="button"] {
+    -webkit-tap-highlight-color: rgba(59, 130, 246, 0.12);
+  }
+
+  .athlete-mobile-tab-bar__item:active {
+    opacity: 0.82;
+    transform: scale(0.97);
+  }
+
+  .athlete-dashboard-quicknav-card:active {
+    transform: scale(0.98);
+  }
+
+  /* ── Route loading shell ── */
+  .athlete-route-loading-shell {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    background: var(--app-bg);
+  }
+
+  .athlete-route-loading-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.35rem 0.5rem 0.5rem;
+  }
+
+  .athlete-route-loading-bar {
+    border-radius: 9999px;
+    background: var(--app-surface-hover);
+    animation: athlete-shimmer 1.2s ease-in-out infinite;
+  }
+
+  .athlete-route-loading-bar--title {
+    height: 1.25rem;
+    width: 6.5rem;
+  }
+
+  .athlete-route-loading-bar--icon {
+    height: 2.75rem;
+    width: 2.75rem;
+    border-radius: 9999px;
+  }
+
+  .athlete-route-loading-bar--chip {
+    height: 2.75rem;
+    width: 5.5rem;
+    border-radius: 9999px;
+  }
+
+  .athlete-route-loading-tabbar {
+    pointer-events: none;
+  }
+
+  .athlete-route-loading-tab {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 2px;
+    padding-bottom: 5px;
+  }
+
+  .athlete-route-loading-bar--tab-icon {
+    height: 1.5rem;
+    width: 1.5rem;
+    border-radius: 9999px;
+  }
+
+  .athlete-route-loading-bar--tab-label {
+    height: 0.5rem;
+    width: 2rem;
+  }
+
+  @keyframes athlete-shimmer {
+    0%,
+    100% {
+      opacity: 0.45;
+    }
+    50% {
+      opacity: 0.85;
+    }
+  }
+
+  /* ── Dashboard touch targets ── */
+  .athlete-dashboard-log-btn {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  .athlete-dashboard-log-btn--compact {
+    min-height: 40px;
+    min-width: 56px;
+  }
+
+  .athlete-dashboard-input {
+    min-height: 44px;
+  }
+
+  .athlete-dashboard-cta-btn {
+    min-height: 52px;
+  }
+
+  /* ── Light mode: dashboard ── */
+  html:not(.dark) .athlete-dashboard-card--fill .animate-pulse > div,
+  html:not(.dark) .athlete-dashboard-card--fill [class*="bg-white/"] {
+    background: var(--app-surface-hover) !important;
+  }
+
+  html:not(.dark) .athlete-dashboard-cta-btn--loading {
+    background: var(--app-surface-hover) !important;
+  }
+
+  html:not(.dark) .athlete-dashboard-card .text-emerald-400,
+  html:not(.dark) .athlete-chat-widget .text-emerald-400 {
+    color: #059669;
+  }
+
+  html:not(.dark) .athlete-dashboard-fill-value {
+    color: inherit;
+  }
+
+  /* ── Light mode: icon buttons ── */
+  html:not(.dark) .ui-icon-btn {
+    border-color: var(--app-border-strong);
+    background: var(--app-surface);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  }
+
+  html:not(.dark) .ui-icon-btn:hover {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: var(--app-surface-hover);
+  }
+
+  html:not(.dark) .shell-topbar-athlete-title {
+    color: var(--app-text);
+  }
+
+  /* ── Light mode: program week nav ── */
+  html:not(.dark) .program-mobile-week-nav--athlete-compact {
+    border-bottom-color: var(--app-border);
+    background: rgba(255, 255, 255, 0.94);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+  }
+
+  html:not(.dark) .program-mobile-week-nav--athlete-compact.program-mobile-week-nav--dark {
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  html:not(.dark) .program-mobile-week-nav-back {
+    border-color: var(--app-border-strong);
+    background: var(--app-surface-muted);
+    color: var(--app-text);
+  }
+
+  /* ── Light mode: chat ── */
+  html:not(.dark) .chat-shell {
+    --chat-border: rgba(15, 23, 42, 0.08);
+    --chat-border-strong: rgba(15, 23, 42, 0.12);
+    --chat-surface-raised: rgba(15, 23, 42, 0.03);
+    --chat-surface-hover: rgba(15, 23, 42, 0.05);
+    --chat-accent-soft: rgba(59, 130, 246, 0.1);
+    --chat-accent-ring: rgba(59, 130, 246, 0.18);
+  }
+
+  html:not(.dark) .chat-shell .chat-list-header .app-search-field {
+    --app-search-bg: var(--app-surface-muted);
+    --app-search-border: var(--app-border);
+    --app-search-border-hover: var(--app-border-strong);
+  }
+
+  html:not(.dark) .chat-filter-tab {
+    background: var(--app-surface-muted);
+    color: var(--app-text-muted);
+  }
+
+  html:not(.dark) .chat-filter-tab--active {
+    color: var(--app-accent);
+    background: var(--app-accent-muted);
+    border-color: rgba(59, 130, 246, 0.35);
+  }
+
+  html:not(.dark) .chat-list-row {
+    border-color: var(--app-border);
+  }
+
+  html:not(.dark) .chat-list-row:hover,
+  html:not(.dark) .chat-list-row:active {
+    background: var(--app-surface-hover);
+  }
+
+  html:not(.dark) .chat-input-bar {
+    background: var(--app-surface);
+    border-color: var(--app-border-strong);
+    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  html:not(.dark) .chat-message-input::placeholder {
+    color: var(--app-text-subtle);
+  }
+
+  html:not(.dark) .chat-conversation-subtitle {
+    color: var(--app-text-muted);
+  }
+
+  html:not(.dark) .chat-menu-dropdown {
+    border-color: var(--app-border);
+    background: var(--app-surface);
+    box-shadow: 0 12px 40px rgba(15, 23, 42, 0.12);
+  }
+
+  /* ── Chat touch targets ── */
+  .chat-filter-tab {
+    min-height: 44px;
+    padding-inline: 1rem;
+  }
+
+  .chat-list-row button {
+    min-height: 64px;
+  }
+
+  .chat-conversation-header .ui-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* ── Profile mobile pills ── */
+  .profile-settings-mobile-pill {
+    min-height: 44px;
+  }
+
+  /* ── Auth / intake loading ── */
+  .intake-gate-loading {
+    display: flex;
+    min-height: 100dvh;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: var(--app-bg);
+  }
+
+  .intake-gate-loading-logo {
+    height: 2.5rem;
+    width: 2.5rem;
+    border-radius: 0.75rem;
+    background: var(--app-accent-muted);
+    animation: athlete-shimmer 1.2s ease-in-out infinite;
+  }
+
+  /* ── Scroll polish ── */
+  .mobile-scroll,
+  .mobile-page-shell__body--scroll,
+  .chat-list-scroll,
+  .chat-messages-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(128, 128, 128, 0.35) transparent;
+  }
+
+  /* ── Empty / error states ── */
+  .athlete-mobile-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem 1rem;
+    text-align: center;
+  }
+
+  .athlete-mobile-empty-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  .athlete-mobile-empty-desc {
+    font-size: 13px;
+    line-height: 1.45;
+    color: var(--app-text-muted);
+    max-width: 280px;
+  }
+
+  /* ── Reduced motion ── */
+  @media (prefers-reduced-motion: reduce) {
+    .athlete-route-loading-bar,
+    .intake-gate-loading-logo {
+      animation: none;
+    }
+
+    .athlete-mobile-tab-bar__item:active,
+    .athlete-dashboard-quicklink-chip:active {
+      transform: none;
+    }
+  }
+
+  /* ── Form feedback toast inline ── */
+  .athlete-inline-toast {
+    margin-top: 0.5rem;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.35;
+  }
+
+  .athlete-inline-toast--success {
+    color: #34d399;
+  }
+
+  html:not(.dark) .athlete-inline-toast--success {
+    color: #059669;
+  }
+
+  .athlete-inline-toast--error {
+    color: #f87171;
+  }
+
+  html:not(.dark)   .app-shell--athlete-profile-mobile .mobile-page-shell__body {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .app-shell--athlete-profile-mobile .athlete-app-layout {
+    min-height: 0;
+  }
+
+  .shell-topbar-action-chip--active {
+    border-color: rgba(59, 130, 246, 0.45);
+    background: var(--app-accent-muted);
+    color: var(--app-accent);
+  }
+
+  /* ── Page transition feel ── */
+  .app-page-content {
+    animation: athlete-page-in 0.18s ease-out;
+  }
+
+  @keyframes athlete-page-in {
+    from {
+      opacity: 0.6;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .app-page-content {
+      animation: none;
+    }
+  }
+
+  /* ── Tab bar light mode contrast ── */
+  html:not(.dark) .athlete-mobile-tab-bar {
+    background: var(--app-nav-bg);
+    border-top-color: var(--app-border);
+  }
+
+  html:not(.dark) .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
+    background: var(--app-accent-muted);
+  }
+
+  /* ── Skeleton pulse theme-aware ── */
+  html:not(.dark) .animate-pulse.bg-app-surface-hover,
+  html:not(.dark) .animate-pulse[class*="bg-white"] {
+    background: var(--app-surface-hover) !important;
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-settings-mobile-nav {
+    display: none;
+  }
+}

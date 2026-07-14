@@ -1,0 +1,24 @@
+{
+  "url": "https://limitlesscoaching.app/dashboard",
+  "email": "henk@henk.com",
+  "viewport": "1440x900",
+  "checks": {
+    "hasPremiumRoot": true,
+    "hasCockpit": true,
+    "cockpitVisible": true,
+    "kpiCount": 5,
+    "hasSidebar": true,
+    "hasInbox": true,
+    "hasCta": true,
+    "hasGoals": true,
+    "hasTodos": true,
+    "hasAgenda": true,
+    "appPillCount": 6,
+    "hasSearchCenter": false,
+    "hasGreeting": true,
+    "startBtnText": "Start invullen →",
+    "hasStrayMobileCta": false,
+    "kpiRowColumns": 5
+  },
+  "pass": true
+}

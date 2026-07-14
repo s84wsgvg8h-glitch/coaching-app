@@ -1,28 +1,55 @@
 "use client";
 
-import Link from "next/link";
 import { Bell, Search, X } from "lucide-react";
 import { Suspense, useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import ThemeToggle from "@/components/ThemeToggle";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { isAthleteProfileOpen } from "@/lib/athleteProfileNavigation";
 import PageBackButton from "@/components/ui/PageBackButton";
-import { getAthleteNotificationCount, getUnreadMessageCount, CHAT_UNREAD_CHANGED_EVENT } from "@/lib/chatUnread";
+import SearchInput from "@/components/ui/SearchInput";
+import {
+  ShellHeaderActionAvatar,
+  ShellHeaderActionButton,
+  ShellHeaderActionLink,
+} from "@/components/ui/ShellHeaderActionChip";
+import {
+  dashboardFirstName,
+  formatDashboardDate,
+  getDashboardGreeting,
+} from "@/lib/dashboardGreeting";
+import { useNotificationCount } from "@/hooks/useNotificationCount";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ShellTopBarProps = {
   onSearchClick: () => void;
   onNotificationsClick: () => void;
   notificationCount?: number;
+  className?: string;
+  athleteProfileOpen?: boolean;
+  onAthleteProfileToggle?: () => void;
 };
 
 export default function ShellTopBar({
   onSearchClick,
   onNotificationsClick,
   notificationCount = 0,
+  className = "",
+  athleteProfileOpen = false,
+  onAthleteProfileToggle,
 }: ShellTopBarProps) {
+  const pathname = usePathname();
   const { profile, userId, role } = useAuth();
   const showSearch = isCoachLikeRole(role);
+  const isCoachDashboard = pathname === "/dashboard" && isCoachLikeRole(role);
+  const isAthleteDashboard = pathname === "/dashboard" && role === "atleet";
+  // Athletes don't use the search center — including it adds shell-topbar--dashboard
+  // which triggers a 1-column grid layout breaking the greeting + actions row.
+  const showDashboardSearchCenter = isCoachDashboard;
+  const isAthleteMobileProfile =
+    role === "atleet" && isAthleteProfileOpen(pathname);
   const fullName = profile?.full_name || "Profiel";
+  const firstName = dashboardFirstName(fullName);
   const initials = fullName
     .split(/\s+/)
     .slice(0, 2)
@@ -32,26 +59,20 @@ export default function ShellTopBar({
   const [searchExpanded, setSearchExpanded] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const searchWrapRef = useRef<HTMLDivElement>(null);
+  const { data: cachedUnread } = useNotificationCount(userId, role, Boolean(userId && role));
 
   useEffect(() => {
-    setUnread(notificationCount);
+    deferEffectUpdate(() => {
+      setUnread(notificationCount);
+    });
   }, [notificationCount]);
 
   useEffect(() => {
-    if (!userId) return;
-
-    async function refresh() {
-      setUnread(
-        role === "atleet"
-          ? await getAthleteNotificationCount(userId)
-          : await getUnreadMessageCount(userId),
-      );
-    }
-
-    void refresh();
-    window.addEventListener(CHAT_UNREAD_CHANGED_EVENT, refresh);
-    return () => window.removeEventListener(CHAT_UNREAD_CHANGED_EVENT, refresh);
-  }, [role, userId]);
+    if (cachedUnread == null) return;
+    deferEffectUpdate(() => {
+      setUnread(cachedUnread);
+    });
+  }, [cachedUnread]);
 
   useEffect(() => {
     if (!searchExpanded) return;
@@ -71,85 +92,188 @@ export default function ShellTopBar({
     return () => document.removeEventListener("mousedown", handlePointerDown);
   }, [searchExpanded]);
 
+  const searchField = (
+    <SearchInput
+      ref={searchInputRef}
+      value=""
+      onChange={() => {}}
+      readOnly
+      onFocus={onSearchClick}
+      onClick={onSearchClick}
+      placeholder="Zoek pagina's, atleten, acties..."
+      variant="pill"
+      showClear={false}
+      className="w-full"
+      inputClassName="cursor-pointer"
+      trailing={
+        <>
+          <kbd className="shell-topbar-search-kbd hidden shrink-0 sm:inline">
+            ⌘K
+          </kbd>
+          {searchExpanded ? (
+            <button
+              type="button"
+              onClick={() => setSearchExpanded(false)}
+              className="ui-icon-btn shrink-0 app-focus-ring"
+              aria-label="Zoeken sluiten"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          ) : null}
+        </>
+      }
+    />
+  );
+
   return (
-    <header className="shell-topbar z-30 shrink-0 pt-safe">
-      <div className="flex items-center justify-between gap-1.5 px-0.5 py-1.5 md:py-2">
-        <div className="flex min-w-0 items-center gap-1.5">
-          <Suspense fallback={null}>
-            <PageBackButton variant="topbar" />
-          </Suspense>
+    <header
+      className={`shell-topbar z-30 shrink-0 ${
+        showDashboardSearchCenter ? "shell-topbar--dashboard" : ""
+      }${isAthleteDashboard ? " shell-topbar--athlete-dashboard" : ""}${className ? ` ${className}` : ""}`}
+    >
+      <div className="shell-topbar-inner">
+        <div className="shell-topbar-leading flex min-w-0 items-center gap-1.5">
+          {!isCoachDashboard && !isAthleteDashboard && !isAthleteMobileProfile ? (
+            <Suspense fallback={null}>
+              <PageBackButton variant="topbar" />
+            </Suspense>
+          ) : null}
+          {isAthleteMobileProfile ? (
+            <h1 className="shell-topbar-athlete-title truncate">Profiel</h1>
+          ) : null}
+          {isAthleteDashboard ? (
+            <div className="shell-topbar-athlete-greeting min-w-0">
+              <p className="shell-topbar-athlete-greeting-hey">
+                Hey {firstName} 👋
+              </p>
+            </div>
+          ) : null}
+          {isCoachDashboard ? (
+            <div className="shell-topbar-greeting">
+              <p className="shell-topbar-greeting-title">
+                {getDashboardGreeting()}, {firstName} 👋
+              </p>
+              <p className="shell-topbar-greeting-sub">{formatDashboardDate()}</p>
+            </div>
+          ) : null}
         </div>
 
-        <div className="flex min-w-0 items-center justify-end gap-1.5">
-        {showSearch ? (
-          <div
-            ref={searchWrapRef}
-            className={`flex items-center transition-all duration-200 ease-out ${
-              searchExpanded ? "mr-auto w-[min(100vw-8rem,320px)] flex-1" : ""
-            }`}
-          >
-            {searchExpanded ? (
-              <div className="shell-topbar-search-expanded app-focus-ring">
-                <Search className="h-4 w-4 shrink-0 text-app-subtle" />
-                <input
-                  ref={searchInputRef}
-                  readOnly
-                  onFocus={onSearchClick}
-                  onClick={onSearchClick}
-                  placeholder="Zoek pagina's, atleten, acties..."
-                  className="min-w-0 flex-1 cursor-pointer bg-transparent text-[13px] text-app-text placeholder:text-app-subtle focus:outline-none"
-                />
-                <kbd className="shell-topbar-search-kbd hidden shrink-0 sm:inline">
-                  ⌘K
-                </kbd>
-                <button
-                  type="button"
-                  onClick={() => setSearchExpanded(false)}
-                  className="ui-icon-btn shrink-0 app-focus-ring"
-                  aria-label="Zoeken sluiten"
-                >
-                  <X className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setSearchExpanded(true);
-                  window.requestAnimationFrame(() => onSearchClick());
-                }}
-                className="ui-icon-btn app-focus-ring"
-                aria-label="Zoeken"
-              >
-                <Search className="h-4 w-4" />
-              </button>
-            )}
-          </div>
+        {showDashboardSearchCenter ? (
+          <div className="shell-topbar-search-center">{searchField}</div>
         ) : null}
 
-        <ThemeToggle compact className="shrink-0" />
-
-        <button
-          type="button"
-          onClick={onNotificationsClick}
-          className="ui-icon-btn relative app-focus-ring"
-          aria-label="Notificaties"
-        >
-          <Bell className="h-4 w-4" />
-          {unread > 0 ? (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-app-accent px-1 text-[9px] font-semibold text-white">
-              {unread > 9 ? "9+" : unread}
-            </span>
+        <div className="shell-topbar-actions">
+          {showSearch && !isCoachDashboard ? (
+            <div
+              ref={searchWrapRef}
+              className={`shell-topbar-search-mobile flex items-center transition-all duration-200 ease-out ${
+                searchExpanded ? "mr-auto w-[min(100vw-8rem,320px)] flex-1" : ""
+              }`}
+            >
+              {searchExpanded ? (
+                searchField
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchExpanded(true);
+                    window.requestAnimationFrame(() => onSearchClick());
+                  }}
+                  className="ui-icon-btn app-focus-ring"
+                  aria-label="Zoeken"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
+            </div>
           ) : null}
-        </button>
 
-        <Link
-          href="/profile"
-          className="ui-icon-btn app-focus-ring"
-          aria-label="Profiel"
-        >
-          <span className="text-[12px] font-semibold">{initials || "👤"}</span>
-        </Link>
+          {showSearch && showDashboardSearchCenter ? (
+            <div
+              ref={searchWrapRef}
+              className={`shell-topbar-search-mobile flex items-center lg:hidden ${
+                searchExpanded ? "w-full flex-1" : ""
+              }`}
+            >
+              {searchExpanded ? (
+                searchField
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchExpanded(true);
+                    window.requestAnimationFrame(() => onSearchClick());
+                  }}
+                  className="ui-icon-btn app-focus-ring"
+                  aria-label="Zoeken"
+                >
+                  <Search className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          ) : null}
+
+          <ShellHeaderActionButton
+            onClick={onNotificationsClick}
+            aria-label={
+              unread > 0 ? `Notificaties, ${unread} ongelezen` : "Notificaties"
+            }
+            badge={unread}
+            badgeLabel={unread > 0 ? `${unread} ongelezen notificaties` : undefined}
+          >
+            <ShellHeaderActionAvatar icon>
+              <Bell className="h-4 w-4" aria-hidden="true" />
+            </ShellHeaderActionAvatar>
+          </ShellHeaderActionButton>
+
+          {role === "atleet" && onAthleteProfileToggle ? (
+            <ShellHeaderActionButton
+              onClick={onAthleteProfileToggle}
+              aria-label={athleteProfileOpen ? "Profiel sluiten" : "Profiel openen"}
+              aria-pressed={athleteProfileOpen}
+              className={[
+                athleteProfileOpen ? "shell-topbar-action-chip--active" : "",
+                isAthleteDashboard ? "shell-topbar-action-chip--athlete-avatar" : "",
+              ]
+                .filter(Boolean)
+                .join(" ")}
+            >
+              <ShellHeaderActionAvatar>{initials || "LC"}</ShellHeaderActionAvatar>
+              <span
+                className={`shell-topbar-action-copy min-w-0${
+                  isAthleteDashboard ? " hidden lg:block" : ""
+                }`}
+              >
+                <span className="shell-topbar-action-label block truncate">
+                  {isAthleteDashboard ? fullName : "Profiel"}
+                </span>
+                {isAthleteDashboard ? (
+                  <span className="shell-topbar-action-sublabel hidden lg:block">
+                    Atleet
+                  </span>
+                ) : null}
+              </span>
+            </ShellHeaderActionButton>
+          ) : (
+            <ShellHeaderActionLink href="/profile" aria-label="Profiel">
+              <ShellHeaderActionAvatar>{initials || "LC"}</ShellHeaderActionAvatar>
+              <span
+                className={`shell-topbar-action-copy min-w-0${
+                  isAthleteDashboard ? " hidden lg:block" : ""
+                }`}
+              >
+                <span className="shell-topbar-action-label block truncate">
+                  <span className="lg:hidden">Profiel</span>
+                  <span className="hidden lg:inline">{firstName}</span>
+                </span>
+                {isCoachLikeRole(role) ? (
+                  <span className="shell-topbar-action-sublabel hidden lg:block">
+                    Coach
+                  </span>
+                ) : null}
+              </span>
+            </ShellHeaderActionLink>
+          )}
         </div>
       </div>
     </header>

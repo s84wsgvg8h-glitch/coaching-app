@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 const STORAGE_KEY = "coaching-app:todo-task-sounds";
 
@@ -11,13 +12,17 @@ export function useTaskSoundPreference() {
   useEffect(() => {
     try {
       const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored !== null) {
-        setSoundEnabledState(stored === "true");
-      }
+      deferEffectUpdate(() => {
+        if (stored !== null) {
+          setSoundEnabledState(stored === "true");
+        }
+        setHydrated(true);
+      });
     } catch {
-      // ignore
+      deferEffectUpdate(() => {
+        setHydrated(true);
+      });
     }
-    setHydrated(true);
   }, []);
 
   const setSoundEnabled = useCallback((value: boolean) => {

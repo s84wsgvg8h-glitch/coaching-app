@@ -202,7 +202,7 @@ export default function StatisticsChartFrame({
                       <button
                         key={option.value}
                         type="button"
-                        className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5 ${
+                        className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-hover ${
                           chartMode === option.value
                             ? "text-brand-purple"
                             : "text-app-text"
@@ -224,7 +224,7 @@ export default function StatisticsChartFrame({
                       <button
                         key={option.value}
                         type="button"
-                        className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5 ${
+                        className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-hover ${
                           overlayMetric === option.value
                             ? "text-orange-400"
                             : "text-app-text"

@@ -13,6 +13,7 @@ type AthleteDayCheckinCardProps = {
   checkin: AthleteDayCheckin;
   dayIsPast: boolean;
   notesOpen: boolean;
+  readOnly?: boolean;
   onBwChange: (value: string) => void;
   onBwBlur: (value: string) => void;
   onRecoverySelect: (value: number) => void;
@@ -25,6 +26,7 @@ export default function AthleteDayCheckinCard({
   checkin,
   dayIsPast,
   notesOpen,
+  readOnly = false,
   onBwChange,
   onBwBlur,
   onRecoverySelect,
@@ -48,6 +50,7 @@ export default function AthleteDayCheckinCard({
           onBlur={(event) => onNotesBlur(event.target.value)}
           placeholder="Notes over deze dag..."
           className="athlete-program-checkin-notes"
+          readOnly={readOnly}
         />
       ) : null}
 
@@ -60,6 +63,7 @@ export default function AthleteDayCheckinCard({
             onBlur={(event) => onBwBlur(event.target.value.trim())}
             placeholder="—"
             inputMode="decimal"
+            readOnly={readOnly}
             className={`athlete-program-checkin-bw ${
               bwOverdue ? "is-overdue" : ""
             }`}
@@ -78,6 +82,7 @@ export default function AthleteDayCheckinCard({
                 key={option}
                 type="button"
                 onClick={() => onRecoverySelect(option)}
+                disabled={readOnly}
                 className={`athlete-program-scale-btn athlete-program-scale-btn--recovery ${
                   checkin.recovery === option ? "is-selected" : ""
                 }`}
@@ -100,6 +105,7 @@ export default function AthleteDayCheckinCard({
                 key={option}
                 type="button"
                 onClick={() => onFatigueSelect(option)}
+                disabled={readOnly}
                 className={`athlete-program-scale-btn athlete-program-scale-btn--fatigue ${
                   checkin.fatigue === option ? "is-selected" : ""
                 }`}

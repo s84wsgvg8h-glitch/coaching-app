@@ -1,26 +1,33 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
-import { GripVertical } from "lucide-react";
+import { Copy, GripVertical } from "lucide-react";
 import CoachExerciseNameInput from "@/components/programs/coach/CoachExerciseNameInput";
 import CoachProgramDayHeader from "@/components/programs/coach/CoachProgramDayHeader";
 import CoachProgramWeekHeader, {
+  type CoachProgramAthleteOption,
   type CoachSbdSummaryItem,
   type EditorView,
 } from "@/components/programs/coach/CoachProgramWeekHeader";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
 import { isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
-import { COACH_CARD_DISMISS_BTN, DELETE_X_BTN, setEmptyDragImage } from "@/lib/programWeek/constants";
+import { COACH_CARD_DISMISS_BTN, DELETE_X_BTN, isExerciseCardDragBlockedTarget, setDragPreviewFromElement } from "@/lib/programWeek/constants";
 import {
   getCoachExerciseColorClass,
   getCoachExercisePriorityClass,
   getExercisePriority,
   getExercisePriorityLabel,
   getExercisePriorityShortLabel,
-  getIntensityType,
-  getIntensityValue,
 } from "@/lib/programWeek/exerciseDisplay";
+import {
+  applyIntensityInput,
+  applyLoadKgInput,
+  getIntensityInputDisplay,
+  getLoadKgInputDisplay,
+} from "@/lib/programWeek/intensityInput";
+import { SHOW_EXERCISE_PRIORITY_UI } from "@/lib/programWeek/editorFlags";
+import { sortExercisesForDay } from "@/lib/programWeek/sortExercises";
 import type { ProgramSearchContext } from "@/lib/programSearch";
 import type {
   ProgramDay,
@@ -64,7 +71,7 @@ export type CoachProgramWeekContentProps = {
   exerciseSets: string;
   exerciseReps: string;
   exerciseIntensity: string;
-  exerciseIntensityType: string;
+  exerciseLoadKg: string;
   setOpenDayWarmupId: (id: string) => void;
   setOpenDayNoteId: (id: string) => void;
   setUitlegMode: React.Dispatch<React.SetStateAction<boolean>>;
@@ -74,7 +81,7 @@ export type CoachProgramWeekContentProps = {
   setExerciseSets: (v: string) => void;
   setExerciseReps: (v: string) => void;
   setExerciseIntensity: (v: string) => void;
-  setExerciseIntensityType: (v: string) => void;
+  setExerciseLoadKg: (v: string) => void;
   setIsCreatingDay: (v: boolean) => void;
   setNewDayTitle: (v: string) => void;
   setOpenExerciseNoteId: (id: string) => void;
@@ -82,6 +89,10 @@ export type CoachProgramWeekContentProps = {
   getDayDateInputValue: (day: ProgramDay) => string;
   hasExercises: (dayId: string) => boolean;
   duplicateDay: (day: ProgramDay) => void;
+  duplicateExerciseRow?: (
+    dayId: string,
+    exerciseId: string,
+  ) => void | Promise<void>;
   deleteDay: (dayId: string) => void;
   updateDayLocal: (
     dayId: string,
@@ -114,6 +125,10 @@ export type CoachProgramWeekContentProps = {
     e: React.DragEvent<HTMLDivElement>,
     dayId: string,
     exerciseId: string,
+  ) => void;
+  handleExerciseDragOverDay: (
+    e: React.DragEvent<HTMLDivElement>,
+    dayId: string,
   ) => void;
   saveExerciseOrder: (dayId: string) => void | Promise<void>;
   updateExerciseLocal: (
@@ -167,6 +182,10 @@ export type CoachProgramWeekContentProps = {
   editorView?: EditorView;
   onEditorViewChange?: (view: EditorView) => void;
   showEditorViewToggle?: boolean;
+  athleteOptions?: CoachProgramAthleteOption[];
+  currentAthleteId?: string;
+  onAthleteChange?: (athleteId: string) => void;
+  athleteSwitching?: boolean;
 };
 
 export default function CoachProgramWeekContent({
@@ -200,7 +219,7 @@ export default function CoachProgramWeekContent({
   exerciseSets,
   exerciseReps,
   exerciseIntensity,
-  exerciseIntensityType,
+  exerciseLoadKg,
   setOpenDayWarmupId,
   setOpenDayNoteId,
   setUitlegMode,
@@ -210,7 +229,7 @@ export default function CoachProgramWeekContent({
   setExerciseSets,
   setExerciseReps,
   setExerciseIntensity,
-  setExerciseIntensityType,
+  setExerciseLoadKg,
   setIsCreatingDay,
   setNewDayTitle,
   setOpenExerciseNoteId,
@@ -218,6 +237,7 @@ export default function CoachProgramWeekContent({
   getDayDateInputValue,
   hasExercises,
   duplicateDay,
+  duplicateExerciseRow,
   deleteDay,
   updateDayLocal,
   saveDayMeta,
@@ -230,6 +250,7 @@ export default function CoachProgramWeekContent({
   saveExerciseLibraryLink,
   handleExerciseDragStart,
   handleExerciseDragOver,
+  handleExerciseDragOverDay,
   saveExerciseOrder,
   updateExerciseLocal,
   saveExerciseField,
@@ -249,6 +270,10 @@ export default function CoachProgramWeekContent({
   editorView = "card",
   onEditorViewChange,
   showEditorViewToggle = false,
+  athleteOptions,
+  currentAthleteId,
+  onAthleteChange,
+  athleteSwitching,
 }: CoachProgramWeekContentProps) {
   return (
     <div className="coach-program-main max-w-full">
@@ -265,6 +290,10 @@ export default function CoachProgramWeekContent({
           editorView={editorView}
           onEditorViewChange={onEditorViewChange}
           showEditorViewToggle={showEditorViewToggle}
+          athleteOptions={athleteOptions}
+          currentAthleteId={currentAthleteId}
+          onAthleteChange={onAthleteChange}
+          athleteSwitching={athleteSwitching}
         />
       )}
 
@@ -272,20 +301,29 @@ export default function CoachProgramWeekContent({
 
               <div className="coach-program-days-grid">
                 {days.map((day) => {
-                  const exercises = exercisesByDay[day.id] || [];
+                  const exercises = sortExercisesForDay(exercisesByDay[day.id] || []);
                   const isAddingExercise = creatingExerciseDayId === day.id;
                   const dayHasExercises = hasExercises(day.id);
                   const noteOpen = openDayNoteId === day.id;
                   const warmupOpen = openDayWarmupId === day.id;
 
-                  const dayDropShift =
+                  const isDraggingDay = draggedDayId === day.id;
+                  const showDayDropBefore =
                     dayDropIndicator?.targetId === day.id &&
                     draggedDayId &&
-                    draggedDayId !== day.id
-                      ? dayDropIndicator.position === "before"
-                        ? "translate-y-8"
-                        : "-translate-y-8"
-                      : "";
+                    draggedDayId !== day.id &&
+                    dayDropIndicator.position === "before";
+                  const showDayDropAfter =
+                    dayDropIndicator?.targetId === day.id &&
+                    draggedDayId &&
+                    draggedDayId !== day.id &&
+                    dayDropIndicator.position === "after";
+                  const isExerciseDropTarget =
+                    Boolean(draggedExercise) &&
+                    exerciseDropIndicator?.dayId === day.id &&
+                    draggedExercise?.dayId !== day.id;
+                  const showEmptyDayExerciseDrop =
+                    isExerciseDropTarget && !dayHasExercises;
 
                   return (
                     <div
@@ -295,19 +333,30 @@ export default function CoachProgramWeekContent({
                         e.preventDefault();
                         void saveDayOrder();
                       }}
-                      className={`coach-program-day-column group/day flex w-full min-w-0 flex-col transform-gpu transition-[transform,opacity] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                        draggedDayId === day.id
-                          ? "z-10 opacity-55 scale-[0.94] rotate-1"
-                          : "opacity-100 scale-100 rotate-0"
-                      } ${dayDropShift}`}
+                      className={`coach-program-day-column group/day relative flex w-full min-w-0 flex-col transform-gpu transition-[transform,opacity,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                        isDraggingDay
+                          ? "z-20 scale-[0.98] opacity-45 saturate-50"
+                          : "z-0 opacity-100 scale-100"
+                      }`}
                     >
+                      {showDayDropBefore ? (
+                        <div
+                          className="coach-program-drop-line coach-program-drop-line--day"
+                          aria-hidden
+                        />
+                      ) : null}
                       <div className="coach-program-day-header-row flex items-start gap-1">
                         {isCoach ? (
                           <span
                             draggable
                             tabIndex={-1}
                             onDragStart={(event) => {
-                              setEmptyDragImage(event);
+                              const column = event.currentTarget.closest(
+                                ".coach-program-day-column",
+                              );
+                              if (column instanceof HTMLElement) {
+                                setDragPreviewFromElement(event, column);
+                              }
                               handleDragStart(day.id);
                             }}
                             onDragEnd={() => void saveDayOrder()}
@@ -341,14 +390,18 @@ export default function CoachProgramWeekContent({
                       </div>
 
                       <div
-                        className={`coach-program-day-card flex flex-col transition-[transform,opacity,box-shadow,border-color] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${
-                          draggedDayId === day.id
-                            ? "shadow-2xl ring-2 ring-brand-blue/20"
+                        className={`coach-program-day-card relative flex flex-col transition-[transform,opacity,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                          isDraggingDay
+                            ? "shadow-2xl ring-2 ring-brand-blue/25"
                             : ""
                         } ${
                           dayDropIndicator?.targetId === day.id &&
                           draggedDayId !== day.id
-                            ? "border-brand-blue/50 shadow-xl"
+                            ? "border-brand-blue/40 shadow-lg"
+                            : ""
+                        } ${
+                          isExerciseDropTarget
+                            ? "border-brand-blue/40 shadow-lg"
                             : ""
                         } ${
                           dayHasExercises ||
@@ -538,46 +591,50 @@ export default function CoachProgramWeekContent({
                           </div>
                         )}
 
+                        {showEmptyDayExerciseDrop ? (
+                          <div
+                            onDragOver={(e) =>
+                              handleExerciseDragOverDay(e, day.id)
+                            }
+                            onDrop={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                            }}
+                            className="coach-program-exercise-day-drop-zone mt-1.5 flex min-h-[120px] flex-1 items-center justify-center rounded-[var(--coach-program-radius)] border border-dashed border-brand-blue/35 bg-brand-blue/[0.04]"
+                          >
+                            <div
+                              className="coach-program-drop-line coach-program-drop-line--exercise static w-[calc(100%-2rem)]"
+                              aria-hidden
+                            />
+                          </div>
+                        ) : null}
+
                         {dayHasExercises && (
                           <div className="space-y-1.5 mt-1.5">
                             {exercises.map((exercise) => {
-                              const intensityType = getIntensityType(exercise);
                               const exerciseNoteOpen =
                                 openExerciseNoteId === exercise.id;
                               const linkedLibraryItem =
                                 getExerciseLibraryItem(exercise);
-                              const exerciseDropShift =
+                              const isDraggingExercise =
+                                draggedExercise?.exerciseId === exercise.id;
+                              const showExerciseDropBefore =
                                 exerciseDropIndicator?.dayId === day.id &&
                                 exerciseDropIndicator.targetId === exercise.id &&
-                                draggedExercise?.exerciseId !== exercise.id
-                                  ? exerciseDropIndicator.position === "before"
-                                    ? "translate-y-4"
-                                    : "-translate-y-4"
-                                  : "";
+                                draggedExercise?.exerciseId !== exercise.id &&
+                                exerciseDropIndicator.position === "before";
+                              const showExerciseDropAfter =
+                                exerciseDropIndicator?.dayId === day.id &&
+                                exerciseDropIndicator.targetId === exercise.id &&
+                                draggedExercise?.exerciseId !== exercise.id &&
+                                exerciseDropIndicator.position === "after";
 
                               return (
                                 <div
                                   key={exercise.id}
                                   id={`exercise-${exercise.id}`}
-                                  className="coach-program-exercise-row flex items-stretch gap-1.5"
+                                  className="coach-program-exercise-row relative flex items-stretch gap-1"
                                 >
-                                  {isCoach ? (
-                                    <span
-                                      draggable
-                                      tabIndex={-1}
-                                      onDragStart={(e) => {
-                                        e.stopPropagation();
-                                        setEmptyDragImage(e);
-                                        handleExerciseDragStart(day.id, exercise.id);
-                                      }}
-                                      onDragEnd={() => void saveExerciseOrder(day.id)}
-                                      className="coach-program-drag-handle self-center shrink-0"
-                                      aria-label="Oefening verplaatsen"
-                                      title="Sleep om oefening te verplaatsen"
-                                    >
-                                      <GripVertical className="h-4 w-4" aria-hidden />
-                                    </span>
-                                  ) : null}
                                   {linkedLibraryItem && (
                                     <div className="coach-exercise-uitleg group/uitleg relative shrink-0">
                                       <button
@@ -615,6 +672,17 @@ export default function CoachProgramWeekContent({
                                   )}
 
                                   <div
+                                    draggable={isCoach}
+                                    onDragStart={(e) => {
+                                      if (isExerciseCardDragBlockedTarget(e.target)) {
+                                        e.preventDefault();
+                                        return;
+                                      }
+                                      e.stopPropagation();
+                                      setDragPreviewFromElement(e, e.currentTarget);
+                                      handleExerciseDragStart(day.id, exercise.id);
+                                    }}
+                                    onDragEnd={() => void saveExerciseOrder(day.id)}
                                     onMouseDown={(e) => {
                                       if (
                                         (e.target as HTMLElement).closest(
@@ -644,21 +712,32 @@ export default function CoachProgramWeekContent({
                                       e.preventDefault();
                                       e.stopPropagation();
                                     }}
-                                    className={`coach-exercise-block group/exercise relative min-w-0 flex-1 ${getCoachExerciseColorClass(
+                                    title={
+                                      isCoach
+                                        ? "Houd ingedrukt op lege ruimte om te slepen"
+                                        : undefined
+                                    }
+                                    className={`coach-exercise-block group/exercise relative min-w-0 flex-1 ${isCoach ? "coach-exercise-block--draggable" : ""} ${getCoachExerciseColorClass(
                                       exercise.name,
-                                    )} transition-[transform,opacity,box-shadow] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)] ${exerciseDropShift} ${
-                                      draggedExercise?.exerciseId === exercise.id
-                                        ? "z-10 opacity-55 scale-[0.96] shadow-lg ring-2 ring-black/15"
-                                        : "opacity-100 scale-100"
+                                    )} transform-gpu transition-[transform,opacity,box-shadow,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
+                                      isDraggingExercise
+                                        ? "z-10 scale-[0.97] opacity-40 saturate-75 shadow-xl ring-2 ring-brand-blue/20"
+                                        : "z-0 scale-100 opacity-100"
                                     } ${
                                       exerciseDropIndicator?.dayId === day.id &&
                                       exerciseDropIndicator.targetId ===
                                         exercise.id &&
-                                      draggedExercise?.exerciseId !== exercise.id
-                                        ? "ring-2 ring-black"
+                                      !isDraggingExercise
+                                        ? "ring-2 ring-brand-blue/35"
                                         : ""
                                     }`}
                                   >
+                                  {showExerciseDropBefore ? (
+                                    <div
+                                      className="coach-program-drop-line coach-program-drop-line--exercise"
+                                      aria-hidden
+                                    />
+                                  ) : null}
                                   {isCoach && (
                                     <>
                                       <button
@@ -670,6 +749,24 @@ export default function CoachProgramWeekContent({
                                       >
                                         ✕
                                       </button>
+                                      {duplicateExerciseRow ? (
+                                        <button
+                                          type="button"
+                                          onClick={(event) => {
+                                            event.preventDefault();
+                                            event.stopPropagation();
+                                            void duplicateExerciseRow(
+                                              day.id,
+                                              exercise.id,
+                                            );
+                                          }}
+                                          className="coach-program-exercise-dup-btn opacity-0 group-hover/exercise:opacity-100"
+                                          title="Dupliceer oefening"
+                                          aria-label="Dupliceer oefening"
+                                        >
+                                          <Copy className="h-3.5 w-3.5" aria-hidden />
+                                        </button>
+                                      ) : null}
                                     </>
                                   )}
 
@@ -724,7 +821,9 @@ export default function CoachProgramWeekContent({
                                         )}
                                       </div>
 
-                                      {isCoach && isPriorityExercise(exercise.name) ? (
+                                      {SHOW_EXERCISE_PRIORITY_UI &&
+                                      isCoach &&
+                                      isPriorityExercise(exercise.name) ? (
                                         <select
                                           value={getExercisePriority(exercise) || ""}
                                           onChange={(event) => {
@@ -751,7 +850,8 @@ export default function CoachProgramWeekContent({
                                             </option>
                                           ))}
                                         </select>
-                                      ) : isPriorityExercise(exercise.name) &&
+                                      ) : SHOW_EXERCISE_PRIORITY_UI &&
+                                        isPriorityExercise(exercise.name) &&
                                         getExercisePriority(exercise) ? (
                                         <p className="coach-program-exercise-priority-sub">
                                           {getExercisePriorityLabel(exercise)}
@@ -833,56 +933,47 @@ export default function CoachProgramWeekContent({
                                       </p>
 
                                       <input
-                                        value={getIntensityValue(exercise)}
+                                        value={getIntensityInputDisplay(exercise)}
                                         onChange={(e) => {
                                           const value = e.target.value;
-
-                                          if (intensityType === "rpe") {
-                                            updateExerciseLocal(
-                                              day.id,
-                                              exercise.id,
-                                              "rpe",
-                                              value,
-                                            );
-
-                                            updateExerciseLocal(
-                                              day.id,
-                                              exercise.id,
-                                              "load",
-                                              "",
-                                            );
-                                          } else {
-                                            updateExerciseLocal(
-                                              day.id,
-                                              exercise.id,
-                                              "load",
-                                              value,
-                                            );
-
+                                          if (value.includes("%")) {
                                             updateExerciseLocal(
                                               day.id,
                                               exercise.id,
                                               "rpe",
                                               "",
                                             );
+                                            updateExerciseLocal(
+                                              day.id,
+                                              exercise.id,
+                                              "load",
+                                              value,
+                                            );
+                                            return;
                                           }
+                                          const kg = getLoadKgInputDisplay(exercise);
+                                          updateExerciseLocal(
+                                            day.id,
+                                            exercise.id,
+                                            "rpe",
+                                            value,
+                                          );
+                                          updateExerciseLocal(
+                                            day.id,
+                                            exercise.id,
+                                            "load",
+                                            kg ? `${kg}kg` : "",
+                                          );
                                         }}
                                         onBlur={(e) => {
-                                          const value = e.target.value.trim();
-
-                                          if (intensityType === "rpe") {
-                                            saveExerciseFields(exercise.id, {
-                                              rpe: value,
-                                              load: "",
-                                            });
-                                          } else {
-                                            saveExerciseFields(exercise.id, {
-                                              load: value
-                                                ? `${value}${intensityType}`
-                                                : "",
-                                              rpe: "",
-                                            });
-                                          }
+                                          const updates = applyIntensityInput(
+                                            exercise,
+                                            e.target.value,
+                                          );
+                                          void saveExerciseFields(exercise.id, {
+                                            rpe: updates.rpe || "",
+                                            load: updates.load || "",
+                                          });
                                         }}
                                         onKeyDown={(e) => {
                                           if (e.key === "Enter") {
@@ -892,30 +983,46 @@ export default function CoachProgramWeekContent({
                                         }}
                                         disabled={!isCoach}
                                         className="coach-program-field"
+                                        placeholder="8 of 80%"
                                       />
                                     </div>
 
                                     <div className="coach-program-field-cell">
                                       <p className="coach-program-field-label">
-                                        TYPE
+                                        LOAD
                                       </p>
 
-                                      <select
-                                        value={intensityType}
-                                        onChange={(e) =>
-                                          updateIntensityType(
+                                      <input
+                                        value={getLoadKgInputDisplay(exercise)}
+                                        onChange={(e) => {
+                                          const value = e.target.value;
+                                          updateExerciseLocal(
                                             day.id,
+                                            exercise.id,
+                                            "load",
+                                            value,
+                                          );
+                                        }}
+                                        onBlur={(e) => {
+                                          const updates = applyLoadKgInput(
                                             exercise,
                                             e.target.value,
-                                          )
-                                        }
+                                          );
+                                          void saveExerciseFields(exercise.id, {
+                                            rpe: updates.rpe || "",
+                                            load: updates.load || "",
+                                          });
+                                        }}
+                                        onKeyDown={(e) => {
+                                          if (e.key === "Enter") {
+                                            e.preventDefault();
+                                            e.currentTarget.blur();
+                                          }
+                                        }}
                                         disabled={!isCoach}
-                                        className="coach-program-field coach-program-field-select"
-                                      >
-                                        <option value="%">%</option>
-                                        <option value="rpe">RPE</option>
-                                        <option value="kg">KG</option>
-                                      </select>
+                                        className="coach-program-field"
+                                        placeholder="kg"
+                                      />
                                     </div>
                                   </div>
 
@@ -1012,13 +1119,32 @@ export default function CoachProgramWeekContent({
                                     </div>
                                   )}
                                 </div>
+                                {showExerciseDropAfter ? (
+                                  <div
+                                    className="coach-program-drop-line coach-program-drop-line--exercise coach-program-drop-line--after"
+                                    aria-hidden
+                                  />
+                                ) : null}
                                 </div>
                               );
                             })}
+                            {isCoach && isExerciseDropTarget ? (
+                              <div
+                                onDragOver={(e) =>
+                                  handleExerciseDragOverDay(e, day.id)
+                                }
+                                onDrop={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                }}
+                                className="min-h-8"
+                                aria-hidden
+                              />
+                            ) : null}
                           </div>
                         )}
 
-                        <div className="mt-auto pt-5">
+                        <div className="mt-1.5 pt-1">
                           {isCoach && !isAddingExercise && (
                             <button
                               type="button"
@@ -1028,7 +1154,7 @@ export default function CoachProgramWeekContent({
                                 setExerciseSets("");
                                 setExerciseReps("");
                                 setExerciseIntensity("");
-                                setExerciseIntensityType("rpe");
+                                setExerciseLoadKg("");
                               }}
                               className="coach-program-add-exercise-btn"
                             >
@@ -1095,20 +1221,17 @@ export default function CoachProgramWeekContent({
                                   className="coach-program-inline-form-input"
                                 />
 
-                                <select
-                                  value={exerciseIntensityType}
+                                <input
+                                  value={exerciseLoadKg}
                                   onChange={(e) =>
-                                    setExerciseIntensityType(e.target.value)
+                                    setExerciseLoadKg(e.target.value)
                                   }
                                   onKeyDown={(e) =>
                                     handleNewExerciseFormKeyDown(e, day.id)
                                   }
-                                  className="coach-program-inline-form-input coach-program-inline-form-select"
-                                >
-                                  <option value="%">%</option>
-                                  <option value="rpe">RPE</option>
-                                  <option value="kg">KG</option>
-                                </select>
+                                  placeholder="Load"
+                                  className="coach-program-inline-form-input"
+                                />
                               </div>
 
                               <div className="coach-program-inline-form-actions">
@@ -1128,7 +1251,7 @@ export default function CoachProgramWeekContent({
                                     setExerciseSets("");
                                     setExerciseReps("");
                                     setExerciseIntensity("");
-                                    setExerciseIntensityType("rpe");
+                                    setExerciseLoadKg("");
                                   }}
                                   className="app-btn-secondary flex-1"
                                 >
@@ -1140,6 +1263,12 @@ export default function CoachProgramWeekContent({
                         </div>
                       </div>
                       </div>
+                      {showDayDropAfter ? (
+                        <div
+                          className="coach-program-drop-line coach-program-drop-line--day coach-program-drop-line--after"
+                          aria-hidden
+                        />
+                      ) : null}
                     </div>
                   );
                 })}

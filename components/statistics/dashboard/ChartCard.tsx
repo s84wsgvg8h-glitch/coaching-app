@@ -58,7 +58,7 @@ function MenuItem({
   return (
     <button
       type="button"
-      className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-white/5 ${
+      className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-hover ${
         active ? "text-brand-purple" : "text-app-text"
       }`}
       onClick={onClick}
@@ -120,7 +120,7 @@ export default function ChartCard({
     .join(" · ");
 
   const body = (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_40px_rgba(0,0,0,0.22)]">
+    <div className="rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1 pr-2">
           <h3 className="truncate text-[15px] font-semibold text-app-text">{title}</h3>
@@ -143,13 +143,13 @@ export default function ChartCard({
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-[#111827] text-app-muted transition hover:text-app-text"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
               aria-label="Grafiek opties"
             >
               <MoreVertical className="h-4 w-4" />
             </button>
             {menuOpen ? (
-              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-white/10 bg-[#111827] p-1 shadow-xl">
+              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface p-1 shadow-xl">
                 {onChartModeChange && chartMode ? (
                   <>
                     <MenuSection label="Weergave" />
@@ -207,7 +207,7 @@ export default function ChartCard({
                 {onHide ? (
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-white/5"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-app-surface-hover"
                     onClick={() => {
                       onHide();
                       setMenuOpen(false);
@@ -219,7 +219,7 @@ export default function ChartCard({
                 ) : null}
                 <button
                   type="button"
-                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-white/5"
+                  className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-app-surface-hover"
                   onClick={() => {
                     setExpanded(true);
                     setMenuOpen(false);
@@ -231,7 +231,7 @@ export default function ChartCard({
                 {onExport ? (
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-white/5"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-app-surface-hover"
                     onClick={() => {
                       onExport();
                       setMenuOpen(false);
@@ -244,7 +244,7 @@ export default function ChartCard({
                 {onReset ? (
                   <button
                     type="button"
-                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-white/5"
+                    className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-app-text hover:bg-app-surface-hover"
                     onClick={() => {
                       onReset();
                       setMenuOpen(false);
@@ -275,7 +275,7 @@ export default function ChartCard({
         onClick={() => setExpanded(false)}
       >
         <div
-          className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-white/10 bg-[#0d1118] p-4"
+          className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-app-border bg-app-surface p-4"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between">
@@ -286,7 +286,7 @@ export default function ChartCard({
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="rounded-lg border border-white/10 p-2 text-app-muted hover:text-app-text"
+              className="rounded-lg border border-app-border p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
             >
               <X className="h-4 w-4" />
             </button>
@@ -324,11 +324,11 @@ function BlockSpanFooter({
 
   return (
     <div className="pl-[44px] pr-2">
-      <div className="flex border-t border-white/5">
+      <div className="flex border-t border-app-border">
         {spans.map((span) => (
           <div
             key={`${span.blockId}-${span.count}`}
-            className="border-r border-dashed border-white/10 pt-1 text-center text-[10px] font-medium text-app-muted last:border-r-0"
+            className="border-r border-dashed border-app-border pt-1 text-center text-[10px] font-medium text-app-muted last:border-r-0"
             style={{ width: `${(span.count / data.length) * 100}%` }}
           >
             {span.label}

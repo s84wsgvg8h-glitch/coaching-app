@@ -13,7 +13,7 @@ export default function StatsTabs<T extends string>({
 }: StatsTabsProps<T>) {
   return (
     <div className="mb-6 -mx-1 overflow-x-auto px-1 scrollbar-none">
-      <div className="flex w-max min-w-full gap-2 rounded-2xl border border-white/10 bg-[#0d1118]/80 p-1.5 sm:w-full sm:flex-wrap">
+      <div className="flex w-max min-w-full gap-1 rounded-2xl border border-app-border bg-app-surface p-1.5 sm:w-full sm:flex-wrap">
       {tabs.map((tab) => {
         const active = tab.id === activeTab;
         return (
@@ -23,8 +23,8 @@ export default function StatsTabs<T extends string>({
             onClick={() => onChange(tab.id)}
             className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
               active
-                ? "bg-brand-purple/15 text-white shadow-[inset_0_0_0_1px_rgba(168,85,247,0.35),0_0_24px_rgba(168,85,247,0.12)]"
-                : "text-app-muted hover:bg-white/5 hover:text-app-text"
+                ? "bg-app-accent/15 text-app-text shadow-[inset_0_0_0_1px_rgba(79,140,255,0.3)]"
+                : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
             }`}
           >
             {tab.label}

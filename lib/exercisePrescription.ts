@@ -25,6 +25,14 @@ export function getIntensityValueFromExercise(exercise: {
   return "";
 }
 
+export function getPrescribedKgFromExercise(exercise: {
+  load?: string | null;
+}): string {
+  const load = exercise.load?.trim() || "";
+  if (!load || load.includes("%")) return "";
+  return load.replace(/kg/gi, "").trim();
+}
+
 export function classifySbdLift(exerciseName: string): SbdLiftKey | null {
   const name = exerciseName.toLowerCase();
   if (
@@ -67,23 +75,45 @@ export function formatPrescriptionIntensity(
   exercise: { name?: string | null; rpe?: string | null; load?: string | null },
   maxes?: AthleteCurrentMaxes | null,
 ): string {
-  const value = getIntensityValueFromExercise(exercise).trim();
-  const type = getIntensityTypeFromExercise(exercise);
-  if (!value) return "-";
+  const rpe = exercise.rpe?.trim() || "";
+  const load = exercise.load?.trim() || "";
 
-  if (type === "%") {
+  if (load.includes("%")) {
+    const value = load.replace("%", "").trim();
+    if (!value) return rpe ? `RPE ${rpe}` : "-";
+
     const percent = Number.parseFloat(value.replace(",", "."));
-    if (!Number.isFinite(percent)) return `${value}%`;
+    const percentLabel = Number.isFinite(percent) ? `${value}%` : `${value}%`;
 
     const lift = classifySbdLift(exercise.name || "");
     const max = lift && maxes ? getMaxForLift(maxes, lift) : null;
-    const kg = percentToKg(percent, max);
-    if (kg !== null) return `${value}% (${kg} kg)`;
-    return `${value}%`;
+    const derivedKg = Number.isFinite(percent) ? percentToKg(percent, max) : null;
+    if (derivedKg !== null) return `${percentLabel} (${derivedKg} kg)`;
+    return percentLabel;
   }
 
-  if (type === "kg") return `${value} kg`;
-  return `RPE ${value}`;
+  if (rpe) return `RPE ${rpe}`;
+
+  const prescribedKg = getPrescribedKgFromExercise(exercise);
+  if (prescribedKg) return `${prescribedKg} kg`;
+
+  return "-";
+}
+
+export function getPrescriptionSummary(
+  exercise: { name?: string | null; rpe?: string | null; load?: string | null },
+  maxes?: AthleteCurrentMaxes | null,
+): string {
+  const intensity = formatPrescriptionIntensity(exercise, maxes);
+  const prescribedKg = getPrescribedKgFromExercise(exercise);
+  const parts: string[] = [];
+
+  if (intensity && intensity !== "-") parts.push(intensity);
+  if (prescribedKg && exercise.rpe?.trim()) {
+    parts.push(`${prescribedKg} kg`);
+  }
+
+  return parts.length > 0 ? parts.join(" · ") : "-";
 }
 
 export function estimateE1rmFromSet(
@@ -102,10 +132,13 @@ export function estimateE1rmFromSet(
   ) {
     const percentage = getPercentageForRpeAndReps(rpe, reps);
     if (percentage <= 0) return null;
-    return roundToNearestTwoPointFive((weight * 100) / percentage);
+    return Math.round((weight * 100) / percentage);
   }
 
-  return roundToNearestTwoPointFive(weight * (1 + reps / 30));
+  // Brzycki formula — becomes invalid when reps ≥ 37 (denominator ≤ 0)
+  const denominator = 1.0278 - 0.0278 * reps;
+  if (denominator <= 0) return null;
+  return Math.round(weight / denominator);
 }
 
 export function parseSetNumber(value: string | null | undefined): number | null {

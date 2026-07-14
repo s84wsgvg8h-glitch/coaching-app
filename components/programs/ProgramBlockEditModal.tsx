@@ -9,6 +9,7 @@ import {
   saveProgramPlanningBlockNote,
 } from "@/lib/programPlanningNotes";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ProgramBlockEditModalProps = {
   open: boolean;
@@ -50,17 +51,21 @@ export default function ProgramBlockEditModal({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    deferEffectUpdate(() => {
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
     if (!open) return;
-    setDraftTitle(title);
-    setDraftStartDate(startDate);
-    setDraftMacrocycleId(macrocycleId);
+    deferEffectUpdate(() => {
+      setDraftTitle(title);
+      setDraftStartDate(startDate);
+      setDraftMacrocycleId(macrocycleId);
+      setLoadingNote(true);
+    });
 
     let cancelled = false;
-    setLoadingNote(true);
 
     void loadProgramPlanningNotes(athleteId, [], [blockId]).then(({ data }) => {
       if (cancelled) return;

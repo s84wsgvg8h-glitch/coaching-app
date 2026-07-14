@@ -50,7 +50,32 @@ export default function ProfileSettingsLayout({
       ) : null}
 
       <nav
-        className="profile-settings-sidebar w-full shrink-0 lg:sticky lg:top-4 lg:w-56 xl:w-60"
+        className="profile-settings-mobile-nav lg:hidden"
+        aria-label="Profiel secties"
+      >
+        {sections.map((section) => {
+          const active = section.id === activeSection;
+          const Icon = section.icon;
+
+          return (
+            <button
+              key={section.id}
+              type="button"
+              onClick={() => onSectionChange(section.id)}
+              className={`profile-settings-mobile-pill app-focus-ring ${
+                active ? "is-active" : ""
+              }`}
+              aria-current={active ? "page" : undefined}
+            >
+              {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" /> : null}
+              {section.label}
+            </button>
+          );
+        })}
+      </nav>
+
+      <nav
+        className="profile-settings-sidebar hidden w-full shrink-0 lg:sticky lg:top-4 lg:block lg:w-56 xl:w-60"
         aria-label="Profiel navigatie"
       >
         {groups.map((group) => (
@@ -76,7 +101,7 @@ export default function ProfileSettingsLayout({
                       {Icon ? (
                         <Icon className="h-4 w-4 shrink-0 opacity-80" aria-hidden="true" />
                       ) : null}
-                      <span className="min-w-0 truncate">{section.label}</span>
+                      <span className="min-w-0 leading-snug">{section.label}</span>
                     </button>
                   );
                 })}

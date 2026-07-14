@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Scale } from "lucide-react";
 import { logQuickBodyweight } from "@/lib/athleteBwLog";
+import { trackEvent } from "@/lib/analytics";
 
 type QuickBodyweightLogProps = {
   athleteId: string;
@@ -18,56 +19,74 @@ export default function QuickBodyweightLog({
   const [bw, setBw] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastLogged, setLastLogged] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  function handleBwChange(value: string) {
+    // Only allow digits, dots and commas — prevents accidental "82k,5" input.
+    const filtered = value.replace(/[^0-9.,]/g, "");
+    setBw(filtered);
+  }
 
   async function handleSave() {
     const parsed = Number.parseFloat(bw.replace(",", "."));
     if (!Number.isFinite(parsed) || parsed <= 0) return;
 
     setSaving(true);
-    const { ok, error } = await logQuickBodyweight(athleteId, parsed);
+    setError(null);
+    const { ok, error: saveError } = await logQuickBodyweight(athleteId, parsed);
     setSaving(false);
 
-    if (!ok || error) {
-      alert(error || "Bodyweight kon niet worden opgeslagen.");
+    if (!ok || saveError) {
+      setError(saveError || "Bodyweight kon niet worden opgeslagen.");
       return;
     }
 
     setLastLogged(`${parsed} kg`);
     setBw("");
+    trackEvent("bodyweight_logged", { valueKg: parsed });
   }
 
   if (variant === "athlete") {
     return (
-      <div className="athlete-dashboard-card">
-        <div className="flex items-center gap-2">
-          <Scale className="h-4 w-4 text-app-muted" aria-hidden="true" />
-          <h2 className="text-[15px] font-semibold text-app-text">
-            Snelle BW-log
-          </h2>
-        </div>
-        <p className="mt-2 text-[13px] text-app-muted">
+      <div className="athlete-dashboard-card athlete-dashboard-card--bw">
+        <p className="athlete-dashboard-eyebrow athlete-dashboard-eyebrow--with-icon">
+          <Scale className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          Snelle BW-log
+        </p>
+        <p className="athlete-dashboard-card-desc mt-1 hidden text-[13px] text-app-muted lg:block">
           Log bodyweight los van je programmadag.
         </p>
-        <div className="mt-4 flex gap-2">
-          <input
-            value={bw}
-            onChange={(event) => setBw(event.target.value)}
-            placeholder="82,5"
-            inputMode="decimal"
-            className="athlete-dashboard-input min-w-0 flex-1"
-          />
+        <div className="athlete-dashboard-bw-row mt-3 lg:mt-4">
+          <div className="athlete-dashboard-bw-input-shell min-w-0 flex-1">
+            <input
+              value={bw}
+              onChange={(event) => handleBwChange(event.target.value)}
+              placeholder="-"
+              inputMode="decimal"
+              aria-label="Bodyweight in kg"
+              className="athlete-dashboard-bw-value-input min-w-0 flex-1"
+            />
+            <span className="athlete-dashboard-bw-unit shrink-0" aria-hidden="true">
+              kg
+            </span>
+          </div>
           <button
             type="button"
             disabled={saving || !bw.trim()}
             onClick={() => void handleSave()}
-            className="athlete-dashboard-log-btn shrink-0 disabled:opacity-45"
+            className="athlete-dashboard-log-btn athlete-dashboard-log-btn--compact shrink-0 disabled:opacity-45"
           >
             {saving ? "…" : "Log"}
           </button>
         </div>
         {lastLogged ? (
-          <p className="mt-2 text-[12px] font-medium text-emerald-400">
+          <p className="sr-only" aria-live="polite">
             Opgeslagen: {lastLogged}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="athlete-inline-toast athlete-inline-toast--error" role="alert">
+            {error}
           </p>
         ) : null}
       </div>
@@ -78,7 +97,7 @@ export default function QuickBodyweightLog({
     <div
       className={
         compact
-          ? "rounded-xl border border-app-border bg-white p-3"
+          ? "rounded-xl border border-app-border bg-app-surface p-3"
           : "app-card"
       }
     >
@@ -89,8 +108,8 @@ export default function QuickBodyweightLog({
       <div className="mt-3 flex gap-2">
         <input
           value={bw}
-          onChange={(event) => setBw(event.target.value)}
-          placeholder="82,5"
+          onChange={(event) => handleBwChange(event.target.value)}
+          placeholder="-"
           inputMode="decimal"
           className="w-full rounded-xl border border-app-border px-3 py-2 text-sm"
         />
@@ -104,7 +123,7 @@ export default function QuickBodyweightLog({
         </button>
       </div>
       {lastLogged ? (
-        <p className="mt-2 text-xs font-semibold text-emerald-700">
+        <p className="mt-2 text-xs font-semibold text-emerald-400">
           Opgeslagen: {lastLogged}
         </p>
       ) : null}

@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CoachProgramWeekStatsModalProps = {
   open: boolean;
@@ -21,7 +22,9 @@ export default function CoachProgramWeekStatsModal({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    deferEffectUpdate(() => {
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {

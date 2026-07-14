@@ -1,5 +1,10 @@
 import { NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/adminApiAuth";
+import {
+  adminKnowledgeCreateSchema,
+  adminKnowledgePatchSchema,
+  parseJsonBody,
+} from "@/lib/apiValidation";
 
 export async function GET(request: Request) {
   try {
@@ -38,22 +43,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
 
-    const body = (await request.json()) as {
-      scope?: "coach" | "athlete";
-      chunk_key?: string;
-      title?: string;
-      category?: string;
-      content?: string;
-      keywords?: string[];
-      active?: boolean;
-    };
-
-    if (!body.scope || !body.chunk_key || !body.title || !body.category) {
-      return NextResponse.json(
-        { error: "scope, chunk_key, title en category zijn verplicht." },
-        { status: 400 },
-      );
+    const parsed = await parseJsonBody(request, adminKnowledgeCreateSchema);
+    if (!parsed.success) {
+      return parsed.response;
     }
+
+    const body = parsed.data;
 
     const { data, error } = await access.admin
       .from("admin_knowledge_chunks")
@@ -94,22 +89,12 @@ export async function PATCH(request: Request) {
       return NextResponse.json({ error: access.error }, { status: 403 });
     }
 
-    const body = (await request.json()) as {
-      id?: string;
-      scope?: "coach" | "athlete";
-      chunk_key?: string;
-      title?: string;
-      category?: string;
-      content?: string;
-      keywords?: string[];
-      active?: boolean;
-    };
-
-    if (!body.id) {
-      return NextResponse.json({ error: "id is verplicht." }, { status: 400 });
+    const parsed = await parseJsonBody(request, adminKnowledgePatchSchema);
+    if (!parsed.success) {
+      return parsed.response;
     }
 
-    const { id, ...patch } = body;
+    const { id, ...patch } = parsed.data;
     const { data, error } = await access.admin
       .from("admin_knowledge_chunks")
       .update({

@@ -13,6 +13,7 @@ import {
   type OpenIpfLifterData,
 } from "@/lib/openipf";
 import { getApiAuthHeaders } from "@/lib/apiClient";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 const LEADERBOARD_CACHE_KEY = "openipf-leaderboard-cache-v2";
 const CACHE_TTL_MS = 6 * 60 * 60 * 1000;
@@ -182,11 +183,6 @@ export default function LeaderboardPage() {
   });
   const fetchGeneration = useRef(0);
 
-  useEffect(() => {
-    document.title = "Leaderboard";
-    void loadLeaderboard();
-  }, []);
-
   async function fetchOpenIpfChunked(
     names: string[],
     baseEntries: AthleteEntry[],
@@ -311,6 +307,13 @@ export default function LeaderboardPage() {
     );
   }
 
+  useEffect(() => {
+    document.title = "Leaderboard";
+    deferEffectUpdate(() => {
+      void loadLeaderboard();
+    });
+  }, []);
+
   const filterOptions = useMemo(() => {
     const divisions = new Set<string>();
     const weightClasses = new Set<string>();
@@ -392,6 +395,7 @@ export default function LeaderboardPage() {
       const aggregate = aggregateLeaderboardMeets(
         entry.lifter.meets,
         meetFilters,
+        sortMetric,
       );
 
       if (!aggregate) {
@@ -579,15 +583,15 @@ export default function LeaderboardPage() {
                   className="flex items-center gap-3 px-3 py-3"
                 >
                   <div
-                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-semibold ${
+                    className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                       rank === 1
-                        ? "bg-yellow-400/90 text-black"
+                        ? "bg-yellow-400/90 text-yellow-900"
                         : rank === 2
-                          ? "bg-zinc-300 text-black"
+                          ? "bg-slate-400/60 text-slate-100"
                           : rank === 3
-                            ? "bg-orange-400/90 text-black"
+                            ? "bg-orange-500/80 text-white"
                             : rank
-                              ? "bg-brand-purple text-white"
+                              ? "bg-brand-purple/90 text-white"
                               : "bg-app-surface-muted text-app-muted"
                     }`}
                   >
@@ -601,14 +605,15 @@ export default function LeaderboardPage() {
                     {row.openipf_pending ? (
                       <p className="text-xs text-app-muted">OpenIPF laden…</p>
                     ) : !row.openipf_found ? (
-                      <p className="text-xs text-red-400">
+                      <p className="text-xs text-red-400/80">
                         Niet gevonden in OpenIPF
                       </p>
                     ) : (
-                      <div className="mt-0.5 flex items-center gap-2.5 text-[11px] tabular-nums text-app-muted">
-                        <span>S {row.squat_kg || "-"}</span>
-                        <span>B {row.bench_kg || "-"}</span>
-                        <span>D {row.deadlift_kg || "-"}</span>
+                      <div className="mt-0.5 flex flex-wrap items-center gap-x-2.5 gap-y-0.5 text-[11px] tabular-nums text-app-muted">
+                        <span>S {row.squat_kg || "–"}</span>
+                        <span>B {row.bench_kg || "–"}</span>
+                        <span>D {row.deadlift_kg || "–"}</span>
+                        {row.weight_class_kg ? <span className="opacity-60">{row.weight_class_kg}kg</span> : null}
                       </div>
                     )}
                   </div>
@@ -663,15 +668,15 @@ export default function LeaderboardPage() {
                   >
                     <div className="flex justify-center">
                       <div
-                        className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-semibold ${
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${
                           rank === 1
-                            ? "bg-yellow-400/90 text-black"
+                            ? "bg-yellow-400/90 text-yellow-900"
                             : rank === 2
-                              ? "bg-zinc-300 text-black"
+                              ? "bg-slate-400/60 text-slate-100"
                               : rank === 3
-                                ? "bg-orange-400/90 text-black"
+                                ? "bg-orange-500/80 text-white"
                                 : rank
-                                  ? "bg-brand-purple text-white"
+                                  ? "bg-brand-purple/90 text-white"
                                   : "bg-app-surface-muted text-app-muted"
                         }`}
                       >

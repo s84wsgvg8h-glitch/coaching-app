@@ -107,7 +107,7 @@ export default function ProfileCoachSection({
       </div>
 
       {coachId && coachName ? (
-        <div className="rounded-2xl border border-gray-200 bg-gray-50 p-5">
+        <div className="rounded-2xl border border-app-border bg-app-surface p-5">
           <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
             Huidige coach
           </p>
@@ -118,7 +118,7 @@ export default function ProfileCoachSection({
               type="button"
               onClick={() => void removeCoach()}
               disabled={removing}
-              className="mt-4 rounded-xl border border-red-300 bg-white px-4 py-2 text-sm font-semibold text-red-700 hover:bg-red-50 disabled:opacity-60"
+              className="mt-4 rounded-xl border border-app-destructive/30 bg-app-surface px-4 py-2 text-sm font-semibold text-app-destructive hover:bg-app-destructive/10 disabled:opacity-60"
             >
               {removing ? "Verwijderen..." : "Coach verwijderen"}
             </button>

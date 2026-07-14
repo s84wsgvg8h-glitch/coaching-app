@@ -22,7 +22,7 @@ export default function CoachProgramDayHeader({
   return (
     <div className="coach-program-day-header">
       {editable ? (
-        <>
+        <div className="coach-program-day-header-row-inner">
           <input
             value={title}
             onChange={(event) => onTitleChange?.(event.target.value)}
@@ -43,12 +43,12 @@ export default function CoachProgramDayHeader({
             className="coach-program-day-pill coach-program-day-pill-date"
             aria-label="Datum van deze dag"
           />
-        </>
+        </div>
       ) : (
-        <>
+        <div className="coach-program-day-header-row-inner">
           <h2 className="coach-program-day-title">{title}</h2>
           <p className="coach-program-day-date">{dateLabel}</p>
-        </>
+        </div>
       )}
     </div>
   );

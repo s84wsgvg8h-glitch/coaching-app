@@ -6,6 +6,7 @@ import {
   saveProgramPlanningBlockNote,
   saveProgramPlanningWeekNote,
 } from "@/lib/programPlanningNotes";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CoachProgramScopeNotesProps = {
   athleteId: string;
@@ -46,9 +47,13 @@ export default function CoachProgramScopeNotes({
     }
 
     if (athleteId && blockId && weekId) {
-      void loadNotes();
+      deferEffectUpdate(() => {
+        void loadNotes();
+      });
     } else {
-      setLoading(false);
+      deferEffectUpdate(() => {
+        setLoading(false);
+      });
     }
 
     return () => {

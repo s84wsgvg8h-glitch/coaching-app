@@ -1,3 +1,4 @@
+import { parseWeekdayFromDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 import type { ProgramBlock, ProgramDay, ProgramWeek } from "@/lib/programWeek/types";
 
 const DUTCH_MONTHS = [
@@ -57,6 +58,93 @@ export function getWeekStartDateObject(block: ProgramBlock, programWeek: Program
   return weekStart;
 }
 
+function getMondayOfCalendarWeek(date: Date) {
+  const monday = new Date(date);
+  monday.setHours(0, 0, 0, 0);
+  const dayOfWeek = monday.getDay();
+  const daysFromMonday = dayOfWeek === 0 ? 6 : dayOfWeek - 1;
+  monday.setDate(monday.getDate() - daysFromMonday);
+  return monday;
+}
+
+function getDateForWeekdayInProgramWeek(
+  currentBlock: ProgramBlock | null,
+  week: ProgramWeek | null,
+  weekdayJs: number,
+) {
+  if (!currentBlock || !week) return null;
+
+  const weekAnchor = getWeekStartDateObject(currentBlock, week);
+  if (!weekAnchor) return null;
+
+  const monday = getMondayOfCalendarWeek(weekAnchor);
+  const daysFromMonday = weekdayJs === 0 ? 6 : weekdayJs - 1;
+  const date = new Date(monday);
+  date.setDate(date.getDate() + daysFromMonday);
+  return date;
+}
+
+function resolveProgramDayDate(
+  currentBlock: ProgramBlock | null,
+  week: ProgramWeek | null,
+  day: ProgramDay,
+  previousDate: Date | null,
+) {
+  const weekdayFromTitle = parseWeekdayFromDayTitle(day.title);
+
+  if (weekdayFromTitle !== null && previousDate !== null) {
+    const previousWeekday = previousDate.getDay();
+    let daysToAdd = (weekdayFromTitle - previousWeekday + 7) % 7;
+    if (daysToAdd === 0) daysToAdd = 7;
+    const date = new Date(previousDate);
+    date.setDate(date.getDate() + daysToAdd);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  if (weekdayFromTitle !== null) {
+    const dateFromTitle = getDateForWeekdayInProgramWeek(
+      currentBlock,
+      week,
+      weekdayFromTitle,
+    );
+    if (dateFromTitle) {
+      dateFromTitle.setHours(0, 0, 0, 0);
+      return dateFromTitle;
+    }
+  }
+
+  if (day.scheduled_date) {
+    const date = new Date(`${day.scheduled_date}T12:00:00`);
+    date.setHours(0, 0, 0, 0);
+    return date;
+  }
+
+  const date = getDayDateObject(currentBlock, week, day.day_number);
+  if (date) date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/** Resolve dates for all days in a week, counting forward through the day order. */
+export function buildProgramWeekDayDates(
+  currentBlock: ProgramBlock | null,
+  week: ProgramWeek | null,
+  days: ProgramDay[],
+): Map<string, Date> {
+  const sorted = [...days].sort((a, b) => a.day_number - b.day_number);
+  const result = new Map<string, Date>();
+  let previousDate: Date | null = null;
+
+  for (const day of sorted) {
+    const date = resolveProgramDayDate(currentBlock, week, day, previousDate);
+    if (!date) continue;
+    result.set(day.id, date);
+    previousDate = date;
+  }
+
+  return result;
+}
+
 export function getWeekEndDateObject(block: ProgramBlock, programWeek: ProgramWeek) {
   const weekStart = getWeekStartDateObject(block, programWeek);
   if (!weekStart) return null;
@@ -79,7 +167,7 @@ export function getDayDateObject(
   week: ProgramWeek | null,
   dayNumber: number,
 ) {
-  if (!currentBlock?.start_date || !week?.week_number) return null;
+  if (!currentBlock?.start_date || week?.week_number == null) return null;
   const date = new Date(currentBlock.start_date);
   date.setHours(0, 0, 0, 0);
   date.setDate(date.getDate() + (week.week_number - 1) * 7 + (dayNumber - 1));
@@ -100,22 +188,23 @@ export function getDayDateForProgramDay(
   currentBlock: ProgramBlock | null,
   week: ProgramWeek | null,
   day: ProgramDay,
+  weekDays?: ProgramDay[],
 ) {
-  if (day.scheduled_date) {
-    const date = new Date(`${day.scheduled_date}T12:00:00`);
-    date.setHours(0, 0, 0, 0);
-    return date;
+  if (weekDays && weekDays.length > 0) {
+    const dates = buildProgramWeekDayDates(currentBlock, week, weekDays);
+    return dates.get(day.id) ?? null;
   }
 
-  return getDayDateObject(currentBlock, week, day.day_number);
+  return resolveProgramDayDate(currentBlock, week, day, null);
 }
 
 export function getDayDateLabelForProgramDay(
   currentBlock: ProgramBlock | null,
   week: ProgramWeek | null,
   day: ProgramDay,
+  weekDays?: ProgramDay[],
 ) {
-  const date = getDayDateForProgramDay(currentBlock, week, day);
+  const date = getDayDateForProgramDay(currentBlock, week, day, weekDays);
   if (!date) return "Geen datum";
   return formatDutchDateWithFullMonth(date);
 }
@@ -124,8 +213,9 @@ export function getDayDateInputValue(
   currentBlock: ProgramBlock | null,
   week: ProgramWeek | null,
   day: ProgramDay,
+  weekDays?: ProgramDay[],
 ) {
-  const date = getDayDateForProgramDay(currentBlock, week, day);
+  const date = getDayDateForProgramDay(currentBlock, week, day, weekDays);
   if (!date) return "";
 
   const year = date.getFullYear();

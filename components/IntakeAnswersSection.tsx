@@ -56,7 +56,7 @@ export default function IntakeAnswersSection({
   const header = (
     <div className="flex items-start justify-between gap-4">
       <div>
-        <h3 className="text-lg font-bold text-black">Intakeformulier</h3>
+        <h3 className="text-lg font-bold text-app-text">Intakeformulier</h3>
         {completedAt ? (
           <p className="mt-1 text-sm text-gray-500">
             Ingevuld op{" "}
@@ -147,7 +147,7 @@ export default function IntakeAnswersSection({
                 <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
                   {field.label}
                 </p>
-                <p className="mt-1 whitespace-pre-wrap text-sm font-semibold text-black">
+                <p className="mt-1 whitespace-pre-wrap text-sm font-semibold text-app-text">
                   {formatIntakeAnswer(field, value)}
                 </p>
               </div>

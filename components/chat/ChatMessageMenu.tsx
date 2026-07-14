@@ -1,9 +1,37 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { ChevronDown, Pin, Reply, Trash2 } from "lucide-react";
+import { ChevronDown, Flag, Pin, Reply, Trash2 } from "lucide-react";
 
 import { QUICK_REACTION_EMOJIS } from "@/lib/chatReactions";
+
+function ChatMessageEmojiRow({
+  className = "",
+  onReact,
+  onCloseAndRun,
+}: {
+  className?: string;
+  onReact: (emoji: string) => void;
+  onCloseAndRun: (action: () => void) => void;
+}) {
+  return (
+    <div
+      className={`flex flex-wrap items-center justify-center gap-2 border-b border-app-border px-4 py-3 ${className}`}
+    >
+      {QUICK_REACTION_EMOJIS.map((emoji) => (
+        <button
+          key={emoji}
+          type="button"
+          onClick={() => onCloseAndRun(() => onReact(emoji))}
+          className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-app-surface-hover"
+          aria-label={`Reageer met ${emoji}`}
+        >
+          {emoji}
+        </button>
+      ))}
+    </div>
+  );
+}
 
 type ChatMessageMenuProps = {
   open: boolean;
@@ -11,10 +39,12 @@ type ChatMessageMenuProps = {
   anchorRect: DOMRect | null;
   isMine: boolean;
   canDelete: boolean;
+  canReport: boolean;
   isPinned: boolean;
   onReply: () => void;
   onPin: () => void;
   onDelete: () => void;
+  onReport: () => void;
   onReact: (emoji: string) => void;
 };
 
@@ -24,10 +54,12 @@ export default function ChatMessageMenu({
   anchorRect,
   isMine,
   canDelete,
+  canReport,
   isPinned,
   onReply,
   onPin,
   onDelete,
+  onReport,
   onReact,
 }: ChatMessageMenuProps) {
   const menuRef = useRef<HTMLDivElement | null>(null);
@@ -85,26 +117,6 @@ export default function ChatMessageMenu({
     action();
   }
 
-  function EmojiRow({ className = "" }: { className?: string }) {
-    return (
-      <div
-        className={`flex flex-wrap items-center justify-center gap-2 border-b border-app-border px-4 py-3 ${className}`}
-      >
-        {QUICK_REACTION_EMOJIS.map((emoji) => (
-          <button
-            key={emoji}
-            type="button"
-            onClick={() => run(() => onReact(emoji))}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-app-surface-hover"
-            aria-label={`Reageer met ${emoji}`}
-          >
-            {emoji}
-          </button>
-        ))}
-      </div>
-    );
-  }
-
   const useSheet = typeof window !== "undefined" && window.innerWidth < 768;
 
   if (useSheet) {
@@ -117,7 +129,7 @@ export default function ChatMessageMenu({
           onClick={onClose}
         />
         <div className="chat-sheet absolute inset-x-0 bottom-0 pb-[max(16px,env(safe-area-inset-bottom))]">
-          <EmojiRow />
+          <ChatMessageEmojiRow onReact={onReact} onCloseAndRun={run} />
           <button
             type="button"
             onClick={() => run(onReply)}
@@ -134,6 +146,16 @@ export default function ChatMessageMenu({
             <Pin className="h-5 w-5" />
             {isPinned ? "Losmaken" : "Vastpinnen"}
           </button>
+          {canReport ? (
+            <button
+              type="button"
+              onClick={() => run(onReport)}
+              className="chat-menu-item"
+            >
+              <Flag className="h-5 w-5" />
+              Melden
+            </button>
+          ) : null}
           {canDelete && (
             <button
               type="button"
@@ -162,7 +184,7 @@ export default function ChatMessageMenu({
         style={{ top: position.top, left: position.left }}
         className="chat-menu-dropdown fixed z-[90] min-w-[200px]"
       >
-        <EmojiRow />
+        <ChatMessageEmojiRow onReact={onReact} onCloseAndRun={run} />
         <button
           type="button"
           onClick={() => run(onReply)}
@@ -179,6 +201,16 @@ export default function ChatMessageMenu({
           <Pin className="h-4 w-4" />
           {isPinned ? "Losmaken" : "Vastpinnen"}
         </button>
+        {canReport ? (
+          <button
+            type="button"
+            onClick={() => run(onReport)}
+            className="chat-menu-item"
+          >
+            <Flag className="h-4 w-4" />
+            Melden
+          </button>
+        ) : null}
         {canDelete && (
           <button
             type="button"

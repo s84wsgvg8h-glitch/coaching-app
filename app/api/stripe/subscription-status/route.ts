@@ -1,0 +1,52 @@
+import { NextRequest, NextResponse } from "next/server";
+import { assertAuthenticatedActive } from "@/lib/apiAuth";
+import { getAthleteSubscriptionAccess } from "@/lib/coachingSubscriptionAccess";
+import { shouldEnforceCoachingSubscription } from "@/lib/coachingAccess";
+import {
+  subscriptionStatusLabel,
+} from "@/lib/subscriptionStatus";
+import { listConfiguredCoachingPlans } from "@/lib/stripeSubscriptionConfig";
+
+export async function GET(request: NextRequest) {
+  const auth = await assertAuthenticatedActive(request);
+  if (auth.error || !auth.user || !auth.supabase) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  }
+
+  const { data: profile } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.user.id)
+    .maybeSingle();
+
+  if (profile?.role !== "atleet") {
+    return NextResponse.json({
+      enforced: false,
+      hasAccess: true,
+      status: null,
+      statusLabel: null,
+      accessSource: null,
+      legacyBilling: false,
+      configuredPlans: listConfiguredCoachingPlans(),
+    });
+  }
+
+  const access = await getAthleteSubscriptionAccess(auth.user.id);
+
+  return NextResponse.json({
+    enforced: shouldEnforceCoachingSubscription(),
+    hasAccess: access.hasAccess,
+    accessSource: access.accessSource,
+    legacyBilling: access.legacyBilling,
+    status: access.subscription?.status ?? null,
+    statusLabel: access.subscription?.status
+      ? subscriptionStatusLabel(access.subscription.status)
+      : null,
+    currentPeriodEnd: access.subscription?.current_period_end ?? null,
+    cancelAtPeriodEnd: access.subscription?.cancel_at_period_end ?? false,
+    requiresSubscription:
+      shouldEnforceCoachingSubscription() && !access.hasAccess,
+    configuredPlans: listConfiguredCoachingPlans(),
+    stripeConfigured: Boolean(process.env.STRIPE_SECRET_KEY?.trim()),
+  });
+}

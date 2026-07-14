@@ -11,6 +11,7 @@ import {
   type MerchCollectionMeta,
 } from "@/lib/merchShopConfig";
 import type { MerchShopStats } from "@/lib/merchShopStats";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type MerchCollectionsTabProps = {
   userId: string;
@@ -32,7 +33,9 @@ export default function MerchCollectionsTab({
   const [draft, setDraft] = useState(emptyDraft());
 
   useEffect(() => {
-    setLoading(true);
+    deferEffectUpdate(() => {
+      setLoading(true);
+    });
     void loadMerchCollectionsAsync(userId).then((rows) => {
       setCollections(rows);
       setLoading(false);

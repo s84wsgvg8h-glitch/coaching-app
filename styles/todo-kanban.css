@@ -88,7 +88,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--app-border);
   padding: 14px 14px 12px;
 }
 
@@ -145,7 +145,7 @@
   align-items: flex-start;
   gap: 10px;
   border-radius: 14px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--app-border);
   background: var(--app-surface-muted);
   padding: 10px 10px 10px 12px;
   transition:
@@ -189,7 +189,7 @@
   width: 18px;
   flex-shrink: 0;
   border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--app-border);
   background: var(--app-surface-muted);
   transition: all 0.15s ease;
 }
@@ -217,7 +217,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 5px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
+  border: 1px solid var(--app-border);
   background: var(--app-surface-muted);
   color: white;
   transition:
@@ -402,17 +402,79 @@
 
 @media (min-width: 1024px) {
   .todo-kanban-board {
-    min-height: calc(100vh - 280px);
+    min-height: calc(100dvh - 280px);
   }
 
   .todo-kanban-column {
-    min-height: calc(100vh - 280px);
+    min-height: calc(100dvh - 280px);
   }
+}
+
+/* ─── Mobile Kanban Tab Navigation ─── */
+.todo-kanban-mobile-tabs {
+  display: flex;
+  gap: 6px;
+  margin-top: 16px;
+  padding: 4px;
+  border-radius: 14px;
+  background: var(--app-panel-inset, var(--app-surface-muted));
+}
+
+.todo-kanban-mobile-tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  transition: background 0.15s ease, color 0.15s ease;
+  cursor: pointer;
+}
+
+.todo-kanban-mobile-tab.is-active {
+  background: var(--app-surface);
+  color: var(--app-text);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+}
+
+.todo-kanban-mobile-tab-count {
+  display: inline-flex;
+  min-width: 18px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--app-surface-hover);
+  padding: 0 5px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--app-text-muted);
+}
+
+.todo-kanban-mobile-tab.is-active .todo-kanban-mobile-tab-count {
+  background: var(--app-accent-muted);
+  color: var(--app-accent);
 }
 
 @media (max-width: 767px) {
   .todo-kanban-board {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* Hide non-active columns on mobile based on data-mobile-column */
+  .todo-kanban-board .todo-kanban-column {
+    display: none;
+  }
+
+  .todo-kanban-board[data-mobile-column="todo"] .todo-kanban-column[data-status="todo"],
+  .todo-kanban-board[data-mobile-column="doing"] .todo-kanban-column[data-status="doing"],
+  .todo-kanban-board[data-mobile-column="done"] .todo-kanban-column[data-status="done"] {
+    display: flex;
   }
 
   .todo-composer {
@@ -427,5 +489,11 @@
   .todo-composer-plus {
     height: 44px;
     width: 44px;
+  }
+}
+
+@media (min-width: 768px) {
+  .todo-kanban-mobile-tabs {
+    display: none;
   }
 }

@@ -10,6 +10,7 @@ import AdminCommerceTab from "@/components/admin/AdminCommerceTab";
 import AdminHierarchyTab from "@/components/admin/AdminHierarchyTab";
 import AdminInvitesTab from "@/components/admin/AdminInvitesTab";
 import AdminKnowledgeTab from "@/components/admin/AdminKnowledgeTab";
+import AdminModerationTab from "@/components/admin/AdminModerationTab";
 import AdminOrganizationsTab from "@/components/admin/AdminOrganizationsTab";
 import AdminOverviewTab from "@/components/admin/AdminOverviewTab";
 import AdminSettingsTab from "@/components/admin/AdminSettingsTab";
@@ -178,6 +179,7 @@ function AdminPageContent() {
                 )}
                 {activeTab === "kennisbank" && <AdminKnowledgeTab />}
                 {activeTab === "audit" && <AdminAuditTab />}
+                {activeTab === "moderation" && <AdminModerationTab />}
                 {activeTab === "system" && <AdminSystemTab />}
                 {activeTab === "organizations" && (
                   <AdminOrganizationsTab

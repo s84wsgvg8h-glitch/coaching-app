@@ -12,6 +12,7 @@ import {
   type AthleteCalendarEvent,
 } from "@/lib/athleteCalendarEvents";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ChatAgendaPanelProps = {
   coachId: string;
@@ -39,9 +40,13 @@ export default function ChatAgendaPanel({
   useEffect(() => {
     const now = new Date();
     const draft = createDefaultAthleteEventDraft(coachId, athleteId, now);
-    setStartAt(toDatetimeLocalValue(now));
-    setEndAt(toDatetimeLocalValue(new Date(draft.end_at)));
-    void refreshEvents();
+    deferEffectUpdate(() => {
+      setStartAt(toDatetimeLocalValue(now));
+      setEndAt(toDatetimeLocalValue(new Date(draft.end_at)));
+    });
+    deferEffectUpdate(() => {
+      void refreshEvents();
+    });
   }, [coachId, athleteId]);
 
   async function refreshEvents() {

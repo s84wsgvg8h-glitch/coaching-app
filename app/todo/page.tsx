@@ -439,12 +439,12 @@ export default function TodoPage() {
         ) : null}
 
         {loading ? (
-          <div className="mt-4 rounded-2xl border border-white/6 bg-[#0d1118] p-4">
+          <div className="mt-4 rounded-2xl border border-app-border bg-app-surface p-4">
             <SkeletonList rows={6} />
           </div>
         ) : isSearching ? (
-          <div className="mt-4 overflow-hidden rounded-2xl border border-white/6 bg-[#0d1118]">
-            <div className="border-b border-white/6 px-4 py-3">
+          <div className="mt-4 overflow-hidden rounded-2xl border border-app-border bg-app-surface">
+            <div className="border-b border-app-border px-4 py-3">
               <h2 className="text-[13px] font-semibold text-app-text">
                 Zoekresultaten ({searchResults.length})
               </h2>
@@ -456,7 +456,7 @@ export default function TodoPage() {
                 compact
               />
             ) : (
-              <div className="space-y-2 p-3">
+              <div className="space-y-2 p-3 pb-4">
                 {searchResults.map((todo) => (
                   <TodoKanbanCard key={todo.id} {...cardProps(todo)} />
                 ))}

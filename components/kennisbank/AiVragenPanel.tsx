@@ -105,7 +105,7 @@ export default function AiVragenPanel() {
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "unknown"
               ? "bg-black text-white"
-              : "border border-gray-300 bg-white text-gray-800"
+              : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
           Onbekend ({unknownCount})
@@ -116,7 +116,7 @@ export default function AiVragenPanel() {
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "errors"
               ? "bg-black text-white"
-              : "border border-gray-300 bg-white text-gray-800"
+              : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
           Fouten ({errorCount})
@@ -127,7 +127,7 @@ export default function AiVragenPanel() {
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "all"
               ? "bg-black text-white"
-              : "border border-gray-300 bg-white text-gray-800"
+              : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
           Alles ({logs.length})
@@ -137,7 +137,7 @@ export default function AiVragenPanel() {
       {loading ? (
         <p className="text-sm text-gray-500">Laden...</p>
       ) : filteredLogs.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-6 text-sm text-gray-600">
+        <div className="rounded-2xl border border-dashed border-app-border bg-app-surface-muted p-6 text-sm text-app-muted">
           Geen AI-vragen gevonden voor dit filter.
         </div>
       ) : (
@@ -145,7 +145,7 @@ export default function AiVragenPanel() {
           {filteredLogs.map((log) => (
             <li
               key={log.id}
-              className="rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
+              className="rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm"
             >
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
                 <span className="font-semibold text-gray-800">
@@ -165,12 +165,12 @@ export default function AiVragenPanel() {
                 ) : null}
               </div>
 
-              <p className="text-sm font-semibold text-black">Vraag</p>
+              <p className="text-sm font-semibold text-app-text">Vraag</p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">
                 {log.question}
               </p>
 
-              <p className="mt-3 text-sm font-semibold text-black">Antwoord</p>
+              <p className="mt-3 text-sm font-semibold text-app-text">Antwoord</p>
               <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
                 {log.answer || "—"}
               </p>
@@ -184,7 +184,7 @@ export default function AiVragenPanel() {
               <button
                 type="button"
                 onClick={() => addToKnowledge(log)}
-                className="mt-3 inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-800 hover:bg-gray-50"
+                className="mt-3 inline-flex items-center gap-1 rounded-lg border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text hover:bg-app-surface-hover"
               >
                 <BookPlus className="h-3.5 w-3.5" />
                 Maak concept-chunk

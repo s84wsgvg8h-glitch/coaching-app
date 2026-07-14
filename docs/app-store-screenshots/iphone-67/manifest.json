@@ -1,0 +1,58 @@
+{
+  "baseUrl": "https://limitlesscoaching.app",
+  "device": "iPhone 14 Pro Max (6.7\")",
+  "expectedPixels": "1290×2796",
+  "capturedAt": "2026-07-09T13:28:33.100Z",
+  "reviewAccounts": {
+    "coach": "review-coach@limitlesscoaching.app",
+    "athlete": "review-athlete@limitlesscoaching.app"
+  },
+  "uploadTo": "App Store Connect → iPhone 6.7\" Display",
+  "results": [
+    {
+      "fileName": "01-coach-dashboard.png",
+      "ok": true,
+      "bytes": 336638
+    },
+    {
+      "fileName": "02-coach-athletes.png",
+      "ok": true,
+      "bytes": 402546
+    },
+    {
+      "fileName": "03-coach-chat.png",
+      "ok": true,
+      "bytes": 219327
+    },
+    {
+      "fileName": "04-coach-program.png",
+      "ok": true,
+      "bytes": 323635
+    },
+    {
+      "fileName": "05-athlete-dashboard.png",
+      "ok": true,
+      "bytes": 406403
+    },
+    {
+      "fileName": "06-athlete-program-week.png",
+      "ok": true,
+      "bytes": 260344
+    },
+    {
+      "fileName": "07-athlete-chat.png",
+      "ok": true,
+      "bytes": 247260
+    },
+    {
+      "fileName": "08-athlete-profile.png",
+      "ok": true,
+      "bytes": 231518
+    },
+    {
+      "fileName": "09-athlete-statistics.png",
+      "ok": true,
+      "bytes": 155881
+    }
+  ]
+}

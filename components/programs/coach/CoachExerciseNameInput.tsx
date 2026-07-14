@@ -20,12 +20,14 @@ export default function CoachExerciseNameInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const exerciseIdRef = useRef(exerciseId);
 
-  if (exerciseIdRef.current !== exerciseId) {
+  useEffect(() => {
+    if (exerciseIdRef.current === exerciseId) return;
     exerciseIdRef.current = exerciseId;
-    if (inputRef.current) {
-      inputRef.current.value = initialName;
+    const input = inputRef.current;
+    if (input) {
+      input.value = initialName;
     }
-  }
+  }, [exerciseId, initialName]);
 
   useEffect(() => {
     const input = inputRef.current;

@@ -23,6 +23,10 @@ const ENV_CHECKS: EnvCheck[] = [
   { key: "RESEND_API_KEY", label: "Resend e-mail", required: false },
   { key: "OPENAI_API_KEY", label: "OpenAI", required: false },
   { key: "NEXT_PUBLIC_VAPID_PUBLIC_KEY", label: "VAPID public", required: false },
+  { key: "APPLE_TEAM_ID", label: "Apple Team ID (Universal Links)", required: false },
+  { key: "APNS_KEY_ID", label: "APNs Key ID", required: false },
+  { key: "APNS_TEAM_ID", label: "APNs Team ID", required: false },
+  { key: "APNS_PRIVATE_KEY", label: "APNs private key (.p8)", required: false },
   { key: "SUPABASE_ACCESS_TOKEN", label: "Supabase access token (auth config)", required: false },
 ];
 

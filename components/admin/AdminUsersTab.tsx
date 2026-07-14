@@ -8,14 +8,15 @@ import {
   MoreHorizontal,
   Plus,
   RefreshCw,
-  Search,
   SlidersHorizontal,
   Upload,
   UserPlus,
   Users,
 } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import { syncAthleteOrganizationFromCoach } from "@/lib/orgAthleteScope";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import {
   AdminAvatar,
   AdminFilterBar,
@@ -311,7 +312,9 @@ export default function AdminUsersTab({
     paginatedUsers.every((user) => selectedIds.has(user.id));
 
   useEffect(() => {
-    setPage(1);
+    deferEffectUpdate(() => {
+      setPage(1);
+    });
   }, [query, roleFilter, statusFilter, coachFilter, pageSize]);
 
   async function assignAthleteToCoach(
@@ -564,16 +567,13 @@ export default function AdminUsersTab({
       ) : null}
 
       <AdminFilterBar>
-        <div className="admin-search-wrap">
-          <Search className="h-4 w-4 shrink-0 text-app-muted" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Zoek op naam of e-mail…"
-            className="admin-search-input"
-            aria-label="Zoek gebruikers"
-          />
-        </div>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Zoek op naam of e-mail…"
+          variant="rounded"
+          aria-label="Zoek gebruikers"
+        />
         <select
           value={roleFilter}
           onChange={(event) => setRoleFilter(event.target.value)}

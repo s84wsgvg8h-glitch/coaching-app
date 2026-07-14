@@ -1,4 +1,5 @@
 import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import { assertActiveUserProfile } from "@/lib/apiGuards";
 
 export const DEMO_ACCESS_TOKEN = "demo-access-token";
 
@@ -31,7 +32,7 @@ export function getSupabaseForRequest(request: Request) {
 
 type AuthResult =
   | { error: null; supabase: SupabaseClient; user: User }
-  | { error: string; status: 401; supabase: null; user: null };
+  | { error: string; status: 401 | 403; supabase: null; user: null };
 
 export async function assertAuthenticated(request: Request): Promise<AuthResult> {
   const token = getBearerToken(request);
@@ -61,4 +62,25 @@ export async function assertAuthenticated(request: Request): Promise<AuthResult>
   }
 
   return { error: null, supabase, user };
+}
+
+export async function assertAuthenticatedActive(
+  request: Request,
+): Promise<AuthResult> {
+  const auth = await assertAuthenticated(request);
+  if (auth.error || !auth.user || !auth.supabase) {
+    return auth;
+  }
+
+  const gate = await assertActiveUserProfile(auth.supabase, auth.user);
+  if (!gate.ok) {
+    return {
+      error: gate.error,
+      status: gate.status === 401 ? 401 : 403,
+      supabase: null,
+      user: null,
+    };
+  }
+
+  return auth;
 }

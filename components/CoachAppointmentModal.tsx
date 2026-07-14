@@ -8,6 +8,7 @@ import {
   toDatetimeLocalValue,
   type CoachCalendarEventInput,
 } from "@/lib/coachCalendarEvents";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CoachAppointmentModalProps = {
   open: boolean;
@@ -34,16 +35,18 @@ export default function CoachAppointmentModal({
 
   useEffect(() => {
     if (open && draft) {
-      setForm(draft);
-      setError("");
-      setShowExtraFields(
-        Boolean(
-          draft.location?.trim() ||
-            draft.video_url?.trim() ||
-            draft.invitees?.trim() ||
-            draft.notes?.trim(),
-        ),
-      );
+      deferEffectUpdate(() => {
+        setForm(draft);
+        setError("");
+        setShowExtraFields(
+          Boolean(
+            draft.location?.trim() ||
+              draft.video_url?.trim() ||
+              draft.invitees?.trim() ||
+              draft.notes?.trim(),
+          ),
+        );
+      });
     }
   }, [open, draft]);
 
@@ -111,10 +114,10 @@ export default function CoachAppointmentModal({
       <form
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-gray-200 bg-white/95 shadow-2xl backdrop-blur-md"
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-2xl backdrop-blur-md"
       >
-        <div className="border-b border-gray-200 p-3">
-          <div className="flex rounded-full bg-gray-100 p-1">
+        <div className="border-b border-app-border p-3">
+          <div className="flex rounded-full bg-app-surface-muted p-1">
             {(
               [
                 { id: "activity", label: "Activiteit" },
@@ -132,7 +135,7 @@ export default function CoachAppointmentModal({
                 className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold transition ${
                   form.event_type === tab.id
                     ? "bg-red-500 text-white"
-                    : "text-gray-600 hover:text-black"
+                    : "text-app-muted hover:text-app-text"
                 }`}
               >
                 {tab.label}
@@ -142,7 +145,7 @@ export default function CoachAppointmentModal({
         </div>
 
         <div className="space-y-2 p-3">
-          <section className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
+          <section className="overflow-hidden rounded-xl border border-app-border bg-app-surface">
             <input
               value={form.title}
               onChange={(event) =>
@@ -151,14 +154,14 @@ export default function CoachAppointmentModal({
                 )
               }
               placeholder={isEditing ? "Activiteit" : "Nieuwe activiteit"}
-              className="w-full bg-transparent px-3 py-3 text-base font-semibold text-black outline-none placeholder:text-gray-400"
+              className="w-full bg-transparent px-3 py-3 text-base font-semibold text-app-text outline-none placeholder:text-app-muted/50"
               autoFocus
             />
 
             <button
               type="button"
               onClick={() => setShowExtraFields((current) => !current)}
-              className="flex w-full items-center justify-between border-t border-gray-200 px-3 py-2 text-left text-sm font-semibold text-gray-600 hover:text-black"
+              className="flex w-full items-center justify-between border-t border-gray-200 px-3 py-2 text-left text-sm font-semibold text-app-muted hover:text-app-text"
             >
               <span>Locatie, videogesprek, genodigden & notities</span>
               <span>{showExtraFields ? "−" : "+"}</span>
@@ -176,7 +179,7 @@ export default function CoachAppointmentModal({
                     )
                   }
                   placeholder="Voeg locatie of videogesprek toe"
-                  className="w-full border-t border-gray-200 bg-transparent px-3 py-3 text-sm text-black outline-none placeholder:text-gray-400"
+                  className="w-full border-t border-app-border bg-transparent px-3 py-3 text-sm text-app-text outline-none placeholder:text-app-muted/50"
                 />
                 <input
                   value={form.video_url || ""}
@@ -188,7 +191,7 @@ export default function CoachAppointmentModal({
                     )
                   }
                   placeholder="Videogesprek URL (optioneel)"
-                  className="w-full border-t border-gray-200 bg-transparent px-3 py-2 text-xs text-gray-600 outline-none placeholder:text-gray-400"
+                  className="w-full border-t border-app-border bg-transparent px-3 py-2 text-xs text-app-muted outline-none placeholder:text-app-muted/50"
                 />
                 <input
                   value={form.invitees || ""}
@@ -200,7 +203,7 @@ export default function CoachAppointmentModal({
                     )
                   }
                   placeholder="Voeg genodigden toe"
-                  className="w-full border-t border-gray-200 bg-transparent px-3 py-3 text-sm text-black outline-none placeholder:text-gray-400"
+                  className="w-full border-t border-app-border bg-transparent px-3 py-3 text-sm text-app-text outline-none placeholder:text-app-muted/50"
                 />
                 <textarea
                   value={form.notes || ""}
@@ -213,20 +216,20 @@ export default function CoachAppointmentModal({
                   }
                   placeholder="Voeg notities, URL of bijlagen toe"
                   rows={3}
-                  className="w-full resize-none border-t border-gray-200 bg-transparent px-3 py-3 text-sm text-black outline-none placeholder:text-gray-400"
+                  className="w-full resize-none border-t border-app-border bg-transparent px-3 py-3 text-sm text-app-text outline-none placeholder:text-app-muted/50"
                 />
               </>
             )}
           </section>
 
-          <section className="overflow-hidden rounded-xl border border-gray-200 bg-gray-50">
-            <div className="border-b border-gray-200 px-3 py-3">
-              <p className="text-sm font-bold text-black">
+          <section className="overflow-hidden rounded-xl border border-app-border bg-app-surface">
+            <div className="border-b border-app-border px-3 py-3">
+              <p className="text-sm font-bold text-app-text">
                 {formatAppointmentRange(form.start_at, form.end_at)}
               </p>
             </div>
             <div className="grid gap-2 px-3 py-3 sm:grid-cols-2">
-              <label className="block text-xs font-semibold text-gray-500">
+              <label className="block text-xs font-semibold text-app-muted">
                 Start
                 <input
                   type="datetime-local"
@@ -241,10 +244,10 @@ export default function CoachAppointmentModal({
                         : current,
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
+                  className="mt-1 w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
                 />
               </label>
-              <label className="block text-xs font-semibold text-gray-500">
+              <label className="block text-xs font-semibold text-app-muted">
                 Eind
                 <input
                   type="datetime-local"
@@ -259,11 +262,11 @@ export default function CoachAppointmentModal({
                         : current,
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-gray-300 bg-white px-2 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
+                  className="mt-1 w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
                 />
               </label>
             </div>
-            <label className="flex items-center gap-2 border-t border-gray-200 px-3 py-2 text-sm font-semibold text-gray-700">
+            <label className="flex items-center gap-2 border-t border-app-border px-3 py-2 text-sm font-semibold text-app-text">
               <input
                 type="checkbox"
                 checked={form.all_day}
@@ -281,16 +284,16 @@ export default function CoachAppointmentModal({
         </div>
 
         {error && (
-          <p className="px-4 pb-2 text-sm font-semibold text-red-600">{error}</p>
+          <p className="px-4 pb-2 text-sm font-semibold text-app-destructive">{error}</p>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t border-gray-200 px-4 py-3">
+        <div className="flex items-center justify-between gap-2 border-t border-app-border px-4 py-3">
           {isEditing ? (
             <button
               type="button"
               onClick={() => void handleDelete()}
               disabled={deleting || saving}
-              className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+              className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-app-destructive hover:bg-red-50 disabled:opacity-60"
             >
               {deleting ? "Verwijderen..." : "Verwijderen"}
             </button>
@@ -301,14 +304,14 @@ export default function CoachAppointmentModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted hover:bg-app-surface-hover"
             >
               Annuleren
             </button>
             <button
               type="submit"
               disabled={saving || deleting}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="rounded-xl bg-app-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
             >
               {saving ? "Opslaan..." : "Opslaan"}
             </button>

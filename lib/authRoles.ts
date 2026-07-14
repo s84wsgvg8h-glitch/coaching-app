@@ -12,6 +12,31 @@ export function isAthleteRole(role: AppRole | null | undefined) {
   return role === "atleet";
 }
 
+export function isPendingRole(role: AppRole | null | undefined) {
+  return role === "pending";
+}
+
+export function isPendingAthlete(profile: {
+  role?: string | null;
+  pending_kind?: string | null;
+}) {
+  return profile.role === "pending" && profile.pending_kind === "athlete";
+}
+
+export function isPendingCoachSignup(profile: {
+  role?: string | null;
+  pending_kind?: string | null;
+}) {
+  return profile.role === "pending" && profile.pending_kind === "coach";
+}
+
+export function needsPendingApproval(profile: {
+  role?: string | null;
+  pending_kind?: string | null;
+} | null | undefined) {
+  return profile?.role === "pending";
+}
+
 export function isHeadCoachRole(
   role: AppRole | null | undefined,
   isHeadCoach?: boolean | null,
@@ -72,6 +97,7 @@ export function canAccessPath(
 
 export function getHomePathForRole(role: AppRole | null | undefined): string {
   if (isAdminRole(role)) return "/admin";
+  if (isPendingRole(role)) return "/pending-approval";
   return "/dashboard";
 }
 

@@ -4,17 +4,14 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import EmptyState from "@/components/ui/EmptyState";
-import {
-  loadCoachCalendarEvents,
-  type CoachCalendarEvent,
-} from "@/lib/coachCalendarEvents";
+import { useCoachCalendarEvents } from "@/hooks/useCoachCalendarEvents";
+import { useCoachTodosQuery } from "@/hooks/useCoachTodosQuery";
 import {
   filterTodayAppointments,
   formatAgendaTime,
   formatAgendaTimeRange,
 } from "@/lib/coachAgendaDisplay";
 import {
-  loadCoachTodosFast,
   toggleCoachTodo,
   type CoachTodo,
   type CoachTodoKanbanStatus,
@@ -30,6 +27,42 @@ type TodaysFocusWidgetProps = {
 function resolveKanbanStatus(todo: CoachTodo): CoachTodoKanbanStatus {
   if (todo.kanban_status) return todo.kanban_status;
   return todo.completed ? "done" : "todo";
+}
+
+const ACCENT_BAR_CLASSES = [
+  "bg-blue-400",
+  "bg-emerald-500",
+  "bg-sky-400",
+  "bg-orange-500",
+  "bg-red-500",
+  "bg-pink-500",
+] as const;
+
+function todoAccentBarClass(
+  todo: CoachTodo,
+  dueStyle: ReturnType<typeof getTodoDueStyle>,
+) {
+  if (dueStyle.indicatorClass) return dueStyle.indicatorClass;
+  const key = todo.athlete_id ?? todo.id;
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = (hash + key.charCodeAt(index) * (index + 3)) % ACCENT_BAR_CLASSES.length;
+  }
+  return ACCENT_BAR_CLASSES[hash];
+}
+
+function todoPriorityBadge(dueStyle: ReturnType<typeof getTodoDueStyle>) {
+  if (!dueStyle.indicatorClass) return null;
+  if (dueStyle.indicatorClass.includes("red")) {
+    return { label: "Hoog", className: "dashboard-focus-priority-badge--high" };
+  }
+  if (dueStyle.indicatorClass.includes("amber")) {
+    return { label: "Middel", className: "dashboard-focus-priority-badge--medium" };
+  }
+  if (dueStyle.indicatorClass.includes("emerald")) {
+    return { label: "Laag", className: "dashboard-focus-priority-badge--low" };
+  }
+  return null;
 }
 
 function sortOpenTodos(items: CoachTodo[]) {
@@ -48,12 +81,15 @@ export default function TodaysFocusWidget({
   athletes = [],
 }: TodaysFocusWidgetProps) {
   const router = useRouter();
-  const [todos, setTodos] = useState<CoachTodo[]>([]);
-  const [appointments, setAppointments] = useState<CoachCalendarEvent[]>([]);
-  const [loading, setLoading] = useState(true);
+  const todosQuery = useCoachTodosQuery(coachId);
+  const calendarQuery = useCoachCalendarEvents(coachId);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
   const [nowMs, setNowMs] = useState(() => Date.now());
+
+  const todos = todosQuery.data ?? [];
+  const appointments = calendarQuery.data ?? [];
+  const loading = todosQuery.isPending || calendarQuery.isPending;
 
   const athleteNameById = useMemo(
     () =>
@@ -71,28 +107,6 @@ export default function TodaysFocusWidget({
   const openTodos = useMemo(() => sortOpenTodos(todos).slice(0, 8), [todos]);
 
   useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const [todoResult, appointmentRows] = await Promise.all([
-        loadCoachTodosFast(coachId),
-        loadCoachCalendarEvents(coachId),
-      ]);
-      if (!cancelled) {
-        setTodos(todoResult.data);
-        setAppointments(appointmentRows);
-        setLoading(false);
-      }
-    }
-
-    void load();
-    return () => {
-      cancelled = true;
-    };
-  }, [coachId]);
-
-  useEffect(() => {
     const timer = window.setInterval(() => setNowMs(Date.now()), 60_000);
     return () => window.clearInterval(timer);
   }, []);
@@ -102,9 +116,7 @@ export default function TodaysFocusWidget({
     setTogglingId(todo.id);
     const { data, error } = await toggleCoachTodo(todo);
     if (data && !error) {
-      setTodos((current) =>
-        current.map((item) => (item.id === data.id ? data : item)),
-      );
+      void todosQuery.refetch();
     }
     setTogglingId(null);
   }
@@ -118,7 +130,7 @@ export default function TodaysFocusWidget({
   }
 
   return (
-    <section className="dashboard-focus-panel glass-accent-card">
+    <section className="dashboard-focus-panel dashboard-focus-panel--wide premium-card glass-accent-card">
       <div className="dashboard-focus-panel-header">
         <div className="min-w-0">
           <p className="text-[8px] font-medium uppercase tracking-wide text-app-subtle">
@@ -137,9 +149,18 @@ export default function TodaysFocusWidget({
       </div>
 
       {loading ? (
-        <p className="dashboard-focus-panel-empty text-[11px] text-app-muted">
-          Laden...
-        </p>
+        <div className="dashboard-focus-panel-body">
+          <div className="dashboard-focus-appointments space-y-2 py-1">
+            <div className="h-3 w-24 animate-pulse rounded bg-app-surface-hover" />
+            <div className="h-10 animate-pulse rounded-lg bg-app-surface-hover" />
+            <div className="h-10 animate-pulse rounded-lg bg-app-surface-hover" />
+          </div>
+          <div className="dashboard-focus-todos space-y-2 py-1">
+            <div className="h-3 w-16 animate-pulse rounded bg-app-surface-hover" />
+            <div className="h-10 animate-pulse rounded-lg bg-app-surface-hover" />
+            <div className="h-10 animate-pulse rounded-lg bg-app-surface-hover" />
+          </div>
+        </div>
       ) : (
         <div className="dashboard-focus-panel-body">
           <div className="dashboard-focus-appointments">
@@ -191,6 +212,7 @@ export default function TodaysFocusWidget({
               <ul className="dashboard-focus-panel-list">
                 {openTodos.map((todo) => {
                   const dueStyle = getTodoDueStyle(todo, nowMs);
+                  const priority = todoPriorityBadge(dueStyle);
                   const athleteName = todo.athlete_id
                     ? athleteNameById[todo.athlete_id]
                     : null;
@@ -211,36 +233,36 @@ export default function TodaysFocusWidget({
                         role="button"
                         tabIndex={0}
                       >
-                        {dueStyle.indicatorClass ? (
-                          <span
-                            className={`dashboard-focus-check-urgency ${dueStyle.indicatorClass}`}
-                            aria-hidden="true"
-                          />
-                        ) : (
-                          <span
-                            className="dashboard-focus-check-urgency dashboard-focus-check-urgency-empty"
-                            aria-hidden="true"
-                          />
-                        )}
+                        <span
+                          className={`dashboard-focus-check-urgency ${todoAccentBarClass(todo, dueStyle)}`}
+                          aria-hidden="true"
+                        />
                         <input
                           type="checkbox"
                           checked={todo.completed}
                           disabled={togglingId === todo.id}
                           onClick={(event) => event.stopPropagation()}
                           onChange={() => void handleToggle(todo)}
-                          className="ui-todo-checkbox app-focus-ring"
+                          className="ui-todo-checkbox app-focus-ring shrink-0"
                           aria-label={`Taak afvinken: ${todo.title}`}
                         />
                         <span className="min-w-0 flex-1">
                           {athleteName ? (
-                            <span className="block truncate text-[9px] font-medium uppercase tracking-wide text-app-subtle">
+                            <span className="block truncate text-[10px] font-medium uppercase tracking-wide text-app-subtle">
                               {athleteName}
                             </span>
                           ) : null}
-                          <span className="block truncate text-[11px] font-medium leading-4 text-app-text">
+                          <span className="block truncate text-[13px] font-medium leading-5 text-app-text">
                             {todo.title}
                           </span>
                         </span>
+                        {priority ? (
+                          <span
+                            className={`dashboard-focus-priority-badge ${priority.className}`}
+                          >
+                            {priority.label}
+                          </span>
+                        ) : null}
                       </div>
                     </li>
                   );

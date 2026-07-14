@@ -7,7 +7,9 @@ import AthleteDayCheckinCard from "@/components/programs/athlete/AthleteDayCheck
 import AthleteExerciseCard, {
   getAthletePriorityBadgeClass,
 } from "@/components/programs/athlete/AthleteExerciseCard";
+import { getPrescribedKgFromExercise } from "@/lib/exercisePrescription";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
+import { sortExercisesForDay } from "@/lib/programWeek/sortExercises";
 import type {
   AthleteDayCheckin,
   AthleteExerciseSet,
@@ -57,12 +59,13 @@ type AthleteProgramWeekContentProps = {
   capitalizeExerciseName: (name: string) => string;
   openAthleteExercisePanel: (exerciseId: string) => void;
   setPreviewLibraryItem: (item: ExerciseLibraryItem) => void;
+  readOnly?: boolean;
 };
 
 export default function AthleteProgramWeekContent({
   mobileWeekNav,
-  blockTitle,
-  weekTitle,
+  blockTitle: _blockTitle,
+  weekTitle: _weekTitle,
   days,
   exercisesByDay,
   userId,
@@ -87,26 +90,15 @@ export default function AthleteProgramWeekContent({
   capitalizeExerciseName,
   openAthleteExercisePanel,
   setPreviewLibraryItem,
+  readOnly = false,
 }: AthleteProgramWeekContentProps) {
   return (
-    <div className="athlete-program-main">
+    <div className="athlete-program-main min-w-0 max-w-full overflow-x-hidden">
       {mobileWeekNav}
-
-      <div className="athlete-program-week-header lg:hidden">
-        <h1 className="flex min-w-0 flex-wrap items-baseline gap-x-2 gap-y-1">
-          <span className="text-[clamp(1.25rem,4vw,1.75rem)] font-semibold tracking-tight text-app-text">
-            {blockTitle}
-          </span>
-          <span className="text-app-muted">/</span>
-          <span className="text-[clamp(1.1rem,3.5vw,1.5rem)] font-semibold text-[#3b82f6]">
-            {weekTitle}
-          </span>
-        </h1>
-      </div>
 
       <div className="athlete-program-days-grid">
         {days.map((day) => {
-          const exercises = exercisesByDay[day.id] || [];
+          const exercises = sortExercisesForDay(exercisesByDay[day.id] || []);
           const checkin = getAthleteDayCheckin(day.id);
           const dayIsPast = isDayPast(getDayDateObject(day));
 
@@ -132,10 +124,13 @@ export default function AthleteProgramWeekContent({
                 checkin={checkin}
                 dayIsPast={dayIsPast}
                 notesOpen={openAthleteDayNotesId === day.id}
+                readOnly={readOnly}
                 onBwChange={(value) =>
                   updateAthleteDayCheckinLocal(day.id, { bw: value })
                 }
-                onBwBlur={(value) => saveAthleteDayCheckin(day.id, { bw: value })}
+                onBwBlur={(value) =>
+                  saveAthleteDayCheckin(day.id, { bw: value })
+                }
                 onRecoverySelect={(value) =>
                   saveAthleteDayCheckin(day.id, { recovery: value })
                 }
@@ -185,7 +180,7 @@ export default function AthleteProgramWeekContent({
 
               <div className="athlete-program-exercise-list">
                 {exercises.length === 0 ? (
-                  <p className="rounded-xl border border-white/6 bg-white/[0.02] p-4 text-[13px] text-app-muted">
+                  <p className="rounded-xl border border-app-border bg-app-surface p-4 text-[13px] text-app-muted">
                     Geen oefeningen voor deze dag.
                   </p>
                 ) : (
@@ -194,7 +189,9 @@ export default function AthleteProgramWeekContent({
                     const weightOverdue =
                       dayIsPast && hasIncompleteSetField(setRows, "weight");
                     const linkedLibraryItem = getExerciseLibraryItem(exercise);
-                    const kgValue = getAthleteSetAverage(exercise, "weight");
+                    const prescribedKg = getPrescribedKgFromExercise(exercise);
+                    const loggedKg = getAthleteSetAverage(exercise, "weight");
+                    const kgValue = prescribedKg || loggedKg;
                     const parsedKg = Number.parseFloat(
                       kgValue.replace(",", "."),
                     );

@@ -26,8 +26,8 @@ export async function loadCoachOrgContext(
 }
 
 /** Apply org/coach scoping to a profiles query. Admin sees all. */
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function applyAthleteScope(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- Supabase query builder chain types vary by select()
   query: any,
   ctx: CoachOrgContext,
   options?: { includeArchived?: boolean },

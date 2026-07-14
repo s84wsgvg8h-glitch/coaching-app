@@ -53,6 +53,24 @@ Vercel sends this automatically as `Authorization: Bearer …` when invoking cro
 | Variable | Scope |
 |----------|-------|
 | `NEXT_PUBLIC_APP_URL` | Public — e.g. `https://limitlesscoaching.app` |
+| `NEXT_PUBLIC_SUPPORT_EMAIL` | Public — shown on `/support` and privacy (App Store support contact) |
+
+### Optional — Analytics & monitoring
+
+| Variable | Scope |
+|----------|-------|
+| `NEXT_PUBLIC_POSTHOG_KEY` | Public — PostHog project API key |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Public — default `https://eu.i.posthog.com` |
+| `NEXT_PUBLIC_SENTRY_DSN` | Public — Sentry DSN for client + server errors |
+
+### Optional — Distributed rate limiting
+
+| Variable | Scope |
+|----------|-------|
+| `UPSTASH_REDIS_REST_URL` | Server only — Upstash Redis REST URL |
+| `UPSTASH_REDIS_REST_TOKEN` | Server only — Upstash REST token |
+
+Without Upstash, rate limits fall back to in-memory (per serverless instance).
 
 ### Optional — AI features
 
@@ -64,9 +82,22 @@ Vercel sends this automatically as `Authorization: Bearer …` when invoking cro
 
 | Variable | Scope |
 |----------|-------|
-| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public |
-| `VAPID_PRIVATE_KEY` | Server only |
+| `NEXT_PUBLIC_VAPID_PUBLIC_KEY` | Public — web push |
+| `VAPID_PRIVATE_KEY` | Server only — web push |
 | `VAPID_SUBJECT` | Server — e.g. `mailto:coach@example.com` |
+| `APNS_KEY_ID` | Server only — iOS native push |
+| `APNS_TEAM_ID` | Server only — Apple Developer Team ID |
+| `APNS_PRIVATE_KEY` | Server only — `.p8` key contents |
+| `APNS_BUNDLE_ID` | Server — default `app.limitlesscoaching` |
+| `APNS_USE_SANDBOX` | Server — `true` for Xcode debug device builds only |
+
+### Optional — iOS Universal Links
+
+| Variable | Scope |
+|----------|-------|
+| `APPLE_TEAM_ID` | Server — 10-char Team ID for `/.well-known/apple-app-site-association` |
+
+See `docs/ios-testflight.md` for APNs key creation and Xcode setup.
 
 ### Optional — Email (admin)
 
@@ -127,32 +158,26 @@ Configure in **Vercel → Domains** and **Cloudflare → R2 → Custom domain**.
 
 **Geïmplementeerd:** GitHub Actions workflow `.github/workflows/cron-broadcasts.yml` roept elke 15 minuten `/api/cron/broadcasts` aan.
 
+#### Activeren (één commando)
+
+De workflow staat klaar in `scripts/cron-broadcasts-workflow.yml`. Activeer met:
+
+```bash
+./scripts/setup-github-broadcasts-cron.sh
+```
+
+Dit script:
+1. Vraagt **eenmalig** GitHub `workflow` scope (browser login)
+2. Pusht `.github/workflows/cron-broadcasts.yml` naar `main`
+3. Start een test-run in GitHub Actions
+
 #### Status
 
 | Stap | Status |
 |------|--------|
-| `CRON_SECRET` in GitHub Actions secrets | ✅ Geconfigureerd |
-| Workflow `.github/workflows/cron-broadcasts.yml` | Push naar `main` vereist (zie hieronder) |
-
-**Workflow naar GitHub pushen** (eenmalig — OAuth token needs `workflow` scope):
-
-```bash
-# Optie A: gh CLI met workflow scope
-gh auth refresh -h github.com -s workflow
-git push origin main
-
-# Optie B: handmatig in GitHub UI
-# Repository → Add file → Create new file
-# Pad: .github/workflows/cron-broadcasts.yml
-# Plak inhoud uit lokale .github/workflows/cron-broadcasts.yml
-```
-
-Daarna: **Actions → Cron — scheduled broadcasts → Run workflow** om direct te testen.
-
-#### Eenmalige setup (GitHub secret)
-
-1. ~~**New repository secret** `CRON_SECRET`~~ — **al ingesteld**
-2. Optioneel — **Variables → `APP_URL`** = `https://limitlesscoaching.app`
+| `CRON_SECRET` in GitHub Actions secrets | ✅ Geconfigureerd (64-char hex) |
+| `CRON_SECRET` in Vercel production | ✅ Geconfigureerd |
+| Workflow op `main` | ⏳ Run `./scripts/setup-github-broadcasts-cron.sh` |
 
 #### Handmatige test (lokaal)
 
@@ -225,3 +250,21 @@ Pull Vercel env (optional):
 ```bash
 npx vercel env pull .env.local
 ```
+
+### Node.js
+
+Production builds use **Node 24** (`engines.node` in `package.json`).
+
+### R2 backfill (Supabase → Cloudflare)
+
+After `CLOUDFLARE_R2_*` vars are set in Vercel:
+
+```bash
+npm run migrate-r2              # dry-run (default limit 25)
+npm run migrate-r2:execute -- --limit=50
+npm run migrate-r2:execute -- --table=messages --limit=100
+```
+
+Requires `SUPABASE_SERVICE_ROLE_KEY` locally (from `.env.local` or `vercel env pull`).
+
+**Note:** R2 credentials are not yet present in the Vercel production env — add them before running `--execute`.

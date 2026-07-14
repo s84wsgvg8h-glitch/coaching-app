@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   BarChart3,
+  Building2,
   Calendar,
   ChevronLeft,
   ClipboardList,
@@ -23,6 +24,7 @@ const NAV_ITEMS = [
   { href: "/todo", label: "Taken", icon: ClipboardList },
   { href: "/chat", label: "Chat", icon: MessageSquare },
   { href: "/betalingen", label: "Betalingen", icon: CreditCard },
+  { href: "/organisatie", label: "Organisatie", icon: Building2 },
   { href: "/profile", label: "Instellingen", icon: Settings },
 ] as const;
 

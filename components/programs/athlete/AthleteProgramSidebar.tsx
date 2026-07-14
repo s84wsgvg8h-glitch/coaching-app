@@ -40,7 +40,7 @@ export default function AthleteProgramSidebar({
   }));
 
   return (
-    <aside className="program-nav-sidebar athlete-program-sidebar hidden lg:flex">
+    <aside className="program-nav-sidebar athlete-program-sidebar is-pinned hidden lg:flex">
       <ProgramNavSidebarRail
         weeks={railWeeks}
         onSelectWeek={(weekId) => {

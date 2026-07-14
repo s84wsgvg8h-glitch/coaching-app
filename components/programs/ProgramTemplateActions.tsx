@@ -10,6 +10,7 @@ import {
   saveWeekAsTemplate,
   type ProgramTemplateOptions,
 } from "@/lib/programTemplates";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CreateTemplateButtonProps = {
   coachId: string;
@@ -39,7 +40,9 @@ export function CreateTemplateButton({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    deferEffectUpdate(() => {
+      setMounted(true);
+    });
   }, []);
 
   async function handleSave() {
@@ -82,7 +85,7 @@ export function CreateTemplateButton({
   const buttonClass =
     activeTone === "dark"
       ? "bg-white/20 text-white hover:bg-white/30"
-      : "bg-white text-black hover:bg-gray-100";
+      : "border border-app-border bg-app-surface text-app-text hover:bg-app-surface-hover";
 
   return (
     <>
@@ -207,7 +210,9 @@ export function ApplyTemplateModal({
   useEffect(() => {
     if (!open) return;
 
-    setLoading(true);
+    deferEffectUpdate(() => {
+      setLoading(true);
+    });
     void loadProgramTemplates(coachId).then((rows) => {
       setTemplates(rows);
       setLoading(false);

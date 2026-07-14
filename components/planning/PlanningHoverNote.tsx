@@ -113,7 +113,7 @@ export default function PlanningHoverNote({
     open && showPopover ? (
       <div
         ref={popoverRef}
-        className="fixed z-[9999] w-56 rounded-xl border border-gray-200 bg-white p-3 shadow-lg"
+        className="fixed z-[9999] w-56 rounded-xl border border-app-border bg-app-surface p-3 shadow-lg"
         style={{
           left: position.left,
           top: placement === "below" ? position.top : undefined,
@@ -152,7 +152,7 @@ export default function PlanningHoverNote({
                       onBlur={() => void handleSave(section)}
                       rows={3}
                       placeholder="Notitie..."
-                      className="w-full rounded-lg border border-gray-200 px-2 py-1.5 text-xs outline-none focus:ring-2 focus:ring-violet-400"
+                      className="w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-1.5 text-xs text-app-text outline-none focus:border-app-accent"
                     />
                     <button
                       type="button"

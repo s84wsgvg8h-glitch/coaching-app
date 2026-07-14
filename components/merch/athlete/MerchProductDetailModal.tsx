@@ -14,6 +14,7 @@ import {
   isMerchItemOrderable,
   type MerchItem,
 } from "@/lib/merch";
+import { openExternalUrl } from "@/lib/openExternalUrl";
 
 type MerchProductDetailModalProps = {
   item: MerchItem;
@@ -141,7 +142,7 @@ export default function MerchProductDetailModal({
     }
 
     if (payload.checkoutUrl) {
-      window.location.href = payload.checkoutUrl;
+      await openExternalUrl(payload.checkoutUrl);
       return;
     }
 

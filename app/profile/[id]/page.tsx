@@ -3,6 +3,16 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter, useSearchParams } from "next/navigation";
+import {
+  ArrowLeft,
+  ClipboardList,
+  Dumbbell,
+  HeartPulse,
+  IdCard,
+  MessageSquareText,
+  Settings2,
+  SlidersHorizontal,
+} from "lucide-react";
 import { getRealSupabase } from "@/lib/supabaseClient";
 import { loadAuthenticatedProfile } from "@/lib/profileAuth";
 import AppShell from "@/components/AppShell";
@@ -19,9 +29,11 @@ import CoachAthleteNotesSection, {
 } from "@/components/profile/CoachAthleteNotesSection";
 import ProfileAdvancedSettingsPanel from "@/components/profile/ProfileAdvancedSettingsPanel";
 import { SkeletonCard } from "@/components/ui/Skeleton";
-import { getChatReturnRoute } from "@/lib/chatNavigation";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { type BlockIntakeWizard } from "@/lib/blockIntakeWizard";
+import { useLogicalBack } from "@/hooks/useLogicalBack";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
+import "@/styles/profile-settings.css";
 
 type Profile = {
   id: string;
@@ -30,6 +42,17 @@ type Profile = {
   lidnummer: string | null;
   geboortedatum: string | null;
   goals_text: string | null;
+};
+
+const SECTION_DESCRIPTIONS: Record<string, string> = {
+  athlete: "Wedstrijden, doelen, betaling en persoonsgegevens.",
+  settings: "Checklist, intake en coach-instellingen voor deze atleet.",
+  advanced: "Video-routing, start-PR's en geavanceerde opties.",
+  "coach-notes": "Privé notities — alleen zichtbaar voor coaches.",
+  maxes: "Huidige maxes en RPE-tabellen.",
+  intake: "Intake-antwoorden en achtergrondinformatie.",
+  injuries: "Blessurehistorie en lichaamsgebieden.",
+  overview: "Profieloverzicht.",
 };
 
 function UserProfilePageContent() {
@@ -44,7 +67,6 @@ function UserProfilePageContent() {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [viewerId, setViewerId] = useState("");
   const [viewerRole, setViewerRole] = useState("");
-  const [chatBackHref, setChatBackHref] = useState("/chat");
   const [blockIntakeWizard, setBlockIntakeWizard] =
     useState<BlockIntakeWizard | null>(null);
 
@@ -93,8 +115,9 @@ function UserProfilePageContent() {
   }
 
   useEffect(() => {
-    void loadProfile();
-    setChatBackHref(getChatReturnRoute());
+    deferEffectUpdate(() => {
+      void loadProfile();
+    });
   }, [profileId]);
 
   const roleLabel =
@@ -111,28 +134,24 @@ function UserProfilePageContent() {
   const canEditAthleteAdminFields = Boolean(
     profile && isCoachLikeRole(viewerRole) && profile.role === "atleet",
   );
-  const backHref = isCoachLikeRole(viewerRole)
-    ? "/athletes"
-    : chatBackHref;
-  const backLabel = isCoachLikeRole(viewerRole)
-    ? "← Terug naar atleten"
-    : "← Terug naar chat";
+  const { href: backHref, label: backLabel } = useLogicalBack();
 
   const sections = useMemo<ProfileSettingsSection[]>(() => {
     if (profile?.role === "atleet") {
       const base: ProfileSettingsSection[] = [
-        { id: "athlete", label: "Atleetgegevens", group: "Algemeen" },
-        { id: "settings", label: "Instellingen", group: "Algemeen" },
-        { id: "maxes", label: "Current maxes & RPE", group: "Training" },
-        { id: "intake", label: "Intake", group: "Training" },
-        { id: "injuries", label: "Blessures", group: "Training" },
+        { id: "athlete", label: "Atleetgegevens", group: "Algemeen", icon: IdCard },
+        { id: "settings", label: "Instellingen", group: "Algemeen", icon: SlidersHorizontal },
+        { id: "maxes", label: "Maxes & RPE", group: "Training", icon: Dumbbell },
+        { id: "intake", label: "Intake", group: "Training", icon: ClipboardList },
+        { id: "injuries", label: "Blessures", group: "Training", icon: HeartPulse },
       ];
 
       if (canEditAthleteAdminFields) {
         base.splice(2, 0, {
           id: "advanced",
-          label: "Geavanceerde instellingen",
+          label: "Geavanceerd",
           group: "Algemeen",
+          icon: Settings2,
         });
       }
 
@@ -141,23 +160,35 @@ function UserProfilePageContent() {
           id: "coach-notes",
           label: "Coach notities",
           group: "Coach",
+          icon: MessageSquareText,
         });
       }
 
       return base;
     }
 
-    return [{ id: "overview", label: "Overzicht", group: "Algemeen" }];
-  }, [profile?.role, profile?.id, viewerId, viewerRole, canEditAthleteAdminFields]);
+    return [{ id: "overview", label: "Overzicht", group: "Algemeen", icon: IdCard }];
+  }, [profile, canEditAthleteAdminFields, viewerId, viewerRole]);
 
   function setSection(sectionId: string) {
     router.replace(`/profile/${profileId}?section=${sectionId}`);
   }
 
+  const pageTitle =
+    profile?.role === "atleet"
+      ? profile.full_name || "Atleet"
+      : sections.find((section) => section.id === activeSection)?.label ||
+        profile?.full_name ||
+        "Profiel";
+
+  const pageSubtitle =
+    SECTION_DESCRIPTIONS[activeSection] ||
+    `${profile?.full_name || "Onbekende gebruiker"} · ${roleLabel}`;
+
   if (loading) {
     return (
-      <AppShell contentClassName="flex-1 p-4 md:p-6">
-        <div className="mx-auto max-w-4xl">
+      <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
           <SkeletonCard />
         </div>
       </AppShell>
@@ -166,35 +197,29 @@ function UserProfilePageContent() {
 
   if (!profile) {
     return (
-      <AppShell contentClassName="flex-1 p-4 md:p-6">
-        <div className="rounded-3xl bg-white p-8 shadow-xl">
-          <p className="text-gray-500">Profiel niet gevonden.</p>
+      <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+        <div className="profile-section-card mx-auto max-w-lg text-center">
+          <p className="text-sm text-app-muted">Profiel niet gevonden.</p>
         </div>
       </AppShell>
     );
   }
 
-  const sectionTitle =
-    sections.find((section) => section.id === activeSection)?.label ||
-    profile.full_name ||
-    "Profiel";
-
   return (
-    <AppShell contentClassName="flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3">
-      <Link
-        href={backHref}
-        className="mb-3 inline-flex items-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-black shadow"
-      >
-        {backLabel}
-      </Link>
-
+    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
       <ProfileSettingsLayout
         fullWidth
-        title={sectionTitle}
-        subtitle={`${profile.full_name || "Onbekende gebruiker"} · ${roleLabel}`}
+        title={pageTitle}
+        subtitle={pageSubtitle}
         sections={sections}
         activeSection={activeSection}
         onSectionChange={setSection}
+        headerExtra={
+          <Link href={backHref} className="profile-back-link app-focus-ring">
+            <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
+            {backLabel}
+          </Link>
+        }
       >
         {activeSection === "overview" && (
           <div>
@@ -207,7 +232,7 @@ function UserProfilePageContent() {
             athleteId={profile.id}
             canEdit={canEdit}
             canEditStartingPrs={canEditAthleteAdminFields}
-            canEditCompetitions={false}
+            canEditCompetitions={canEditAthleteAdminFields}
             canEditPayment={canEditPayment}
             canEditVideoSettings={canEditAthleteAdminFields}
             initialGeboortedatum={profile.geboortedatum}
@@ -215,7 +240,6 @@ function UserProfilePageContent() {
             initialGoalsText={profile.goals_text}
             blockIntakeWizard={blockIntakeWizard}
             highlightField={highlightField}
-            onSaved={() => void loadProfile()}
           />
         )}
 

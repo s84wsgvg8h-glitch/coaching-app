@@ -50,7 +50,7 @@ export default function GoalsProgressWidget({
     if (loading) {
       return (
         <div className="athlete-dashboard-card animate-pulse">
-          <div className="h-24 rounded-xl bg-white/5" />
+          <div className="h-24 rounded-xl bg-app-surface-hover" />
         </div>
       );
     }
@@ -72,9 +72,9 @@ export default function GoalsProgressWidget({
               </p>
               <Link
                 href="/doelen"
-                className="mt-2 inline-block text-[13px] font-medium text-[#3b82f6] hover:underline"
+                className="mt-2 inline-block text-[13px] font-medium text-app-accent hover:underline"
               >
-                Stel doelen in
+                Stel doelen in →
               </Link>
             </div>
           ) : (
@@ -84,7 +84,7 @@ export default function GoalsProgressWidget({
               </p>
               <Link
                 href="/doelen"
-                className="mt-2 inline-block text-[13px] font-medium text-[#3b82f6] hover:underline"
+                className="mt-2 inline-block text-[13px] font-medium text-app-accent hover:underline"
               >
                 Bewerken
               </Link>

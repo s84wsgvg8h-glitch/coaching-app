@@ -1,5 +1,6 @@
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { isCronAuthorized } from "@/lib/cronAuth";
 
 export function getSupabaseForRequest(request: Request) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -47,9 +48,17 @@ export async function assertCoachLike(request: Request): Promise<{
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("role")
+    .select("role, archived_at")
     .eq("id", user.id)
     .single();
+
+  if (profile?.archived_at) {
+    return { error: "Account gedeactiveerd.", db: null, userId: null };
+  }
+
+  if (profile?.role === "pending") {
+    return { error: "Account wacht op goedkeuring.", db: null, userId: null };
+  }
 
   if (!isCoachLikeRole(profile?.role)) {
     return { error: "Alleen coaches.", db: null, userId: null };
@@ -61,6 +70,35 @@ export async function assertCoachLike(request: Request): Promise<{
   }
 
   return { error: null, db: serviceClient, userId: user.id };
+}
+
+export async function assertCoachLikeOrCron(request: Request): Promise<{
+  error: string | null;
+  db: SupabaseClient | null;
+  userId: string | null;
+  cron: boolean;
+}> {
+  if (isCronAuthorized(request)) {
+    const serviceClient = getServiceClient();
+    if (!serviceClient) {
+      return {
+        error: "Service role key ontbreekt.",
+        db: null,
+        userId: null,
+        cron: true,
+      };
+    }
+
+    return { error: null, db: serviceClient, userId: null, cron: true };
+  }
+
+  const access = await assertCoachLike(request);
+  return {
+    error: access.error,
+    db: access.db,
+    userId: access.userId,
+    cron: false,
+  };
 }
 
 export async function getAuthSessionToken() {

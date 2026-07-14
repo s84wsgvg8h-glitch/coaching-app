@@ -53,11 +53,11 @@ export default function BlockIntakeWizardModal({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 p-4">
-      <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+      <div className="w-full max-w-lg rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl">
         <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
           Nieuw block — stap {stepIndex + 1}/{BLOCK_INTAKE_STEPS.length}
         </p>
-        <h2 className="mt-1 text-xl font-bold text-black">{step.title}</h2>
+        <h2 className="mt-1 text-xl font-bold text-app-text">{step.title}</h2>
         <p className="mt-1 text-sm text-gray-500">{step.prompt}</p>
 
         <textarea

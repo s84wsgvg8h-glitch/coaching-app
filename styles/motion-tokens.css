@@ -1,0 +1,45 @@
+/* Motion design tokens */
+
+:root {
+  --motion-duration-fast: 150ms;
+  --motion-duration-normal: 250ms;
+  --motion-duration-slow: 400ms;
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .athlete-dashboard-card:hover,
+  .dashboard-kpi-card:hover,
+  .athlete-dashboard-quicknav-card:hover {
+    transform: none !important;
+  }
+}
+
+.skip-to-content {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 10000;
+  border-radius: 9999px;
+  background: var(--app-accent);
+  color: white;
+  padding: 0.65rem 1rem;
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.skip-to-content:focus {
+  left: 1rem;
+  top: calc(0.75rem + env(safe-area-inset-top, 0px));
+}

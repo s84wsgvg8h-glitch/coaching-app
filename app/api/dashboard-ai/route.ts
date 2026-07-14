@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
-import { assertAuthenticated } from "@/lib/apiAuth";
-import { checkRateLimit } from "@/lib/rateLimit";
+import { assertAuthenticatedActive } from "@/lib/apiAuth";
+import { dashboardAiSchema, parseJsonBody } from "@/lib/apiValidation";
+import { isAthleteRole, isCoachLikeRole } from "@/lib/authRoles";
+import { checkDistributedRateLimit, rateLimitHeaders } from "@/lib/rateLimitDistributed";
 import {
   formatTrainingSnapshotForPrompt,
   isAdminDataQuestion,
@@ -138,12 +140,12 @@ function hasAllowedNonKnowledgeContext(
 }
 
 export async function POST(request: Request) {
-  const auth = await assertAuthenticated(request);
+  const auth = await assertAuthenticatedActive(request);
   if (!auth.user) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const rate = checkRateLimit(`dashboard-ai:${auth.user.id}`, {
+  const rate = await checkDistributedRateLimit(`dashboard-ai:${auth.user.id}`, {
     max: 30,
     windowMs: 60_000,
   });
@@ -152,9 +154,7 @@ export async function POST(request: Request) {
       { error: "Te veel AI-verzoeken. Probeer over een minuut opnieuw." },
       {
         status: 429,
-        headers: rate.retryAfterMs
-          ? { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) }
-          : undefined,
+        headers: rateLimitHeaders(rate.retryAfterMs),
       },
     );
   }
@@ -171,39 +171,42 @@ export async function POST(request: Request) {
     );
   }
 
-  let body: DashboardAiRequest;
-
-  try {
-    body = (await request.json()) as DashboardAiRequest;
-  } catch {
-    return NextResponse.json({ error: "Ongeldig verzoek." }, { status: 400 });
+  const parsed = await parseJsonBody(request, dashboardAiSchema);
+  if (!parsed.success) {
+    return parsed.response;
   }
 
-  const query = body.query?.trim();
+  const query = parsed.data.query.trim();
+  const body = parsed.data as DashboardAiRequest;
+  const { data: profile } = await auth.supabase
+    .from("profiles")
+    .select("role")
+    .eq("id", auth.user.id)
+    .maybeSingle();
 
-  if (!query) {
-    return NextResponse.json({ error: "Vul een vraag in." }, { status: 400 });
-  }
+  const userRole = profile?.role || "atleet";
+  const knowledgeScope: KnowledgeScope = isAthleteRole(userRole)
+    ? "athlete"
+    : body.knowledgeScope === "athlete"
+      ? "athlete"
+      : "coach";
 
-  if (query.length > 4000) {
-    return NextResponse.json(
-      { error: "Vraag is te lang (max. 4000 tekens)." },
-      { status: 400 },
-    );
-  }
-
-  const knowledgeScope: KnowledgeScope =
-    body.knowledgeScope === "athlete" ? "athlete" : "coach";
+  const sanitizedBody: DashboardAiRequest = {
+    ...body,
+    role: userRole,
+    knowledgeScope,
+    coachSnapshot: isCoachLikeRole(userRole) ? body.coachSnapshot : undefined,
+  };
 
   const knowledgeChunks = searchKnowledge(query, 8, knowledgeScope);
   const knowledgeContext = formatKnowledgeForPrompt(knowledgeChunks);
-  const trainingContext = body.trainingSnapshot
-    ? formatTrainingSnapshotForPrompt(body.trainingSnapshot)
-    : body.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
+  const trainingContext = sanitizedBody.trainingSnapshot
+    ? formatTrainingSnapshotForPrompt(sanitizedBody.trainingSnapshot)
+    : sanitizedBody.trainingContext || "Geen trainingsdata meegestuurd voor deze vraag.";
 
   if (
     knowledgeChunks.length === 0 &&
-    !hasAllowedNonKnowledgeContext(body, query, knowledgeScope)
+    !hasAllowedNonKnowledgeContext(sanitizedBody, query, knowledgeScope)
   ) {
     return NextResponse.json({
       answer: UNKNOWN_ANSWER,
@@ -229,7 +232,7 @@ export async function POST(request: Request) {
           {
             role: "system",
             content: buildSystemPrompt(
-              body,
+              sanitizedBody,
               knowledgeContext,
               trainingContext,
               knowledgeScope,
@@ -237,7 +240,7 @@ export async function POST(request: Request) {
           },
           {
             role: "user",
-            content: `Rol gebruiker: ${body.role || "onbekend"}\nVraag: ${query}`,
+            content: `Rol gebruiker: ${userRole}\nVraag: ${query}`,
           },
         ],
       }),

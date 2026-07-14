@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MoreVertical } from "lucide-react";
+import { Ban, Flag, MoreVertical } from "lucide-react";
 
 type ChatConversationMenuProps = {
   onPin: () => void;
@@ -11,6 +11,12 @@ type ChatConversationMenuProps = {
   onDelete: () => void;
   pinned: boolean;
   muted: boolean;
+  isDirect?: boolean;
+  onReport?: () => void;
+  onBlock?: () => void;
+  onSearch?: () => void;
+  onAiAssistant?: () => void;
+  showAiAssistant?: boolean;
 };
 
 export default function ChatConversationMenu({
@@ -21,6 +27,12 @@ export default function ChatConversationMenu({
   onDelete,
   pinned,
   muted,
+  isDirect = false,
+  onReport,
+  onBlock,
+  onSearch,
+  onAiAssistant,
+  showAiAssistant = false,
 }: ChatConversationMenuProps) {
   const [open, setOpen] = useState(false);
 
@@ -48,7 +60,25 @@ export default function ChatConversationMenu({
             className="fixed inset-0 z-10"
             onClick={() => setOpen(false)}
           />
-          <div className="chat-menu-dropdown absolute right-0 top-11 z-20 min-w-[220px]">
+          <div className="chat-menu-dropdown absolute right-0 top-full z-20 mt-1 min-w-[220px]">
+            {onSearch ? (
+              <button
+                type="button"
+                onClick={() => run(onSearch)}
+                className="chat-menu-item"
+              >
+                Zoeken
+              </button>
+            ) : null}
+            {showAiAssistant && onAiAssistant ? (
+              <button
+                type="button"
+                onClick={() => run(onAiAssistant)}
+                className="chat-menu-item"
+              >
+                AI-assistent
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => run(onPin)}
@@ -77,6 +107,26 @@ export default function ChatConversationMenu({
             >
               Chat wissen
             </button>
+            {onReport ? (
+              <button
+                type="button"
+                onClick={() => run(onReport)}
+                className="chat-menu-item"
+              >
+                <Flag className="h-4 w-4" />
+                {isDirect ? "Gebruiker melden" : "Gesprek melden"}
+              </button>
+            ) : null}
+            {isDirect && onBlock ? (
+              <button
+                type="button"
+                onClick={() => run(onBlock)}
+                className="chat-menu-item chat-menu-item-danger"
+              >
+                <Ban className="h-4 w-4" />
+                Gebruiker blokkeren
+              </button>
+            ) : null}
             <button
               type="button"
               onClick={() => run(onDelete)}

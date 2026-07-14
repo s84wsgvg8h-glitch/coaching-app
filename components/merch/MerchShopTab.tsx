@@ -39,6 +39,7 @@ import {
   type MerchProductSort,
   type MerchShopStats,
 } from "@/lib/merchShopStats";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 const FILTER_TABS: Array<{ id: MerchProductFilter; label: string }> = [
   { id: "all", label: "Alle producten" },
@@ -103,7 +104,9 @@ export default function MerchShopTab({
   const [menuItemId, setMenuItemId] = useState<string | null>(null);
 
   useEffect(() => {
-    setFilter(initialFilter);
+    deferEffectUpdate(() => {
+      setFilter(initialFilter);
+    });
   }, [initialFilter]);
 
   const visibleItems = useMemo(() => {
@@ -694,7 +697,7 @@ function StatusBadge({ status }: { status: MerchItem["status"] }) {
         ? "bg-red-500 text-white"
         : status === "archived"
           ? "bg-slate-500 text-white"
-          : "bg-amber-500 text-black";
+          : "bg-amber-500 text-white";
   return (
     <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${tone}`}>
       {getMerchStatusLabel(status)}

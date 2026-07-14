@@ -1,18 +1,29 @@
-import { supabase } from "@/lib/supabaseClient";
 import { captureVideoThumbnail } from "@/lib/videoThumbnail";
+import { uploadFileViaApi } from "@/lib/storage/clientUpload";
+import { getSignedUrlViaApi } from "@/lib/storage/clientUpload";
+import { deleteStoredObject } from "@/lib/storage/clientDelete";
+import { getPublicUrl } from "@/lib/storage/index";
+import { resolveMediaUrl } from "@/lib/storage/resolve";
+import type { StorageUploadResult } from "@/lib/storage/types";
 
 const BUCKET = "exercise-library";
 const MAX_SIZE_MB = 250;
-const SIGNED_URL_TTL_SECONDS = 60 * 60;
 
 type ExerciseLibraryVideoSource = {
   video_url?: string | null;
   video_path?: string | null;
+  storage_provider?: string | null;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
 };
 
 function extractExerciseLibraryStoragePath(
   item: ExerciseLibraryVideoSource | null | undefined,
 ) {
+  if (item?.storage_path?.trim()) {
+    return item.storage_path.trim();
+  }
+
   const videoPath = item?.video_path?.trim();
   if (videoPath) return videoPath;
 
@@ -42,33 +53,51 @@ function extractExerciseLibraryStoragePath(
 export function resolveExerciseLibraryVideoUrl(
   item: ExerciseLibraryVideoSource | null | undefined,
 ) {
+  const resolved = resolveMediaUrl({
+    file_url: null,
+    video_url: item?.video_url,
+    storage_provider: item?.storage_provider,
+    storage_bucket: item?.storage_bucket || BUCKET,
+    storage_path: item?.storage_path || item?.video_path,
+  });
+
+  if (resolved) return resolved;
+
   const storagePath = extractExerciseLibraryStoragePath(item);
   if (storagePath && !/^https?:\/\//i.test(storagePath)) {
-    const { data } = supabase.storage.from(BUCKET).getPublicUrl(storagePath);
-    return data.publicUrl;
+    return getPublicUrl({
+      provider: item?.storage_provider,
+      bucket: BUCKET,
+      path: storagePath,
+    });
   }
 
-  const rawUrl = item?.video_url?.trim();
-  if (rawUrl && /^https?:\/\//i.test(rawUrl)) {
-    return rawUrl;
-  }
-
-  return null;
+  return item?.video_url?.trim() || null;
 }
 
 export async function getExerciseLibraryPlaybackUrl(
   item: ExerciseLibraryVideoSource | null | undefined,
 ) {
+  if (item?.storage_provider === "r2" && item.storage_path) {
+    const signed = await getSignedUrlViaApi({
+      provider: item.storage_provider,
+      bucket: item.storage_bucket,
+      path: item.storage_path,
+      legacyUrl: item.video_url,
+    });
+    if (signed.url) return signed.url;
+  }
+
   const storagePath = extractExerciseLibraryStoragePath(item);
 
   if (storagePath && !/^https?:\/\//i.test(storagePath)) {
-    const { data, error } = await supabase.storage
-      .from(BUCKET)
-      .createSignedUrl(storagePath, SIGNED_URL_TTL_SECONDS);
-
-    if (!error && data?.signedUrl) {
-      return data.signedUrl;
-    }
+    const signed = await getSignedUrlViaApi({
+      provider: item?.storage_provider || "supabase",
+      bucket: item?.storage_bucket || BUCKET,
+      path: storagePath,
+      legacyUrl: item?.video_url,
+    });
+    if (signed.url) return signed.url;
   }
 
   return resolveExerciseLibraryVideoUrl(item);
@@ -86,6 +115,7 @@ export async function uploadExerciseLibraryVideo(userId: string, file: File) {
       videoUrl: null as string | null,
       videoPath: null as string | null,
       thumbnailUrl: null as string | null,
+      storage: null as StorageUploadResult | null,
       error: new Error("Alleen videobestanden zijn toegestaan."),
     };
   }
@@ -96,53 +126,38 @@ export async function uploadExerciseLibraryVideo(userId: string, file: File) {
       videoUrl: null,
       videoPath: null,
       thumbnailUrl: null,
+      storage: null,
       error: new Error(`Video is te groot. Maximaal ${MAX_SIZE_MB} MB.`),
     };
   }
 
-  const timestamp = Date.now();
   const isQuickTime =
     file.type === "video/quicktime" ||
     file.name.toLowerCase().endsWith(".mov");
-  const extension = isQuickTime
-    ? "mp4"
-    : file.name.split(".").pop() || "mp4";
-  const videoPath = `library/${userId}/${timestamp}.${extension}`;
+  const uploadFile = isQuickTime
+    ? new File([file], file.name.replace(/\.mov$/i, ".mp4"), {
+        type: "video/mp4",
+      })
+    : file;
 
-  const { error: uploadError } = await supabase.storage
-    .from(BUCKET)
-    .upload(videoPath, file, {
-      upsert: true,
-      contentType: isQuickTime ? "video/mp4" : file.type || "video/mp4",
-    });
+  const result = await uploadFileViaApi({
+    file: uploadFile,
+    filename: uploadFile.name,
+    uploadType: "exercise-library",
+    upsert: true,
+  });
 
-  if (uploadError) {
+  if (result.error || !result.url) {
     return {
       videoUrl: null,
       videoPath: null,
       thumbnailUrl: null,
-      error: uploadError,
+      storage: null,
+      error: result.error || new Error("Upload mislukt."),
     };
   }
 
-  const { data: videoPublic } = supabase.storage
-    .from(BUCKET)
-    .getPublicUrl(videoPath);
-
   let thumbnailUrl: string | null = null;
-
-  void (async () => {
-    try {
-      const thumbnailBlob = await captureVideoThumbnail(file);
-      const thumbnailPath = `library/${userId}/thumbs/${timestamp}.jpg`;
-      await supabase.storage.from(BUCKET).upload(thumbnailPath, thumbnailBlob, {
-        upsert: true,
-        contentType: "image/jpeg",
-      });
-    } catch {
-      // Thumbnail is optional.
-    }
-  })();
 
   try {
     const thumbnailBlob = await Promise.race([
@@ -151,35 +166,53 @@ export async function uploadExerciseLibraryVideo(userId: string, file: File) {
         setTimeout(() => reject(new Error("timeout")), 2500),
       ),
     ]);
-    const thumbnailPath = `library/${userId}/thumbs/${timestamp}.jpg`;
-    const { error: thumbError } = await supabase.storage
-      .from(BUCKET)
-      .upload(thumbnailPath, thumbnailBlob, {
-        upsert: true,
-        contentType: "image/jpeg",
-      });
-    if (!thumbError) {
-      const { data: thumbPublic } = supabase.storage
-        .from(BUCKET)
-        .getPublicUrl(thumbnailPath);
-      thumbnailUrl = thumbPublic.publicUrl;
+    const thumbFile = new File(
+      [thumbnailBlob],
+      `thumb-${Date.now()}.jpg`,
+      { type: "image/jpeg" },
+    );
+    const thumbResult = await uploadFileViaApi({
+      file: thumbFile,
+      filename: thumbFile.name,
+      uploadType: "exercise-library",
+      context: { isThumbnail: true },
+      upsert: true,
+    });
+    if (!thumbResult.error && thumbResult.url) {
+      thumbnailUrl = thumbResult.url;
     }
   } catch {
     // Video upload succeeds without thumbnail preview.
   }
 
   return {
-    videoUrl: videoPublic.publicUrl,
-    videoPath,
+    videoUrl: result.url,
+    videoPath: result.path,
     thumbnailUrl,
+    storage: result,
     error: null as Error | null,
   };
 }
 
-export async function removeExerciseLibraryStorage(paths: string[]) {
+export async function removeExerciseLibraryStorage(
+  paths: string[],
+  options?: {
+    provider?: string | null;
+    bucket?: string | null;
+  },
+) {
   const cleaned = paths.filter(Boolean);
   if (cleaned.length === 0) return { error: null as Error | null };
 
-  const { error } = await supabase.storage.from(BUCKET).remove(cleaned);
-  return { error };
+  for (const path of cleaned) {
+    const { error } = await deleteStoredObject({
+      provider: options?.provider,
+      bucket: options?.bucket || BUCKET,
+      path,
+      uploadType: "exercise-library",
+    });
+    if (error) return { error };
+  }
+
+  return { error: null as Error | null };
 }

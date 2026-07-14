@@ -7,6 +7,8 @@ import {
   toggleTheme as toggleStoredTheme,
   type ThemeMode,
 } from "@/lib/theme";
+import { getThemeColorMeta, applyDocumentSurfaceColor } from "@/lib/nativeStatusBar";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ThemeContextValue = {
   theme: ThemeMode;
@@ -22,7 +24,15 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const initialTheme = getPreferredTheme();
     applyTheme(initialTheme);
-    setThemeState(initialTheme);
+    deferEffectUpdate(() => {
+      setThemeState(initialTheme);
+    });
+    applyDocumentSurfaceColor(initialTheme);
+
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", getThemeColorMeta(initialTheme));
+    }
   }, []);
 
   function setTheme(nextTheme: ThemeMode) {

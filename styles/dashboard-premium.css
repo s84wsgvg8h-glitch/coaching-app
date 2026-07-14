@@ -1,0 +1,760 @@
+/* Premium coach dashboard visual system — scoped to .premium-coach-ui */
+
+.shell-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+}
+
+html.dark .premium-coach-ui {
+  --dash-bg: #0b0e14;
+  --dash-bg-elevated: #161b22;
+  --dash-bg-hover: #1c2330;
+  --dash-border: rgba(255, 255, 255, 0.06);
+  --dash-border-strong: rgba(255, 255, 255, 0.1);
+  --dash-text-muted: #94a3b8;
+  --dash-text-subtle: #64748b;
+  --dash-accent: #3d8bff;
+  --dash-accent-soft: rgba(61, 139, 255, 0.14);
+  --dash-accent-glow: rgba(61, 139, 255, 0.22);
+  --dash-purple: #8b7cf6;
+  --dash-green: #34d399;
+  --dash-orange: #fbbf24;
+  --dash-blue: #60a5fa;
+  --dash-radius: 14px;
+  --dash-radius-lg: 16px;
+  --dash-card-padding: 1.25rem;
+  --dash-gap: 1rem;
+  --dash-gap-lg: 1.25rem;
+  --dash-shadow-card:
+    inset 0 1px 0 rgba(255, 255, 255, 0.04),
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 8px 32px rgba(0, 0, 0, 0.35);
+  --dash-shadow-hover:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 0 1px rgba(107, 140, 255, 0.12),
+    0 14px 40px rgba(0, 0, 0, 0.42);
+
+  --app-bg: var(--dash-bg);
+  --app-surface: var(--dash-bg-elevated);
+  --app-surface-hover: var(--dash-bg-hover);
+  --app-surface-elevated: #161922;
+  --app-text-muted: var(--dash-text-muted);
+  --app-text-subtle: var(--dash-text-subtle);
+  --app-accent: var(--dash-accent);
+  --app-accent-muted: var(--dash-accent-soft);
+  --app-accent-glow: var(--dash-accent-glow);
+  --glass-surface-border: var(--dash-border);
+  --glass-surface-bg:
+    radial-gradient(ellipse 120% 80% at 50% -20%, rgba(107, 140, 255, 0.08), transparent 55%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.035) 0%, rgba(255, 255, 255, 0.012) 100%);
+  --glass-surface-shadow: var(--dash-shadow-card);
+  --glass-input-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.015));
+  --glass-input-border: var(--dash-border);
+  --glass-hover-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+  --dashboard-sidebar-width: 248px;
+  --dashboard-kpi-min-height: 112px;
+  --dashboard-agenda-rail-width: 300px;
+  --coach-shell-topbar-height: calc(2.85rem + env(safe-area-inset-top, 0px));
+
+  background: var(--dash-bg);
+}
+
+html.dark .premium-coach-ui .mobile-scroll,
+html.dark .premium-coach-ui .dashboard-page-content {
+  background: var(--dash-bg);
+}
+
+html.dark .premium-coach-ui .app-shell-glow {
+  background:
+    radial-gradient(ellipse 80% 50% at 20% -10%, rgba(107, 140, 255, 0.12), transparent 50%),
+    radial-gradient(ellipse 60% 40% at 90% 10%, rgba(139, 124, 246, 0.06), transparent 45%);
+  opacity: 1;
+}
+
+/* ─── Shared premium card ─── */
+
+html.dark .premium-coach-ui .premium-card,
+html.dark .premium-coach-ui .glass-accent-card,
+html.dark .premium-coach-ui .ui-panel,
+html.dark .premium-coach-ui .dashboard-kpi-card {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-bg-elevated);
+  box-shadow: var(--dash-shadow-card);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+html.dark .premium-coach-ui .premium-card::before,
+html.dark .premium-coach-ui .glass-accent-card::before {
+  display: none;
+}
+
+html.dark .premium-coach-ui .premium-card:hover,
+html.dark .premium-coach-ui a.dashboard-kpi-card:hover,
+html.dark .premium-coach-ui .dashboard-client-note-row:hover {
+  transform: translateY(-3px);
+  border-color: rgba(107, 140, 255, 0.14);
+  box-shadow: var(--dash-shadow-hover);
+}
+
+html.dark .premium-coach-ui .ui-panel {
+  border-radius: var(--dash-radius-lg);
+  padding: var(--dash-card-padding);
+}
+
+html.dark .premium-coach-ui .dashboard-coach-main {
+  gap: var(--dash-gap-lg) !important;
+}
+
+html.dark .premium-coach-ui .dashboard-coach-body {
+  gap: var(--dash-gap-lg);
+}
+
+/* ─── Sidebar ─── */
+
+html.dark .premium-coach-ui .coach-app-sidebar {
+  padding: 1rem 0.85rem 1.15rem;
+  border-right: 1px solid var(--dash-border);
+  background: #0a0c10;
+}
+
+@media (min-width: 1024px) {
+  html.dark .premium-coach-ui .coach-app-sidebar:hover {
+    width: var(--dashboard-sidebar-expanded-width);
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+  }
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin-bottom: 1.35rem;
+  padding: 0.25rem 0.5rem 0.85rem;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-text);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-brand-mark {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.55rem;
+  background: linear-gradient(135deg, rgba(107, 140, 255, 0.35), rgba(107, 140, 255, 0.12));
+  box-shadow: 0 0 20px rgba(107, 140, 255, 0.2);
+  color: var(--dash-accent);
+  font-size: 14px;
+  font-weight: 800;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-section {
+  margin-bottom: 1.1rem;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-section-label {
+  margin-bottom: 0.45rem;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--dash-text-subtle);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-nav {
+  gap: 0.25rem;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-link {
+  min-height: 42px;
+  padding: 0.5rem 0.65rem;
+  border-radius: 0.75rem;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--dash-text-muted);
+  transition: all 0.2s ease;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-link-icon {
+  height: 1.125rem;
+  width: 1.125rem;
+  opacity: 0.85;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-link:hover {
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--app-text);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-link.is-active {
+  background: linear-gradient(
+    135deg,
+    rgba(107, 140, 255, 0.22) 0%,
+    rgba(107, 140, 255, 0.08) 100%
+  );
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 0 24px rgba(107, 140, 255, 0.12);
+  color: #fff;
+  font-weight: 600;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-link.is-active .coach-app-sidebar-link-icon {
+  opacity: 1;
+  color: var(--dash-accent);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-badge {
+  background: var(--dash-accent);
+  font-size: 10px;
+  box-shadow: 0 0 12px rgba(107, 140, 255, 0.35);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-footer {
+  gap: 0.55rem;
+  padding-top: 1rem;
+  border-top-color: var(--dash-border);
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-profile,
+html.dark .premium-coach-ui .coach-app-sidebar-plan {
+  border-radius: 0.85rem;
+  border-color: var(--dash-border);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.65rem 0.7rem;
+}
+
+html.dark .premium-coach-ui .coach-app-sidebar-profile-avatar {
+  height: 2.25rem;
+  width: 2.25rem;
+  background: linear-gradient(135deg, rgba(107, 140, 255, 0.25), rgba(107, 140, 255, 0.08));
+  color: #fff;
+}
+
+/* ─── Topbar ─── */
+
+html.dark .premium-coach-ui .shell-topbar {
+  border-bottom-color: var(--dash-border);
+  background: color-mix(in srgb, var(--dash-bg) 92%, transparent);
+  padding: 0 1rem;
+}
+
+html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-inner {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+}
+
+@media (min-width: 1024px) {
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-inner {
+    grid-template-columns: minmax(0, 240px) minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.45rem 0;
+  }
+}
+
+html.dark .premium-coach-ui .shell-topbar-greeting-title {
+  font-size: 1.125rem;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+html.dark .premium-coach-ui .shell-topbar-greeting-sub {
+  margin-top: 0.2rem;
+  font-size: 12px;
+  color: var(--dash-text-muted);
+}
+
+html.dark .premium-coach-ui .shell-topbar-search-center {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-search-center {
+    display: flex;
+    justify-content: center;
+    min-width: 0;
+  }
+
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-search-center .app-search-field {
+    width: min(100%, 420px);
+    min-height: 38px;
+    border: 1px solid var(--dash-border);
+    background: rgba(255, 255, 255, 0.03);
+    box-shadow: none;
+  }
+
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-search-center .app-search-field:hover:not(:focus-within) {
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-search-center .app-search-field:focus-within {
+    border-color: rgba(107, 140, 255, 0.28);
+    box-shadow: none;
+  }
+
+  html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-search-mobile {
+    display: none;
+  }
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem;
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip {
+  min-height: 40px;
+  border-radius: 0.75rem;
+  border: 1px solid var(--dash-border);
+  background: rgba(255, 255, 255, 0.03);
+  transition: all 0.2s ease;
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip:hover {
+  border-color: rgba(107, 140, 255, 0.2);
+  background: rgba(107, 140, 255, 0.08);
+  box-shadow: 0 0 20px rgba(107, 140, 255, 0.12);
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--icon {
+  min-width: 40px;
+  width: 40px;
+  padding: 0.35rem;
+}
+
+html.dark .premium-coach-ui .shell-topbar-action-avatar {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(135deg, rgba(107, 140, 255, 0.35), rgba(107, 140, 255, 0.1));
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+}
+
+html.dark .premium-coach-ui .shell-topbar-action-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text);
+  line-height: 1.2;
+}
+
+html.dark .premium-coach-ui .shell-topbar-action-sublabel {
+  font-size: 10px;
+  color: var(--dash-text-muted);
+  line-height: 1.2;
+}
+
+html.dark .premium-coach-ui .shell-topbar-search-kbd {
+  border-color: var(--dash-border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--dash-text-subtle);
+}
+
+/* ─── KPI cards ─── */
+
+html.dark .premium-coach-ui .dashboard-kpi-row {
+  gap: var(--dash-gap);
+}
+
+@media (min-width: 768px) {
+  html.dark .premium-coach-ui .dashboard-kpi-row {
+    gap: var(--dash-gap-lg);
+  }
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-kpi-card {
+  min-height: var(--dashboard-kpi-min-height);
+  padding: 0.5rem 0.65rem;
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-kpi-icon {
+  height: 1.5rem;
+  width: 1.5rem;
+  margin-bottom: 0.35rem;
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-kpi-value {
+  margin-top: 0.1rem;
+  font-size: 1.35rem;
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-kpi-hint,
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-kpi-trend {
+  margin-top: 0.15rem;
+  font-size: 10px;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-card-body {
+  padding: 0;
+  justify-content: flex-start;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-icon {
+  display: inline-flex;
+  height: 2.25rem;
+  width: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.65rem;
+  margin-bottom: 0.85rem;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-icon--purple {
+  background: rgba(139, 124, 246, 0.18);
+  color: #a78bfa;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-icon--green {
+  background: rgba(52, 211, 153, 0.15);
+  color: #34d399;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-icon--orange {
+  background: rgba(251, 191, 36, 0.15);
+  color: #fbbf24;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-icon--blue {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60a5fa;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-label {
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  color: var(--dash-text-muted);
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-value {
+  margin-top: 0.35rem;
+  font-size: 1.85rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-hint,
+html.dark .premium-coach-ui .dashboard-kpi-trend {
+  margin-top: 0.65rem;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--dash-text-subtle);
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-card--chart .team-engagement-chart {
+  opacity: 0.55;
+  filter: drop-shadow(0 0 8px rgba(107, 140, 255, 0.25));
+}
+
+/* ─── Focus / tasks ─── */
+
+html.dark .premium-coach-ui .dashboard-focus-panel {
+  padding: var(--dash-card-padding);
+  border-radius: var(--dash-radius-lg);
+}
+
+html.dark .premium-coach-ui .dashboard-focus-panel-header {
+  margin-bottom: 0.85rem;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-section-label {
+  margin-bottom: 0.55rem;
+  font-size: 10px;
+  letter-spacing: 0.06em;
+  color: var(--dash-text-subtle);
+}
+
+html.dark .premium-coach-ui .dashboard-focus-check-row {
+  min-height: 44px;
+  margin-bottom: 0.35rem;
+  border-radius: 0.75rem;
+  border: 1px solid var(--dash-border) !important;
+  background: rgba(255, 255, 255, 0.02) !important;
+  padding: 0.55rem 0.65rem 0.55rem 0.75rem;
+  transition: all 0.18s ease;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-check-row:hover {
+  border-color: rgba(107, 140, 255, 0.14) !important;
+  background: rgba(255, 255, 255, 0.04) !important;
+  transform: translateY(-1px);
+}
+
+html.dark .premium-coach-ui .dashboard-focus-priority-badge {
+  flex-shrink: 0;
+  border-radius: 9999px;
+  padding: 0.15rem 0.45rem;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-priority-badge--high {
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  background: rgba(248, 113, 113, 0.12);
+  color: #fca5a5;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-priority-badge--medium {
+  border: 1px solid rgba(251, 191, 36, 0.35);
+  background: rgba(251, 191, 36, 0.1);
+  color: #fcd34d;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-priority-badge--low {
+  border: 1px solid rgba(96, 165, 250, 0.35);
+  background: rgba(96, 165, 250, 0.1);
+  color: #93c5fd;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-appointment-row {
+  border-radius: 0.75rem;
+  border-color: var(--dash-border);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.55rem 0.65rem;
+}
+
+/* ─── Charts ─── */
+
+html.dark .premium-coach-ui .dashboard-sessions-chart {
+  position: relative;
+  min-height: 148px;
+  padding-top: 0.5rem;
+}
+
+html.dark .premium-coach-ui .dashboard-sessions-chart::before {
+  content: "";
+  position: absolute;
+  inset: 0.5rem 0 2.5rem;
+  background: repeating-linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.04) 0,
+    rgba(255, 255, 255, 0.04) 1px,
+    transparent 1px,
+    transparent 24px
+  );
+  pointer-events: none;
+}
+
+html.dark .premium-coach-ui .dashboard-sessions-chart-bar {
+  background: linear-gradient(
+    180deg,
+    rgba(107, 140, 255, 0.75) 0%,
+    rgba(107, 140, 255, 0.2) 100%
+  );
+  border-radius: 0.5rem 0.5rem 0.2rem 0.2rem;
+  box-shadow: 0 4px 16px rgba(107, 140, 255, 0.15);
+}
+
+html.dark .premium-coach-ui .dashboard-sessions-chart-bar.is-today {
+  background: linear-gradient(
+    180deg,
+    rgba(107, 140, 255, 0.95) 0%,
+    rgba(107, 140, 255, 0.35) 100%
+  );
+  box-shadow: 0 0 20px rgba(107, 140, 255, 0.25);
+}
+
+html.dark .premium-coach-ui .dashboard-focus-area-bar {
+  height: 0.4rem;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+/* ─── Agenda rail ─── */
+
+html.dark .premium-coach-ui .today-agenda-timeline {
+  padding: var(--dash-card-padding);
+  border-radius: var(--dash-radius-lg);
+}
+
+html.dark .premium-coach-ui .today-agenda-hour-line {
+  border-color: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .premium-coach-ui .today-agenda-block {
+  border-radius: 0.75rem;
+  padding: 0.5rem 0.6rem;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+html.dark .premium-coach-ui .today-agenda-block-tone-0,
+html.dark .premium-coach-ui .today-agenda-block-tone-1,
+html.dark .premium-coach-ui .today-agenda-block-tone-2,
+html.dark .premium-coach-ui .today-agenda-block-tone-3,
+html.dark .premium-coach-ui .today-agenda-block-tone-4 {
+  border-width: 1px;
+  opacity: 0.92;
+}
+
+html.dark .premium-coach-ui .today-agenda-now-line {
+  border-top-color: var(--dash-accent);
+  box-shadow: 0 0 12px rgba(61, 139, 255, 0.45);
+}
+
+html.dark .premium-coach-ui .today-agenda-now-badge {
+  background: var(--dash-accent);
+  box-shadow: 0 0 16px rgba(61, 139, 255, 0.35);
+}
+
+html.dark .premium-coach-ui .today-agenda-scroll {
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent calc(var(--agenda-hour-height, 48px) - 1px),
+      rgba(255, 255, 255, 0.04) calc(var(--agenda-hour-height, 48px) - 1px),
+      rgba(255, 255, 255, 0.04) var(--agenda-hour-height, 48px)
+    ),
+    rgba(255, 255, 255, 0.02);
+  border-radius: 0.75rem;
+}
+
+html.dark .premium-coach-ui .dashboard-widget-panel {
+  min-width: 0;
+}
+
+/* ─── Dark cockpit panels (inbox, quick actions) ─── */
+
+html.dark .premium-coach-ui .dashboard-cockpit-panel-label {
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--dash-text-subtle);
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-quick-actions--cockpit .dashboard-quick-action-btn {
+  border-radius: 0.75rem;
+  border-color: var(--dash-border);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--dash-text-muted);
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-quick-actions--cockpit .dashboard-quick-action-btn:hover {
+  border-color: rgba(61, 139, 255, 0.22);
+  background: rgba(61, 139, 255, 0.08);
+  color: #fff;
+  box-shadow: 0 0 20px rgba(61, 139, 255, 0.1);
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-quick-actions--cockpit .dashboard-quick-action-btn svg {
+  color: var(--dash-text-muted);
+}
+
+html.dark .premium-coach-ui .dashboard-cockpit .dashboard-quick-actions--cockpit .dashboard-quick-action-btn:hover svg {
+  color: var(--dash-accent);
+}
+
+html.dark .premium-coach-ui .dashboard-inbox-item {
+  border-radius: 0.75rem;
+  border: 1px solid var(--dash-border);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.55rem 0.65rem;
+}
+
+html.dark .premium-coach-ui .dashboard-inbox-item:hover {
+  border-color: rgba(61, 139, 255, 0.18);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+html.dark .premium-coach-ui .dashboard-inbox-action {
+  border-radius: 9999px;
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 0.75rem;
+  font-size: 11px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+html.dark .premium-coach-ui .dashboard-inbox-action:hover {
+  border-color: rgba(61, 139, 255, 0.28);
+  background: rgba(61, 139, 255, 0.12);
+  color: #fff;
+}
+
+html.dark .premium-coach-ui .dashboard-focus-panel,
+html.dark .premium-coach-ui .dashboard-cockpit-panel,
+html.dark .premium-coach-ui .today-agenda-timeline {
+  border: 1px solid var(--dash-border);
+  background: var(--dash-bg-elevated);
+  box-shadow: var(--dash-shadow-card);
+}
+
+html.dark .premium-coach-ui .ui-section-title,
+html.dark .premium-coach-ui .dashboard-focus-panel-header p {
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+html.dark .premium-coach-ui .dashboard-client-note-row {
+  border-radius: 0.85rem;
+  padding: 0.75rem 0.85rem;
+}
+
+html.dark .premium-coach-ui .dashboard-quick-actions {
+  gap: 0.55rem;
+  padding-top: 1rem;
+  margin-top: 0.75rem;
+  border-top-color: var(--dash-border);
+}
+
+html.dark .premium-coach-ui .dashboard-quick-action-btn {
+  border-radius: 0.75rem;
+  border-color: var(--dash-border);
+  background: rgba(255, 255, 255, 0.025);
+  padding: 0.55rem 1rem;
+  font-size: 12.5px;
+}
+
+html.dark .premium-coach-ui .dashboard-quick-action-btn:hover {
+  border-color: rgba(107, 140, 255, 0.18);
+  box-shadow: 0 0 20px rgba(107, 140, 255, 0.1);
+}
+
+html.dark .premium-coach-ui .dashboard-greeting-header h1 {
+  font-size: 1.75rem;
+  letter-spacing: -0.03em;
+}
+
+html.dark .premium-coach-ui .dashboard-greeting-header p {
+  font-size: 13px;
+  color: var(--dash-text-muted);
+}
+
+html.dark .premium-coach-ui .dashboard-page-content {
+  padding-top: 0.45rem;
+}
+
+@media (min-width: 768px) {
+  html.dark .premium-coach-ui .dashboard-page-content {
+    padding-top: 0.5rem;
+  }
+}
+
+html.dark .premium-coach-ui .ui-todo-checkbox {
+  height: 1.125rem;
+  width: 1.125rem;
+  border-radius: 0.35rem;
+  border-color: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.03);
+}

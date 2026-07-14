@@ -1,6 +1,5 @@
 "use client";
 
-import { Check } from "lucide-react";
 import {
   formatFillScorePercentage,
   getFillScoreColorClass,
@@ -11,43 +10,82 @@ type AthleteWeeklyFillScoreCardProps = {
   loading?: boolean;
 };
 
+function FillScoreProgressRing({
+  value,
+  colorClass,
+}: {
+  value: number;
+  colorClass: string;
+}) {
+  const size = 52;
+  const stroke = 4;
+  const radius = (size - stroke) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const offset = circumference - (Math.min(100, Math.max(0, value)) / 100) * circumference;
+
+  return (
+    <div className={`athlete-dashboard-fill-ring ${colorClass}`} aria-hidden="true">
+      <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="rgba(255, 255, 255, 0.08)"
+          strokeWidth={stroke}
+        />
+        <circle
+          cx={size / 2}
+          cy={size / 2}
+          r={radius}
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={stroke}
+          strokeLinecap="round"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+        />
+      </svg>
+      <span className={`athlete-dashboard-fill-ring-label ${colorClass}`}>
+        {formatFillScorePercentage(value)}
+      </span>
+    </div>
+  );
+}
+
 export default function AthleteWeeklyFillScoreCard({
   percentage,
   loading = false,
 }: AthleteWeeklyFillScoreCardProps) {
-  const value = percentage ?? 100;
-  const colorClass = getFillScoreColorClass(value);
+  const hasScore = percentage !== null;
+  const value = percentage ?? 0;
+  const colorClass = hasScore ? getFillScoreColorClass(value) : "text-app-muted";
 
   if (loading) {
     return (
       <div className="athlete-dashboard-card athlete-dashboard-card--fill animate-pulse">
-        <div className="h-20 rounded-xl bg-white/5" />
+        <div className="h-3 w-24 rounded bg-app-surface-hover" />
+        <div className="mt-4 flex justify-center">
+          <div className="h-[52px] w-[52px] rounded-full bg-app-surface-hover" />
+        </div>
       </div>
     );
   }
 
   return (
     <div className="athlete-dashboard-card athlete-dashboard-card--fill">
-      <p className="athlete-dashboard-eyebrow">Weekly fill score</p>
-      <p className="mt-1 text-[13px] text-app-muted">
+      <p className="athlete-dashboard-eyebrow">Invulscore</p>
+      <p className="athlete-dashboard-card-desc mt-1 hidden text-[13px] text-app-muted lg:block">
         Invulscore afgelopen 7 dagen
       </p>
-      <div className="mt-4 flex items-center justify-between gap-2">
-        <p
-          className={`athlete-dashboard-fill-value text-[42px] font-semibold leading-none tracking-tight ${colorClass}`}
-        >
-          {formatFillScorePercentage(value)}
-        </p>
-        <div
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
-            value >= 80
-              ? "bg-emerald-500/15 text-emerald-400"
-              : "bg-white/6 text-app-muted"
-          }`}
-          aria-hidden="true"
-        >
-          <Check className="h-5 w-5" strokeWidth={2.5} />
-        </div>
+      <div className="athlete-dashboard-fill-layout mt-3 lg:mt-4">
+        {hasScore ? (
+          <FillScoreProgressRing value={value} colorClass={colorClass} />
+        ) : (
+          <div className="athlete-dashboard-fill-ring text-app-muted" aria-hidden="true">
+            <span className="athlete-dashboard-fill-ring-label">—</span>
+          </div>
+        )}
       </div>
     </div>
   );

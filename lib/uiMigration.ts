@@ -1,7 +1,7 @@
 import { applyTheme } from "@/lib/theme";
 import { STORAGE_KEY as DASHBOARD_LAYOUT_KEY } from "@/lib/dashboardWidgetOrder";
 
-export const UI_MIGRATION_VERSION = 6;
+export const UI_MIGRATION_VERSION = 9;
 const MIGRATION_KEY = "coaching-app-ui-migration";
 
 /** One-time client migration: reset cached dashboard layout and enforce dark theme. */

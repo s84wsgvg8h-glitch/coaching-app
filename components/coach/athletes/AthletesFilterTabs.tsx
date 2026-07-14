@@ -20,20 +20,16 @@ export default function AthletesFilterTabs({
   className = "",
 }: AthletesFilterTabsProps) {
   return (
-    <div className={`flex flex-wrap items-center gap-2 ${className}`}>
+    <div className={`flex flex-wrap items-center gap-2.5 ${className}`}>
       {FILTERS.map((filter) => {
         const isActive = value === filter.key;
         const isAchterstand = filter.key === "non-compliant";
 
-        let activeClass = "border-app-border/70 text-app-muted hover:border-app-border hover:text-app-text";
+        let activeClass = "athletes-filter-tab text-app-muted";
         if (isActive) {
-          if (isAchterstand) {
-            activeClass =
-              "athletes-filter-tab-active athletes-filter-tab-active--warning border-amber-500/50 text-amber-300";
-          } else {
-            activeClass =
-              "athletes-filter-tab-active border-app-accent/50 text-app-accent";
-          }
+          activeClass = isAchterstand
+            ? "athletes-filter-tab athletes-filter-tab--active athletes-filter-tab--warning"
+            : "athletes-filter-tab athletes-filter-tab--active";
         }
 
         return (
@@ -46,7 +42,7 @@ export default function AthletesFilterTabs({
                 ? "Atleten met lage invulscore of weinig activiteit"
                 : undefined
             }
-            className={`rounded-full border px-4 py-1.5 text-[13px] font-medium transition app-focus-ring ${activeClass}`}
+            className={`app-focus-ring ${activeClass}`}
           >
             {filter.label}
           </button>

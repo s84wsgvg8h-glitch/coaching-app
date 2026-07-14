@@ -58,6 +58,11 @@ export type ExerciseLibraryItem = {
   thumbnail_url: string | null;
   active: boolean;
   sort_order: number;
+  storage_provider?: string | null;
+  storage_bucket?: string | null;
+  storage_path?: string | null;
+  storage_content_type?: string | null;
+  storage_size_bytes?: number | null;
   created_at?: string | null;
   updated_at?: string | null;
 };
@@ -212,6 +217,11 @@ export async function saveExerciseLibraryItem(item: ExerciseLibraryItemInput) {
     thumbnail_url: item.thumbnail_url?.trim() || null,
     active: item.active,
     sort_order: item.sort_order,
+    storage_provider: item.storage_provider || "supabase",
+    storage_bucket: item.storage_bucket || null,
+    storage_path: item.storage_path || null,
+    storage_content_type: item.storage_content_type || null,
+    storage_size_bytes: item.storage_size_bytes ?? null,
     updated_at: new Date().toISOString(),
   };
 

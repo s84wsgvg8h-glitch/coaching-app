@@ -1,0 +1,195 @@
+/* Light mode — fix unreadable white-on-white text across coach pages */
+
+html:not(.dark) .athletes-table-head th {
+  color: var(--app-text-subtle) !important;
+}
+
+html:not(.dark) .athletes-table-row {
+  border-bottom-color: var(--app-border) !important;
+}
+
+html:not(.dark) .athletes-metric-label,
+html:not(.dark) .athletes-export-btn {
+  color: var(--app-text-subtle) !important;
+}
+
+html:not(.dark) .athletes-export-btn:hover:not(:disabled) {
+  color: var(--app-text-muted) !important;
+  background: var(--app-surface-hover) !important;
+}
+
+html:not(.dark) .athletes-sidebar-panel,
+html:not(.dark) .athletes-glass-card,
+html:not(.dark) .athletes-glass-bar,
+html:not(.dark) .athletes-glass-input,
+html:not(.dark) .athletes-filter-tab,
+html:not(.dark) .athletes-pill-btn-ghost,
+html:not(.dark) .athletes-status-badge--muted,
+html:not(.dark) .athletes-invite-modal,
+html:not(.dark) .athletes-beheer-row,
+html:not(.dark) .athletes-mobile-card {
+  border-color: var(--app-border) !important;
+}
+
+html:not(.dark) .athletes-glass-card,
+html:not(.dark) .athletes-glass-bar {
+  background: var(--app-surface) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  box-shadow: var(--app-card-shadow) !important;
+}
+
+html:not(.dark) .athletes-glass-bar .athletes-metric-segment:hover {
+  background: var(--app-surface-hover) !important;
+}
+
+html:not(.dark) .athletes-filter-tab:hover:not(.athletes-filter-tab--active) {
+  border-color: var(--app-border-strong) !important;
+  background: var(--app-surface-hover) !important;
+}
+
+html:not(.dark) .athletes-invite-modal {
+  background: var(--app-surface) !important;
+  box-shadow: var(--app-card-shadow) !important;
+}
+
+html:not(.dark) .todo-kanban-column-header,
+html:not(.dark) .todo-kanban-card,
+html:not(.dark) .todo-kanban-checkbox,
+html:not(.dark) .task-complete-checkbox {
+  border-color: var(--app-border) !important;
+}
+
+html:not(.dark) .app-search-clear {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) .app-search-clear:hover {
+  background: var(--app-surface-hover) !important;
+  color: var(--app-text) !important;
+}
+
+/* Remap hardcoded dark panel text inside coach shell */
+html:not(.dark) .premium-coach-ui [class*="text-white/"],
+html:not(.dark) .premium-coach-ui .text-white:not(
+    .bg-app-accent *,
+    [class*="bg-black"],
+    [class*="bg-blue-6"],
+    [class*="bg-brand"],
+    [class*="bg-red"],
+    [class*="bg-emerald"],
+    [class*="bg-green-6"],
+    [class*="bg-purple"],
+    [class*="bg-sky"],
+    [class*="bg-amber"],
+    [class*="bg-orange"],
+    .shell-topbar-action-chip--active *
+  ) {
+  color: var(--app-text) !important;
+}
+
+html:not(.dark) .premium-coach-ui .text-white\/70,
+html:not(.dark) .premium-coach-ui .text-white\/60,
+html:not(.dark) .premium-coach-ui .text-white\/50,
+html:not(.dark) .premium-coach-ui .text-white\/40 {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) [class*="bg-[#"] .text-white,
+html:not(.dark) [class*="bg-[#"] .text-white\/70,
+html:not(.dark) [class*="bg-[#"] .text-white\/80 {
+  color: var(--app-text) !important;
+}
+
+html:not(.dark) [class*="bg-[#"] .text-white\/50,
+html:not(.dark) [class*="bg-[#"] .text-white\/40 {
+  color: var(--app-text-muted) !important;
+}
+
+/* Athlete shell + dashboard */
+html:not(.dark) .premium-athlete-ui [class*="text-white/"],
+html:not(.dark) .premium-athlete-ui .text-white:not(
+    .bg-app-accent *,
+    [class*="bg-blue-6"],
+    .athlete-dashboard-start-btn *,
+    .athlete-dashboard-cta-btn *
+  ) {
+  color: var(--app-text) !important;
+}
+
+html:not(.dark) .athlete-dashboard-card,
+html:not(.dark) .athlete-dashboard-todos-widget,
+html:not(.dark) .dashboard-cockpit-panel,
+html:not(.dark) .ui-panel,
+html:not(.dark) .ui-panel-compact,
+html:not(.dark) .dashboard-panel,
+html:not(.dark) .coach-attention-panel {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface) !important;
+  box-shadow: var(--app-card-shadow) !important;
+}
+
+html:not(.dark) .athlete-dashboard-card::before,
+html:not(.dark) .athlete-dashboard-todos-widget::before {
+  display: none !important;
+}
+
+html:not(.dark) .athlete-dashboard-todos-segments,
+html:not(.dark) .athlete-dashboard-bw-input-shell,
+html:not(.dark) .athlete-dashboard-item-row,
+html:not(.dark) .athlete-dashboard-quicknav-card,
+html:not(.dark) .athlete-dashboard-app-pill,
+html:not(.dark) .coach-attention-row,
+html:not(.dark) .coach-attention-action {
+  border-color: var(--app-border) !important;
+  background: var(--app-surface-hover) !important;
+}
+
+html:not(.dark) .athlete-dashboard-eyebrow,
+html:not(.dark) .athlete-dashboard-card-desc,
+html:not(.dark) .athlete-chat-widget-preview {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) .athlete-dashboard-todos-segment:not(.athlete-dashboard-todos-segment--active) {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) .dashboard-kpi-card,
+html:not(.dark) .dashboard-kpi-hint,
+html:not(.dark) .dashboard-kpi-label {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) .dashboard-kpi-value {
+  color: var(--app-text) !important;
+}
+
+html:not(.dark) .ui-command-panel,
+html:not(.dark) .ui-command-overlay {
+  background: rgba(248, 249, 252, 0.92) !important;
+}
+
+html:not(.dark) .ui-command-panel {
+  border-color: var(--app-border) !important;
+  box-shadow: var(--app-card-shadow) !important;
+}
+
+html:not(.dark) .shell-topbar,
+html:not(.dark) .mobile-page-shell__header {
+  background: color-mix(in srgb, var(--app-surface) 92%, transparent) !important;
+  border-color: var(--app-border) !important;
+}
+
+html:not(.dark) .coach-app-sidebar,
+html:not(.dark) .athlete-app-sidebar {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+}
+
+html:not(.dark) .glass-accent-card,
+html:not(.dark) .premium-card {
+  background: var(--app-surface) !important;
+  border-color: var(--app-border) !important;
+  box-shadow: var(--app-card-shadow) !important;
+}

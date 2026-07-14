@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import SearchInput from "@/components/ui/SearchInput";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
 import { getExerciseLibrarySuggestions } from "@/lib/exerciseLibrarySuggestions";
 
@@ -32,7 +33,7 @@ function LibraryItemRow({
     <button
       type="button"
       onClick={() => onSelect(item)}
-      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-gray-50"
+      className="flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left hover:bg-app-surface-hover"
     >
       {item.thumbnail_url ? (
         <img
@@ -41,13 +42,13 @@ function LibraryItemRow({
           className="h-14 w-20 rounded-xl object-cover"
         />
       ) : (
-        <div className="flex h-14 w-20 items-center justify-center rounded-xl bg-gray-100 text-xl">
+        <div className="flex h-14 w-20 items-center justify-center rounded-xl bg-app-surface-muted text-xl">
           🎥
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="truncate font-semibold text-black">{item.name}</p>
-        <p className="text-xs text-gray-500">{item.category}</p>
+        <p className="truncate font-semibold text-app-text">{item.name}</p>
+        <p className="text-xs text-app-muted">{item.category}</p>
       </div>
     </button>
   );
@@ -106,26 +107,28 @@ export default function ExerciseLibraryPickerModal({
       onClick={onClose}
     >
       <div
-        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl bg-white shadow-2xl"
+        className="flex max-h-[80vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-2xl"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-gray-200 p-4">
-          <h2 className="text-lg font-bold text-black">Uitlegvideo kiezen</h2>
+        <div className="border-b border-app-border p-4">
+          <h2 className="text-lg font-bold text-app-text">Uitlegvideo kiezen</h2>
           {exerciseName && (
-            <p className="mt-1 text-sm text-gray-500">Voor: {exerciseName}</p>
+            <p className="mt-1 text-sm text-app-muted">Voor: {exerciseName}</p>
           )}
-          <input
+          <SearchInput
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
+            onChange={setQuery}
             placeholder="Zoek op oefening, categorie..."
-            className="mt-3 w-full rounded-xl border border-gray-300 px-4 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
+            variant="rounded"
+            tone="light"
             autoFocus
+            className="mt-3 w-full"
           />
         </div>
 
         <div className="overflow-y-auto p-2">
           {!hasResults ? (
-            <p className="p-4 text-sm text-gray-500">
+            <p className="p-4 text-sm text-app-muted">
               Geen uitlegvideo&apos;s gevonden. Voeg eerst oefeningen toe in de
               oefeningenbibliotheek.
             </p>
@@ -166,11 +169,11 @@ export default function ExerciseLibraryPickerModal({
           )}
         </div>
 
-        <div className="border-t border-gray-200 p-3">
+        <div className="border-t border-app-border p-3">
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-app-surface-hover"
           >
             Annuleren
           </button>

@@ -7,11 +7,11 @@ import {
   Copy,
   Link2,
   Plus,
-  Search,
   Timer,
   UserPlus,
   Users,
 } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import {
   buildCoachInviteUrl,
   formatInviteExpiry,
@@ -37,6 +37,7 @@ import {
   type AdminAthleteInvite,
 } from "@/lib/adminInvites";
 import { loadCoachOrganizations, type CoachOrganization } from "@/lib/adminOrganizations";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import { AdminLoading, AdminPanel } from "@/components/admin/AdminUi";
 import {
   AdminEmptyPanel,
@@ -60,7 +61,6 @@ type UnifiedInvite = {
   token: string;
   owner: string;
   active: boolean;
-  isExpired: boolean;
   createdAt: string;
   expiresAt: string | null;
   expiresLabel: string;
@@ -69,12 +69,13 @@ type UnifiedInvite = {
 type TypeFilter = "all" | "coach" | "athlete" | "organization";
 type StatusFilter = "all" | "active" | "inactive";
 
-function isSignupInviteExpired(invite: CoachSignupInvite) {
-  return new Date(invite.expires_at).getTime() <= Date.now();
+function unifiedInviteIsExpired(item: UnifiedInvite) {
+  if (!item.expiresAt) return false;
+  return new Date(item.expiresAt).getTime() <= Date.now();
 }
 
 function inviteIsActive(item: UnifiedInvite) {
-  return item.active && !item.isExpired;
+  return item.active && !unifiedInviteIsExpired(item);
 }
 
 export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
@@ -112,7 +113,9 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
   }
 
   useEffect(() => {
-    void reload();
+    deferEffectUpdate(() => {
+      void reload();
+    });
   }, []);
 
   const unifiedInvites = useMemo<UnifiedInvite[]>(() => {
@@ -124,7 +127,6 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
       token: invite.token,
       owner: "Platform",
       active: invite.active,
-      isExpired: isSignupInviteExpired(invite),
       createdAt: invite.created_at,
       expiresAt: invite.expires_at,
       expiresLabel: formatSignupExpiry(invite.expires_at),
@@ -138,7 +140,6 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
       token: invite.token,
       owner: invite.coach_name || "Onbekende coach",
       active: invite.active,
-      isExpired: isInviteLinkExpired(invite),
       createdAt: invite.created_at,
       expiresAt: invite.expires_at,
       expiresLabel: formatInviteExpiry(invite),
@@ -156,7 +157,6 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
       token: invite.token,
       owner: "Platform admin",
       active: invite.active,
-      isExpired: new Date(invite.expires_at).getTime() <= Date.now(),
       createdAt: invite.created_at,
       expiresAt: invite.expires_at,
       expiresLabel: formatPlatformInviteExpiry(invite.expires_at),
@@ -211,7 +211,9 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
   }, [filteredInvites, page, pageSize]);
 
   useEffect(() => {
-    setPage(1);
+    deferEffectUpdate(() => {
+      setPage(1);
+    });
   }, [typeFilter, statusFilter, query, pageSize]);
 
   async function handleCreateCoachInvite() {
@@ -417,15 +419,12 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
 
         <div className="border-b border-white/6 px-3 py-3 sm:px-4">
           <div className="admin-filter-bar !border-0 !bg-transparent !p-0">
-            <div className="admin-search-wrap">
-              <Search className="h-4 w-4 shrink-0 text-app-muted" />
-              <input
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Zoek op naam, eigenaar of link…"
-                className="admin-search-input"
-              />
-            </div>
+            <SearchInput
+              value={query}
+              onChange={setQuery}
+              placeholder="Zoek op naam, eigenaar of link…"
+              variant="rounded"
+            />
             <select
               value={statusFilter}
               onChange={(event) =>
@@ -518,7 +517,7 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
                             <button
                               type="button"
                               onClick={() => void copyUrl(item.url, item.token)}
-                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-app-muted hover:bg-white/6 hover:text-app-text"
+                              className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                               aria-label="Link kopiëren"
                             >
                               {copied ? (
@@ -538,14 +537,14 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
                               className={`admin-status-dot ${
                                 active
                                   ? "admin-status-dot--active"
-                                  : item.isExpired
+                                  : unifiedInviteIsExpired(item)
                                     ? "admin-status-dot--warning"
                                     : "admin-status-dot--inactive"
                               }`}
                             />
                             {active
                               ? "Actief"
-                              : item.isExpired
+                              : unifiedInviteIsExpired(item)
                                 ? "Verlopen"
                                 : "Inactief"}
                           </span>

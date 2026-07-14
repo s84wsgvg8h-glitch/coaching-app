@@ -121,7 +121,7 @@ export default function CoachDashboardApps({
   ];
 
   return (
-    <div className="dashboard-apps-grid">
+    <div className="dashboard-apps-grid dashboard-apps-grid--mobile-only">
       {apps.map((app) => (
         <Link
           key={app.href}

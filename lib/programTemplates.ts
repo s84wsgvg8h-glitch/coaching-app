@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
+import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
 import { loadProgramHierarchy, type ProgramHierarchy } from "@/lib/programData";
 
 export type ProgramTemplateOptions = {
@@ -163,15 +164,11 @@ async function insertTemplateWeeks(
   weekNumberOffset = 0,
 ) {
   for (const week of weeks) {
-    const { data: createdWeek, error: weekError } = await supabase
-      .from("program_weeks")
-      .insert({
-        title: week.title,
-        week_number: week.week_number + weekNumberOffset,
-        program_block_id: blockId,
-      })
-      .select("id")
-      .single();
+    const { week: createdWeek, error: weekError } = await createProgramWeekForBlock({
+      blockId,
+      title: week.title,
+      weekNumber: week.week_number + weekNumberOffset,
+    });
 
     if (weekError || !createdWeek) continue;
 

@@ -10,6 +10,7 @@ import {
   type MerchDiscount,
   type MerchDiscountType,
 } from "@/lib/merchShopConfig";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type MerchDiscountsTabProps = {
   userId: string;
@@ -33,7 +34,9 @@ export default function MerchDiscountsTab({
   }, [userId]);
 
   useEffect(() => {
-    void refresh();
+    deferEffectUpdate(() => {
+      void refresh();
+    });
   }, [refresh]);
 
   async function handleCreate() {

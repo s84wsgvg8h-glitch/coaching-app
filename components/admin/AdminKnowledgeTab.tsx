@@ -6,9 +6,9 @@ import {
   Eye,
   MessageSquare,
   Plus,
-  Search,
   Trash2,
 } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import { adminFetch } from "@/lib/adminFetch";
 import type { AdminKnowledgeChunkRow } from "@/lib/adminKnowledge";
 import {
@@ -17,6 +17,7 @@ import {
   AdminPagination,
 } from "@/components/admin/AdminPageParts";
 import { AdminLoading, AdminPanel, AdminPanelHeader } from "@/components/admin/AdminUi";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 const emptyForm = {
   scope: "coach" as "coach" | "athlete",
@@ -58,7 +59,9 @@ export default function AdminKnowledgeTab() {
   }
 
   useEffect(() => {
-    void load();
+    deferEffectUpdate(() => {
+      void load();
+    });
   }, []);
 
   useEffect(() => {
@@ -70,14 +73,16 @@ export default function AdminKnowledgeTab() {
 
     try {
       const prefill = JSON.parse(raw) as Partial<typeof emptyForm>;
-      setForm((current) => ({
-        ...current,
-        title: prefill.title || current.title,
-        content: prefill.content || current.content,
-        category: prefill.category || current.category,
-        keywords: prefill.keywords || current.keywords,
-        scope: prefill.scope || current.scope,
-      }));
+      deferEffectUpdate(() => {
+        setForm((current) => ({
+          ...current,
+          title: prefill.title || current.title,
+          content: prefill.content || current.content,
+          category: prefill.category || current.category,
+          keywords: prefill.keywords || current.keywords,
+          scope: prefill.scope || current.scope,
+        }));
+      });
       sessionStorage.removeItem("admin-knowledge-prefill");
       formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
     } catch {
@@ -114,7 +119,9 @@ export default function AdminKnowledgeTab() {
   }, [filteredChunks, page, pageSize]);
 
   useEffect(() => {
-    setPage(1);
+    deferEffectUpdate(() => {
+      setPage(1);
+    });
   }, [search, scopeFilter, categoryFilter, statusFilter, pageSize]);
 
   async function save() {
@@ -342,7 +349,7 @@ export default function AdminKnowledgeTab() {
                       (label) => (
                         <span
                           key={label}
-                          className="rounded-md bg-white/5 px-2 py-1 text-[11px] font-semibold text-app-muted"
+                          className="rounded-md bg-app-surface-hover px-2 py-1 text-[11px] font-semibold text-app-muted"
                         >
                           {label}
                         </span>
@@ -429,15 +436,13 @@ export default function AdminKnowledgeTab() {
         <div className="flex min-w-0 flex-col gap-4">
           <AdminPanel flush className="!p-0">
             <AdminFilterBar>
-              <div className="admin-search-wrap min-w-0 flex-1">
-                <Search className="h-4 w-4 shrink-0 text-app-subtle" />
-                <input
-                  value={search}
-                  onChange={(event) => setSearch(event.target.value)}
-                  placeholder="Zoek op titel, key of keyword…"
-                  className="admin-search-input"
-                />
-              </div>
+              <SearchInput
+                value={search}
+                onChange={setSearch}
+                placeholder="Zoek op titel, key of keyword…"
+                variant="rounded"
+                className="min-w-0 flex-1"
+              />
               <select
                 value={scopeFilter}
                 onChange={(event) =>

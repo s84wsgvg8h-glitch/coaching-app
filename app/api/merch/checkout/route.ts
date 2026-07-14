@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { assertAuthenticatedActive } from "@/lib/apiAuth";
+import {
+  merchCheckoutSchema,
+  parseJsonBody,
+} from "@/lib/apiValidation";
 import { getAppUrl } from "@/lib/appUrl";
 import { validateMerchDiscountForCheckout } from "@/lib/merchDiscounts";
 import { normalizeMerchItem } from "@/lib/merch";
@@ -8,18 +12,13 @@ import {
   createMerchOrder,
   updateMerchOrderSession,
 } from "@/lib/merchOrders";
+import { getStripe } from "@/lib/stripe";
 
 function getServiceClient() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!url || !key) return null;
   return createClient(url, key);
-}
-
-function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) return null;
-  return new Stripe(key);
 }
 
 async function insertOrderEvent(
@@ -42,45 +41,20 @@ function isOrderableStatus(status: string, preorder: boolean) {
 }
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace("Bearer ", "");
-
-  if (!token) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const auth = await assertAuthenticatedActive(request);
+  if (auth.error || !auth.user || !auth.supabase) {
+    return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { global: { headers: { Authorization: `Bearer ${token}` } } },
-  );
-
+  const { supabase, user } = auth;
   const service = getServiceClient();
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  if (!user) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const parsed = await parseJsonBody(request, merchCheckoutSchema);
+  if (!parsed.success) {
+    return parsed.response;
   }
 
-  const body = (await request.json()) as {
-    merchItemId?: string;
-    size?: string;
-    color?: string;
-    customerNote?: string;
-    pickupMethod?: string;
-    discountCode?: string;
-  };
-
-  if (!body.merchItemId || !body.size?.trim()) {
-    return NextResponse.json(
-      { error: "Kies een product en maat." },
-      { status: 400 },
-    );
-  }
-
+  const body = parsed.data;
   const { data: itemRow, error: itemError } = await supabase
     .from("merch_items")
     .select("*")

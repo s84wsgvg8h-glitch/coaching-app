@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ClipboardList,
+  CreditCard,
   Dumbbell,
   HeartPulse,
   IdCard,
@@ -13,7 +14,7 @@ import {
   User,
 } from "lucide-react";
 import { getRealSupabase } from "@/lib/supabaseClient";
-import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import { useAuth } from "@/components/AuthProvider";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
@@ -25,10 +26,13 @@ import PushNotificationPrompt from "@/components/notifications/PushNotificationP
 import ProfileRpeTableSection from "@/components/profile/ProfileRpeTableSection";
 import ProfileSettingsPanel from "@/components/profile/ProfileSettingsPanel";
 import ProfileLogoutButton from "@/components/profile/ProfileLogoutButton";
+import ProfileDeleteAccountSection from "@/components/profile/ProfileDeleteAccountSection";
+import ProfileCoachingSubscriptionSection from "@/components/profile/ProfileCoachingSubscriptionSection";
 import ProfileSettingsLayout, {
   type ProfileSettingsSection,
 } from "@/components/profile/ProfileSettingsLayout";
-import { updateProfileAvatar, uploadAvatar } from "@/lib/chatAvatars";
+import { AthleteProfileSkeleton } from "@/components/mobile/AthleteMobileSkeletons";
+import { updateProfileAvatar, uploadAvatar, toStorageMetadata } from "@/lib/chatAvatars";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import "@/styles/profile-settings.css";
 
@@ -36,8 +40,8 @@ function ProfilePageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeSection = searchParams.get("section") || "account";
+  const { userId, role: authRole, email: authEmail, profile: authProfile } = useAuth();
 
-  const [userId, setUserId] = useState("");
   const [role, setRole] = useState("");
   const [email, setEmail] = useState("");
   const [geboortedatum, setGeboortedatum] = useState("");
@@ -56,51 +60,43 @@ function ProfilePageContent() {
   const saveMessageTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    async function getProfile() {
+    if (!userId) return;
+
+    setEmail(authEmail);
+    setEditedEmail(authEmail);
+    if (authProfile?.full_name) {
+      setEditedFullName(authProfile.full_name);
+    }
+    if (authRole) {
+      setRole(authRole);
+    }
+    if (authProfile?.business_name) {
+      setBusinessName(authProfile.business_name);
+    }
+
+    async function loadProfileDetails() {
       const client = getRealSupabase();
-      const {
-        data: { user },
-      } = await client.auth.getUser();
-
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
-
-      setUserId(user.id);
-      setEmail(user.email || "");
-      setEditedEmail(user.email || "");
-
-      const authProfile = await loadAuthenticatedProfile(user.id);
-      if (authProfile?.role) {
-        setRole(authProfile.role);
-      }
-
       const { data } = await client
         .from("profiles")
         .select("*")
-        .eq("id", user.id)
+        .eq("id", userId)
         .maybeSingle();
 
       if (data) {
-        setEditedFullName(data.full_name || "");
-        setRole(data.role || authProfile?.role || "");
+        setEditedFullName(data.full_name || authProfile?.full_name || "");
+        setRole(data.role || authRole || "");
         setLidnummer(data.lidnummer || "");
         setGeboortedatum(data.geboortedatum || "");
         setGoalsText((data.goals_text as string | null) || "");
         setAvatarUrl(data.avatar_url || null);
         setBusinessName(data.business_name || authProfile?.business_name || "");
-      } else if (authProfile) {
-        setEditedFullName(authProfile.full_name || "");
-        setRole(authProfile.role || "");
-        setBusinessName(authProfile.business_name || "");
       }
 
       setProfileLoaded(true);
     }
 
-    getProfile();
-  }, []);
+    void loadProfileDetails();
+  }, [userId, authEmail, authProfile, authRole]);
 
   useEffect(() => {
     autoSaveReady.current = false;
@@ -136,6 +132,7 @@ function ProfilePageContent() {
     if (role === "atleet") {
       return [
         { id: "account", label: "Account", group: "Algemeen", icon: User },
+        { id: "subscription", label: "Abonnement", group: "Algemeen", icon: CreditCard },
         { id: "maxes", label: "Maxes & RPE", group: "Training", icon: Dumbbell },
         { id: "athlete", label: "Atleetgegevens", group: "Training", icon: IdCard },
         { id: "intake", label: "Intake", group: "Training", icon: ClipboardList },
@@ -230,7 +227,7 @@ function ProfilePageContent() {
     if (!userId) return;
     setAvatarCropFile(null);
     setSaving(true);
-    const { url, error } = await uploadAvatar(userId, croppedFile, "profile");
+    const { url, storage, error } = await uploadAvatar(userId, croppedFile, "profile");
 
     if (error || !url) {
       setSaving(false);
@@ -238,7 +235,11 @@ function ProfilePageContent() {
       return;
     }
 
-    const { error: updateError } = await updateProfileAvatar(userId, url);
+    const { error: updateError } = await updateProfileAvatar(
+      userId,
+      url,
+      storage ? toStorageMetadata(storage) : null,
+    );
     setSaving(false);
 
     if (updateError) {
@@ -262,8 +263,19 @@ function ProfilePageContent() {
           ? "Checklist, intake en coach-instellingen."
           : "Beheer je traininggegevens en profiel.";
 
+  if (!userId) {
+    return (
+      <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6 lg:px-8">
+        <AthleteProfileSkeleton />
+      </AppShell>
+    );
+  }
+
   return (
-    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+    <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6 lg:px-8">
+      {!profileLoaded ? (
+        <AthleteProfileSkeleton />
+      ) : (
       <ProfileSettingsLayout
         title={sectionTitle}
         subtitle={sectionSubtitle}
@@ -368,8 +380,14 @@ function ProfilePageContent() {
                 <span>Wijzigingen worden automatisch opgeslagen</span>
               ) : null}
             </div>
+
+            <ProfileDeleteAccountSection />
           </div>
         )}
+
+        {activeSection === "subscription" && userId && role === "atleet" ? (
+          <ProfileCoachingSubscriptionSection userId={userId} />
+        ) : null}
 
         {activeSection === "maxes" && userId ? (
           <ProfileRpeTableSection athleteId={userId} canEditMaxes={false} />
@@ -387,19 +405,6 @@ function ProfilePageContent() {
             initialGeboortedatum={geboortedatum}
             initialLidnummer={lidnummer}
             initialGoalsText={goalsText}
-            onSaved={async () => {
-              const { data } = await getRealSupabase()
-                .from("profiles")
-                .select("geboortedatum, lidnummer, goals_text")
-                .eq("id", userId)
-                .maybeSingle();
-
-              if (data) {
-                setGeboortedatum(data.geboortedatum || "");
-                setLidnummer(data.lidnummer || "");
-                setGoalsText((data.goals_text as string | null) || "");
-              }
-            }}
           />
         ) : null}
 
@@ -436,6 +441,7 @@ function ProfilePageContent() {
           </div>
         )}
       </ProfileSettingsLayout>
+      )}
 
       {avatarCropFile ? (
         <AvatarCropModal
@@ -450,7 +456,13 @@ function ProfilePageContent() {
 
 export default function ProfilePage() {
   return (
-    <Suspense fallback={<AppShell contentClassName="flex-1 p-6">Profiel laden...</AppShell>}>
+    <Suspense
+      fallback={
+        <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6">
+          <AthleteProfileSkeleton />
+        </AppShell>
+      }
+    >
       <ProfilePageContent />
     </Suspense>
   );

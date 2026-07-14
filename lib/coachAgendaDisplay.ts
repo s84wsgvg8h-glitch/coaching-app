@@ -101,6 +101,20 @@ export function isAppointmentActiveNow(
   return current >= start && current <= end;
 }
 
+export type AppointmentStatus = "past" | "active" | "upcoming";
+
+export function getAppointmentStatus(
+  appointment: CoachCalendarEvent,
+  now = new Date(),
+): AppointmentStatus {
+  if (isAppointmentActiveNow(appointment, now)) return "active";
+  if (!appointment.all_day) {
+    const end = new Date(appointment.end_at).getTime();
+    if (now.getTime() > end) return "past";
+  }
+  return "upcoming";
+}
+
 export function getTimelineBlockStyle(column: number, totalColumns: number) {
   const width = 100 / totalColumns;
   return {

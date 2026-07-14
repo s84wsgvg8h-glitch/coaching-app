@@ -7,6 +7,7 @@ import {
   loadProgramPlanningNotes,
   saveProgramPlanningWeekNote,
 } from "@/lib/programPlanningNotes";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ProgramWeekEditModalProps = {
   open: boolean;
@@ -35,15 +36,19 @@ export default function ProgramWeekEditModal({
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    deferEffectUpdate(() => {
+      setMounted(true);
+    });
   }, []);
 
   useEffect(() => {
     if (!open) return;
-    setDraftTitle(title);
+    deferEffectUpdate(() => {
+      setDraftTitle(title);
+      setLoadingNote(true);
+    });
 
     let cancelled = false;
-    setLoadingNote(true);
 
     void loadProgramPlanningNotes(athleteId, [weekId], []).then(({ data }) => {
       if (cancelled) return;
@@ -95,7 +100,8 @@ export default function ProgramWeekEditModal({
 
         <h2 className="program-edit-modal-title">Week aanpassen</h2>
         <p className="program-edit-modal-subtitle">
-          Pas naam en week notes aan.
+          Pas naam en week notes aan. Gebruik bijvoorbeeld &quot;Week 0&quot; voor
+          een week vóór de block-start — datums schuiven dan automatisch mee.
         </p>
 
         <div className="mt-4 space-y-3">

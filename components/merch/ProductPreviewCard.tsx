@@ -83,7 +83,7 @@ export default function ProductPreviewCard({
                 status === "live"
                   ? "bg-emerald-500 text-white"
                   : status === "concept"
-                    ? "bg-amber-500 text-black"
+                    ? "bg-amber-500 text-white"
                     : "bg-slate-500 text-white"
               }`}
             >
@@ -95,7 +95,7 @@ export default function ProductPreviewCard({
               </span>
             ) : null}
             {preorder ? (
-              <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-black">
+              <span className="rounded-md bg-amber-500 px-2 py-0.5 text-[10px] font-bold text-white">
                 Pre-order
               </span>
             ) : null}

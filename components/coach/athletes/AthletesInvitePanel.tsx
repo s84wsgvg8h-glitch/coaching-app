@@ -112,7 +112,7 @@ export default function AthletesInvitePanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-white/10 bg-white/5 text-app-muted transition hover:bg-white/10 hover:text-app-text app-focus-ring"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-surface text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
@@ -188,7 +188,7 @@ export default function AthletesInvitePanel({
             ].map(({ icon: Icon, text }) => (
               <div
                 key={text}
-                className="flex items-start gap-2 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5"
+                className="flex items-start gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2.5"
               >
                 <Icon className="mt-0.5 h-4 w-4 shrink-0 text-app-accent" />
                 <p className="text-[11px] leading-snug text-app-muted">{text}</p>
@@ -207,7 +207,7 @@ export default function AthletesInvitePanel({
                   return (
                     <div
                       key={link.id}
-                      className="rounded-xl border border-white/10 bg-white/[0.03] p-3"
+                      className="rounded-xl border border-app-border bg-app-surface p-3"
                     >
                       <p className="break-all text-[12px] text-app-text">{url}</p>
                       <p className="mt-1 text-[11px] text-app-muted">
@@ -238,7 +238,7 @@ export default function AthletesInvitePanel({
 
           {primaryUrl ? (
             <div className="mb-5 flex flex-col items-end gap-3">
-              <label className="flex w-full cursor-pointer items-start gap-2.5 rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2.5 text-left text-[13px] text-app-text">
+              <label className="flex w-full cursor-pointer items-start gap-2.5 rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-left text-[13px] text-app-text">
                 <input
                   type="checkbox"
                   checked={requiresIntake}

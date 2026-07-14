@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, Shield, Trash2, UserPlus } from "lucide-react";
+import { ArrowLeft, Ban, Flag, Shield, Trash2, UserPlus } from "lucide-react";
 import {
   addChatGroupMembers,
   loadChatGroupDetails,
@@ -11,7 +11,8 @@ import {
   updateChatGroupSettings,
   type ChatGroupDetails,
 } from "@/lib/chatGroups";
-import { uploadAvatar, updateGroupAvatar } from "@/lib/chatAvatars";
+import { uploadAvatar, updateGroupAvatar, toStorageMetadata } from "@/lib/chatAvatars";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import { saveChatReturnRoute } from "@/lib/chatNavigation";
 import ChatAvatar from "@/components/chat/ChatAvatar";
 import type { ChatProfile } from "@/lib/chatUtils";
@@ -22,6 +23,8 @@ type GroupInfoPanelProps = {
   contacts: ChatProfile[];
   onBack: () => void;
   onUpdated?: () => void;
+  onReportMember?: (memberUserId: string, memberName: string) => void;
+  onBlockMember?: (memberUserId: string, memberName: string) => void;
 };
 
 export default function GroupInfoPanel({
@@ -30,6 +33,8 @@ export default function GroupInfoPanel({
   contacts,
   onBack,
   onUpdated,
+  onReportMember,
+  onBlockMember,
 }: GroupInfoPanelProps) {
   const avatarInputRef = useRef<HTMLInputElement | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,7 +53,9 @@ export default function GroupInfoPanel({
   }
 
   useEffect(() => {
-    void refreshDetails();
+    deferEffectUpdate(() => {
+      void refreshDetails();
+    });
   }, [groupId, userId]);
 
   const availableContacts = useMemo(() => {
@@ -147,7 +154,7 @@ export default function GroupInfoPanel({
     if (!file || !details?.canManage) return;
 
     setSaving(true);
-    const { url, error: uploadError } = await uploadAvatar(
+    const { url, storage, error: uploadError } = await uploadAvatar(
       userId,
       file,
       `group-${groupId}`,
@@ -159,7 +166,11 @@ export default function GroupInfoPanel({
       return;
     }
 
-    const { error } = await updateGroupAvatar(groupId, url);
+    const { error } = await updateGroupAvatar(
+      groupId,
+      url,
+      storage ? toStorageMetadata(storage) : null,
+    );
     setSaving(false);
 
     if (error) {
@@ -387,7 +398,7 @@ export default function GroupInfoPanel({
                   </div>
                 </Link>
 
-                {details.canManage && !isSelf && (
+                {details.canManage && !isSelf ? (
                   <div className="flex shrink-0 items-center gap-2">
                     <button
                       type="button"
@@ -423,7 +434,38 @@ export default function GroupInfoPanel({
                       <Trash2 className="h-4 w-4" />
                     </button>
                   </div>
-                )}
+                ) : null}
+
+                {!isSelf && (onReportMember || onBlockMember) ? (
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    {onReportMember ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onReportMember(member.user_id, member.full_name)
+                        }
+                        className="app-focus-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-app-border text-app-muted transition hover:bg-app-surface-hover"
+                        aria-label={`${member.full_name} melden`}
+                        title="Melden"
+                      >
+                        <Flag className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                    {onBlockMember ? (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          onBlockMember(member.user_id, member.full_name)
+                        }
+                        className="app-focus-ring inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border border-red-500/30 text-red-600 transition hover:bg-red-500/10 dark:text-red-300"
+                        aria-label={`${member.full_name} blokkeren`}
+                        title="Blokkeren"
+                      >
+                        <Ban className="h-4 w-4" />
+                      </button>
+                    ) : null}
+                  </div>
+                ) : null}
               </div>
             );
           })}

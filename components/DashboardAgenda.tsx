@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import { Calendar, ChevronRight } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
-import CoachWeekCalendar from "@/components/CoachWeekCalendar";
 import { supabase } from "@/lib/supabaseClient";
 import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonCard } from "@/components/ui/Skeleton";
@@ -19,6 +19,14 @@ import {
   loadAthleteCalendarEvents,
 } from "@/lib/athleteCalendarEvents";
 import { isCoachLikeRole } from "@/lib/authRoles";
+
+const CoachWeekCalendar = dynamic(
+  () => import("@/components/CoachWeekCalendar"),
+  {
+    ssr: false,
+    loading: () => <SkeletonCard />,
+  },
+);
 
 type AgendaItem = {
   id: string;
@@ -76,15 +84,24 @@ function AthleteAgenda({
       );
 
       const agendaItems: AgendaItem[] = [];
-      const { data: registrations } = await loadAthleteCompetitionNotes(userId);
-      const coachEvents = await loadAthleteCalendarEvents(userId);
+      const [{ data: registrations }, coachEvents, profileResult] =
+        await Promise.all([
+          loadAthleteCompetitionNotes(userId),
+          loadAthleteCalendarEvents(userId),
+          supabase
+            .from("profiles")
+            .select("betaling_dag")
+            .eq("id", userId)
+            .single(),
+        ]);
+      const registrationRows = registrations || [];
 
       upcoming
         .filter((competition) =>
-          registrations.some((entry) => entry.competitionId === competition.id),
+          registrationRows.some((entry) => entry.competitionId === competition.id),
         )
         .forEach((competition) => {
-          const registration = registrations.find(
+          const registration = registrationRows.find(
             (entry) => entry.competitionId === competition.id,
           );
           const noteParts = [
@@ -117,11 +134,7 @@ function AthleteAgenda({
           });
         });
 
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("betaling_dag")
-        .eq("id", userId)
-        .single();
+      const profile = profileResult.data;
 
       if (profile?.betaling_dag) {
         const paymentDate = getNextPaymentDate(Number(profile.betaling_dag));
@@ -166,7 +179,7 @@ function AthleteAgenda({
         </div>
 
         {loading ? (
-          <div className="mt-4 h-20 animate-pulse rounded-xl bg-white/5" />
+          <div className="mt-4 h-20 animate-pulse rounded-xl bg-app-surface-hover" />
         ) : items.length === 0 ? (
           <p className="mt-4 text-[13px] text-app-muted">
             Geen afspraken gepland.

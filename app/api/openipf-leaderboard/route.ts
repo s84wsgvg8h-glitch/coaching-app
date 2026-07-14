@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-import { assertAuthenticated } from "@/lib/apiAuth";
+import { assertAuthenticatedActive } from "@/lib/apiAuth";
+import { openipfLeaderboardSchema, parseJsonBody } from "@/lib/apiValidation";
+import { checkRateLimit } from "@/lib/rateLimit";
 import { getLifterDataBatch } from "@/lib/openipf";
 
 export const maxDuration = 60;
@@ -7,20 +9,35 @@ export const maxDuration = 60;
 const MAX_NAMES_PER_REQUEST = 12;
 
 export async function POST(request: NextRequest) {
-  const auth = await assertAuthenticated(request);
+  const auth = await assertAuthenticatedActive(request);
   if (!auth.user) {
     return NextResponse.json({ error: auth.error }, { status: auth.status });
   }
 
-  let body: { names?: string[] };
-
-  try {
-    body = await request.json();
-  } catch {
-    return NextResponse.json({ error: "Ongeldige request body" }, { status: 400 });
+  const rate = checkRateLimit(`openipf-leaderboard:${auth.user.id}`, {
+    max: 10,
+    windowMs: 60_000,
+  });
+  if (!rate.ok) {
+    return NextResponse.json(
+      { error: "Te veel verzoeken. Probeer later opnieuw." },
+      {
+        status: 429,
+        headers: rate.retryAfterMs
+          ? { "Retry-After": String(Math.ceil(rate.retryAfterMs / 1000)) }
+          : undefined,
+      },
+    );
   }
 
-  const names = [...new Set((body.names || []).map((name) => name.trim()).filter(Boolean))];
+  const parsed = await parseJsonBody(request, openipfLeaderboardSchema);
+  if (!parsed.success) {
+    return parsed.response;
+  }
+
+  const names = [
+    ...new Set((parsed.data.names || []).map((name) => name.trim()).filter(Boolean)),
+  ];
 
   if (names.length === 0) {
     return NextResponse.json({ results: {} });

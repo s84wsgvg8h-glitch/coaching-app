@@ -2,11 +2,7 @@ import { NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { isCronAuthorized } from "@/lib/cronAuth";
 
-export async function POST(request: Request) {
-  if (!isCronAuthorized(request)) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
+async function runBroadcastsCron() {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
   if (!serviceKey) {
@@ -55,15 +51,13 @@ export async function POST(request: Request) {
     if (row.repeat_rule === "weekly") {
       const next = new Date(row.scheduled_at);
       next.setDate(next.getDate() + 7);
-      await admin
-        .from("scheduled_chat_broadcasts")
-        .insert({
-          coach_id: row.coach_id,
-          message: row.message,
-          scheduled_at: next.toISOString(),
-          repeat_rule: row.repeat_rule,
-          athlete_ids: row.athlete_ids,
-        });
+      await admin.from("scheduled_chat_broadcasts").insert({
+        coach_id: row.coach_id,
+        message: row.message,
+        scheduled_at: next.toISOString(),
+        repeat_rule: row.repeat_rule,
+        athlete_ids: row.athlete_ids,
+      });
     }
 
     await admin
@@ -75,4 +69,18 @@ export async function POST(request: Request) {
   }
 
   return NextResponse.json({ processed });
+}
+
+export async function GET(request: Request) {
+  if (!isCronAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return runBroadcastsCron();
+}
+
+export async function POST(request: Request) {
+  if (!isCronAuthorized(request)) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  return runBroadcastsCron();
 }

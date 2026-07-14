@@ -15,6 +15,18 @@ function daysSince(iso: string | null) {
   return Math.floor((now.getTime() - then.getTime()) / (1000 * 60 * 60 * 24));
 }
 
+async function loadLatestActivityForAthlete(athleteId: string) {
+  const { data } = await supabase
+    .from("athlete_exercise_sets")
+    .select("created_at")
+    .eq("athlete_id", athleteId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  return (data?.created_at as string | null) ?? null;
+}
+
 export async function loadAthleteLastActivities(
   athleteIds: string[],
 ): Promise<Map<string, AthleteLastActivity>> {
@@ -25,27 +37,19 @@ export async function loadAthleteLastActivities(
     result.set(id, { athleteId: id, lastActivityAt: null, daysAgo: null });
   }
 
-  const { data: sets } = await supabase
-    .from("athlete_exercise_sets")
-    .select("athlete_id, created_at")
-    .in("athlete_id", athleteIds)
-    .order("created_at", { ascending: false });
+  const latestRows = await Promise.all(
+    athleteIds.map(async (athleteId) => ({
+      athleteId,
+      lastActivityAt: await loadLatestActivityForAthlete(athleteId),
+    })),
+  );
 
-  for (const row of sets || []) {
-    const athleteId = row.athlete_id as string;
-    const updatedAt = row.created_at as string | null;
-    if (!updatedAt) continue;
-
-    const current = result.get(athleteId);
-    if (!current) continue;
-
-    if (
-      !current.lastActivityAt ||
-      new Date(updatedAt) > new Date(current.lastActivityAt)
-    ) {
-      current.lastActivityAt = updatedAt;
-      current.daysAgo = daysSince(updatedAt);
-    }
+  for (const row of latestRows) {
+    result.set(row.athleteId, {
+      athleteId: row.athleteId,
+      lastActivityAt: row.lastActivityAt,
+      daysAgo: daysSince(row.lastActivityAt),
+    });
   }
 
   return result;

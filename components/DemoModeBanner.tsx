@@ -10,6 +10,7 @@ import {
 } from "@/lib/demo/demoMode";
 import DemoPagesSheet from "@/components/DemoPagesSheet";
 import { useEffect, useState } from "react";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 export default function DemoModeBanner() {
   const [visible, setVisible] = useState(false);
@@ -18,9 +19,11 @@ export default function DemoModeBanner() {
   const [pagesOpen, setPagesOpen] = useState(false);
 
   useEffect(() => {
-    setVisible(isDemoMode());
-    setLabel(getDemoPersonaLabel());
-    setPersona(getDemoPersona());
+    deferEffectUpdate(() => {
+      setVisible(isDemoMode());
+      setLabel(getDemoPersonaLabel());
+      setPersona(getDemoPersona());
+    });
   }, []);
 
   if (!visible) return null;

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Clock, Download, Archive, RotateCcw } from "lucide-react";
+import EmptyState from "@/components/ui/EmptyState";
 import { SkeletonList } from "@/components/ui/Skeleton";
 import Toast, { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
@@ -618,9 +619,30 @@ export default function AthleteOverviewPanel({
             <SkeletonList rows={6} />
           </div>
         ) : filtered.length === 0 ? (
-          <p className="px-4 py-10 text-center text-sm text-app-muted">
-            Geen atleten gevonden.
-          </p>
+          <EmptyState
+            icon="athletes"
+            title={
+              quickFilter === "all" && !search.trim()
+                ? "Nodig je eerste atleet uit"
+                : "Geen atleten gevonden"
+            }
+            description={
+              quickFilter === "all" && !search.trim()
+                ? "Deel een uitnodigingslink om je eerste atleet te koppelen en te beginnen met coachen."
+                : "Pas je zoekopdracht of filters aan om atleten te vinden."
+            }
+            action={
+              quickFilter === "all" && !search.trim() && onInviteClick ? (
+                <button
+                  type="button"
+                  onClick={onInviteClick}
+                  className="app-btn-primary min-h-[44px]"
+                >
+                  Atleet uitnodigen
+                </button>
+              ) : null
+            }
+          />
         ) : (
           <>
             <div className="athletes-table-wrap hidden lg:block">
@@ -710,9 +732,9 @@ export default function AthleteOverviewPanel({
             type="button"
             onClick={handleExport}
             disabled={filtered.length === 0}
-            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-3 py-2 text-[12px] text-app-subtle transition hover:bg-app-surface-raised/40 hover:text-app-muted disabled:opacity-40 app-focus-ring"
+            className="athletes-export-btn app-focus-ring"
           >
-            <Download className="h-3.5 w-3.5" />
+            <Download className="h-3 w-3" />
             Exporteer CSV
           </button>
         </div>

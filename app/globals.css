@@ -2,6 +2,21 @@
 
 @custom-variant dark (&:where(.dark, .dark *));
 
+@media (prefers-reduced-motion: reduce) {
+  html:focus-within {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 :root {
   color-scheme: light;
 
@@ -165,6 +180,7 @@ html.dark {
   --color-app-surface: var(--app-surface);
   --color-app-surface-muted: var(--app-surface-muted);
   --color-app-surface-hover: var(--app-surface-hover);
+  --color-app-surface-elevated: var(--app-surface-elevated);
   --color-app-text: var(--app-text);
   --color-app-muted: var(--app-text-muted);
   --color-app-subtle: var(--app-text-subtle);
@@ -194,11 +210,11 @@ html.dark {
 html {
   height: 100%;
   -webkit-text-size-adjust: 100%;
+  background: var(--app-bg);
 }
 
 body {
-  min-height: 100%;
-  min-height: 100dvh;
+  height: 100%;
   background: var(--app-bg);
   color: var(--app-text);
   font-family: var(--font-sans-stack);
@@ -208,6 +224,17 @@ body {
   letter-spacing: -0.012em;
   -webkit-tap-highlight-color: transparent;
   overflow-x: hidden;
+}
+
+@media (min-width: 1024px) {
+  html {
+    min-height: 100dvh;
+  }
+
+  body {
+    min-height: 100%;
+    min-height: 100dvh;
+  }
 }
 
 h1,
@@ -232,11 +259,11 @@ textarea {
   touch-action: manipulation;
 }
 
-@media (max-width: 767px) {
-  input,
+@media (max-width: 1023px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]),
   select,
   textarea {
-    font-size: 16px;
+    font-size: 16px !important;
   }
 }
 
@@ -616,34 +643,16 @@ textarea {
 }
 
 .ui-search-pill {
-  border-radius: 9999px;
-  border: 1px solid var(--glass-surface-border);
-  background: var(--glass-input-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  padding: 0 12px;
-  min-height: 36px;
-  color: var(--app-text-muted);
-  transition:
-    border-color 0.18s ease,
-    background 0.18s ease,
-    box-shadow 0.18s ease;
+  cursor: pointer;
+  transition: opacity 200ms ease;
 }
 
 .ui-search-pill-compact {
-  min-height: 32px;
-  padding: 0 10px;
-  opacity: 0.85;
-}
-
-.ui-search-pill-compact:hover {
-  opacity: 1;
+  opacity: 0.9;
 }
 
 .ui-search-pill:hover {
-  border-color: var(--app-border-strong);
-  background: var(--app-surface-hover);
+  opacity: 1;
 }
 
 .ui-kbd {
@@ -664,7 +673,7 @@ textarea {
   width: 36px;
   height: 36px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  border: 1px solid var(--app-border-strong);
   background: var(--glass-bg);
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
@@ -676,6 +685,10 @@ textarea {
     box-shadow 0.2s ease;
 }
 
+html.dark .ui-icon-btn {
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
 .ui-icon-btn:hover {
   background: linear-gradient(
     155deg,
@@ -684,6 +697,11 @@ textarea {
     rgba(255, 255, 255, 0.04) 100%
   );
   border-color: rgba(255, 255, 255, 0.28);
+}
+
+html:not(.dark) .ui-icon-btn:hover {
+  background: var(--app-surface-hover);
+  border-color: rgba(59, 130, 246, 0.35);
 }
 
 @media (max-width: 767px) {
@@ -859,6 +877,153 @@ textarea {
   background: color-mix(in srgb, var(--app-bg) 88%, transparent);
   backdrop-filter: blur(12px);
   padding: 0 0.5rem;
+}
+
+@media (max-width: 1023px) {
+  .shell-topbar--athlete-dashboard,
+  .shell-topbar--athlete-dashboard.shell-topbar--scroll-with-content {
+    border-bottom: none;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+.shell-topbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0;
+}
+
+.shell-topbar-leading {
+  min-width: 0;
+  flex: 1;
+}
+
+.shell-topbar-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.shell-topbar-action-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  flex-shrink: 0;
+  border-radius: 0.75rem;
+  border: 1px solid var(--app-panel-border);
+  background: var(--app-panel-inset);
+  padding: 0.35rem 0.65rem 0.35rem 0.4rem;
+  color: var(--app-text);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease,
+    transform 0.15s ease;
+}
+
+.shell-topbar-action-chip:hover {
+  border-color: rgba(59, 130, 246, 0.28);
+  background: var(--app-accent-muted);
+}
+
+.shell-topbar-action-chip:active {
+  transform: scale(0.98);
+}
+
+.shell-topbar-action-chip--icon {
+  padding: 0.35rem;
+  min-width: 44px;
+}
+
+.shell-topbar-action-avatar {
+  display: inline-flex;
+  height: 1.75rem;
+  width: 1.75rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.35),
+    rgba(59, 130, 246, 0.1)
+  );
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.shell-topbar-action-avatar--icon {
+  background: var(--app-surface-hover);
+  color: var(--app-text-muted);
+}
+
+.shell-topbar-action-copy {
+  min-width: 0;
+}
+
+.shell-topbar-action-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.2;
+  color: var(--app-text);
+}
+
+.shell-topbar-action-sublabel {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+  color: var(--app-text-muted);
+}
+
+.shell-topbar-action-badge {
+  position: absolute;
+  right: -2px;
+  top: -2px;
+  display: flex;
+  height: 1rem;
+  min-width: 1rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: var(--app-accent);
+  padding: 0 0.25rem;
+  font-size: 9px;
+  font-weight: 600;
+  color: white;
+  pointer-events: none;
+}
+
+.shell-topbar-athlete-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+  color: var(--app-text);
+}
+
+.shell-topbar--athlete-dashboard .shell-topbar-inner {
+  align-items: center;
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.shell-topbar--athlete-dashboard .shell-topbar-leading {
+  flex: 1 1 auto;
+}
+
+.shell-topbar--athlete-dashboard .shell-topbar-actions {
+  margin-left: auto;
 }
 
 .app-page-content {
@@ -1880,6 +2045,7 @@ textarea:focus {
   background: var(--app-accent);
   color: #fff;
   width: fit-content;
+  min-width: 2.75rem;
   max-width: 100%;
 }
 
@@ -1888,6 +2054,7 @@ textarea:focus {
   border-bottom-left-radius: 6px;
   color: var(--app-text);
   width: fit-content;
+  min-width: 2.75rem;
   max-width: 100%;
 }
 
@@ -2134,41 +2301,6 @@ textarea:focus {
   padding: 8px 12px;
 }
 
-.chat-search-field {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  border-radius: 9999px;
-  border: 1px solid var(--glass-input-border);
-  background: var(--glass-input-bg);
-  padding: 9px 14px;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-}
-
-.chat-search-field-accent {
-  border-color: rgba(79, 140, 255, 0.35);
-  background: linear-gradient(
-    155deg,
-    rgba(79, 140, 255, 0.16) 0%,
-    rgba(79, 140, 255, 0.06) 100%
-  );
-}
-
-.chat-search-input {
-  min-width: 0;
-  flex: 1;
-  background: transparent;
-  font-size: 13px;
-  color: var(--app-text);
-  outline: none;
-}
-
-.chat-search-input::placeholder {
-  color: var(--app-text-subtle);
-}
-
 .chat-reaction-pill {
   display: inline-flex;
   align-items: center;
@@ -2254,7 +2386,7 @@ textarea:focus {
   resize: none;
   background: transparent;
   padding: 6px 4px 6px 10px;
-  font-size: 15px;
+  font-size: 16px;
   color: var(--app-text);
   outline: none;
   border: none;
@@ -2506,13 +2638,14 @@ textarea:focus {
 .today-agenda-timeline--rail {
   display: flex;
   flex-direction: column;
-  height: auto;
-  min-height: var(--dashboard-focus-height);
+  height: 100%;
+  min-height: 0;
 }
 
 .today-agenda-timeline--rail .today-agenda-scroll {
   flex: 1;
-  min-height: calc(var(--dashboard-focus-height) - 4.5rem);
+  min-height: 0;
+  overflow-y: auto;
   height: auto !important;
 }
 
@@ -2943,7 +3076,7 @@ html.dark .text-purple-900 {
   --app-panel-inset: var(--app-surface-muted);
   --app-panel-inset-hover: var(--app-surface-hover);
   --app-input-inset: rgba(0, 0, 0, 0.04);
-  --app-nav-bg: rgba(255, 255, 255, 0.94);
+  --app-nav-bg: var(--app-bg);
   --app-nav-border: var(--app-border);
   --app-nav-shadow: 0 -8px 32px rgba(0, 0, 0, 0.08);
   --app-eyebrow: var(--app-accent);
@@ -2958,7 +3091,7 @@ html.dark {
   --app-panel-inset: rgba(255, 255, 255, 0.02);
   --app-panel-inset-hover: rgba(255, 255, 255, 0.04);
   --app-input-inset: rgba(0, 0, 0, 0.28);
-  --app-nav-bg: rgba(10, 10, 12, 0.98);
+  --app-nav-bg: var(--app-bg);
   --app-nav-border: rgba(255, 255, 255, 0.08);
   --app-nav-shadow: 0 -12px 40px rgba(0, 0, 0, 0.55);
   --app-card-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
@@ -3018,6 +3151,44 @@ html:not(.dark) input[class*="bg-[#"],
 html:not(.dark) textarea[class*="bg-[#"] {
   background-color: var(--app-input-bg) !important;
   border-color: var(--app-border) !important;
+  color: var(--app-text) !important;
 }
 
+/* Light mode: hardcoded white text on theme surfaces (coach pages) */
+html:not(.dark) .app-shell .text-white\/80,
+html:not(.dark) .app-shell .text-white\/70,
+html:not(.dark) .app-shell .text-white\/60,
+html:not(.dark) .app-shell .text-white\/50,
+html:not(.dark) .app-shell .text-white\/40 {
+  color: var(--app-text-muted) !important;
+}
+
+html:not(.dark) .app-shell .text-white:not(
+  [class*="bg-black"] *,
+  [class*="bg-app-accent"] *,
+  [class*="bg-blue-6"] *,
+  [class*="bg-brand"] *,
+  [class*="bg-red-5"] *,
+  [class*="bg-emerald"] *,
+  [class*="bg-green-6"] *,
+  [class*="bg-purple"] *,
+  [class*="bg-sky-5"] *,
+  [class*="bg-amber-5"] *,
+  [class*="bg-orange-5"] *,
+  .todo-composer-plus *,
+  .todo-composer-submit *,
+  .athletes-pill-btn-primary *
+) {
+  color: var(--app-text);
+}
+
+html:not(.dark) [class*="bg-black"].text-white,
+html:not(.dark) [class*="bg-app-accent"].text-white,
+html:not(.dark) [class*="bg-blue-6"].text-white,
+html:not(.dark) .bg-app-accent .text-white,
+html:not(.dark) .todo-composer-plus,
+html:not(.dark) .todo-composer-submit,
+html:not(.dark) .athletes-pill-btn-primary {
+  color: #ffffff !important;
+}
 

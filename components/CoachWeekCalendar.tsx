@@ -20,6 +20,7 @@ import {
   loadCoachAthleteCompetitions,
   loadUpcomingCompetitions,
 } from "@/lib/competitions";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CalendarEvent = {
   id: string;
@@ -394,7 +395,10 @@ export default function CoachWeekCalendar({
         calendarLayoutRef.current &&
         !calendarLayoutRef.current.contains(event.target as Node)
       ) {
-        collapseCalendar();
+        if (!forceExpanded) {
+          setExpanded(false);
+          setWeekStart(getMonday(new Date()));
+        }
       }
     }
 
@@ -416,12 +420,14 @@ export default function CoachWeekCalendar({
   useEffect(() => {
     if (!focusRequest) return;
 
-    setWeekStart(getMonday(parseDate(focusRequest.date)));
-    setScrollToHour(
-      focusRequest.startAt ? getHourFraction(focusRequest.startAt) : currentHour,
-    );
-    setHighlightedAppointmentId(focusRequest.appointmentId || null);
-    setExpanded(true);
+    deferEffectUpdate(() => {
+      setWeekStart(getMonday(parseDate(focusRequest.date)));
+      setScrollToHour(
+        focusRequest.startAt ? getHourFraction(focusRequest.startAt) : currentHour,
+      );
+      setHighlightedAppointmentId(focusRequest.appointmentId || null);
+      setExpanded(true);
+    });
     onFocusHandled?.();
   }, [focusRequest, onFocusHandled]);
 
@@ -537,7 +543,9 @@ export default function CoachWeekCalendar({
 
   useEffect(() => {
     if (userId) {
-      void loadEvents();
+      deferEffectUpdate(() => {
+        void loadEvents();
+      });
     }
   }, [userId, loadEvents]);
 
@@ -1196,8 +1204,8 @@ export default function CoachWeekCalendar({
     );
   }
 
-  function renderTimeGrid() {
-    return (
+  const timeGrid = useMemo(
+    () => (
       <div
         ref={gridContainerRef}
         className="relative grid"
@@ -1291,8 +1299,21 @@ export default function CoachWeekCalendar({
           </div>
         )}
       </div>
-    );
-  }
+    ),
+    [
+      currentHour,
+      dayCount,
+      dragCreate,
+      dragCreateMoved,
+      expanded,
+      gridHeight,
+      gridTemplateColumns,
+      now,
+      timedBlocks,
+      todayDayIndex,
+      visibleDays,
+    ],
+  );
 
   const isExpanded = forceExpanded || expanded;
   const minGridWidth = isExpanded ? 720 : 380;
@@ -1436,7 +1457,7 @@ export default function CoachWeekCalendar({
                   }`}
                   style={fullPage ? undefined : { maxHeight: timeGridMaxHeight }}
                 >
-                  {renderTimeGrid()}
+                  {timeGrid}
                 </div>
               ) : (
                 <div
@@ -1446,7 +1467,7 @@ export default function CoachWeekCalendar({
                     height: collapsedViewHeight,
                   }}
                 >
-                  <div>{renderTimeGrid()}</div>
+                  <div>{timeGrid}</div>
                 </div>
               )}
             </div>

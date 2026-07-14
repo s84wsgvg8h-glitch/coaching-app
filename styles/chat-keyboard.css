@@ -1,0 +1,102 @@
+/* ─── Chat keyboard (mobile) ───
+   WhatsApp-like flow: panel stays full height; bottom padding (--keyboard-height)
+   animates in sync with iOS keyboard. Flex column: header | messages | compose.
+*/
+
+@media (max-width: 1023px) {
+  html[data-chat-viewport-sync="true"] #app-viewport-root {
+    top: 0 !important;
+    right: 0 !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    height: 100% !important;
+    max-height: none !important;
+    transform: none !important;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-mobile-shell .mobile-page-shell__body {
+    overflow: hidden;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-list-panel {
+    display: none !important;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    min-height: 0;
+    overflow: hidden;
+    background: var(--app-bg);
+    padding-bottom: var(--keyboard-height, 0px);
+    transition: padding-bottom var(--keyboard-transition-duration, 0.25s)
+      var(--keyboard-transition-easing, cubic-bezier(0.17, 0.59, 0.4, 0.99));
+    will-change: padding-bottom;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-conversation-panel,
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-conversation-stage {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-conversation-header {
+    flex-shrink: 0;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-messages-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-compose-stack {
+    flex-shrink: 0;
+    background: var(--app-bg);
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync .chat-compose-footer {
+    flex-shrink: 0;
+    padding-top: 0.375rem;
+    padding-bottom: 0;
+  }
+
+  html[data-keyboard-open="true"] .chat-side-panel--viewport-sync .chat-compose-stack {
+    padding-bottom: 0 !important;
+  }
+
+  html[data-keyboard-open="true"] .chat-side-panel--viewport-sync .chat-compose-footer {
+    padding-top: 0.375rem;
+    padding-bottom: 0 !important;
+    background: var(--app-bg) !important;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-input-bar {
+    align-items: center !important;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-message-input-wrap {
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+  }
+
+  html[data-chat-viewport-sync="true"] .chat-input-bar textarea,
+  html[data-chat-viewport-sync="true"] .chat-message-input {
+    font-size: 16px !important;
+    line-height: 20px;
+    padding: 0 !important;
+    margin: 0;
+  }
+}

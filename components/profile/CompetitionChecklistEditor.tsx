@@ -125,7 +125,7 @@ export default function CompetitionChecklistEditor({
       {sections.map((section, sectionIndex) => (
         <section
           key={section.id}
-          className={`rounded-2xl border border-gray-200 bg-gray-50/60 ${
+          className={`rounded-2xl border border-app-border bg-app-surface ${
             compact ? "p-3" : "p-5"
           }`}
         >
@@ -151,7 +151,7 @@ export default function CompetitionChecklistEditor({
             {section.items.map((item, itemIndex) => (
               <div
                 key={item.id}
-                className={`grid gap-2 rounded-xl border border-gray-200 bg-white ${
+                className={`grid gap-2 rounded-xl border border-app-border bg-app-surface-muted ${
                   compact
                     ? "grid-cols-1 px-2 py-1.5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]"
                     : "grid-cols-1 p-3 md:grid-cols-2"
@@ -203,7 +203,7 @@ export default function CompetitionChecklistEditor({
           <button
             type="button"
             onClick={() => addItem(sectionIndex)}
-            className="mt-2 rounded-lg border border-gray-300 px-3 py-1 text-xs font-semibold hover:bg-white"
+            className="mt-2 rounded-lg border border-app-border px-3 py-1 text-xs font-semibold text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           >
             + Item
           </button>
@@ -213,7 +213,7 @@ export default function CompetitionChecklistEditor({
       <button
         type="button"
         onClick={addSection}
-        className="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-gray-50"
+        className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted hover:bg-app-surface-hover hover:text-app-text"
       >
         Sectie toevoegen
       </button>

@@ -19,6 +19,15 @@ export function applyTheme(theme: ThemeMode) {
   document.documentElement.classList.toggle("dark", theme === "dark");
   document.documentElement.style.colorScheme = theme;
   window.localStorage.setItem(THEME_STORAGE_KEY, theme);
+
+  void import("@/lib/nativeStatusBar").then(({ syncNativeStatusBar, getThemeColorMeta, applyDocumentSurfaceColor }) => {
+    applyDocumentSurfaceColor(theme);
+    void syncNativeStatusBar(theme);
+    const meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) {
+      meta.setAttribute("content", getThemeColorMeta(theme));
+    }
+  });
 }
 
 export function toggleTheme(): ThemeMode {

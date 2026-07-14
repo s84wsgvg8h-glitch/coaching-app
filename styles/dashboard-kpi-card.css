@@ -1,0 +1,234 @@
+/* Coach dashboard KPI cards — v2 (accent rail + icon + arrow) */
+
+.dashboard-kpi-card--v2 {
+  --kpi-accent: var(--app-accent);
+  --kpi-accent-soft: rgba(79, 140, 255, 0.12);
+  --kpi-accent-border: rgba(79, 140, 255, 0.28);
+  --kpi-accent-glow: rgba(79, 140, 255, 0.55);
+  --kpi-card-bg: var(--app-surface);
+  --kpi-value-color: var(--app-text);
+  --kpi-label-color: var(--app-text-subtle);
+  --kpi-hint-color: var(--app-text-muted);
+  --kpi-arrow-bg: rgba(255, 255, 255, 0.04);
+  --kpi-arrow-border: var(--app-border);
+
+  position: relative;
+  display: grid;
+  grid-template-columns: 3px minmax(0, 1fr) auto;
+  align-items: stretch;
+  min-height: 112px;
+  width: 100%;
+  overflow: hidden;
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  background: var(--kpi-card-bg);
+  text-decoration: none;
+  color: inherit;
+  transition:
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.dashboard-kpi-card--v2:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--kpi-accent) 28%, var(--app-border));
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.12);
+}
+
+.dashboard-kpi-card--purple {
+  --kpi-accent: #3d8bff;
+  --kpi-accent-soft: rgba(61, 139, 255, 0.14);
+  --kpi-accent-border: rgba(61, 139, 255, 0.32);
+  --kpi-accent-glow: rgba(61, 139, 255, 0.65);
+}
+
+.dashboard-kpi-card--green {
+  --kpi-accent: #34d399;
+  --kpi-accent-soft: rgba(52, 211, 153, 0.14);
+  --kpi-accent-border: rgba(52, 211, 153, 0.32);
+  --kpi-accent-glow: rgba(52, 211, 153, 0.65);
+}
+
+.dashboard-kpi-card--orange {
+  --kpi-accent: #fbbf24;
+  --kpi-accent-soft: rgba(251, 191, 36, 0.14);
+  --kpi-accent-border: rgba(251, 191, 36, 0.32);
+  --kpi-accent-glow: rgba(251, 191, 36, 0.55);
+}
+
+.dashboard-kpi-card--blue {
+  --kpi-accent: #60a5fa;
+  --kpi-accent-soft: rgba(96, 165, 250, 0.14);
+  --kpi-accent-border: rgba(96, 165, 250, 0.32);
+  --kpi-accent-glow: rgba(96, 165, 250, 0.6);
+}
+
+.dashboard-kpi-accent {
+  display: block;
+  width: 3px;
+  background: var(--kpi-accent);
+  box-shadow:
+    0 0 12px var(--kpi-accent-glow),
+    0 0 24px color-mix(in srgb, var(--kpi-accent-glow) 45%, transparent);
+}
+
+.dashboard-kpi-inner {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0.85rem 0.65rem 0.85rem 0.75rem;
+}
+
+.dashboard-kpi-top {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.4rem;
+}
+
+.dashboard-kpi-icon-wrap {
+  display: inline-flex;
+  height: 2rem;
+  width: 2rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--kpi-accent-border);
+  background: var(--kpi-accent-soft);
+  color: var(--kpi-accent);
+}
+
+.dashboard-kpi-label {
+  margin: 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--kpi-label-color);
+}
+
+.dashboard-kpi-value {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--kpi-value-color);
+  font-variant-numeric: tabular-nums;
+}
+
+.dashboard-kpi-value-skeleton {
+  margin-top: 0.15rem;
+  height: 2rem;
+  width: 4.5rem;
+}
+
+.dashboard-kpi-value-suffix {
+  margin-left: 0.15rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--kpi-hint-color);
+}
+
+.dashboard-kpi-hint,
+.dashboard-kpi-trend {
+  margin: 0.35rem 0 0;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--kpi-hint-color);
+}
+
+.dashboard-kpi-arrow {
+  display: inline-flex;
+  align-self: center;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-right: 0.75rem;
+  flex-shrink: 0;
+  border-radius: 9999px;
+  border: 1px solid var(--kpi-arrow-border);
+  background: var(--kpi-arrow-bg);
+  color: var(--kpi-accent);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.dashboard-kpi-card--v2:hover .dashboard-kpi-arrow {
+  border-color: color-mix(in srgb, var(--kpi-accent) 35%, var(--app-border));
+  background: var(--kpi-accent-soft);
+  transform: translateX(1px);
+}
+
+/* Team engagement chart variant */
+.dashboard-kpi-card--chart {
+  grid-template-columns: 3px minmax(0, 1fr);
+}
+
+.dashboard-kpi-card--chart .team-engagement-chart {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.55rem;
+  z-index: 0;
+  height: 42px;
+  width: min(42%, 120px);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.dashboard-kpi-card--chart .dashboard-kpi-inner {
+  padding-right: min(38%, 7rem);
+}
+
+/* Light mode */
+html:not(.dark) .premium-coach-ui .dashboard-kpi-card--v2 {
+  --kpi-card-bg: #ffffff;
+  --kpi-value-color: #111827;
+  --kpi-label-color: #64748b;
+  --kpi-hint-color: #94a3b8;
+  --kpi-arrow-bg: #ffffff;
+  --kpi-arrow-border: rgba(15, 23, 42, 0.1);
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+}
+
+html:not(.dark) .premium-coach-ui .dashboard-kpi-card--v2:hover {
+  box-shadow: 0 14px 36px rgba(15, 23, 42, 0.1);
+}
+
+/* Dark mode */
+html.dark .premium-coach-ui .dashboard-kpi-card--v2 {
+  --kpi-card-bg: #161b22;
+  --kpi-value-color: #ffffff;
+  --kpi-label-color: rgba(255, 255, 255, 0.42);
+  --kpi-hint-color: rgba(255, 255, 255, 0.52);
+  --kpi-arrow-bg: rgba(255, 255, 255, 0.04);
+  --kpi-arrow-border: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.28);
+}
+
+html.dark .premium-coach-ui .dashboard-kpi-card--v2:hover {
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+}
+
+@media (min-width: 1024px) {
+  .dashboard-cockpit .dashboard-kpi-card--v2 {
+    min-height: 112px;
+  }
+
+  .dashboard-cockpit .dashboard-kpi-card--v2 .dashboard-kpi-value {
+    font-size: 1.75rem;
+  }
+
+  .dashboard-cockpit .dashboard-kpi-card--chart .team-engagement-chart {
+    height: 36px;
+    width: min(40%, 100px);
+  }
+}

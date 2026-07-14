@@ -1,79 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
-import { needsIntakeCompletion } from "@/lib/intakeForm";
+import { needsIntakeCompletionFromProfile } from "@/lib/authIntake";
 import { isDemoMode } from "@/lib/demo/demoMode";
-import { SkeletonCard } from "@/components/ui/Skeleton";
 
-const ALLOWED_PATHS = ["/intake", "/login", "/signup", "/privacy", "/voorwaarden"];
+const ALLOWED_PATHS = [
+  "/intake",
+  "/login",
+  "/signup",
+  "/privacy",
+  "/voorwaarden",
+  "/pending-approval",
+];
 
+/** Redirect-only gate — no extra splash screen after auth bootstrap. */
 export default function IntakeGate({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { userId, role, loading: authLoading } = useAuth();
-  const [checked, setChecked] = useState(false);
-  const [blocked, setBlocked] = useState(false);
+  const { userId, profile, loading: authLoading } = useAuth();
 
   useEffect(() => {
-    let cancelled = false;
+    if (authLoading) return;
+    if (ALLOWED_PATHS.some((path) => pathname.startsWith(path))) return;
+    if (isDemoMode() || !userId) return;
 
-    async function check() {
-      if (ALLOWED_PATHS.some((path) => pathname.startsWith(path))) {
-        if (!cancelled) {
-          setBlocked(false);
-          setChecked(true);
-        }
-        return;
-      }
-
-      if (authLoading) return;
-
-      if (isDemoMode()) {
-        if (!cancelled) {
-          setBlocked(false);
-          setChecked(true);
-        }
-        return;
-      }
-
-      if (!userId) {
-        if (!cancelled) {
-          setBlocked(false);
-          setChecked(true);
-        }
-        return;
-      }
-
-      const needsIntake = await needsIntakeCompletion(userId);
-
-      if (cancelled) return;
-
-      if (needsIntake && role === "atleet") {
-        setBlocked(true);
-        router.replace("/intake");
-      } else {
-        setBlocked(false);
-      }
-
-      setChecked(true);
+    if (needsIntakeCompletionFromProfile(profile)) {
+      router.replace("/intake");
     }
-
-    void check();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [pathname, router, userId, role, authLoading]);
-
-  if (authLoading || !checked || blocked) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center bg-app-bg">
-        <p className="text-sm text-app-muted">Laden...</p>
-      </div>
-    );
-  }
+  }, [pathname, router, userId, profile, authLoading]);
 
   return <>{children}</>;
 }

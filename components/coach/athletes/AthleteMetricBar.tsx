@@ -27,20 +27,14 @@ function MetricSegment({
 }) {
   return (
     <div
-      className={`flex min-w-0 flex-1 items-center gap-3 px-4 py-3 sm:px-5 sm:py-4 ${
-        isLast ? "" : "sm:border-r sm:border-app-border/30"
+      className={`athletes-metric-segment flex min-w-0 flex-1 items-center gap-3.5 px-4 py-3.5 sm:px-5 sm:py-4 ${
+        isLast ? "" : "sm:border-r sm:border-white/[0.08]"
       }`}
     >
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-app-accent/10 text-app-accent ring-1 ring-app-accent/20">
-        {icon}
-      </span>
+      <span className="athletes-metric-icon">{icon}</span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[20px] font-semibold leading-none tracking-tight text-app-text sm:text-[22px]">
-          {value}
-        </p>
-        <div className="mt-1 flex min-w-0 items-center gap-1.5">
-          {label}
-        </div>
+        <p className="athletes-metric-value truncate">{value}</p>
+        <div className="mt-1.5 flex min-w-0 items-center gap-1.5">{label}</div>
       </div>
     </div>
   );
@@ -88,16 +82,14 @@ export default function AthleteMetricBar({
       className={`${athletesGlassBar} mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-2xl md:grid-cols-4`}
     >
       <MetricSegment
-        icon={<Users className="h-[18px] w-[18px]" />}
+        icon={<Users className="h-5 w-5" />}
         value={String(athleteCount)}
         label={
-          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-app-subtle">
-            atleten
-          </p>
+          <p className="athletes-metric-label truncate">atleten</p>
         }
       />
       <MetricSegment
-        icon={<Euro className="h-[18px] w-[18px]" />}
+        icon={<Euro className="h-5 w-5" />}
         value={
           revenueVisible ? (
             revenueLabel
@@ -107,9 +99,7 @@ export default function AthleteMetricBar({
         }
         label={
           <>
-            <p className="truncate text-[11px] font-medium uppercase tracking-wide text-app-subtle">
-              omzet
-            </p>
+            <p className="athletes-metric-label truncate">omzet</p>
             <button
               type="button"
               onClick={toggleRevenueVisibility}
@@ -127,21 +117,17 @@ export default function AthleteMetricBar({
         }
       />
       <MetricSegment
-        icon={<LineChart className="h-[18px] w-[18px]" />}
+        icon={<LineChart className="h-5 w-5" />}
         value={scoresLoading ? "…" : avgFillScoreLabel}
         label={
-          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-app-subtle">
-            gem. invulscore
-          </p>
+          <p className="athletes-metric-label truncate">gem. invulscore</p>
         }
       />
       <MetricSegment
-        icon={<CreditCard className="h-[18px] w-[18px]" />}
+        icon={<CreditCard className="h-5 w-5" />}
         value={String(overdueCount)}
         label={
-          <p className="truncate text-[11px] font-medium uppercase tracking-wide text-app-subtle">
-            overdue betalingen
-          </p>
+          <p className="athletes-metric-label truncate">overdue betalingen</p>
         }
         isLast
       />

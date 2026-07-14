@@ -2,7 +2,10 @@
 
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ChevronDown, ChevronUp } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import SearchInput from "@/components/ui/SearchInput";
+import { PageLoading } from "@/components/ui/Skeleton";
 import AiVragenPanel from "@/components/kennisbank/AiVragenPanel";
 import type { KnowledgeChunk } from "@/lib/knowledgeBase";
 import {
@@ -122,15 +125,15 @@ function KennisbankPageInner() {
   return (
     <AppShell contentClassName="app-page-content flex-1 p-4 md:p-8">
       <div className="mx-auto w-full max-w-none space-y-6">
-        <div className="rounded-3xl bg-white p-6 shadow-xl md:p-8">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-            {scope === "athlete" ? "Atleten AI kennisbank" : "AI kennisbank"}
+        <div className="app-card p-6 md:p-8">
+          <p className="text-xs font-bold uppercase tracking-wide text-app-subtle">
+            {scope === "athlete" ? "Atleten kennisbank" : "Coach kennisbank"}
           </p>
-          <h1 className="mt-2 text-3xl font-bold text-black md:text-4xl">
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-app-text md:text-3xl">
             Kennisbank & AI-vragen
           </h1>
-          <p className="mt-2 max-w-2xl text-sm text-gray-500 md:text-base">
-            Curated kennisblokken en atleten-AI vragen op één plek.
+          <p className="mt-2 max-w-2xl text-sm text-app-muted md:text-[15px]">
+            Coachingkennis en antwoorden voor atleten-AI op één plek.
           </p>
 
           {canViewAiVragen ? (
@@ -138,10 +141,10 @@ function KennisbankPageInner() {
               <button
                 type="button"
                 onClick={() => switchTab("chunks")}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
                   activeTab === "chunks"
-                    ? "bg-black text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-app-accent text-white"
+                    : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                 }`}
               >
                 Kennisbank
@@ -149,10 +152,10 @@ function KennisbankPageInner() {
               <button
                 type="button"
                 onClick={() => switchTab("vragen")}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold ${
+                className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
                   activeTab === "vragen"
-                    ? "bg-black text-white"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                    ? "bg-app-accent text-white"
+                    : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                 }`}
               >
                 AI-vragen
@@ -161,32 +164,28 @@ function KennisbankPageInner() {
           ) : null}
 
           {stats && activeTab === "chunks" ? (
-            <div className="mt-6 flex flex-wrap gap-3">
-              <span className="rounded-full bg-gray-100 px-4 py-2 text-sm font-semibold text-gray-700">
-                {stats.curatedCount} curated chunks
+            <div className="mt-5 flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-muted">
+                <span className="h-1.5 w-1.5 rounded-full bg-app-accent"></span>
+                {stats.curatedCount} kennisblokken
               </span>
-              {stats.hasLocalPdf ? (
-                <span className="rounded-full bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700">
-                  +{stats.localExcerptCount} lokale ESS PDF excerpts (alleen dev)
-                </span>
-              ) : null}
             </div>
           ) : null}
         </div>
 
         {activeTab === "vragen" && canViewAiVragen ? (
-          <div className="rounded-3xl bg-white p-4 shadow-xl md:p-6">
+          <div className="app-card p-4 md:p-6">
             <AiVragenPanel />
           </div>
         ) : (
           <>
-            <div className="rounded-3xl bg-white p-4 shadow-xl md:p-6">
-              <input
-                type="search"
+            <div className="app-card p-4 md:p-6">
+              <SearchInput
                 value={query}
-                onChange={(event) => setQuery(event.target.value)}
+                onChange={setQuery}
                 placeholder="Zoek titel, categorie, keywords of inhoud..."
-                className="w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
+                variant="rounded"
+                className="w-full"
               />
 
               <div className="mt-4 flex flex-wrap gap-2">
@@ -195,10 +194,10 @@ function KennisbankPageInner() {
                     key={option}
                     type="button"
                     onClick={() => setCategory(option)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition ${
+                    className={`rounded-full px-4 py-2 text-sm font-semibold transition app-focus-ring ${
                       category === option
-                        ? "bg-black text-white"
-                        : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                        ? "bg-app-accent text-white"
+                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                     }`}
                   >
                     {option}
@@ -208,19 +207,23 @@ function KennisbankPageInner() {
             </div>
 
             {loading ? (
-              <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">
-                Kennisbank laden...
+              <div className="app-card p-8">
+                <PageLoading label="Kennisbank laden…" />
               </div>
             ) : grouped.length === 0 ? (
-              <div className="rounded-3xl bg-white p-8 text-center text-gray-500 shadow-xl">
-                Geen chunks gevonden voor deze zoekopdracht.
+              <div className="app-card p-8 text-center">
+                <p className="text-sm text-app-muted">
+                  Geen resultaten voor deze zoekopdracht.
+                </p>
               </div>
             ) : (
               grouped.map((group) => (
                 <section key={group.category} className="space-y-3">
                   <div className="flex items-center justify-between px-1">
-                    <h2 className="text-lg font-bold text-black">{group.category}</h2>
-                    <span className="text-sm text-gray-400">{group.items.length}</span>
+                    <h2 className="text-lg font-semibold text-app-text">
+                      {group.category}
+                    </h2>
+                    <span className="text-sm text-app-subtle">{group.items.length}</span>
                   </div>
 
                   <div className="space-y-3">
@@ -230,36 +233,40 @@ function KennisbankPageInner() {
                       return (
                         <article
                           key={chunk.id}
-                          className="rounded-2xl border border-gray-100 bg-white p-5 shadow-sm"
+                          className="app-card p-5"
                         >
                           <button
                             type="button"
                             onClick={() =>
                               setExpandedId(isExpanded ? null : chunk.id)
                             }
-                            className="flex w-full items-start justify-between gap-4 text-left"
+                            className="app-focus-ring flex w-full items-start justify-between gap-4 rounded-lg text-left"
                           >
-                            <div>
-                              <h3 className="font-semibold text-black">
+                            <div className="min-w-0">
+                              <h3 className="font-semibold text-app-text">
                                 {chunk.title}
                               </h3>
-                              <p className="mt-1 text-xs text-gray-400">{chunk.id}</p>
+                              <p className="mt-1 text-xs text-app-subtle">
+                                {chunk.category}
+                              </p>
                             </div>
-                            <span className="shrink-0 text-sm text-gray-400">
-                              {isExpanded ? "−" : "+"}
+                            <span className="mt-0.5 shrink-0 text-app-muted">
+                              {isExpanded
+                                ? <ChevronUp className="h-4 w-4" />
+                                : <ChevronDown className="h-4 w-4" />}
                             </span>
                           </button>
 
                           {isExpanded ? (
-                            <div className="mt-4 space-y-4 border-t border-gray-100 pt-4">
-                              <p className="whitespace-pre-line text-sm leading-relaxed text-gray-700">
+                            <div className="mt-4 space-y-4 border-t border-app-border pt-4">
+                              <p className="whitespace-pre-line text-sm leading-relaxed text-app-muted">
                                 {chunk.content}
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {chunk.keywords.map((keyword) => (
                                   <span
                                     key={keyword}
-                                    className="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-600"
+                                    className="rounded-full border border-app-border bg-app-surface px-3 py-1 text-xs font-medium text-app-muted"
                                   >
                                     {keyword}
                                   </span>
@@ -267,7 +274,7 @@ function KennisbankPageInner() {
                               </div>
                             </div>
                           ) : (
-                            <p className="mt-3 line-clamp-2 text-sm text-gray-500">
+                            <p className="mt-3 line-clamp-2 text-sm text-app-muted">
                               {chunk.content}
                             </p>
                           )}
@@ -290,7 +297,7 @@ export default function KennisbankPage() {
     <Suspense
       fallback={
         <AppShell contentClassName="flex-1 p-8">
-          Kennisbank laden...
+          <PageLoading label="Kennisbank laden…" />
         </AppShell>
       }
     >

@@ -44,7 +44,7 @@ export default function ProgramBlockRedirectPage() {
 
   return (
     <AppShell contentClassName="flex-1 p-8">
-      <div className="mx-auto max-w-5xl rounded-2xl bg-white p-8 shadow">
+      <div className="mx-auto max-w-5xl rounded-2xl border border-app-border bg-app-surface p-8 shadow">
         <p className="text-gray-500">
           {errorMessage || "Programma openen..."}
         </p>

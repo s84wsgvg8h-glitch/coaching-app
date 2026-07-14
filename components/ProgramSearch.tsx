@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { Search } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import {
   buildProgramSearchItems,
   filterProgramSearchItems,
@@ -11,11 +13,13 @@ import {
 } from "@/lib/programSearch";
 import { getApiAuthHeaders } from "@/lib/apiClient";
 import { isDemoMode } from "@/lib/demo/demoMode";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ProgramSearchProps = {
   context: ProgramSearchContext;
   className?: string;
   variant?: "default" | "coach-dark";
+  layout?: "default" | "icon";
 };
 
 type AiResult = {
@@ -30,15 +34,18 @@ export default function ProgramSearch({
   context,
   className = "",
   variant = "default",
+  layout = "default",
 }: ProgramSearchProps) {
   const router = useRouter();
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
+  const [expanded, setExpanded] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiError, setAiError] = useState("");
   const [aiResult, setAiResult] = useState<AiResult | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const items = useMemo(() => buildProgramSearchItems(context), [context]);
   const results = useMemo(
@@ -52,21 +59,32 @@ export default function ProgramSearch({
   );
 
   useEffect(() => {
-    setActiveIndex(0);
-    setAiResult(null);
-    setAiError("");
+    deferEffectUpdate(() => {
+      setActiveIndex(0);
+      setAiResult(null);
+      setAiError("");
+    });
   }, [query]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
       if (!containerRef.current?.contains(event.target as Node)) {
         setOpen(false);
+        if (layout === "icon") {
+          setExpanded(false);
+        }
       }
     }
 
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
+  }, [layout]);
+
+  useEffect(() => {
+    if (expanded) {
+      inputRef.current?.focus();
+    }
+  }, [expanded]);
 
   function selectItem(item: ProgramSearchItem) {
     setOpen(false);
@@ -179,6 +197,10 @@ export default function ProgramSearch({
 
     if (event.key === "Escape") {
       setOpen(false);
+      if (layout === "icon") {
+        setExpanded(false);
+        setQuery("");
+      }
     }
   }
 
@@ -187,31 +209,50 @@ export default function ProgramSearch({
 
   const isCoachDark = variant === "coach-dark";
 
+  if (layout === "icon" && !expanded) {
+    return (
+      <button
+        type="button"
+        className={`coach-program-search-icon-btn ${className}`}
+        onClick={() => {
+          setExpanded(true);
+          setOpen(true);
+        }}
+        aria-label="Zoeken in programma"
+        title="Zoeken"
+      >
+        <Search className="h-4 w-4" aria-hidden="true" />
+      </button>
+    );
+  }
+
   return (
-    <div ref={containerRef} className={`relative ${className}`}>
-      <input
-        type="search"
+    <div
+      ref={containerRef}
+      className={`relative ${layout === "icon" ? "coach-program-search-expand" : ""} ${className}`}
+    >
+      <SearchInput
+        ref={inputRef}
         value={query}
-        onChange={(event) => {
-          setQuery(event.target.value);
+        onChange={(next) => {
+          setQuery(next);
           setOpen(true);
         }}
         onFocus={() => setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder="Zoek oefeningen in dit programma of stel een AI-vraag..."
-        className={
-          isCoachDark
-            ? "coach-program-search-input w-full"
-            : "w-full rounded-2xl border border-gray-200 bg-white px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-black"
-        }
+        variant="rounded"
+        tone={isCoachDark ? "default" : "light"}
+        showClear={false}
+        className={`w-full ${layout === "icon" ? "coach-program-search-input--expanded" : ""}`}
       />
 
       {open && (
         <div
           className={
             isCoachDark
-              ? "coach-program-search-dropdown absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden"
-              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-xl"
+              ? `coach-program-search-dropdown absolute top-[calc(100%+0.5rem)] z-30 overflow-hidden ${layout === "icon" ? "right-0 min-w-[min(24rem,calc(100vw-2rem))]" : "left-0 right-0"}`
+              : "absolute left-0 right-0 top-[calc(100%+0.5rem)] z-30 overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-xl"
           }
         >
           {results.length > 0 && (
@@ -225,11 +266,11 @@ export default function ProgramSearch({
                     className={`flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm transition ${
                       isCoachDark
                         ? index === activeIndex
-                          ? "bg-white/8"
-                          : "hover:bg-white/5"
+                          ? "bg-app-surface-hover"
+                          : "hover:bg-app-surface-hover"
                         : index === activeIndex
-                          ? "bg-gray-100"
-                          : "hover:bg-gray-50"
+                          ? "bg-app-surface-hover"
+                          : "hover:bg-app-surface-hover"
                     }`}
                   >
                     <span className="text-base">
@@ -244,7 +285,7 @@ export default function ProgramSearch({
                     <span className="min-w-0 flex-1">
                       <span
                         className={`block font-semibold ${
-                          isCoachDark ? "text-app-text" : "text-black"
+                          "text-app-text"
                         }`}
                       >
                         {item.title}

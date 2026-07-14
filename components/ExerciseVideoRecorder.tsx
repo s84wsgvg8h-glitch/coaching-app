@@ -4,6 +4,7 @@ import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ExerciseVideoRecorderProps = {
   open: boolean;
@@ -167,7 +168,8 @@ export default function ExerciseVideoRecorder({
           width: { ideal: 1280 },
           height: { ideal: 720 },
         },
-        audio: true,
+        // Video-only: keeps background music playing on iOS.
+        audio: false,
       });
 
       cameraStreamRef.current = stream;
@@ -201,14 +203,16 @@ export default function ExerciseVideoRecorder({
     setTrimEnd(0);
     setGalleryOpen(false);
     setGalleryFiles([]);
-    setMuteVideoAudio(false);
+    setMuteVideoAudio(true);
     setFlashOn(false);
     setActiveTrimHandle(null);
   }
 
   useEffect(() => {
     if (!open) {
-      resetState();
+      deferEffectUpdate(() => {
+        resetState();
+      });
       return;
     }
 
@@ -217,17 +221,23 @@ export default function ExerciseVideoRecorder({
       return;
     }
 
-    void startCameraStream();
+    deferEffectUpdate(() => {
+      void startCameraStream();
+    });
   }, [open, recordedVideoUrl]);
 
   useEffect(() => {
     if (!open || recordedVideoUrl) return;
     stopCameraStream();
-    void startCameraStream();
+    deferEffectUpdate(() => {
+      void startCameraStream();
+    });
   }, [cameraFacingMode]);
 
   useEffect(() => {
-    void applyTorch(flashOn);
+    deferEffectUpdate(() => {
+      void applyTorch(flashOn);
+    });
   }, [flashOn]);
 
   useEffect(() => {

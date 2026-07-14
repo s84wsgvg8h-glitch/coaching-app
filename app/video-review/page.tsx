@@ -198,17 +198,20 @@ function VideoReviewContent() {
   return (
     <AppShell>
       <div className="mx-auto max-w-4xl">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
           <div>
-            <h1 className="text-3xl font-bold text-app-text">Video review</h1>
-            <p className="mt-1 text-sm text-app-muted">
-              {pendingCount} openstaande review{pendingCount === 1 ? "" : "s"}
+            <p className="text-xs font-bold uppercase tracking-wider text-app-muted">Video review</p>
+            <h1 className="mt-1 text-3xl font-bold text-app-text">Video review</h1>
+            <p className="mt-2 text-sm text-app-muted">
+              {pendingCount > 0
+                ? `${pendingCount} openstaande review${pendingCount === 1 ? "" : "s"}`
+                : "Alle reviews zijn verwerkt."}
             </p>
           </div>
           {athleteFilter ? (
             <Link
               href={`/athletes/${athleteFilter}`}
-              className="text-sm font-semibold text-brand-purple hover:underline"
+              className="app-focus-ring inline-flex items-center gap-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
             >
               ← Atleet hub
             </Link>
@@ -273,8 +276,8 @@ function VideoReviewContent() {
                     <span
                       className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                         review.status === "pending"
-                          ? "bg-amber-100 text-amber-900"
-                          : "bg-emerald-100 text-emerald-800"
+                          ? "bg-amber-500/15 text-amber-400"
+                          : "bg-emerald-500/15 text-emerald-400"
                       }`}
                     >
                       {review.status === "pending" ? "Open" : "Beoordeeld"}

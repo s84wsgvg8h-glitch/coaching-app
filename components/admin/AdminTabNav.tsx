@@ -6,6 +6,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   Activity,
   Building2,
+  Flag,
   ExternalLink,
   GitBranch,
   LayoutDashboard,
@@ -32,7 +33,8 @@ export type AdminTabId =
   | "kennisbank"
   | "settings"
   | "system"
-  | "audit";
+  | "audit"
+  | "moderation";
 
 type AdminTabDef = {
   id: AdminTabId;
@@ -118,6 +120,12 @@ export const ADMIN_NAV_SECTIONS: AdminNavSection[] = [
     id: "platform",
     label: "Platform",
     tabs: [
+      {
+        id: "moderation",
+        label: "Moderatie",
+        description: "Chat-meldingen beoordelen en afhandelen.",
+        icon: Flag,
+      },
       {
         id: "kennisbank",
         label: "Kennisbank",

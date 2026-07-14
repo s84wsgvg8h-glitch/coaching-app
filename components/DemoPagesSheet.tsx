@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search, X } from "lucide-react";
+import { X } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import {
   getDemoPages,
   groupDemoPages,
@@ -64,15 +65,13 @@ export default function DemoPagesSheet({ open, onClose }: DemoPagesSheetProps) {
         </div>
 
         <div className="shrink-0 px-4 py-3">
-          <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-black/30 px-3 py-2">
-            <Search className="h-4 w-4 shrink-0 text-app-muted" />
-            <input
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Zoek pagina…"
-              className="w-full bg-transparent text-[14px] text-app-text outline-none placeholder:text-app-muted"
-            />
-          </div>
+          <SearchInput
+            value={query}
+            onChange={setQuery}
+            placeholder="Zoek pagina…"
+            variant="rounded"
+            showClear={false}
+          />
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
@@ -112,7 +111,7 @@ function DemoPageRow({
       <Link
         href={page.href}
         onClick={onNavigate}
-        className="app-focus-ring flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-white/6 bg-white/[0.03] px-3 py-2.5 text-[13px] font-medium text-app-text transition hover:border-sky-500/30 hover:bg-sky-500/10"
+        className="app-focus-ring flex min-h-[44px] items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-[13px] font-medium text-app-text transition hover:border-sky-500/30 hover:bg-sky-500/10"
       >
         <span>{page.label}</span>
         <span className="text-[11px] text-app-muted">→</span>

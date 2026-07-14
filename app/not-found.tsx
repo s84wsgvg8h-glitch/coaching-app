@@ -1,26 +1,44 @@
-import Link from "next/link";
+"use client";
 
-export default function NotFound() {
+import Link from "next/link";
+import { useAuth } from "@/components/AuthProvider";
+import { isCoachLikeRole } from "@/lib/authRoles";
+import AuthShell, { AuthField, AuthInput } from "@/components/auth/AuthShell";
+
+export default function NotFoundPage() {
+  const { userId, loading } = useAuth();
+  const signedIn = Boolean(userId);
+
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-app-bg px-4 pb-safe pt-safe text-center">
-      <p className="text-[13px] font-semibold uppercase tracking-wide text-app-accent">
-        404
-      </p>
-      <h1 className="mt-3 text-2xl font-semibold text-app-text">
-        Pagina niet gevonden
-      </h1>
-      <p className="mt-2 max-w-md text-[14px] leading-relaxed text-app-muted">
-        Deze pagina bestaat niet of is verplaatst. Ga terug naar je dashboard om
-        verder te gaan.
-      </p>
-      <div className="mt-6 flex w-full max-w-xs flex-col gap-2 sm:flex-row sm:justify-center">
-        <Link href="/dashboard" className="app-btn-primary min-h-[44px]">
-          Naar dashboard
-        </Link>
-        <Link href="/login" className="app-btn-secondary min-h-[44px]">
-          Inloggen
-        </Link>
-      </div>
-    </main>
+    <AuthShell
+      title="Pagina niet gevonden"
+      subtitle={
+        signedIn
+          ? "Deze pagina bestaat niet of is verplaatst. Ga terug naar je dashboard om verder te gaan."
+          : "Deze pagina bestaat niet. Log in om verder te gaan in Limitless Coaching."
+      }
+      footer={
+        !loading ? (
+          <div className="flex flex-col gap-2">
+            {signedIn ? (
+              <Link href="/dashboard" className="app-btn-primary min-h-[44px] text-center">
+                Naar dashboard
+              </Link>
+            ) : (
+              <Link href="/login" className="app-btn-primary min-h-[44px] text-center">
+                Inloggen
+              </Link>
+            )}
+            <Link href="/" className="app-btn-secondary min-h-[44px] text-center">
+              Naar home
+            </Link>
+          </div>
+        ) : null
+      }
+    >
+      <AuthField label="Status">
+        <AuthInput value="404 — pagina niet gevonden" readOnly aria-readonly />
+      </AuthField>
+    </AuthShell>
   );
 }

@@ -8,6 +8,48 @@
   display: none;
 }
 
+@media (max-width: 1023px) {
+  .profile-settings-mobile-nav {
+    display: flex;
+    gap: 0.5rem;
+    overflow-x: auto;
+    padding-bottom: 0.25rem;
+    margin-bottom: 0.25rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .profile-settings-mobile-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .profile-settings-mobile-pill {
+    min-height: 44px;
+  }
+
+  .profile-settings-sidebar {
+    display: none;
+  }
+
+  .profile-settings-root {
+    min-height: 0;
+    flex: 1;
+  }
+
+  .profile-settings-main {
+    border: none;
+    border-radius: 16px;
+    padding: 1rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .profile-settings-mobile-nav {
+    display: none !important;
+  }
+}
+
 .profile-settings-mobile-pill {
   display: inline-flex;
   flex-shrink: 0;
@@ -293,4 +335,211 @@
   margin: 1.5rem 0;
   border: none;
   border-top: 1px solid var(--app-border);
+}
+
+.profile-back-link {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  gap: 0.4rem;
+  border-radius: 12px;
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-surface-muted);
+  padding: 0.45rem 0.85rem;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--app-text);
+  text-decoration: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.profile-back-link:hover {
+  border-color: rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.08);
+}
+
+.profile-section-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.profile-section-card {
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+  padding: 1rem 1.15rem;
+}
+
+@media (min-width: 768px) {
+  .profile-section-card {
+    padding: 1.15rem 1.35rem;
+  }
+}
+
+.profile-section-card-header {
+  margin-bottom: 0.85rem;
+}
+
+.profile-section-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.profile-section-card-desc {
+  margin-top: 0.2rem;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--app-text-muted);
+}
+
+.profile-field-textarea {
+  width: 100%;
+  min-height: 5.5rem;
+  border-radius: 12px;
+  border: 1px solid var(--app-border-strong);
+  background: var(--app-input-bg);
+  padding: 0.7rem 0.9rem;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--app-text);
+  outline: none;
+  resize: vertical;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.profile-field-textarea:focus {
+  border-color: rgba(79, 140, 255, 0.45);
+  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+}
+
+.profile-field-textarea::placeholder {
+  color: var(--app-text-subtle);
+}
+
+.profile-field-hint {
+  margin-top: 0.35rem;
+  font-size: 11px;
+  color: var(--app-text-subtle);
+}
+
+.profile-field-input--prefix {
+  padding-left: 2rem;
+}
+
+.profile-field-prefix {
+  pointer-events: none;
+  position: absolute;
+  left: 0.9rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 14px;
+  color: var(--app-text-subtle);
+}
+
+.profile-stat-card {
+  border-radius: 12px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  padding: 0.75rem 0.9rem;
+}
+
+.profile-stat-card-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--app-text-subtle);
+}
+
+.profile-stat-card-value {
+  margin-top: 0.25rem;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.profile-competition-card {
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  padding: 0.85rem 1rem;
+}
+
+.profile-competition-card + .profile-competition-card {
+  margin-top: 0.65rem;
+}
+
+.profile-competition-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.profile-competition-date {
+  margin-top: 0.15rem;
+  font-size: 12px;
+  color: var(--app-text-muted);
+}
+
+.profile-competition-toggle {
+  flex-shrink: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--app-text-subtle);
+}
+
+.profile-callout {
+  border-radius: 14px;
+  border: 1px solid var(--app-border);
+  padding: 0.85rem 1rem;
+  font-size: 13px;
+}
+
+.profile-callout--violet {
+  border-color: rgba(139, 92, 246, 0.35);
+  background: rgba(139, 92, 246, 0.1);
+  color: var(--app-text);
+}
+
+.profile-callout--amber {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.1);
+  color: var(--app-text);
+}
+
+.profile-callout-title {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.profile-callout-pre {
+  margin-top: 0.5rem;
+  overflow-x: auto;
+  border-radius: 10px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  padding: 0.65rem 0.75rem;
+  font-size: 11px;
+  color: var(--app-text-muted);
+}
+
+.profile-section-enter {
+  animation: profile-section-fade 0.2s ease;
+}
+
+@keyframes profile-section-fade {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

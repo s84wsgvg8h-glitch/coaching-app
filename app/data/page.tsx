@@ -3,6 +3,7 @@
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { useAuth } from "@/components/AuthProvider";
 import { PageContainer, PageHeader } from "@/components/ui/design-system";
 import { PageLoading } from "@/components/ui/Skeleton";
 import { supabase } from "@/lib/supabaseClient";
@@ -20,6 +21,7 @@ import {
 import DeloadSuggestionBanner from "@/components/data/DeloadSuggestionBanner";
 import AthleteProgressTabs from "@/components/data/AthleteProgressTabs";
 import StatsTabs from "@/components/statistics/dashboard/StatsTabs";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type DataTab = "statistieken" | "ruwe-data" | "team" | "performance";
 
@@ -28,52 +30,47 @@ function DataPageInner() {
   const searchParams = useSearchParams();
   const embeddedInChat = searchParams.get("embedded") === "chat";
   const tabParam = searchParams.get("tab");
-  const [role, setRole] = useState("");
-  const [userId, setUserId] = useState("");
-  const [loadingRole, setLoadingRole] = useState(true);
+  const { userId, role, loading: authLoading } = useAuth();
   const [selectedAthleteId, setSelectedAthleteId] = useState("");
   const [athletes, setAthletes] = useState<
     Array<{ id: string; full_name: string | null }>
   >([]);
+  const [athletesLoaded, setAthletesLoaded] = useState(false);
 
   useEffect(() => {
     document.title = "Data & statistieken";
+  }, []);
 
-    async function loadRole() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
+  useEffect(() => {
+    if (authLoading || !userId) return;
 
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
-
-      setUserId(user.id);
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      setRole(profile?.role || "");
-
-      if (isCoachLikeRole(profile?.role)) {
-        const { data: athleteRows } = await supabase
-          .from("profiles")
-          .select("id, full_name")
-          .eq("role", "atleet")
-          .order("full_name", { ascending: true });
-        setAthletes(athleteRows || []);
-        if (athleteRows?.[0]) setSelectedAthleteId(athleteRows[0].id);
-      }
-
-      setLoadingRole(false);
+    if (!isCoachLikeRole(role)) {
+      deferEffectUpdate(() => {
+        setAthletesLoaded(true);
+      });
+      return;
     }
 
-    void loadRole();
-  }, []);
+    let cancelled = false;
+
+    async function loadAthletes() {
+      const { data: athleteRows } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "atleet")
+        .order("full_name", { ascending: true });
+
+      if (cancelled) return;
+      setAthletes(athleteRows || []);
+      if (athleteRows?.[0]) setSelectedAthleteId(athleteRows[0].id);
+      setAthletesLoaded(true);
+    }
+
+    void loadAthletes();
+    return () => {
+      cancelled = true;
+    };
+  }, [authLoading, role, userId]);
 
   const isCoach = isCoachLikeRole(role);
   const activeTab: DataTab =
@@ -110,7 +107,7 @@ function DataPageInner() {
     );
   }
 
-  if (loadingRole) {
+  if (!athletesLoaded && isCoachLikeRole(role)) {
     return (
       <AppShell>
         <PageContainer size="full">

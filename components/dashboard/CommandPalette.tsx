@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import SearchInput from "@/components/ui/SearchInput";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabaseClient";
 import { getNavLinks } from "@/lib/navigation";
@@ -9,6 +10,12 @@ import { useAuth } from "@/components/AuthProvider";
 import { getDemoPages } from "@/lib/demo/demoPages";
 import { getDemoPersona, isDemoMode } from "@/lib/demo/demoMode";
 import { buildProgramWeekPath, resolveProgramEntryForAthlete } from "@/lib/programNavigation";
+import { trackEvent } from "@/lib/analytics";
+import {
+  applyAthleteScope,
+  loadCoachOrgContext,
+} from "@/lib/orgAthleteScope";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type CommandPaletteProps = {
   open: boolean;
@@ -35,27 +42,58 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const [programs, setPrograms] = useState<
     Array<{ athleteId: string; athleteName: string; href: string; label: string }>
   >([]);
+  const [athleteProgramHref, setAthleteProgramHref] = useState<string | null>(null);
 
   useEffect(() => {
     if (!open) {
-      setQuery("");
-      setSelected(0);
+      deferEffectUpdate(() => {
+        setQuery("");
+        setSelected(0);
+      });
       return;
     }
 
+    trackEvent("command_palette_opened");
+
     async function loadData() {
-      if (!userId || !isCoachLikeRole(role)) {
+      if (!userId) {
+        setAthletes([]);
+        setPrograms([]);
+        setAthleteProgramHref(null);
+        return;
+      }
+
+      if (role === "atleet") {
+        const { data: entry } = await resolveProgramEntryForAthlete(userId, userId);
+        setAthleteProgramHref(entry ? buildProgramWeekPath(entry) : "/programs");
         setAthletes([]);
         setPrograms([]);
         return;
       }
 
-      const { data } = await supabase
+      if (!isCoachLikeRole(role)) {
+        setAthletes([]);
+        setPrograms([]);
+        setAthleteProgramHref(null);
+        return;
+      }
+
+      const ctx = await loadCoachOrgContext(userId);
+      if (!ctx) {
+        setAthletes([]);
+        setPrograms([]);
+        return;
+      }
+
+      let query = supabase
         .from("profiles")
         .select("id, full_name")
         .eq("role", "atleet")
         .order("full_name", { ascending: true })
         .limit(40);
+
+      query = applyAthleteScope(query, ctx);
+      const { data } = await query;
 
       const athleteRows = data || [];
       setAthletes(athleteRows);
@@ -96,6 +134,37 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       group: "Pagina's",
       keywords: item.description,
     }));
+
+    const athleteQuickActions: CommandItem[] =
+      role === "atleet"
+        ? [
+            {
+              id: "qa-fill",
+              label: "Vandaag invullen",
+              hint: "Open je programma van vandaag",
+              href: athleteProgramHref || "/programs",
+              group: "Snelle acties",
+            },
+            {
+              id: "qa-chat-athlete",
+              label: "Open chat",
+              href: "/chat",
+              group: "Snelle acties",
+            },
+            {
+              id: "qa-data",
+              label: "Open data",
+              href: "/data",
+              group: "Snelle acties",
+            },
+            {
+              id: "qa-todo-athlete",
+              label: "Taken & habits",
+              href: "/todo",
+              group: "Snelle acties",
+            },
+          ]
+        : [];
 
     const quickActions: CommandItem[] = isCoachLikeRole(role)
       ? [
@@ -174,10 +243,18 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       : [];
 
     const extraAthletePages: CommandItem[] =
-      !isCoachLikeRole(role) && role
+      role === "atleet"
         ? [
+            { id: "/programs", label: "Programma", href: "/programs", group: "Pagina's" },
+            { id: "/chat-athlete", label: "Chat", href: "/chat", group: "Pagina's" },
+            { id: "/data-athlete", label: "Data", href: "/data", group: "Pagina's" },
+            { id: "/invulscore", label: "Invulscore", href: "/invulscore", group: "Pagina's" },
+            { id: "/video-gallery", label: "Video", href: "/video-gallery", group: "Pagina's" },
+            { id: "/kennisbank-athlete", label: "Kennisbank", href: "/kennisbank", group: "Pagina's" },
             { id: "/meet-week", label: "Meet-week", href: "/meet-week", group: "Pagina's" },
             { id: "/merch", label: "Merch", href: "/merch", group: "Pagina's" },
+            { id: "/leaderboard-athlete", label: "Leaderboard", href: "/leaderboard", group: "Pagina's" },
+            { id: "/doelen", label: "Doelen", href: "/doelen", group: "Pagina's" },
           ]
         : [];
 
@@ -188,8 +265,15 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       }
     }
 
-    return [...quickActions, ...demoBrowseItems, ...mergedNav, ...athleteItems, ...programItems];
-  }, [athletes, programs, role]);
+    return [
+      ...athleteQuickActions,
+      ...quickActions,
+      ...demoBrowseItems,
+      ...mergedNav,
+      ...athleteItems,
+      ...programItems,
+    ];
+  }, [athleteProgramHref, athletes, programs, role]);
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -212,7 +296,9 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   );
 
   useEffect(() => {
-    setSelected(0);
+    deferEffectUpdate(() => {
+      setSelected(0);
+    });
   }, [query, open]);
 
   useEffect(() => {
@@ -263,12 +349,19 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       >
         <div className="flex items-center gap-2 border-b border-app-border px-4 py-3">
           <span className="text-[13px] font-medium text-app-subtle">⌘K</span>
-          <input
+          <SearchInput
             autoFocus
             value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Zoek atleten, programma's, berichten, pagina's…"
-            className="min-w-0 flex-1 bg-transparent text-[14px] text-app-text outline-none placeholder:text-app-subtle"
+            onChange={setQuery}
+            placeholder={
+              role === "atleet"
+                ? "Zoek pagina's, acties, programma…"
+                : "Zoek atleten, programma's, berichten, pagina's…"
+            }
+            variant="ghost"
+            hideIcon
+            showClear={false}
+            className="flex-1"
             aria-label="Zoeken"
           />
         </div>
@@ -311,17 +404,4 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
       </div>
     </div>
   );
-}
-
-export function useCommandPaletteHotkey(onOpen: () => void) {
-  useEffect(() => {
-    function onKeyDown(event: KeyboardEvent) {
-      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
-        event.preventDefault();
-        onOpen();
-      }
-    }
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [onOpen]);
 }

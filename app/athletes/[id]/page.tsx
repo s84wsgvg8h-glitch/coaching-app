@@ -1,10 +1,10 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import CoachAthleteHubPanel from "@/components/coach/CoachAthleteHubPanel";
+import CoachAthleteDashboardTodos from "@/components/coach/CoachAthleteDashboardTodos";
 import CoachAthleteSwitcher from "@/components/coach/CoachAthleteSwitcher";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -33,7 +33,7 @@ function CoachAthleteHubContent() {
   const [fillScore, setFillScore] = useState<number | null>(null);
   const [athletes, setAthletes] = useState<AthleteOption[]>([]);
   const [programHref, setProgramHref] = useState<string | null>(null);
-
+  const [coachId, setCoachId] = useState<string | null>(null);
   useEffect(() => {
     document.title = "Atleet hub";
 
@@ -108,6 +108,7 @@ function CoachAthleteHubContent() {
       const name = athlete.full_name || "Atleet";
       setAthleteName(name);
       setAthletes(athleteRows || []);
+      setCoachId(user.id);
       setLoading(false);
 
       const [score, programEntry] = await Promise.all([
@@ -142,13 +143,7 @@ function CoachAthleteHubContent() {
       <div className="mx-auto max-w-5xl">
         <div className="flex flex-wrap items-start justify-between gap-3">
           <div>
-            <Link
-              href="/athletes"
-              className="text-sm font-semibold text-brand-purple hover:underline"
-            >
-              ← Alle atleten
-            </Link>
-            <h1 className="mt-3 text-3xl font-bold text-app-text">{athleteName}</h1>
+            <h1 className="text-3xl font-bold text-app-text">{athleteName}</h1>
             {fillScore !== null ? (
               <p className="mt-3 text-sm text-app-muted">
                 Invulscore afgelopen 30 dagen:{" "}
@@ -172,6 +167,10 @@ function CoachAthleteHubContent() {
             programHref={programHref}
           />
         </div>
+
+        {coachId ? (
+          <CoachAthleteDashboardTodos athleteId={athleteId} coachId={coachId} />
+        ) : null}
       </div>
     </AppShell>
   );

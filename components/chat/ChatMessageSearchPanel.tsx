@@ -66,7 +66,6 @@ export default function ChatMessageSearchPanel({
           value={query}
           onChange={onQueryChange}
           placeholder="Zoeken..."
-          accent
           autoFocus
         />
       </div>

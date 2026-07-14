@@ -325,6 +325,51 @@ export function getBestTotalMeet(
   );
 }
 
+function getMeetMetricValue(
+  meet: OpenIpfMeetResult,
+  metric: LeaderboardSortMetric,
+) {
+  switch (metric) {
+    case "total":
+      return meet.totalKg;
+    case "squat":
+      return meet.squatKg;
+    case "bench":
+      return meet.benchKg;
+    case "deadlift":
+      return meet.deadliftKg;
+    default:
+      return meet.goodlift;
+  }
+}
+
+export function getBestMeetForMetric(
+  meets: OpenIpfMeetResult[],
+  filters: LeaderboardMeetFilters,
+  metric: LeaderboardSortMetric = "total",
+): OpenIpfMeetResult | null {
+  const filtered = filterMeets(meets, filters);
+
+  if (filtered.length === 0) {
+    return null;
+  }
+
+  return filtered.reduce((best, meet) => {
+    const meetValue = getMeetMetricValue(meet, metric);
+    const bestValue = getMeetMetricValue(best, metric);
+
+    if (meetValue > bestValue) {
+      return meet;
+    }
+
+    if (meetValue === bestValue && meet.totalKg > best.totalKg) {
+      return meet;
+    }
+
+    return best;
+  });
+}
+
 export function meetToAggregate(meet: OpenIpfMeetResult): LeaderboardAggregate {
   return {
     sex: meet.sex,
@@ -360,8 +405,9 @@ export function getMetricValue(
 export function aggregateLeaderboardMeets(
   meets: OpenIpfMeetResult[],
   filters: LeaderboardMeetFilters,
+  metric: LeaderboardSortMetric = "total",
 ): LeaderboardAggregate | null {
-  const bestMeet = getBestTotalMeet(meets, filters);
+  const bestMeet = getBestMeetForMetric(meets, filters, metric);
 
   if (!bestMeet) {
     return null;

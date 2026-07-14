@@ -63,7 +63,7 @@ export default function CoachAiCopilotWidget({
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
-            AI Copilot
+            Team digest
           </p>
           <h3 className="text-lg font-bold text-app-text">Weekoverzicht</h3>
         </div>

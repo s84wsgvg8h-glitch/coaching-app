@@ -31,6 +31,7 @@ import type { StatisticsPeriodFilter } from "@/lib/statisticsChartFilters";
 import { getOverviewBlockMetas } from "@/lib/statisticsOverview";
 import StatisticsOverviewDashboard from "@/components/statistics/StatisticsOverviewDashboard";
 import StatsFilterBar from "@/components/statistics/dashboard/StatsFilterBar";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 const CORE_OVERVIEW_CHART_IDS = new Set([
   "e1rm_all",
@@ -84,13 +85,11 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
 
   useEffect(() => {
     if (embedded) {
-      setHeaderPortal(document.getElementById("statistics-header-actions"));
+      deferEffectUpdate(() => {
+        setHeaderPortal(document.getElementById("statistics-header-actions"));
+      });
     }
   }, [embedded]);
-
-  useEffect(() => {
-    void loadStatisticsData();
-  }, []);
 
   const athleteOptions = useMemo(() => {
     const unique: Record<string, string> = {};
@@ -106,16 +105,20 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
 
   useEffect(() => {
     if (!selectedAthleteId && athleteOptions[0]) {
-      setSelectedAthleteId(athleteOptions[0].id);
+      deferEffectUpdate(() => {
+        setSelectedAthleteId(athleteOptions[0].id);
+      });
     }
   }, [athleteOptions, selectedAthleteId]);
 
   useEffect(() => {
     if (!selectedAthleteId) return;
-    const loaded = loadAthleteChartInstances(selectedAthleteId);
-    setChartInstances(
-      loaded.filter((item) => !CORE_OVERVIEW_CHART_IDS.has(item.chartId)),
-    );
+    deferEffectUpdate(() => {
+      const loaded = loadAthleteChartInstances(selectedAthleteId);
+      setChartInstances(
+        loaded.filter((item) => !CORE_OVERVIEW_CHART_IDS.has(item.chartId)),
+      );
+    });
   }, [selectedAthleteId]);
 
   useEffect(() => {
@@ -165,11 +168,13 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
 
   useEffect(() => {
     if (period.preset !== "custom" || blockMetas.length === 0) return;
-    setPeriod((current) => ({
-      ...current,
-      fromBlockId: current.fromBlockId || blockMetas[0]?.blockId,
-      toBlockId: current.toBlockId || blockMetas[blockMetas.length - 1]?.blockId,
-    }));
+    deferEffectUpdate(() => {
+      setPeriod((current) => ({
+        ...current,
+        fromBlockId: current.fromBlockId || blockMetas[0]?.blockId,
+        toBlockId: current.toBlockId || blockMetas[blockMetas.length - 1]?.blockId,
+      }));
+    });
   }, [period.preset, blockMetas]);
 
   const extraChartInstances = useMemo(
@@ -344,6 +349,12 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
 
     setLoading(false);
   }
+
+  useEffect(() => {
+    deferEffectUpdate(() => {
+      void loadStatisticsData();
+    });
+  }, []);
 
   const content = (
     <>

@@ -13,6 +13,7 @@ import {
 } from "@/lib/adminSettings";
 import { AdminPageHeader } from "@/components/admin/AdminPageParts";
 import { AdminLoading, AdminPanel, AdminPanelHeader } from "@/components/admin/AdminUi";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type AdminSettingsTabProps = {
   onToast?: (message: string) => void;
@@ -130,7 +131,9 @@ export default function AdminSettingsTab({ onToast }: AdminSettingsTabProps) {
   }
 
   useEffect(() => {
-    void load();
+    deferEffectUpdate(() => {
+      void load();
+    });
   }, []);
 
   function patchSettings(next: AppSettings) {

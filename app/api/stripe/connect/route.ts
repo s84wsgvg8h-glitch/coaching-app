@@ -1,132 +1,251 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
-import { createClient } from "@supabase/supabase-js";
+import { assertCoachLike } from "@/lib/coachApiAuth";
 import { getAppUrl } from "@/lib/appUrl";
+import {
+  mapConnectAccountStatus,
+  syncCoachConnectProfile,
+} from "@/lib/stripeConnect";
+import {
+  COACH_CONNECT_ACCOUNT_CAPABILITIES,
+  ensureCoachConnectPaymentSetup,
+  getConnectPaymentMethodDisplayStatus,
+  mapConnectPaymentCapabilities,
+} from "@/lib/stripeConnectPaymentMethods";
+import { getStripe } from "@/lib/stripe";
 
-function getStripe() {
-  const key = process.env.STRIPE_SECRET_KEY;
-  if (!key) return null;
-  return new Stripe(key);
+const STRIPE_DB_CONFIG_ERROR =
+  "Stripe-koppeling kon niet worden geladen door een databaseconfiguratiefout.";
+
+function logStripeConnectDbError(
+  context: string,
+  details: { code?: string; message?: string },
+) {
+  console.error("[stripe/connect] database error", {
+    context,
+    code: details.code ?? "unknown",
+    message: details.message ?? "unknown",
+  });
 }
 
-function getServiceSupabase() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!url || !key) return null;
-  return createClient(url, key);
+function stripeDbConfigErrorResponse(
+  context: string,
+  error: { code?: string; message?: string } | null,
+) {
+  logStripeConnectDbError(context, {
+    code: error?.code,
+    message: error?.message,
+  });
+  return NextResponse.json({ error: STRIPE_DB_CONFIG_ERROR }, { status: 500 });
+}
+
+function stripeNotConfiguredResponse() {
+  return NextResponse.json(
+    {
+      error: "Stripe is nog niet geconfigureerd.",
+      configured: false,
+    },
+    { status: 503 },
+  );
 }
 
 export async function POST(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "");
-  if (!token) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
-  }
-
-  const supabase = getServiceSupabase();
-  const stripe = getStripe();
-  if (!supabase || !stripe) {
+  const auth = await assertCoachLike(request);
+  if (auth.error || !auth.db || !auth.userId) {
     return NextResponse.json(
-      { error: "Stripe is nog niet geconfigureerd." },
-      { status: 503 },
+      { error: auth.error ?? "Geen toegang." },
+      { status: auth.error === "Niet ingelogd." ? 401 : 403 },
     );
   }
 
-  const {
-    data: { user },
-    error: authError,
-  } = await supabase.auth.getUser(token);
-
-  if (authError || !user) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const supabase = auth.db;
+  const stripe = getStripe();
+  if (!stripe) {
+    return stripeNotConfiguredResponse();
   }
 
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("role, stripe_connect_account_id")
-    .eq("id", user.id)
+    .select("role, stripe_connect_account_id, full_name")
+    .eq("id", auth.userId)
     .maybeSingle();
 
-  if (!profile || (profile.role !== "coach" && profile.role !== "admin")) {
-    return NextResponse.json({ error: "Geen toegang." }, { status: 403 });
+  if (profileError) {
+    return stripeDbConfigErrorResponse("read-profile-post", profileError);
+  }
+
+  if (!profile) {
+    logStripeConnectDbError("read-profile-post-missing", {
+      message: "profile row missing after coach auth",
+    });
+    return NextResponse.json({ error: STRIPE_DB_CONFIG_ERROR }, { status: 500 });
   }
 
   let accountId = profile.stripe_connect_account_id as string | null;
 
   if (!accountId) {
-    const account = await stripe.accounts.create({
-      type: "express",
-      capabilities: {
-        card_payments: { requested: true },
-        transfers: { requested: true },
-      },
-    });
+    const { data: authUser } = await supabase.auth.admin.getUserById(auth.userId);
+    const coachEmail = authUser?.user?.email?.trim() || undefined;
 
-    accountId = account.id;
+    try {
+      const account = await stripe.accounts.create({
+        type: "express",
+        country: "NL",
+        email: coachEmail,
+        capabilities: COACH_CONNECT_ACCOUNT_CAPABILITIES,
+        metadata: {
+          coach_id: auth.userId,
+          coach_name: (profile.full_name as string | null) || "",
+        },
+      });
 
-    await supabase
-      .from("profiles")
-      .update({ stripe_connect_account_id: accountId })
-      .eq("id", user.id);
+      accountId = account.id;
+
+      try {
+        await ensureCoachConnectPaymentSetup(accountId);
+      } catch (paymentMethodError) {
+        console.warn("[stripe/connect] payment method setup after create failed", {
+          accountId,
+          message:
+            paymentMethodError instanceof Error
+              ? paymentMethodError.message
+              : "unknown",
+        });
+      }
+
+      const { error: updateError } = await supabase
+        .from("profiles")
+        .update({ stripe_connect_account_id: accountId })
+        .eq("id", auth.userId);
+
+      if (updateError) {
+        logStripeConnectDbError("write-stripe-connect-account-id", updateError);
+        return NextResponse.json({ error: STRIPE_DB_CONFIG_ERROR }, { status: 500 });
+      }
+    } catch (error) {
+      const message =
+        error instanceof Error ? error.message : "Stripe-koppeling mislukt.";
+      return NextResponse.json({ error: message }, { status: 502 });
+    }
   }
 
-  const origin = request.headers.get("origin") || getAppUrl();
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    const status = mapConnectAccountStatus(account);
 
-  const accountLink = await stripe.accountLinks.create({
-    account: accountId,
-    refresh_url: `${origin}/betalingen?stripe=refresh`,
-    return_url: `${origin}/betalingen?stripe=success`,
-    type: "account_onboarding",
-  });
+    const origin = request.headers.get("origin") || getAppUrl();
+    const returnBase = `${origin.replace(/\/$/, "")}/betalingen`;
 
-  return NextResponse.json({ url: accountLink.url });
+    if (status.connected) {
+      await syncCoachConnectProfile(supabase, auth.userId, account);
+      let paymentMethodSetup = null;
+      try {
+        paymentMethodSetup = await ensureCoachConnectPaymentSetup(accountId);
+      } catch (paymentMethodError) {
+        console.warn("[stripe/connect] payment method setup on login failed", {
+          accountId,
+          message:
+            paymentMethodError instanceof Error
+              ? paymentMethodError.message
+              : "unknown",
+        });
+      }
+      const loginLink = await stripe.accounts.createLoginLink(accountId);
+      return NextResponse.json({
+        url: loginLink.url,
+        mode: "login",
+        status,
+        paymentCapabilities: mapConnectPaymentCapabilities(account),
+        paymentMethodSetup,
+      });
+    }
+
+    const accountLink = await stripe.accountLinks.create({
+      account: accountId,
+      refresh_url: `${returnBase}?stripe=refresh`,
+      return_url: `${returnBase}?stripe=success`,
+      type: "account_onboarding",
+    });
+
+    return NextResponse.json({ url: accountLink.url, mode: "onboarding", status });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Stripe-koppeling mislukt.";
+    return NextResponse.json({ error: message }, { status: 502 });
+  }
 }
 
 export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get("authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "");
-  if (!token) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
+  const auth = await assertCoachLike(request);
+  if (auth.error || !auth.db || !auth.userId) {
+    return NextResponse.json(
+      { error: auth.error ?? "Geen toegang." },
+      { status: auth.error === "Niet ingelogd." ? 401 : 403 },
+    );
   }
 
-  const supabase = getServiceSupabase();
+  const supabase = auth.db;
   const stripe = getStripe();
-  if (!supabase || !stripe) {
+  if (!stripe) {
     return NextResponse.json({ connected: false, configured: false });
   }
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser(token);
-
-  if (!user) {
-    return NextResponse.json({ error: "Niet ingelogd." }, { status: 401 });
-  }
-
-  const { data: profile } = await supabase
+  const { data: profile, error: profileError } = await supabase
     .from("profiles")
-    .select("stripe_connect_account_id, stripe_connect_onboarded_at")
-    .eq("id", user.id)
+    .select("role, stripe_connect_account_id, stripe_connect_onboarded_at")
+    .eq("id", auth.userId)
     .maybeSingle();
 
-  const accountId = profile?.stripe_connect_account_id as string | null;
+  if (profileError) {
+    return stripeDbConfigErrorResponse("read-profile-get", profileError);
+  }
+
+  if (!profile) {
+    logStripeConnectDbError("read-profile-get-missing", {
+      message: "profile row missing after coach auth",
+    });
+    return NextResponse.json({ error: STRIPE_DB_CONFIG_ERROR }, { status: 500 });
+  }
+
+  const accountId = profile.stripe_connect_account_id as string | null;
   if (!accountId) {
-    return NextResponse.json({ connected: false, configured: true });
+    return NextResponse.json({
+      connected: false,
+      configured: true,
+      pendingOnboarding: false,
+      chargesEnabled: false,
+      payoutsEnabled: false,
+      requirementsDue: [],
+      requirementsEventuallyDue: [],
+      requirementsPastDue: [],
+    });
   }
 
-  const account = await stripe.accounts.retrieve(accountId);
-  const connected = Boolean(account.charges_enabled && account.payouts_enabled);
+  try {
+    const account = await stripe.accounts.retrieve(accountId);
+    const status = await syncCoachConnectProfile(supabase, auth.userId, account);
+    const paymentMethodDisplay = await getConnectPaymentMethodDisplayStatus(
+      stripe,
+      accountId,
+    ).catch(() => null);
 
-  if (connected && !profile?.stripe_connect_onboarded_at) {
-    await supabase
-      .from("profiles")
-      .update({ stripe_connect_onboarded_at: new Date().toISOString() })
-      .eq("id", user.id);
+    return NextResponse.json({
+      connected: status.connected,
+      configured: true,
+      pendingOnboarding: status.pendingOnboarding,
+      accountId: status.accountId,
+      chargesEnabled: status.chargesEnabled,
+      payoutsEnabled: status.payoutsEnabled,
+      requirementsDue: status.requirementsDue,
+      requirementsEventuallyDue: status.requirementsEventuallyDue,
+      requirementsPastDue: status.requirementsPastDue,
+      disabledReason: status.disabledReason,
+      onboardedAt: profile.stripe_connect_onboarded_at,
+      paymentCapabilities: mapConnectPaymentCapabilities(account),
+      paymentMethodDisplay,
+    });
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : "Stripe-status ophalen mislukt.";
+    return NextResponse.json({ error: message }, { status: 502 });
   }
-
-  return NextResponse.json({
-    connected,
-    configured: true,
-    accountId,
-  });
 }

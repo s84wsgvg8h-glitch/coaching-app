@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type RestTimerBarProps = {
   seconds: number;
@@ -12,7 +13,9 @@ export default function RestTimerBar({ seconds, label, onDone }: RestTimerBarPro
   const [remaining, setRemaining] = useState(seconds);
 
   useEffect(() => {
-    setRemaining(seconds);
+    deferEffectUpdate(() => {
+      setRemaining(seconds);
+    });
   }, [seconds]);
 
   useEffect(() => {

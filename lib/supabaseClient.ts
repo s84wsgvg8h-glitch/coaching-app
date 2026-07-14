@@ -12,14 +12,27 @@ function resolveSupabaseEnv() {
   };
 }
 
+function createRealSupabaseClient() {
+  const { url, key } = resolveSupabaseEnv();
+
+  return createClient(url, key, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+      storage:
+        typeof window !== "undefined" ? window.localStorage : undefined,
+    },
+  });
+}
+
 export function getRealSupabase() {
   return getRealSupabaseClient();
 }
 
 function getRealSupabaseClient() {
   if (!realSupabase) {
-    const { url, key } = resolveSupabaseEnv();
-    realSupabase = createClient(url, key);
+    realSupabase = createRealSupabaseClient();
   }
   return realSupabase;
 }

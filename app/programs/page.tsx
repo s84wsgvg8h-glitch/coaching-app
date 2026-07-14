@@ -1,14 +1,30 @@
 "use client";
 
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useEffect, useLayoutEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Dumbbell } from "lucide-react";
+import { useQueryClient } from "@tanstack/react-query";
+import { ChevronRight, Dumbbell, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import EmptyState from "@/components/ui/EmptyState";
 import { PageContainer } from "@/components/ui/design-system";
 import { PageLoading } from "@/components/ui/Skeleton";
+import { showAppToast } from "@/lib/appToast";
+import { getCoachLastAthleteId, setCoachLastAthleteId } from "@/lib/coachLastAthlete";
+import {
+  applyAthleteScope,
+  loadCoachOrgContext,
+} from "@/lib/orgAthleteScope";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/AuthProvider";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import {
+  prefetchAthleteProgramEntry,
+  useAthleteProgramEntry,
+  type AthleteProgramEntryResult,
+} from "@/hooks/useAthleteProgramEntry";
+import { readAthleteProgramHrefSession } from "@/lib/programEntrySessionCache";
+import { queryKeys } from "@/lib/queryKeys";
 import {
   buildProgramWeekPath,
   isNoAthleteProgramMessage,
@@ -16,72 +32,290 @@ import {
   resolveProgramEntryForAthlete,
 } from "@/lib/programNavigation";
 
+type CoachAthleteOption = {
+  id: string;
+  full_name: string | null;
+};
+
+function CoachProgramAthletePicker({
+  athletes,
+  coachId,
+}: {
+  athletes: CoachAthleteOption[];
+  coachId: string;
+}) {
+  const router = useRouter();
+  const [openingId, setOpeningId] = useState<string | null>(null);
+
+  async function openProgram(athleteId: string) {
+    setOpeningId(athleteId);
+    setCoachLastAthleteId(athleteId);
+
+    const { data: entry, error } = await resolveProgramEntryForAthlete(
+      athleteId,
+      coachId,
+    );
+
+    if (error || !entry) {
+      showAppToast(error || "Geen programma gevonden voor deze atleet.");
+      setOpeningId(null);
+      return;
+    }
+
+    router.replace(buildProgramWeekPath(entry, { coachViewingAthlete: true }));
+  }
+
+  if (athletes.length === 0) {
+    return (
+      <AppShell contentClassName="flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3">
+        <PageContainer size="md">
+          <div className="app-card mx-auto max-w-lg p-6 sm:p-8">
+            <EmptyState
+              icon="athletes"
+              title="Nog geen atleten"
+              description="Nodig je eerste atleet uit om een programma te bekijken of te bewerken."
+              action={
+                <Link href="/athletes" className="app-btn-primary inline-flex min-h-[44px]">
+                  Naar atleten
+                </Link>
+              }
+            />
+          </div>
+        </PageContainer>
+      </AppShell>
+    );
+  }
+
+  return (
+    <AppShell contentClassName="flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3">
+      <PageContainer size="md">
+        <div className="app-card mx-auto max-w-lg overflow-hidden">
+          <div className="border-b border-app-border px-5 py-5">
+            <div className="flex items-center gap-3">
+              <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-app-accent/10 text-app-accent">
+                <Dumbbell className="h-5 w-5" strokeWidth={1.75} />
+              </span>
+              <div>
+                <h1 className="text-lg font-semibold text-app-text">
+                  Kies een atleet
+                </h1>
+                <p className="mt-0.5 text-[13px] text-app-muted">
+                  Open het programma van een atleet om verder te gaan.
+                </p>
+              </div>
+            </div>
+          </div>
+          <ul className="divide-y divide-app-border">
+            {athletes.map((athlete) => (
+              <li key={athlete.id}>
+                <button
+                  type="button"
+                  disabled={openingId === athlete.id}
+                  onClick={() => void openProgram(athlete.id)}
+                  className="app-focus-ring flex w-full min-h-[52px] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-app-surface-hover disabled:opacity-60"
+                >
+                  <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-accent-muted text-[11px] font-bold text-app-accent">
+                    {(athlete.full_name || "A")
+                      .split(/\s+/)
+                      .slice(0, 2)
+                      .map((part) => part[0]?.toUpperCase() || "")
+                      .join("")}
+                  </span>
+                  <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-app-text">
+                    {athlete.full_name || "Atleet"}
+                  </span>
+                  <ChevronRight className="h-4 w-4 shrink-0 text-app-muted" />
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="border-t border-app-border px-5 py-4">
+            <Link
+              href="/athletes"
+              className="app-focus-ring inline-flex min-h-[44px] items-center gap-2 text-[13px] font-medium text-app-accent hover:underline"
+            >
+              <Users className="h-4 w-4" />
+              Alle atleten beheren
+            </Link>
+          </div>
+        </div>
+      </PageContainer>
+    </AppShell>
+  );
+}
+
 function ProgramsRedirectContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const athleteQuery = searchParams.get("athlete");
+  const queryClient = useQueryClient();
+  const { userId, role, loading: authLoading } = useAuth();
+  const athleteEntryQuery = useAthleteProgramEntry(
+    userId,
+    userId,
+    role === "atleet" && !authLoading && Boolean(userId),
+  );
   const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
+  const [coachAthletes, setCoachAthletes] = useState<CoachAthleteOption[] | null>(
+    null,
+  );
+  const [showCoachPicker, setShowCoachPicker] = useState(false);
+
+  useLayoutEffect(() => {
+    if (authLoading || !userId || role !== "atleet") return;
+
+    const resolved =
+      athleteEntryQuery.data ??
+      queryClient.getQueryData<AthleteProgramEntryResult>(
+        queryKeys.athleteProgramEntry(userId, userId),
+      );
+
+    const href =
+      resolved?.href ??
+      (resolved ? null : readAthleteProgramHrefSession());
+
+    if (
+      href &&
+      href !== "/programs" &&
+      resolved?.hasProgram !== false
+    ) {
+      router.replace(href);
+    }
+  }, [
+    athleteEntryQuery.data,
+    authLoading,
+    queryClient,
+    role,
+    router,
+    userId,
+  ]);
 
   useEffect(() => {
+    if (authLoading) return;
+
+    if (!userId) {
+      router.replace("/login");
+      return;
+    }
+
     async function redirect() {
-      const {
-        data: { user },
-      } = await supabase.auth.getUser();
-
-      if (!user) {
-        window.location.href = "/login";
-        return;
-      }
-
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("role")
-        .eq("id", user.id)
-        .single();
-
-      const role = profile?.role || "";
-
       if (isCoachLikeRole(role)) {
-        if (!athleteQuery) {
-          router.replace("/athletes");
+        const targetAthleteId =
+          athleteQuery || getCoachLastAthleteId() || null;
+
+        if (!targetAthleteId) {
+          const ctx = await loadCoachOrgContext(userId);
+          if (!ctx) {
+            setShowCoachPicker(true);
+            setCoachAthletes([]);
+            return;
+          }
+
+          let query = supabase
+            .from("profiles")
+            .select("id, full_name")
+            .eq("role", "atleet")
+            .order("full_name", { ascending: true })
+            .limit(50);
+
+          query = applyAthleteScope(query, ctx);
+          const { data } = await query;
+          setCoachAthletes(data || []);
+          setShowCoachPicker(true);
           return;
         }
 
         const { data: entry, error } = await resolveProgramEntryForAthlete(
-          athleteQuery,
-          user.id,
+          targetAthleteId,
+          userId,
         );
 
         if (error || !entry) {
-          alert(error || "Geen programma gevonden voor deze atleet.");
-          router.replace(`/athletes/${athleteQuery}`);
+          if (!athleteQuery) {
+            const ctx = await loadCoachOrgContext(userId);
+            if (ctx) {
+              let query = supabase
+                .from("profiles")
+                .select("id, full_name")
+                .eq("role", "atleet")
+                .order("full_name", { ascending: true })
+                .limit(50);
+              query = applyAthleteScope(query, ctx);
+              const { data } = await query;
+              setCoachAthletes(data || []);
+              setShowCoachPicker(true);
+              showAppToast(error || "Geen programma gevonden voor deze atleet.");
+              return;
+            }
+          }
+
+          showAppToast(error || "Geen programma gevonden voor deze atleet.");
+          router.replace(`/athletes/${targetAthleteId}`);
           return;
         }
 
+        setCoachLastAthleteId(targetAthleteId);
         router.replace(buildProgramWeekPath(entry, { coachViewingAthlete: true }));
         return;
       }
 
-      const { data: entry, error } = await resolveProgramEntryForAthlete(
-        user.id,
-        user.id,
-      );
+      if (role === "atleet") {
+        const entryData =
+          athleteEntryQuery.data ??
+          queryClient.getQueryData<AthleteProgramEntryResult>(
+            queryKeys.athleteProgramEntry(userId, userId),
+          );
 
-      if (!entry && isNoAthleteProgramMessage(error)) {
-        setEmptyMessage(NO_ATHLETE_PROGRAM_MESSAGE);
+        if (!entryData) {
+          if (athleteEntryQuery.isPending) return;
+          await prefetchAthleteProgramEntry(queryClient, userId, userId);
+        }
+
+        const resolved =
+          entryData ??
+          queryClient.getQueryData<AthleteProgramEntryResult>(
+            queryKeys.athleteProgramEntry(userId, userId),
+          );
+
+        if (
+          !resolved?.hasProgram &&
+          isNoAthleteProgramMessage(resolved?.error ?? null)
+        ) {
+          setEmptyMessage(NO_ATHLETE_PROGRAM_MESSAGE);
+          return;
+        }
+
+        if (
+          !resolved?.hasProgram ||
+          !resolved.href ||
+          resolved.href === "/programs"
+        ) {
+          setEmptyMessage(resolved?.error || "Geen programma gevonden.");
+          return;
+        }
+
+        router.replace(resolved.href);
         return;
       }
-
-      if (error || !entry) {
-        setEmptyMessage(error || "Geen programma gevonden.");
-        return;
-      }
-
-      router.replace(buildProgramWeekPath(entry));
     }
 
     void redirect();
-  }, [athleteQuery, router]);
+  }, [
+    athleteEntryQuery.data,
+    athleteEntryQuery.isPending,
+    athleteQuery,
+    authLoading,
+    queryClient,
+    role,
+    router,
+    userId,
+  ]);
+
+  if (showCoachPicker && coachAthletes !== null && userId) {
+    return (
+      <CoachProgramAthletePicker athletes={coachAthletes} coachId={userId} />
+    );
+  }
 
   if (emptyMessage) {
     return (
@@ -110,9 +344,6 @@ function ProgramsRedirectContent() {
     <AppShell>
       <PageContainer size="md">
         <PageLoading label="Programma openen…" />
-        <p className="mt-4 text-center text-[13px] text-app-muted">
-          Als coach selecteer je eerst een atleet om het programma te bekijken.
-        </p>
       </PageContainer>
     </AppShell>
   );

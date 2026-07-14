@@ -8,6 +8,7 @@ type ChatSwipeReplyRowProps = {
   onReply: () => void;
   onSwipeStart?: () => void;
   disabled?: boolean;
+  className?: string;
 };
 
 const REPLY_THRESHOLD = 56;
@@ -18,6 +19,7 @@ export default function ChatSwipeReplyRow({
   onReply,
   onSwipeStart,
   disabled = false,
+  className = "",
 }: ChatSwipeReplyRowProps) {
   const [offset, setOffset] = useState(0);
   const [animating, setAnimating] = useState(false);
@@ -81,7 +83,9 @@ export default function ChatSwipeReplyRow({
   }
 
   return (
-    <div className="chat-swipe-reply-row relative min-w-0 max-w-full overflow-hidden">
+    <div
+      className={`chat-swipe-reply-row relative w-fit max-w-full shrink-0 overflow-hidden ${className}`}
+    >
       <div
         className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center"
         aria-hidden="true"
@@ -93,7 +97,7 @@ export default function ChatSwipeReplyRow({
         />
       </div>
       <div
-        className={`min-w-0 max-w-full ${animating ? "transition-transform duration-200 ease-out" : ""}`}
+        className={`w-fit max-w-full ${animating ? "transition-transform duration-200 ease-out" : ""}`}
         style={{ transform: offset > 0 ? `translateX(${offset}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

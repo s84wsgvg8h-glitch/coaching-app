@@ -8,16 +8,27 @@ import {
   saveAthleteCompetitionNotes,
   saveAthleteCompetitions,
   saveMeetResults,
+  updateCompetition,
+  type AthleteCompetitionNotes,
   type Competition,
   type MeetResults,
 } from "@/lib/competitions";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
+import MeetWeekCompetitionManager from "@/components/meet/MeetWeekCompetitionManager";
 import { markBlockIntakeReviewed, type BlockIntakeWizard } from "@/lib/blockIntakeWizard";
 import {
   formatPaymentDay,
+  formatPaymentDayFieldValue,
   formatPaymentPrice,
+  formatPaymentPriceFieldValue,
+  isPaymentDashInput,
+  isValidPaymentDayInput,
+  isValidPaymentPriceInput,
   loadAthletePayment,
-  PAYMENT_MIGRATION_SQL,
   parsePaymentDayInput,
+  parsePaymentPriceInput,
+  PAYMENT_MIGRATION_SQL,
+  paymentPriceInputHasAmount,
   saveAthletePayment,
 } from "@/lib/athletePayments";
 import {
@@ -47,7 +58,6 @@ type AthleteProfileSectionProps = {
   initialGoalsText?: string | null;
   blockIntakeWizard?: BlockIntakeWizard | null;
   highlightField?: string | null;
-  onSaved?: () => void;
   className?: string;
 };
 
@@ -63,7 +73,6 @@ export default function AthleteProfileSection({
   initialGoalsText = "",
   blockIntakeWizard = null,
   highlightField = null,
-  onSaved,
   className = "",
 }: AthleteProfileSectionProps) {
   const [geboortedatum, setGeboortedatum] = useState(initialGeboortedatum || "");
@@ -83,6 +92,12 @@ export default function AthleteProfileSection({
   const [meetResultsById, setMeetResultsById] = useState<
     Record<string, MeetResults>
   >({});
+  const [competitionMetaById, setCompetitionMetaById] = useState<
+    Record<string, { naam: string; startDate: string; endDate: string }>
+  >({});
+  const [competitionMetaSavingId, setCompetitionMetaSavingId] = useState<
+    string | null
+  >(null);
   const [startingPrs, setStartingPrs] = useState<AthleteStartingPrs>({
     coaching_start_date: null,
     starting_pr_squat: null,
@@ -102,10 +117,61 @@ export default function AthleteProfileSection({
   const saveMessageTimer = useRef<number | null>(null);
 
   useEffect(() => {
-    setGeboortedatum(initialGeboortedatum || "");
-    setLidnummer(initialLidnummer || "");
-    setGoalsText(initialGoalsText || "");
+    deferEffectUpdate(() => {
+      setGeboortedatum(initialGeboortedatum || "");
+      setLidnummer(initialLidnummer || "");
+      setGoalsText(initialGoalsText || "");
+    });
   }, [initialGeboortedatum, initialLidnummer, initialGoalsText, athleteId]);
+
+  function applyCompetitionRegistrationState(
+    upcoming: Competition[],
+    registrations: AthleteCompetitionNotes[],
+  ) {
+    setUpcomingCompetitions(upcoming);
+    setSelectedCompetitionIds(
+      registrations.map((entry) => entry.competitionId),
+    );
+    setCompetitionNotesById(
+      Object.fromEntries(
+        registrations.map((entry) => [
+          entry.competitionId,
+          {
+            coachNotes: entry.coachNotes || "",
+            goals: entry.goals || "",
+          },
+        ]),
+      ),
+    );
+    setMeetResultsById(
+      Object.fromEntries(
+        registrations.map((entry) => [entry.competitionId, entry.meetResults]),
+      ),
+    );
+    setCompetitionMetaById(
+      Object.fromEntries(
+        upcoming.map((competition) => [
+          competition.id,
+          {
+            naam: competition.naam,
+            startDate: competition.start_date,
+            endDate: competition.end_date,
+          },
+        ]),
+      ),
+    );
+  }
+
+  async function reloadCompetitions() {
+    const [competitionsResult, selectedResult] = await Promise.all([
+      loadUpcomingCompetitions(),
+      loadAthleteCompetitionNotes(athleteId),
+    ]);
+    applyCompetitionRegistrationState(
+      competitionsResult.data,
+      selectedResult.data,
+    );
+  }
 
   useEffect(() => {
     let cancelled = false;
@@ -131,40 +197,20 @@ export default function AthleteProfileSection({
 
       if (cancelled) return;
 
-      setUpcomingCompetitions(competitionsResult.data);
-      setSelectedCompetitionIds(
-        selectedResult.data.map((entry) => entry.competitionId),
-      );
-      setCompetitionNotesById(
-        Object.fromEntries(
-          selectedResult.data.map((entry) => [
-            entry.competitionId,
-            {
-              coachNotes: entry.coachNotes || "",
-              goals: entry.goals || "",
-            },
-          ]),
-        ),
-      );
-      setMeetResultsById(
-        Object.fromEntries(
-          selectedResult.data.map((entry) => [
-            entry.competitionId,
-            entry.meetResults,
-          ]),
-        ),
+      applyCompetitionRegistrationState(
+        competitionsResult.data,
+        selectedResult.data,
       );
 
       if (paymentResult) {
         setBetalingPrijs(
-          paymentResult.payment.betaling_prijs !== null
-            ? String(paymentResult.payment.betaling_prijs)
-            : "",
+          formatPaymentPriceFieldValue(paymentResult.payment.betaling_prijs),
         );
         setBetalingDag(
-          paymentResult.payment.betaling_dag !== null
-            ? String(paymentResult.payment.betaling_dag)
-            : "",
+          formatPaymentDayFieldValue(
+            paymentResult.payment.betaling_prijs,
+            paymentResult.payment.betaling_dag,
+          ),
         );
         setPaymentMigrationRequired(paymentResult.migrationRequired);
       }
@@ -232,30 +278,6 @@ export default function AthleteProfileSection({
       }, 2800);
     });
   }, [highlightField, loading]);
-
-  useEffect(() => {
-    if (!canEdit || loading || !autoSaveReady.current) return;
-
-    const timer = window.setTimeout(() => {
-      void saveProfile();
-    }, 800);
-
-    return () => window.clearTimeout(timer);
-  }, [
-    geboortedatum,
-    lidnummer,
-    goalsText,
-    betalingPrijs,
-    betalingDag,
-    ...(canEditCompetitions ? [selectedCompetitionIds] : []),
-    ...(canEditStartingPrs ? [startingPrInputs] : []),
-    canEdit,
-    canEditPayment,
-    canEditCompetitions,
-    canEditStartingPrs,
-    athleteId,
-    loading,
-  ]);
 
   useEffect(() => {
     return () => {
@@ -342,6 +364,75 @@ export default function AthleteProfileSection({
     });
   }
 
+  function updateCompetitionMetaField(
+    competitionId: string,
+    field: "naam" | "startDate" | "endDate",
+    value: string,
+  ) {
+    setCompetitionMetaById((current) => ({
+      ...current,
+      [competitionId]: {
+        naam: current[competitionId]?.naam || "",
+        startDate: current[competitionId]?.startDate || "",
+        endDate: current[competitionId]?.endDate || "",
+        [field]: value,
+      },
+    }));
+  }
+
+  async function saveCompetitionMeta(competitionId: string) {
+    const meta = competitionMetaById[competitionId];
+    if (!meta?.naam.trim() || !meta.startDate) {
+      setMessage("Vul een wedstrijdnaam en startdatum in.");
+      return;
+    }
+
+    const resolvedEndDate = meta.endDate || meta.startDate;
+    if (resolvedEndDate < meta.startDate) {
+      setMessage("De einddatum mag niet voor de startdatum liggen.");
+      return;
+    }
+
+    setCompetitionMetaSavingId(competitionId);
+    setMessage("");
+
+    const { data, error } = await updateCompetition(competitionId, {
+      naam: meta.naam,
+      startDate: meta.startDate,
+      endDate: resolvedEndDate,
+    });
+
+    setCompetitionMetaSavingId(null);
+
+    if (error || !data) {
+      setMessage(error?.message || "Wedstrijd opslaan mislukt.");
+      return;
+    }
+
+    setUpcomingCompetitions((current) =>
+      current
+        .map((competition) =>
+          competition.id === competitionId ? data : competition,
+        )
+        .sort((a, b) => a.start_date.localeCompare(b.start_date)),
+    );
+    setCompetitionMetaById((current) => ({
+      ...current,
+      [competitionId]: {
+        naam: data.naam,
+        startDate: data.start_date,
+        endDate: data.end_date,
+      },
+    }));
+    setMessage("Wedstrijd opgeslagen.");
+    if (saveMessageTimer.current) {
+      window.clearTimeout(saveMessageTimer.current);
+    }
+    saveMessageTimer.current = window.setTimeout(() => {
+      setMessage("");
+    }, 2000);
+  }
+
   async function saveProfile() {
     setSaving(true);
     setMessage("");
@@ -362,23 +453,26 @@ export default function AthleteProfileSection({
     }
 
     if (canEditPayment) {
-      const trimmedPrice = betalingPrijs.trim().replace(",", ".");
-      let parsedPrice: number | null = null;
-
-      if (trimmedPrice) {
-        parsedPrice = Number.parseFloat(trimmedPrice);
-        if (Number.isNaN(parsedPrice) || parsedPrice < 0) {
-          setSaving(false);
-          setMessage("Vul een geldige prijs in.");
-          return;
-        }
+      if (!isValidPaymentPriceInput(betalingPrijs)) {
+        setSaving(false);
+        setMessage("Vul een geldige prijs in of gebruik —.");
+        return;
       }
 
-      const parsedDay = parsePaymentDayInput(betalingDag);
-      if (betalingDag.trim() && parsedDay === null) {
+      if (!isValidPaymentDayInput(betalingDag, betalingPrijs)) {
         setSaving(false);
-        setMessage("Betaaldag moet tussen 1 en 31 liggen.");
+        setMessage(
+          paymentPriceInputHasAmount(betalingPrijs)
+            ? "Betaaldag moet tussen 1 en 31 liggen."
+            : "Gebruik — voor betaaldag als er geen prijs is.",
+        );
         return;
+      }
+
+      const parsedPrice = parsePaymentPriceInput(betalingPrijs);
+      let parsedDay = parsePaymentDayInput(betalingDag);
+      if (parsedPrice === null) {
+        parsedDay = null;
       }
 
       try {
@@ -456,25 +550,41 @@ export default function AthleteProfileSection({
     saveMessageTimer.current = window.setTimeout(() => {
       setMessage("");
     }, 2000);
-    onSaved?.();
   }
 
-  return (
-    <div className={`space-y-8 ${className}`}>
-      <div>
-        <p className="mb-1 text-sm font-semibold uppercase tracking-wide text-gray-400">
-          Atleetprofiel
-        </p>
-        <h2 className="text-2xl font-bold text-black">Atleetgegevens</h2>
-      </div>
+  useEffect(() => {
+    if (!canEdit || loading || !autoSaveReady.current) return;
 
+    const timer = window.setTimeout(() => {
+      void saveProfile();
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [
+    geboortedatum,
+    lidnummer,
+    goalsText,
+    betalingPrijs,
+    betalingDag,
+    ...(canEditCompetitions ? [selectedCompetitionIds] : []),
+    ...(canEditStartingPrs ? [startingPrInputs] : []),
+    canEdit,
+    canEditPayment,
+    canEditCompetitions,
+    canEditStartingPrs,
+    athleteId,
+    loading,
+  ]);
+
+  return (
+    <div className={`profile-section-stack ${className}`}>
       {blockIntakeWizard?.completed_at && !blockIntakeWizard.coach_reviewed_at ? (
-        <div className="rounded-2xl border border-violet-200 bg-violet-50 p-4">
-          <p className="text-sm font-bold text-violet-900">Block-intake (review)</p>
-          <ul className="mt-2 space-y-1 text-sm text-violet-950">
+        <div className="profile-callout profile-callout--violet">
+          <p className="profile-callout-title">Block-intake (review)</p>
+          <ul className="mt-2 space-y-1 text-sm text-app-muted">
             {Object.entries(blockIntakeWizard.answers || {}).map(([key, value]) => (
               <li key={key}>
-                <span className="font-semibold">{key}:</span> {value}
+                <span className="font-semibold text-app-text">{key}:</span> {value}
               </li>
             ))}
           </ul>
@@ -482,7 +592,7 @@ export default function AthleteProfileSection({
             <button
               type="button"
               onClick={() => void markBlockIntakeReviewed(blockIntakeWizard.id)}
-              className="mt-3 rounded-xl bg-black px-3 py-1.5 text-xs font-semibold text-white"
+              className="mt-3 rounded-xl border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover"
             >
               Markeer als bekeken
             </button>
@@ -490,23 +600,20 @@ export default function AthleteProfileSection({
         </div>
       ) : null}
 
-      <div>
-        <h3 className="text-lg font-bold text-black">Opkomende wedstrijden</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          {canEditCompetitions
-            ? "Selecteer de wedstrijden waar deze atleet aan meedoet."
-            : "Wedstrijden uit de wedstrijdkalender."}
-        </p>
+      <section className="profile-section-card">
+        <div className="profile-section-card-header">
+          <h3 className="profile-section-card-title">Opkomende wedstrijden</h3>
+          <p className="profile-section-card-desc">
+            {canEditCompetitions
+              ? "Koppel wedstrijden, pas gegevens aan en stel doelen in."
+              : "Wedstrijden uit de wedstrijdkalender."}
+          </p>
+        </div>
 
         {loading ? (
-          <p className="mt-4 text-sm text-gray-500">Wedstrijden laden...</p>
+          <p className="text-sm text-app-muted">Wedstrijden laden...</p>
         ) : canEditCompetitions ? (
-          upcomingCompetitions.length === 0 ? (
-            <p className="mt-4 text-sm text-gray-500">
-              Er staan nog geen aankomende wedstrijden in de kalender.
-            </p>
-          ) : (
-            <div className="mt-4 space-y-4">
+            <div className="space-y-4">
               {selectedCompetitionIds.length > 0 ? (
                 <div className="space-y-3">
                   {upcomingCompetitions
@@ -515,19 +622,17 @@ export default function AthleteProfileSection({
                     )
                     .map((competition) => {
                       const notes = competitionNotesById[competition.id];
+                      const meta = competitionMetaById[competition.id];
                       const isExpanded = expandedMeetIds.has(competition.id);
 
                       return (
-                        <div
-                          key={competition.id}
-                          className="rounded-2xl border border-black bg-gray-50 px-4 py-3"
-                        >
+                        <div key={competition.id} className="profile-competition-card">
                           <div className="flex items-start gap-3">
                             <input
                               type="checkbox"
                               checked
                               onChange={() => toggleCompetition(competition.id)}
-                              className="mt-1 h-4 w-4 shrink-0 rounded border-gray-300"
+                              className="mt-1 h-4 w-4 shrink-0 rounded border-app-border"
                             />
                             <div className="min-w-0 flex-1">
                               <button
@@ -536,25 +641,87 @@ export default function AthleteProfileSection({
                                 className="flex w-full items-start justify-between gap-3 text-left"
                               >
                                 <span>
-                                  <span className="block font-semibold text-black">
+                                  <span className="profile-competition-name">
                                     {competition.naam}
                                   </span>
-                                  <span className="mt-1 block text-sm text-gray-500">
+                                  <span className="profile-competition-date block">
                                     {formatCompetitionDateRange(
                                       competition.start_date,
                                       competition.end_date,
                                     )}
                                   </span>
                                 </span>
-                                <span className="shrink-0 text-sm text-gray-400">
+                                <span className="profile-competition-toggle">
                                   {isExpanded ? "Inklappen" : "Uitklappen"}
                                 </span>
                               </button>
 
                               {isExpanded ? (
                                 <div className="mt-3 space-y-3">
+                                  <div className="rounded-xl border border-app-border bg-app-surface px-3 py-3">
+                                    <p className="profile-field-label">
+                                      Wedstrijdgegevens
+                                    </p>
+                                    <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                                      <input
+                                        type="text"
+                                        value={meta?.naam ?? competition.naam}
+                                        onChange={(event) =>
+                                          updateCompetitionMetaField(
+                                            competition.id,
+                                            "naam",
+                                            event.target.value,
+                                          )
+                                        }
+                                        placeholder="Naam van wedstrijd"
+                                        className="profile-field-input sm:col-span-2"
+                                      />
+                                      <input
+                                        type="date"
+                                        value={
+                                          meta?.startDate ?? competition.start_date
+                                        }
+                                        onChange={(event) =>
+                                          updateCompetitionMetaField(
+                                            competition.id,
+                                            "startDate",
+                                            event.target.value,
+                                          )
+                                        }
+                                        aria-label="Startdatum"
+                                        className="profile-field-input"
+                                      />
+                                      <input
+                                        type="date"
+                                        value={meta?.endDate ?? competition.end_date}
+                                        onChange={(event) =>
+                                          updateCompetitionMetaField(
+                                            competition.id,
+                                            "endDate",
+                                            event.target.value,
+                                          )
+                                        }
+                                        aria-label="Einddatum"
+                                        className="profile-field-input"
+                                      />
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        void saveCompetitionMeta(competition.id)
+                                      }
+                                      disabled={
+                                        competitionMetaSavingId === competition.id
+                                      }
+                                      className="mt-3 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover disabled:opacity-60"
+                                    >
+                                      {competitionMetaSavingId === competition.id
+                                        ? "Opslaan..."
+                                        : "Wedstrijdgegevens opslaan"}
+                                    </button>
+                                  </div>
                                   <div>
-                                    <label className="mb-1 block text-xs font-semibold text-gray-500">
+                                    <label className="profile-field-label">
                                       Wedstrijddoelen
                                     </label>
                                     <AutoResizeTextarea
@@ -570,7 +737,7 @@ export default function AthleteProfileSection({
                                         void persistCompetitionNotes(competition.id)
                                       }
                                       placeholder="Bijv. 600 kg totaal, geen missed opens..."
-                                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
+                                      className="profile-field-textarea mt-1"
                                     />
                                   </div>
                                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
@@ -583,13 +750,14 @@ export default function AthleteProfileSection({
                                       ] as const
                                     ).map(([field, label]) => (
                                       <div key={field}>
-                                        <label className="mb-1 block text-xs font-semibold text-gray-500">
+                                        <label className="profile-field-label">
                                           {label} (kg)
                                         </label>
                                         <input
                                           type="number"
                                           value={
-                                            meetResultsById[competition.id]?.[field] ?? ""
+                                            meetResultsById[competition.id]?.[field] ??
+                                            ""
                                           }
                                           onChange={(event) => {
                                             const raw = event.target.value;
@@ -597,25 +765,28 @@ export default function AthleteProfileSection({
                                               ...current,
                                               [competition.id]: {
                                                 squatKg:
-                                                  current[competition.id]?.squatKg ?? null,
+                                                  current[competition.id]?.squatKg ??
+                                                  null,
                                                 benchKg:
-                                                  current[competition.id]?.benchKg ?? null,
+                                                  current[competition.id]?.benchKg ??
+                                                  null,
                                                 deadliftKg:
                                                   current[competition.id]?.deadliftKg ??
                                                   null,
                                                 totalKg:
-                                                  current[competition.id]?.totalKg ?? null,
+                                                  current[competition.id]?.totalKg ??
+                                                  null,
                                                 [field]: raw ? Number(raw) : null,
                                               },
                                             }));
                                           }}
-                                          className="w-full rounded-lg border border-gray-300 px-2 py-1.5 text-sm"
+                                          className="profile-field-input mt-1"
                                         />
                                       </div>
                                     ))}
                                   </div>
                                   <div>
-                                    <label className="mb-1 block text-xs font-semibold text-gray-500">
+                                    <label className="profile-field-label">
                                       Coach notities
                                     </label>
                                     <AutoResizeTextarea
@@ -631,7 +802,7 @@ export default function AthleteProfileSection({
                                         void persistCompetitionNotes(competition.id)
                                       }
                                       placeholder="Taper, gewichtsklasse, opbouw..."
-                                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-black"
+                                      className="profile-field-textarea mt-1"
                                     />
                                   </div>
                                 </div>
@@ -643,27 +814,27 @@ export default function AthleteProfileSection({
                     })}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500">
-                  Nog geen wedstrijden geselecteerd.
+                <p className="text-sm text-app-muted">
+                  Nog geen wedstrijden gekoppeld aan deze atleet.
                 </p>
               )}
 
               {upcomingCompetitions.some(
                 (competition) => !selectedCompetitionIds.includes(competition.id),
               ) ? (
-                <div className="rounded-2xl border border-gray-200">
+                <div className="rounded-xl border border-app-border">
                   <button
                     type="button"
                     onClick={() => setShowAllCompetitions((value) => !value)}
-                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-black"
+                    className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-semibold text-app-text"
                   >
                     <span>Meer wedstrijden kiezen</span>
-                    <span className="text-gray-400">
+                    <span className="text-app-text-subtle">
                       {showAllCompetitions ? "Inklappen" : "Uitklappen"}
                     </span>
                   </button>
                   {showAllCompetitions ? (
-                    <div className="space-y-2 border-t border-gray-200 px-4 py-3">
+                    <div className="space-y-2 border-t border-app-border px-4 py-3">
                       {upcomingCompetitions
                         .filter(
                           (competition) =>
@@ -672,19 +843,19 @@ export default function AthleteProfileSection({
                         .map((competition) => (
                           <label
                             key={competition.id}
-                            className="flex cursor-pointer items-start gap-3 rounded-xl border border-gray-200 px-3 py-2"
+                            className="flex cursor-pointer items-start gap-3 rounded-xl border border-app-border bg-app-surface px-3 py-2"
                           >
                             <input
                               type="checkbox"
                               checked={false}
                               onChange={() => toggleCompetition(competition.id)}
-                              className="mt-1 h-4 w-4 rounded border-gray-300"
+                              className="mt-1 h-4 w-4 rounded border-app-border"
                             />
                             <span>
-                              <span className="block font-semibold text-black">
+                              <span className="profile-competition-name block">
                                 {competition.naam}
                               </span>
-                              <span className="mt-1 block text-sm text-gray-500">
+                              <span className="profile-competition-date block">
                                 {formatCompetitionDateRange(
                                   competition.start_date,
                                   competition.end_date,
@@ -697,53 +868,62 @@ export default function AthleteProfileSection({
                   ) : null}
                 </div>
               ) : null}
+
+              <MeetWeekCompetitionManager
+                athleteId={athleteId}
+                linkedCompetitionIds={selectedCompetitionIds}
+                onUpdated={async (competitionId) => {
+                  await reloadCompetitions();
+                  if (competitionId) {
+                    setExpandedMeetIds((current) =>
+                      new Set(current).add(competitionId),
+                    );
+                  }
+                }}
+              />
             </div>
-          )
         ) : selectedCompetitions.length === 0 ? (
-          <p className="mt-4 text-sm text-gray-500">
+          <p className="text-sm text-app-muted">
             Geen opkomende wedstrijden geselecteerd.
           </p>
         ) : (
-          <div className="mt-4 space-y-3">
+          <div>
             {selectedCompetitions.map((competition) => {
               const isExpanded = expandedMeetIds.has(competition.id);
 
               return (
-                <div
-                  key={competition.id}
-                  className="rounded-2xl border border-gray-200 px-4 py-3"
-                >
+                <div key={competition.id} className="profile-competition-card">
                   <button
                     type="button"
                     onClick={() => toggleMeetExpanded(competition.id)}
                     className="flex w-full items-start justify-between gap-3 text-left"
                   >
                     <span>
-                      <p className="font-semibold text-black">{competition.naam}</p>
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="profile-competition-name">{competition.naam}</p>
+                      <p className="profile-competition-date">
                         {formatCompetitionDateRange(
                           competition.start_date,
                           competition.end_date,
                         )}
                       </p>
                     </span>
-                    <span className="shrink-0 text-sm text-gray-400">
+                    <span className="profile-competition-toggle">
                       {isExpanded ? "Inklappen" : "Uitklappen"}
                     </span>
                   </button>
 
                   {isExpanded ? (
-                    <div className="mt-3 space-y-3 border-t border-gray-100 pt-3">
+                    <div className="mt-3 space-y-3 border-t border-app-border pt-3">
                       {competition.goals ? (
-                        <p className="text-sm text-black">
+                        <p className="text-sm text-app-text">
                           <span className="font-semibold">Doelen:</span>{" "}
                           {competition.goals}
                         </p>
                       ) : (
-                        <p className="text-sm text-gray-500">Nog geen doelen ingevuld.</p>
+                        <p className="text-sm text-app-muted">Nog geen doelen ingevuld.</p>
                       )}
                       {competition.meetResults?.totalKg ? (
-                        <p className="text-sm text-black">
+                        <p className="text-sm text-app-text">
                           <span className="font-semibold">Resultaat:</span>{" "}
                           S {competition.meetResults.squatKg ?? "—"} / B{" "}
                           {competition.meetResults.benchKg ?? "—"} / D{" "}
@@ -752,8 +932,8 @@ export default function AthleteProfileSection({
                         </p>
                       ) : null}
                       {competition.coachNotes ? (
-                        <p className="text-sm text-gray-700">
-                          <span className="font-semibold text-black">
+                        <p className="text-sm text-app-muted">
+                          <span className="font-semibold text-app-text">
                             Coach notities:
                           </span>{" "}
                           {competition.coachNotes}
@@ -766,164 +946,175 @@ export default function AthleteProfileSection({
             })}
           </div>
         )}
-      </div>
+      </section>
 
-      <div>
-        <h3 className="text-lg font-bold text-black">Doelen</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Vrije tekst voor doelen, focus en verwachtingen.
-        </p>
+      <section className="profile-section-card">
+        <div className="profile-section-card-header">
+          <h3 className="profile-section-card-title">Doelen</h3>
+          <p className="profile-section-card-desc">
+            Vrije tekst voor doelen, focus en verwachtingen.
+          </p>
+        </div>
         {canEdit ? (
           <AutoResizeTextarea
             value={goalsText}
             onChange={(event) => setGoalsText(event.target.value)}
             placeholder="Bijv. 600 kg totaal op NK, focus op bench techniek..."
-            className="mt-4 w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+            className="profile-field-textarea"
           />
         ) : goalsText ? (
-          <p className="mt-4 whitespace-pre-wrap rounded-2xl bg-gray-50 px-4 py-3 text-sm text-black">
+          <p className="whitespace-pre-wrap rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm text-app-text">
             {goalsText}
           </p>
         ) : (
-          <p className="mt-4 text-sm text-gray-500">Nog geen doelen ingevuld.</p>
+          <p className="text-sm text-app-muted">Nog geen doelen ingevuld.</p>
         )}
-      </div>
+      </section>
 
       {canEditPayment && (
-        <div id="profile-section-payment">
-          <h3 className="text-lg font-bold text-black">Betaling</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Prijs en vaste betaaldag per maand voor deze atleet.
-          </p>
+        <section id="profile-section-payment" className="profile-section-card">
+          <div className="profile-section-card-header">
+            <h3 className="profile-section-card-title">Betaling</h3>
+            <p className="profile-section-card-desc">
+              Prijs en vaste betaaldag per maand voor deze atleet.
+            </p>
+          </div>
 
           {paymentMigrationRequired && (
-            <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-              <p className="font-semibold">Supabase-migratie nog niet gedraaid</p>
-              <p className="mt-1">
+            <div className="profile-callout profile-callout--amber mb-4">
+              <p className="profile-callout-title">Supabase-migratie nog niet gedraaid</p>
+              <p className="mt-1 text-app-muted">
                 Betaling wordt tijdelijk lokaal opgeslagen. Run in Supabase SQL Editor:
               </p>
-              <pre className="mt-2 overflow-x-auto rounded-xl bg-white p-3 text-xs text-black">
-                {PAYMENT_MIGRATION_SQL}
-              </pre>
+              <pre className="profile-callout-pre">{PAYMENT_MIGRATION_SQL}</pre>
             </div>
           )}
 
           {canEdit ? (
-            <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-              <div id="profile-field-betaling_prijs">
-                <label className="mb-2 block text-sm font-semibold">Prijs</label>
+            <div className="profile-field-grid">
+              <div id="profile-field-betaling_prijs" className="profile-field">
+                <label className="profile-field-label">Prijs</label>
                 <div className="relative">
-                  <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">
-                    €
-                  </span>
+                  <span className="profile-field-prefix">€</span>
                   <input
                     type="text"
                     inputMode="decimal"
                     value={betalingPrijs}
-                    onChange={(event) => setBetalingPrijs(event.target.value)}
-                    placeholder="0,00"
-                    className="w-full rounded-2xl border border-gray-300 py-3 pl-9 pr-4 outline-none focus:ring-2 focus:ring-black"
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setBetalingPrijs(next);
+                      if (isPaymentDashInput(next)) {
+                        setBetalingDag("—");
+                      }
+                    }}
+                    placeholder="—"
+                    className="profile-field-input profile-field-input--prefix"
                   />
                 </div>
               </div>
 
-              <div id="profile-field-betaling_dag">
-                <label className="mb-2 block text-sm font-semibold">
+              <div id="profile-field-betaling_dag" className="profile-field">
+                <label className="profile-field-label">
                   Betaaldag (dag van de maand)
                 </label>
                 <input
-                  type="number"
-                  min={1}
-                  max={31}
+                  type="text"
+                  inputMode="numeric"
                   value={betalingDag}
                   onChange={(event) => setBetalingDag(event.target.value)}
-                  placeholder="Bijv. 20"
-                  className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                  placeholder="—"
+                  disabled={isPaymentDashInput(betalingPrijs)}
+                  className="profile-field-input disabled:opacity-60"
                 />
-                <p className="mt-2 text-xs text-gray-500">
-                  Bijvoorbeeld 20 = elke maand op de 20ste.
+                <p className="profile-field-hint">
+                  Gebruik — als de atleet niet betaalt. Anders bijv. 20 = elke
+                  maand op de 20ste.
                 </p>
               </div>
             </div>
           ) : (
-            <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-              <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  Prijs
+            <div className="profile-field-grid">
+              <div className="profile-stat-card">
+                <p className="profile-stat-card-label">Prijs</p>
+                <p className="profile-stat-card-value">
+                  {formatPaymentPrice(parsePaymentPriceInput(betalingPrijs))}
                 </p>
-                <p className="mt-1 font-semibold text-black">
-                  {formatPaymentPrice(
-                    betalingPrijs.trim()
-                      ? Number.parseFloat(betalingPrijs.replace(",", "."))
+              </div>
+              <div className="profile-stat-card">
+                <p className="profile-stat-card-label">Betaaldag</p>
+                <p className="profile-stat-card-value">
+                  {formatPaymentDay(
+                    paymentPriceInputHasAmount(betalingPrijs)
+                      ? parsePaymentDayInput(betalingDag)
                       : null,
                   )}
                 </p>
               </div>
-              <div className="rounded-2xl bg-gray-50 px-4 py-3">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                  Betaaldag
-                </p>
-                <p className="mt-1 font-semibold text-black">
-                  {formatPaymentDay(parsePaymentDayInput(betalingDag))}
+            </div>
+          )}
+        </section>
+      )}
+
+      <section className="profile-section-card">
+        <div className="profile-section-card-header">
+          <h3 className="profile-section-card-title">Persoonsgegevens</h3>
+          <p className="profile-section-card-desc">Geboortedatum en lidnummer.</p>
+        </div>
+
+        {canEdit ? (
+          <div className="profile-field-grid">
+            <div id="profile-field-geboortedatum" className="profile-field">
+              <label className="profile-field-label">Geboortedatum</label>
+              <input
+                type="date"
+                value={geboortedatum}
+                onChange={(event) => setGeboortedatum(event.target.value)}
+                className="profile-field-input"
+              />
+            </div>
+            <div id="profile-field-lidnummer" className="profile-field">
+              <label className="profile-field-label">Lidnummer</label>
+              <input
+                type="text"
+                value={lidnummer}
+                onChange={(event) => setLidnummer(event.target.value)}
+                className="profile-field-input"
+              />
+            </div>
+          </div>
+        ) : (
+          <div className="profile-field-grid">
+            {geboortedatum && (
+              <div className="profile-stat-card">
+                <p className="profile-stat-card-label">Geboortedatum</p>
+                <p className="profile-stat-card-value">
+                  {new Date(`${geboortedatum}T12:00:00`).toLocaleDateString("nl-NL")}
                 </p>
               </div>
-            </div>
-          )}
-        </div>
-      )}
-
-      {canEdit ? (
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-2">
-          <div id="profile-field-geboortedatum">
-            <label className="mb-2 block text-sm font-semibold">Geboortedatum</label>
-            <input
-              type="date"
-              value={geboortedatum}
-              onChange={(event) => setGeboortedatum(event.target.value)}
-              className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
-            />
+            )}
+            {lidnummer && (
+              <div className="profile-stat-card">
+                <p className="profile-stat-card-label">Lidnummer</p>
+                <p className="profile-stat-card-value">{lidnummer}</p>
+              </div>
+            )}
+            {!geboortedatum && !lidnummer ? (
+              <p className="text-sm text-app-muted">Nog geen persoonsgegevens ingevuld.</p>
+            ) : null}
           </div>
-          <div id="profile-field-lidnummer">
-            <label className="mb-2 block text-sm font-semibold">Lidnummer</label>
-            <input
-              type="text"
-              value={lidnummer}
-              onChange={(event) => setLidnummer(event.target.value)}
-              className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
-            />
-          </div>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {geboortedatum && (
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Geboortedatum
-              </p>
-              <p className="mt-1 font-semibold text-black">
-                {new Date(`${geboortedatum}T12:00:00`).toLocaleDateString("nl-NL")}
-              </p>
-            </div>
-          )}
-          {lidnummer && (
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Lidnummer
-              </p>
-              <p className="mt-1 font-semibold text-black">{lidnummer}</p>
-            </div>
-          )}
-        </div>
-      )}
+        )}
+      </section>
 
       {canEditVideoSettings ? (
-        <div className="mt-6 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
-          <h3 className="text-lg font-bold text-black">Trainingsvideo&apos;s</h3>
-          <p className="mt-1 text-sm text-gray-500">
-            Kies waar setvideo&apos;s naartoe gaan als deze atleet ze uploadt in
-            het programma.
-          </p>
-          <label className="mt-4 flex items-start gap-3 text-sm text-black">
+        <section className="profile-section-card">
+          <div className="profile-section-card-header">
+            <h3 className="profile-section-card-title">Trainingsvideo&apos;s</h3>
+            <p className="profile-section-card-desc">
+              Kies waar setvideo&apos;s naartoe gaan als deze atleet ze uploadt in het
+              programma.
+            </p>
+          </div>
+          <label className="flex items-start gap-3 text-sm text-app-text">
             <input
               type="checkbox"
               checked={videoSubmitToReview}
@@ -945,29 +1136,28 @@ export default function AthleteProfileSection({
                   );
                 }
               }}
-              className="mt-1"
+              className="mt-1 h-4 w-4 rounded border-app-border"
             />
             <span>
               Stuur trainingsvideo&apos;s naar{" "}
-              <span className="font-semibold">video review</span> in plaats van
-              chat
+              <span className="font-semibold">video review</span> in plaats van chat
             </span>
           </label>
-        </div>
+        </section>
       ) : null}
 
-      <div id="profile-section-starting-prs">
-        <h3 className="text-lg font-bold text-black">Coaching & start-PR&apos;s</h3>
-        <p className="mt-1 text-sm text-gray-500">
-          Startdatum bij coach en beginwaarden voor squat, bench en deadlift.
-        </p>
+      <section id="profile-section-starting-prs" className="profile-section-card">
+        <div className="profile-section-card-header">
+          <h3 className="profile-section-card-title">Coaching & start-PR&apos;s</h3>
+          <p className="profile-section-card-desc">
+            Startdatum bij coach en beginwaarden voor squat, bench en deadlift.
+          </p>
+        </div>
 
         {canEditStartingPrs ? (
-          <div className="mt-4 grid grid-cols-1 gap-5 md:grid-cols-2">
-            <div id="profile-field-coaching_start_date">
-              <label className="mb-2 block text-sm font-semibold">
-                Startdatum coaching
-              </label>
+          <div className="profile-field-grid">
+            <div id="profile-field-coaching_start_date" className="profile-field">
+              <label className="profile-field-label">Startdatum coaching</label>
               <input
                 type="date"
                 value={startingPrInputs.coaching_start_date}
@@ -977,13 +1167,11 @@ export default function AthleteProfileSection({
                     coaching_start_date: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                className="profile-field-input"
               />
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Start-PR squat (kg)
-              </label>
+            <div className="profile-field">
+              <label className="profile-field-label">Start-PR squat (kg)</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -994,13 +1182,11 @@ export default function AthleteProfileSection({
                     starting_pr_squat: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                className="profile-field-input"
               />
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Start-PR bench (kg)
-              </label>
+            <div className="profile-field">
+              <label className="profile-field-label">Start-PR bench (kg)</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -1011,13 +1197,11 @@ export default function AthleteProfileSection({
                     starting_pr_bench: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                className="profile-field-input"
               />
             </div>
-            <div>
-              <label className="mb-2 block text-sm font-semibold">
-                Start-PR deadlift (kg)
-              </label>
+            <div className="profile-field">
+              <label className="profile-field-label">Start-PR deadlift (kg)</label>
               <input
                 type="text"
                 inputMode="decimal"
@@ -1028,50 +1212,42 @@ export default function AthleteProfileSection({
                     starting_pr_deadlift: event.target.value,
                   }))
                 }
-                className="w-full rounded-2xl border border-gray-300 px-4 py-3 outline-none focus:ring-2 focus:ring-black"
+                className="profile-field-input"
               />
             </div>
           </div>
         ) : (
-          <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-2">
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Startdatum coaching
-              </p>
-              <p className="mt-1 font-semibold text-black">
+          <div className="profile-field-grid">
+            <div className="profile-stat-card">
+              <p className="profile-stat-card-label">Startdatum coaching</p>
+              <p className="profile-stat-card-value">
                 {formatCoachingStartDate(startingPrs.coaching_start_date)}
               </p>
             </div>
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Start-PR squat
-              </p>
-              <p className="mt-1 font-semibold text-black">
+            <div className="profile-stat-card">
+              <p className="profile-stat-card-label">Start-PR squat</p>
+              <p className="profile-stat-card-value">
                 {formatStartingPr(startingPrs.starting_pr_squat)}
               </p>
             </div>
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Start-PR bench
-              </p>
-              <p className="mt-1 font-semibold text-black">
+            <div className="profile-stat-card">
+              <p className="profile-stat-card-label">Start-PR bench</p>
+              <p className="profile-stat-card-value">
                 {formatStartingPr(startingPrs.starting_pr_bench)}
               </p>
             </div>
-            <div className="rounded-2xl bg-gray-50 px-4 py-3">
-              <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
-                Start-PR deadlift
-              </p>
-              <p className="mt-1 font-semibold text-black">
+            <div className="profile-stat-card">
+              <p className="profile-stat-card-label">Start-PR deadlift</p>
+              <p className="profile-stat-card-value">
                 {formatStartingPr(startingPrs.starting_pr_deadlift)}
               </p>
             </div>
           </div>
         )}
-      </div>
+      </section>
 
       {canEdit && (
-        <div className="flex min-h-6 items-center gap-3 text-sm text-gray-500">
+        <div className="profile-save-status">
           {saving ? <span>Opslaan...</span> : null}
           {message ? <span>{message}</span> : null}
           {!saving && !message ? (

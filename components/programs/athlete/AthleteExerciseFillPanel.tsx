@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef } from "react";
 import { normalizeExerciseFormat } from "@/lib/exerciseFormat";
 import {
   ATHLETE_PLACEHOLDER_INPUT_CLASS,
@@ -31,6 +32,7 @@ type AthleteExerciseFillPanelProps = {
   previousWeekMessage: string;
   previousWeekData: PreviousWeekSetData | null;
   uploadingVideoSetKey: string;
+  videoRecorderActive?: boolean;
   onClose: () => void;
   onToggleNotePanel: () => void;
   onExerciseNoteChange: (value: string) => void;
@@ -57,6 +59,7 @@ type AthleteExerciseFillPanelProps = {
     rows: AthleteExerciseSet[],
     field: "reps" | "weight" | "rpe",
   ) => string;
+  readOnly?: boolean;
 };
 
 export default function AthleteExerciseFillPanel({
@@ -75,6 +78,7 @@ export default function AthleteExerciseFillPanel({
   previousWeekMessage,
   previousWeekData,
   uploadingVideoSetKey,
+  videoRecorderActive = false,
   onClose,
   onToggleNotePanel,
   onExerciseNoteChange,
@@ -90,9 +94,115 @@ export default function AthleteExerciseFillPanel({
   getSetVideoKey,
   getE1rmLabel,
   getAverageFromRows,
+  readOnly = false,
 }: AthleteExerciseFillPanelProps) {
+  const panelRef = useRef<HTMLElement>(null);
+  const dismissHandleRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
+  const bodyRef = useRef<HTMLDivElement>(null);
+
+  function handleNumericSetUpdate(
+    setNumber: number,
+    field: "reps" | "weight" | "rpe",
+    raw: string,
+  ) {
+    const filtered = raw.replace(/[^0-9.,]/g, "");
+    onUpdateSet(setNumber, field, filtered);
+  }
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    const handle = dismissHandleRef.current;
+    const header = headerRef.current;
+    const body = bodyRef.current;
+    if (!panel || !handle || !header || !body) return;
+
+    const mobileQuery = window.matchMedia("(max-width: 1023px)");
+    if (!mobileQuery.matches) return;
+
+    let startY = 0;
+    let dragging = false;
+
+    function resetTransform() {
+      panel!.style.transform = "";
+      panel!.style.transition = "";
+    }
+
+    function canStartDrag(target: EventTarget | null) {
+      if (!handle || !header || !body) return false;
+      if (body.scrollTop > 2) return false;
+      if (!target || !(target instanceof Element)) return false;
+      if (
+        target.closest(
+          "input, textarea, button, a, video, .athlete-set-copy-btn, .athlete-set-video-btn",
+        )
+      ) {
+        return false;
+      }
+      if (handle.contains(target) || header.contains(target)) return true;
+      if (body.contains(target)) return true;
+      return false;
+    }
+
+    function onTouchStart(event: TouchEvent) {
+      if (!canStartDrag(event.target)) return;
+      startY = event.touches[0]?.clientY ?? 0;
+      dragging = true;
+      panel!.style.transition = "none";
+    }
+
+    function onTouchMove(event: TouchEvent) {
+      if (!dragging) return;
+      if (body!.scrollTop > 2) {
+        dragging = false;
+        resetTransform();
+        return;
+      }
+
+      const currentY = event.touches[0]?.clientY ?? startY;
+      const deltaY = currentY - startY;
+      if (deltaY <= 0) return;
+
+      event.preventDefault();
+      panel!.style.transform = `translateY(${Math.min(deltaY, 160)}px)`;
+    }
+
+    function onTouchEnd(event: TouchEvent) {
+      if (!dragging) return;
+      dragging = false;
+      const endY = event.changedTouches[0]?.clientY ?? startY;
+      const deltaY = endY - startY;
+
+      panel!.style.transition = "transform 0.22s ease";
+      if (deltaY > 72 && body!.scrollTop <= 2) {
+        panel!.style.transform = "translateY(100%)";
+        window.setTimeout(onClose, 180);
+        return;
+      }
+
+      resetTransform();
+    }
+
+    panel.addEventListener("touchstart", onTouchStart, { passive: true });
+    panel.addEventListener("touchmove", onTouchMove, { passive: false });
+    panel.addEventListener("touchend", onTouchEnd, { passive: true });
+    panel.addEventListener("touchcancel", onTouchEnd, { passive: true });
+
+    return () => {
+      panel.removeEventListener("touchstart", onTouchStart);
+      panel.removeEventListener("touchmove", onTouchMove);
+      panel.removeEventListener("touchend", onTouchEnd);
+      panel.removeEventListener("touchcancel", onTouchEnd);
+      resetTransform();
+    };
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-40 athlete-exercise-panel-root">
+    <div
+      className={`athlete-exercise-panel-root fixed inset-0 z-50 overflow-x-hidden ${
+        videoRecorderActive ? "pointer-events-none" : ""
+      }`}
+    >
       <button
         type="button"
         aria-label="Sluit oefening invullen"
@@ -101,14 +211,24 @@ export default function AthleteExerciseFillPanel({
       />
 
       <section
+        ref={panelRef}
         data-athlete-set-panel="true"
-        className="athlete-exercise-panel absolute bottom-0 left-0 right-0 flex h-[min(78dvh,calc(100dvh-env(safe-area-inset-bottom)-0.5rem))] w-full max-lg:animate-[slidepanel_0.22s_ease-out] flex-col overflow-hidden lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[82vh] lg:w-[min(640px,calc(100vw-32px))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:animate-[floatpanel_0.18s_ease-out]"
+        className="athlete-exercise-panel absolute bottom-0 left-0 right-0 flex h-[min(78dvh,calc(100dvh-env(safe-area-inset-bottom)-0.5rem))] w-full max-w-full min-w-0 max-lg:animate-[slidepanel_0.22s_ease-out] flex-col overflow-hidden lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[82vh] lg:w-[min(640px,calc(100vw-32px))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:animate-[floatpanel_0.18s_ease-out]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="mx-auto mb-2 mt-3 h-1 w-10 shrink-0 rounded-full bg-white/20 lg:hidden" />
+        <div
+          ref={dismissHandleRef}
+          className="athlete-exercise-panel-dismiss-handle shrink-0 touch-none lg:hidden"
+          aria-hidden="true"
+        >
+          <div className="mx-auto mt-3 h-1 w-10 rounded-full bg-app-surface-hover" />
+        </div>
 
-        <div className="athlete-exercise-panel-header flex shrink-0 items-start justify-between gap-3 md:gap-4">
-          <div className="min-w-0 pr-2">
+        <div
+          ref={headerRef}
+          className="athlete-exercise-panel-header flex shrink-0 items-start justify-between gap-3 md:gap-4 touch-none lg:touch-auto"
+        >
+          <div className="min-w-0 flex-1 pr-2">
             <p className="mb-1.5 text-xs text-app-muted md:text-sm">
               {day.title} · {dayDateLabel}
             </p>
@@ -118,14 +238,6 @@ export default function AthleteExerciseFillPanel({
             <p className="mt-1 text-xs text-app-muted md:text-sm">
               Voorgeschreven: {prescribedLabel}
             </p>
-
-            <button
-              type="button"
-              onClick={onTogglePreviousWeek}
-              className="athlete-exercise-panel-secondary-btn mt-3"
-            >
-              {previousWeekOpen ? "Vorige week verbergen" : "Bekijk vorige week"}
-            </button>
           </div>
 
           <button
@@ -138,50 +250,56 @@ export default function AthleteExerciseFillPanel({
           </button>
         </div>
 
-        <div className="athlete-exercise-panel-body min-h-0 flex-1 overflow-y-auto overscroll-contain">
-          <div
-            className={`athlete-exercise-panel-notes mb-4 pt-2 ${
-              notePanelOpen ? "is-open" : ""
-            }`}
-          >
+        <div
+          ref={bodyRef}
+          className="athlete-exercise-panel-body min-h-0 min-w-0 max-w-full flex-1 overflow-x-hidden overflow-y-auto overscroll-contain"
+        >
+          {readOnly ? (
+            <p className="mb-3 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs text-app-muted">
+              Alleen bekijken — dit is precies wat de atleet ziet en heeft ingevuld.
+            </p>
+          ) : null}
+          <div className="athlete-exercise-panel-action-chips mb-4 pt-2">
             <button
               type="button"
               onClick={onToggleNotePanel}
-              className="athlete-exercise-panel-notes-header"
+              className={`athlete-exercise-panel-action-chip athlete-exercise-panel-action-chip--notes ${
+                notePanelOpen ? "is-active" : ""
+              }`}
             >
-              <div className="flex min-w-0 flex-1 items-start justify-between gap-3">
-                <div className="min-w-0 text-left">
-                  <p className="athlete-exercise-panel-notes-label">Athlete notes</p>
-                  {!notePanelOpen && exerciseNote.trim() ? (
-                    <p className="athlete-exercise-panel-notes-preview">
-                      {exerciseNote}
-                    </p>
-                  ) : (
-                    <p className="text-sm text-app-muted">
-                      {notePanelOpen
-                        ? "Bewerk je note bij deze oefening"
-                        : exerciseNote.trim()
-                          ? "Bekijk of bewerk je note"
-                          : "Voeg een note toe bij deze oefening"}
-                    </p>
-                  )}
-                </div>
-                <span className="shrink-0 text-lg font-bold text-emerald-400">
-                  {notePanelOpen ? "−" : "+"}
+              <span className="athlete-exercise-panel-action-chip-label">
+                Athlete notes
+              </span>
+              {!notePanelOpen && exerciseNote.trim() ? (
+                <span className="athlete-exercise-panel-action-chip-preview">
+                  {exerciseNote}
                 </span>
-              </div>
+              ) : null}
             </button>
 
-            {notePanelOpen ? (
-              <textarea
-                value={exerciseNote}
-                onChange={(event) => onExerciseNoteChange(event.target.value)}
-                onBlur={(event) => onExerciseNoteBlur(event.target.value)}
-                placeholder="Schrijf hier je note bij deze oefening..."
-                className="athlete-exercise-panel-notes-input"
-              />
-            ) : null}
+            <button
+              type="button"
+              onClick={onTogglePreviousWeek}
+              className={`athlete-exercise-panel-action-chip athlete-exercise-panel-action-chip--previous ${
+                previousWeekOpen ? "is-active" : ""
+              }`}
+            >
+              <span className="athlete-exercise-panel-action-chip-label">
+                {previousWeekOpen ? "Verberg vorige week" : "Bekijk vorige week"}
+              </span>
+            </button>
           </div>
+
+          {notePanelOpen ? (
+            <textarea
+              value={exerciseNote}
+              onChange={(event) => onExerciseNoteChange(event.target.value)}
+              onBlur={(event) => onExerciseNoteBlur(event.target.value)}
+              placeholder="Schrijf hier je note bij deze oefening..."
+              className="athlete-exercise-panel-notes-input mb-4"
+              readOnly={readOnly}
+            />
+          ) : null}
 
           {previousWeekOpen ? (
             <div className="athlete-exercise-panel-previous-week mb-4">
@@ -253,7 +371,7 @@ export default function AthleteExerciseFillPanel({
             </div>
           ) : null}
 
-          {loadingSets ? (
+          {loadingSets && !readOnly ? (
             <div className="athlete-exercise-panel-loading">Sets laden...</div>
           ) : (
             <div className="space-y-2">
@@ -262,8 +380,7 @@ export default function AthleteExerciseFillPanel({
                 <p>Set</p>
                 <p>Reps</p>
                 <p>Gewicht</p>
-                <p className="flex items-center gap-1">
-                  isRPE
+                <p>
                   <Link
                     href="/rpe-tabel"
                     target="_blank"
@@ -271,7 +388,7 @@ export default function AthleteExerciseFillPanel({
                     className="athlete-exercise-panel-rpe-link"
                     onClick={(event) => event.stopPropagation()}
                   >
-                    RPE?
+                    RPE
                   </Link>
                 </p>
                 <p className="text-center">↓</p>
@@ -289,7 +406,7 @@ export default function AthleteExerciseFillPanel({
                         <button
                           type="button"
                           onClick={() => onOpenVideoRecorder(row.set_number)}
-                          disabled={isUploading}
+                          disabled={readOnly || isUploading}
                           className={`athlete-set-video-btn ${
                             video?.video_url ? "has-video" : ""
                           } ${isUploading ? "is-loading" : ""}`}
@@ -309,7 +426,7 @@ export default function AthleteExerciseFillPanel({
                         data-set-number={row.set_number}
                         value={row.reps || ""}
                         onChange={(event) =>
-                          onUpdateSet(row.set_number, "reps", event.target.value)
+                          handleNumericSetUpdate(row.set_number, "reps", event.target.value)
                         }
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "reps", event.target.value)
@@ -321,6 +438,7 @@ export default function AthleteExerciseFillPanel({
                             : "8"
                         }
                         inputMode="numeric"
+                        readOnly={readOnly}
                         className={withOverdueInputClass(
                           `athlete-set-input ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                           dayIsPast && isEmptySetField(row.reps),
@@ -333,7 +451,7 @@ export default function AthleteExerciseFillPanel({
                         data-set-number={row.set_number}
                         value={row.weight || ""}
                         onChange={(event) =>
-                          onUpdateSet(row.set_number, "weight", event.target.value)
+                          handleNumericSetUpdate(row.set_number, "weight", event.target.value)
                         }
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "weight", event.target.value)
@@ -341,6 +459,7 @@ export default function AthleteExerciseFillPanel({
                         onKeyDown={onSetKeyDown}
                         placeholder="100"
                         inputMode="decimal"
+                        readOnly={readOnly}
                         className={withOverdueInputClass(
                           `athlete-set-input ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                           dayIsPast && isEmptySetField(row.weight),
@@ -353,7 +472,7 @@ export default function AthleteExerciseFillPanel({
                         data-set-number={row.set_number}
                         value={row.rpe || ""}
                         onChange={(event) =>
-                          onUpdateSet(row.set_number, "rpe", event.target.value)
+                          handleNumericSetUpdate(row.set_number, "rpe", event.target.value)
                         }
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "rpe", event.target.value)
@@ -361,6 +480,7 @@ export default function AthleteExerciseFillPanel({
                         onKeyDown={onSetKeyDown}
                         placeholder="8"
                         inputMode="decimal"
+                        readOnly={readOnly}
                         className={withOverdueInputClass(
                           `athlete-set-input ${ATHLETE_PLACEHOLDER_INPUT_CLASS}`,
                           dayIsPast && isEmptySetField(row.rpe),
@@ -370,7 +490,7 @@ export default function AthleteExerciseFillPanel({
                       <button
                         type="button"
                         onClick={() => onCopySetDown(row)}
-                        disabled={row.set_number >= setRows.length}
+                        disabled={readOnly || row.set_number >= setRows.length}
                         className={`athlete-set-copy-btn ${
                           row.set_number >= setRows.length ? "is-disabled" : ""
                         }`}
@@ -392,7 +512,7 @@ export default function AthleteExerciseFillPanel({
                           className="w-full max-h-[220px] rounded-xl bg-black"
                         />
                         {video.caption?.trim() ? (
-                          <p className="mt-2 whitespace-pre-wrap rounded-xl bg-white/5 px-3 py-2 text-sm text-app-muted">
+                          <p className="mt-2 whitespace-pre-wrap rounded-xl bg-app-surface-muted px-3 py-2 text-sm text-app-muted">
                             {video.caption}
                           </p>
                         ) : null}

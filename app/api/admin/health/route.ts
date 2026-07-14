@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { assertAdmin } from "@/lib/adminApiAuth";
 import { fetchTableCounts } from "@/lib/adminAnalytics";
 import { loadRecentCalendarSyncLogs } from "@/lib/calendarSyncLog";
+import { getStripeCoachingHealthChecks } from "@/lib/stripeCoachingHealth";
 
 export async function GET(request: Request) {
   try {
@@ -23,6 +24,7 @@ export async function GET(request: Request) {
       ),
       serviceRolePresent: Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY),
       cronSecretPresent: Boolean(process.env.CRON_SECRET),
+      stripeCoaching: getStripeCoachingHealthChecks(),
     };
 
     return NextResponse.json({

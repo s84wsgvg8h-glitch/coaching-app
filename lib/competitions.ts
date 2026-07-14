@@ -446,6 +446,34 @@ export async function createCompetition(input: {
   };
 }
 
+export async function updateCompetition(
+  id: string,
+  input: {
+    naam: string;
+    startDate: string;
+    endDate?: string;
+  },
+) {
+  const resolvedEndDate = input.endDate?.trim() || input.startDate;
+
+  const { data, error } = await supabase
+    .from("wedstrijden")
+    .update({
+      naam: input.naam.trim(),
+      datum: input.startDate,
+      start_date: input.startDate,
+      end_date: resolvedEndDate,
+    })
+    .eq("id", id)
+    .select("id, naam, start_date, end_date, created_at")
+    .single();
+
+  return {
+    data: (data as Competition | null) ?? null,
+    error,
+  };
+}
+
 export async function linkAthleteToCompetition(
   athleteId: string,
   competitionId: string,

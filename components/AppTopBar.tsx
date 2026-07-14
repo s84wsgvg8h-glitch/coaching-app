@@ -9,6 +9,7 @@ import {
   CHAT_UNREAD_CHANGED_EVENT,
   getUnreadMessageCount,
 } from "@/lib/chatUnread";
+import { SearchFieldTrigger } from "@/components/ui/SearchInput";
 
 type AppTopBarProps = {
   onSearchClick: () => void;
@@ -80,18 +81,14 @@ export default function AppTopBar({ onSearchClick }: AppTopBarProps) {
         <div className="hidden min-w-0 flex-1 sm:block" aria-hidden="true" />
       )}
 
-      <button
-        type="button"
+      <SearchFieldTrigger
         onClick={onSearchClick}
-        className="ui-search-pill ui-search-pill-compact app-focus-ring hidden max-w-[220px] flex-1 items-center gap-2 sm:flex lg:max-w-[260px]"
-      >
-        <span className="text-[13px] text-app-subtle" aria-hidden="true">
-          ⌘K
-        </span>
-        <span className="flex-1 truncate text-left text-[12px] font-normal text-app-subtle">
-          Zoeken…
-        </span>
-      </button>
+        placeholder="Zoeken…"
+        kbd="⌘K"
+        compact
+        showIcon={false}
+        className="app-focus-ring hidden max-w-[220px] flex-1 sm:flex lg:max-w-[260px]"
+      />
 
       <div className="flex shrink-0 items-center gap-2">
         <button

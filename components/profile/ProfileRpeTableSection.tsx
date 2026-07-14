@@ -91,16 +91,6 @@ export default function ProfileRpeTableSection({
     };
   }, [athleteId]);
 
-  useEffect(() => {
-    if (!canEditMaxes || loading || !autoSaveReady.current) return;
-
-    const timer = window.setTimeout(() => {
-      void saveMaxes();
-    }, 800);
-
-    return () => window.clearTimeout(timer);
-  }, [inputs, canEditMaxes, loading, athleteId]);
-
   async function saveMaxes() {
     const nextMaxes = {
       current_max_squat: parseMaxInput(inputs.current_max_squat),
@@ -121,6 +111,16 @@ export default function ProfileRpeTableSection({
     setMessage("Current maxes opgeslagen.");
     window.setTimeout(() => setMessage(""), 2000);
   }
+
+  useEffect(() => {
+    if (!canEditMaxes || loading || !autoSaveReady.current) return;
+
+    const timer = window.setTimeout(() => {
+      void saveMaxes();
+    }, 800);
+
+    return () => window.clearTimeout(timer);
+  }, [inputs, canEditMaxes, loading, athleteId]);
 
   const activeMax = getMaxForLift(maxes, selectedLift);
 
@@ -164,8 +164,8 @@ export default function ProfileRpeTableSection({
                   : "current_max_deadlift";
 
             return (
-              <div key={lift} className="rounded-2xl border border-gray-200 p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+              <div key={lift} className="rounded-2xl border border-app-border bg-app-surface p-4">
+                <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
                   {SBD_LIFT_LABELS[lift]}
                 </p>
                 {canEditMaxes ? (
@@ -180,7 +180,7 @@ export default function ProfileRpeTableSection({
                       }))
                     }
                     placeholder="kg"
-                    className="mt-2 w-full rounded-xl border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-black"
+                    className="mt-2 w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-app-text outline-none focus:border-app-accent"
                   />
                 ) : (
                   <p className="mt-2 text-2xl font-bold text-app-text">
@@ -216,7 +216,7 @@ export default function ProfileRpeTableSection({
                 onChange={(event) =>
                   setSelectedLift(event.target.value as SbdLiftKey)
                 }
-                className="rounded-xl border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-black"
+                className="rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-app-text outline-none focus:border-app-accent"
               >
                 {(Object.keys(SBD_LIFT_LABELS) as SbdLiftKey[]).map((lift) => (
                   <option key={lift} value={lift}>
@@ -231,7 +231,7 @@ export default function ProfileRpeTableSection({
                 type="checkbox"
                 checked={showWeights}
                 onChange={(event) => setShowWeights(event.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-app-border"
               />
               Toon gewichten
             </label>
@@ -245,17 +245,17 @@ export default function ProfileRpeTableSection({
           </p>
         ) : null}
 
-        <div className="mt-4 overflow-hidden rounded-2xl border border-gray-200">
+        <div className="mt-4 overflow-hidden rounded-2xl border border-app-border">
           <div className="overflow-auto">
             <table className="min-w-[720px] w-full border-collapse text-center text-xs">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-200 px-2 py-2 font-bold">RPE</th>
-                  <th className="border border-gray-200 px-2 py-2 font-bold">RIR</th>
+                <tr className="bg-app-surface">
+                  <th className="border border-app-border px-2 py-2 font-bold text-app-text">RPE</th>
+                  <th className="border border-app-border px-2 py-2 font-bold text-app-text">RIR</th>
                   {repColumns.map((rep) => (
                     <th
                       key={rep}
-                      className="border border-gray-200 px-2 py-2 font-bold"
+                      className="border border-app-border px-2 py-2 font-bold text-app-text"
                     >
                       {rep}
                     </th>
@@ -265,16 +265,16 @@ export default function ProfileRpeTableSection({
               <tbody>
                 {tableRows.map((row) => (
                   <tr key={row.rpe}>
-                    <td className="border border-gray-200 bg-gray-50 px-2 py-2 font-bold">
+                    <td className="border border-app-border bg-app-surface px-2 py-2 font-bold text-app-text">
                       {formatRpe(row.rpe)}
                     </td>
-                    <td className="border border-gray-200 bg-gray-50 px-2 py-2 font-bold">
+                    <td className="border border-app-border bg-app-surface px-2 py-2 font-bold text-app-text">
                       {formatRpe(row.rir)}
                     </td>
                     {row.cells.map((cell) => (
                       <td
                         key={`${row.rpe}-${cell.reps}`}
-                        className="border border-gray-200 px-1 py-2 dark:border-white/10"
+                        className="border border-app-border px-1 py-2"
                         style={{
                           backgroundColor: getRpeCellColor(row.rpe, cell.reps),
                           color: getRpeCellTextColor(row.rpe, cell.reps),

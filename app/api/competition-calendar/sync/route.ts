@@ -1,91 +1,31 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
-import { isCronAuthorized } from "@/lib/cronAuth";
+import { assertCoachLikeOrCron } from "@/lib/coachApiAuth";
 import { insertCalendarSyncLog, getLastSuccessfulCalendarSync } from "@/lib/calendarSyncLog";
 import {
   fetchKnkfCalendarEvents,
   syncKnkfEventsToSupabase,
 } from "@/lib/knkfCalendarSync";
 
-function getSupabaseForRequest(request: Request) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-
-  if (!url || !anonKey) {
-    throw new Error("Supabase is niet geconfigureerd.");
-  }
-
-  const authHeader = request.headers.get("Authorization");
-  const token = authHeader?.replace(/^Bearer\s+/i, "").trim();
-
-  return createClient(url, anonKey, {
-    global: token ? { headers: { Authorization: `Bearer ${token}` } } : {},
-  });
-}
-
-async function assertCoachAccess(request: Request) {
-  if (isCronAuthorized(request)) {
-    const serviceRole = process.env.SUPABASE_SERVICE_ROLE_KEY;
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-
-    if (serviceRole && url) {
-      return { supabase: createClient(url, serviceRole), error: null };
-    }
-  }
-
-  const supabase = getSupabaseForRequest(request);
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-
-  if (userError || !user) {
-    return { supabase: null, error: "Niet ingelogd." };
-  }
-
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role")
-    .eq("id", user.id)
-    .single();
-
-  if (profile?.role !== "coach" && profile?.role !== "admin") {
-    return { supabase: null, error: "Alleen coaches mogen de kalender synchroniseren." };
-  }
-
-  return { supabase, error: null };
-}
-
-async function getTriggerUserId(request: Request, supabase: NonNullable<Awaited<ReturnType<typeof assertCoachAccess>>["supabase"]>) {
-  if (isCronAuthorized(request)) {
-    return null;
-  }
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
-  return user?.id ?? null;
-}
-
 export async function POST(request: Request) {
   let triggeredBy: string | null = null;
-  let supabaseClient: Awaited<ReturnType<typeof assertCoachAccess>>["supabase"] = null;
+  let supabaseClient: NonNullable<
+    Awaited<ReturnType<typeof assertCoachLikeOrCron>>["db"]
+  > | null = null;
 
   try {
-    const access = await assertCoachAccess(request);
+    const access = await assertCoachLikeOrCron(request);
 
-    if (!access.supabase) {
+    if (!access.db) {
       return NextResponse.json({ error: access.error }, { status: 401 });
     }
 
-    supabaseClient = access.supabase;
-    triggeredBy = await getTriggerUserId(request, access.supabase);
+    supabaseClient = access.db;
+    triggeredBy = access.cron ? null : access.userId;
 
     const events = await fetchKnkfCalendarEvents();
-    const result = await syncKnkfEventsToSupabase(access.supabase, events);
+    const result = await syncKnkfEventsToSupabase(access.db, events);
 
-    await insertCalendarSyncLog(access.supabase, {
+    await insertCalendarSyncLog(access.db, {
       triggeredBy,
       status: "success",
       fetchedCount: result.fetched,
@@ -114,21 +54,23 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
-  let supabaseClient: Awaited<ReturnType<typeof assertCoachAccess>>["supabase"] = null;
+  let supabaseClient: NonNullable<
+    Awaited<ReturnType<typeof assertCoachLikeOrCron>>["db"]
+  > | null = null;
   let triggeredBy: string | null = null;
 
   try {
-    if (isCronAuthorized(request)) {
-      const access = await assertCoachAccess(request);
+    const access = await assertCoachLikeOrCron(request);
 
-      if (!access.supabase) {
-        return NextResponse.json({ error: access.error }, { status: 401 });
-      }
+    if (!access.db) {
+      return NextResponse.json({ error: access.error }, { status: 401 });
+    }
 
-      supabaseClient = access.supabase;
-      triggeredBy = await getTriggerUserId(request, access.supabase);
+    supabaseClient = access.db;
+    triggeredBy = access.cron ? null : access.userId;
 
-      const lastSync = await getLastSuccessfulCalendarSync(access.supabase);
+    if (access.cron) {
+      const lastSync = await getLastSuccessfulCalendarSync(access.db);
       const threeDaysMs = 3 * 24 * 60 * 60 * 1000;
       if (
         lastSync?.created_at &&
@@ -144,9 +86,9 @@ export async function GET(request: Request) {
       }
 
       const events = await fetchKnkfCalendarEvents();
-      const result = await syncKnkfEventsToSupabase(access.supabase, events);
+      const result = await syncKnkfEventsToSupabase(access.db, events);
 
-      await insertCalendarSyncLog(access.supabase, {
+      await insertCalendarSyncLog(access.db, {
         triggeredBy,
         status: "success",
         fetchedCount: result.fetched,
@@ -155,11 +97,6 @@ export async function GET(request: Request) {
       });
 
       return NextResponse.json(result);
-    }
-
-    const access = await assertCoachAccess(request);
-    if (!access.supabase) {
-      return NextResponse.json({ error: access.error }, { status: 401 });
     }
 
     const events = await fetchKnkfCalendarEvents();

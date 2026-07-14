@@ -1,0 +1,267 @@
+/* ─── Athlete Home Dashboard — Light Mode (colors only, layout = dark) ─── */
+
+@media (max-width: 1023px) {
+  html:not(.dark) .app-shell--athlete-dashboard-mobile {
+    --athlete-dash-bg: #f8f9fc;
+    --athlete-dash-card: #ffffff;
+    --athlete-dash-title: #111827;
+    --athlete-dash-muted: #6b7280;
+    --athlete-dash-body: #374151;
+    --athlete-dash-label: #3b82f6;
+    --athlete-dash-border: rgba(15, 23, 42, 0.08);
+    --athlete-dash-border-soft: rgba(15, 23, 42, 0.06);
+    --athlete-dash-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+    --athlete-dash-shadow-sm: 0 6px 20px rgba(15, 23, 42, 0.06);
+    --athlete-dash-inset: #f3f4f6;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .mobile-page-shell,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .mobile-page-shell__body,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-app-layout,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .app-page-content--athlete-dashboard-mobile {
+    background: var(--athlete-dash-bg);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar--athlete-dashboard {
+    background: var(--athlete-dash-bg);
+    border-bottom-color: transparent;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-athlete-greeting-hey {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-athlete-greeting-sub {
+    color: var(--athlete-dash-muted);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-action-chip {
+    border: 1px solid var(--athlete-dash-border-soft);
+    background: var(--athlete-dash-card);
+    box-shadow: var(--athlete-dash-shadow-sm);
+    color: var(--athlete-dash-body);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-action-chip:hover {
+    border-color: rgba(59, 130, 246, 0.22);
+    background: #ffffff;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-action-chip--active {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: rgba(59, 130, 246, 0.08);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-card {
+    border: 1px solid var(--athlete-dash-border-soft);
+    background: var(--athlete-dash-card);
+    box-shadow: var(--athlete-dash-shadow);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-card::before {
+    display: none;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-eyebrow {
+    color: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-eyebrow--alert::before {
+    background: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-fill-ring svg circle:first-child {
+    stroke: #e5e7eb;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-fill-ring-label {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-bw-input-shell {
+    border: none;
+    background: var(--athlete-dash-inset);
+  }
+
+  html:not(.dark)
+    .app-shell--athlete-dashboard-mobile
+    .athlete-dashboard-card--bw
+    .athlete-dashboard-bw-input-shell {
+    background: var(--athlete-dash-inset);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-bw-value-input {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-bw-value-input::placeholder {
+    color: #9ca3af;
+    opacity: 1;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-bw-unit {
+    color: var(--athlete-dash-muted);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-log-btn,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-log-btn--compact {
+    border: 1px solid var(--athlete-dash-label);
+    background: var(--athlete-dash-card);
+    color: var(--athlete-dash-label);
+    box-shadow: none;
+  }
+}
+
+@media (max-width: 1023px) {
+  html:not(.dark),
+  html:not(.dark) body,
+  html:not(.dark) .app-viewport-root {
+    background-color: #f8f9fc;
+  }
+}
+
+@media (max-width: 1023px) {
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-cta-btn {
+    border: none;
+    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+    box-shadow:
+      0 8px 24px rgba(37, 99, 235, 0.28),
+      0 4px 12px rgba(15, 23, 42, 0.06);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget h2 {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget-preview {
+    color: var(--athlete-dash-muted);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget-time {
+    color: #9ca3af;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget-badge {
+    background: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget-avatar {
+    background: #e5e7eb;
+    color: var(--athlete-dash-body);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-todos-add-btn {
+    border: 1px solid var(--athlete-dash-border);
+    background: var(--athlete-dash-card);
+    color: var(--athlete-dash-body);
+    box-shadow: var(--athlete-dash-shadow-sm);
+  }
+
+  html:not(.dark)
+    .app-shell--athlete-dashboard-mobile
+    .athlete-dashboard--mobile-fit
+    .athlete-dashboard-item-row {
+    border-color: var(--athlete-dash-border-soft);
+    background: var(--athlete-dash-inset);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-item-row p {
+    color: var(--athlete-dash-body);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-item-check {
+    border-color: #d1d5db;
+    background: #f9fafb;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-item-check--done {
+    border-color: rgba(59, 130, 246, 0.45);
+    background: var(--athlete-dash-label);
+    color: #ffffff;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-item-delete,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-item-edit {
+    color: #9ca3af;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-todos-empty {
+    border-color: var(--athlete-dash-border);
+    color: var(--athlete-dash-muted);
+    background: rgba(255, 255, 255, 0.6);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-todos-view-all {
+    color: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-input,
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-habit-frequency {
+    border-color: var(--athlete-dash-border);
+    background: var(--athlete-dash-card);
+    color: var(--athlete-dash-body);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-quicknav-card {
+    border-color: var(--athlete-dash-border-soft);
+    background: var(--athlete-dash-card);
+    box-shadow: var(--athlete-dash-shadow-sm);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-quicknav-icon {
+    color: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-quicknav-title {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-quicknav-desc {
+    color: var(--athlete-dash-muted);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-mobile-tab-bar,
+  html:not(.dark) .athlete-mobile-tab-bar {
+    border-top: 1px solid var(--athlete-dash-border);
+    background: var(--app-nav-bg);
+    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  html:not(.dark) .athlete-mobile-tab-bar__item {
+    color: var(--athlete-dash-muted);
+  }
+
+  html:not(.dark) .athlete-mobile-tab-bar__item.is-active {
+    color: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
+    background: rgba(59, 130, 246, 0.1);
+    color: var(--athlete-dash-label);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-inline-toast--error {
+    color: #dc2626;
+  }
+}
+
+@media (min-width: 1024px) {
+  html:not(.dark) .athlete-dashboard-card {
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    background: #ffffff;
+    box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+  }
+
+  html:not(.dark) .athlete-dashboard-card::before {
+    display: none;
+  }
+
+  html:not(.dark) .athlete-dashboard-eyebrow {
+    color: #3b82f6;
+  }
+
+  html:not(.dark) .athlete-dashboard-bw-input-shell {
+    border: none;
+    background: #f3f4f6;
+  }
+}

@@ -7,6 +7,14 @@ cd "$ROOT"
 
 GH="${GH:-gh}"
 if ! command -v "$GH" >/dev/null 2>&1; then
+  for candidate in /tmp/gh_2.95.0_macOS_arm64/bin/gh /opt/homebrew/bin/gh /usr/local/bin/gh; do
+    if [ -x "$candidate" ]; then
+      GH="$candidate"
+      break
+    fi
+  done
+fi
+if ! command -v "$GH" >/dev/null 2>&1; then
   echo "Install GitHub CLI: https://cli.github.com/"
   exit 1
 fi

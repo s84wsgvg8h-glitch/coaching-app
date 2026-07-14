@@ -9,6 +9,7 @@ import {
   loadScheduledBroadcasts,
   type ScheduledBroadcast,
 } from "@/lib/scheduledBroadcasts";
+import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 type ScheduledBroadcastPanelProps = {
   coachId: string;
@@ -33,7 +34,9 @@ export default function ScheduledBroadcastPanel({
   }
 
   useEffect(() => {
-    void refresh();
+    deferEffectUpdate(() => {
+      void refresh();
+    });
     void supabase
       .from("profiles")
       .select("id, full_name")

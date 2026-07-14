@@ -29,11 +29,26 @@ export function middleware(request: NextRequest) {
   }
 
   const supabaseOrigin = getPublicSupabaseUrl();
-  const mediaSrc = ["'self'", "blob:", supabaseOrigin].filter(Boolean).join(" ");
+  const r2PublicOrigin = (
+    process.env.CLOUDFLARE_R2_PUBLIC_URL ||
+    process.env.NEXT_PUBLIC_R2_PUBLIC_URL ||
+    ""
+  )
+    .trim()
+    .replace(/\/$/, "");
+  const r2AccountId = process.env.CLOUDFLARE_ACCOUNT_ID?.trim();
+  const r2ApiOrigin = r2AccountId
+    ? `https://${r2AccountId}.r2.cloudflarestorage.com`
+    : "";
+  const mediaSrc = ["'self'", "blob:", supabaseOrigin, r2PublicOrigin]
+    .filter(Boolean)
+    .join(" ");
   const connectSrc = [
     "'self'",
     supabaseOrigin,
     supabaseOrigin?.replace(/^https:/, "wss:"),
+    r2ApiOrigin,
+    r2PublicOrigin,
     "https://api.stripe.com",
     "https://checkout.stripe.com",
   ]

@@ -54,7 +54,7 @@ export default function TodoComposer({
                   onChange(suggestion);
                   inputRef.current?.focus();
                 }}
-                className="block w-full px-3 py-2 text-left text-[13px] text-app-text hover:bg-white/5"
+                className="block w-full px-3 py-2 text-left text-[13px] text-app-text hover:bg-app-surface-hover"
               >
                 {suggestion}
               </button>

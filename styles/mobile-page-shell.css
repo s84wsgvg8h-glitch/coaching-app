@@ -1,0 +1,537 @@
+/* ─── Mobile page shell (iPhone / ≤1023px) ───
+   Single viewport root + one scroll container per page.
+
+   Safe area top:    .mobile-page-shell__header (ONE source)
+   Safe area bottom: --mobile-content-bottom-reserve (ONE variable)
+   Viewport:         100svh fallback + 100dvh
+*/
+
+/* ─── Central CSS variables ─── */
+:root {
+  /* Tab bar icon area only — home indicator is additive via env() */
+  --mobile-tab-bar-height: 3.125rem;
+
+  /* Total content bottom reserve: tab bar + home indicator + breathing room */
+  --mobile-content-bottom-reserve: calc(
+    var(--mobile-tab-bar-height) + env(safe-area-inset-bottom, 0px) + 0.75rem
+  );
+
+  /* Full nav strip height (for nav element itself) */
+  --mobile-nav-total-height: calc(
+    var(--mobile-tab-bar-height) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+@media (max-width: 1023px) {
+  html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  html,
+  body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    background: var(--app-bg);
+    overscroll-behavior: none;
+  }
+
+  body {
+    width: 100%;
+  }
+
+  /* Single pinned viewport — 100svh fallback, 100dvh modern */
+  .app-viewport-root {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    display: flex;
+    width: 100%;
+    height: 100svh;
+    height: 100dvh;
+    flex-direction: column;
+    overflow: hidden;
+    background: var(--app-bg);
+  }
+
+  .app-viewport-inner {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* Auth/admin pages fill the viewport root */
+  .app-viewport-root .auth-shell,
+  .app-viewport-root main.auth-shell,
+  .app-viewport-root .admin-page-root,
+  .app-viewport-root .intake-gate-loading {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Capacitor native: content extends under Dynamic Island, apply safe area manually. */
+  html.capacitor-native .auth-shell {
+    min-height: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding-top: max(1.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)) !important;
+  }
+
+  .app-viewport-root .athlete-route-loading-shell {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  /* App/page shells fill the viewport root */
+  .app-viewport-root .app-shell,
+  .app-viewport-root .mobile-page-shell,
+  .app-viewport-root .chat-mobile-shell.mobile-page-shell,
+  .app-viewport-root .athlete-program-shell.mobile-page-shell {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  .athlete-program-shell.mobile-page-shell .mobile-page-shell__header--program-week {
+    overflow: visible;
+    z-index: 30;
+  }
+
+  /* ─── Shell structure ─── */
+  .mobile-page-shell {
+    display: flex;
+    flex-direction: column;
+    background: var(--app-bg);
+  }
+
+  /* SINGLE safe-area-top source — the header wrapper.
+     Background set explicitly so the status-bar / Dynamic Island area
+     always matches the app background with no visible gap or mismatch. */
+  .mobile-page-shell__header {
+    flex-shrink: 0;
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+    background: var(--app-bg);
+  }
+
+  /* Capacitor native with contentInset:"never" — content extends under Dynamic Island,
+     so we must apply the full safe-area-inset-top ourselves via CSS env(). */
+  html.capacitor-native .mobile-page-shell__header {
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+    background: var(--app-bg);
+  }
+
+  /* Topbar inside header gets no extra top padding (header provides it) */
+  .mobile-page-shell .shell-topbar {
+    padding-top: 0 !important;
+  }
+
+  .mobile-page-shell .shell-topbar.pt-safe {
+    padding-top: 0 !important;
+  }
+
+  /* mobile-safe-top: for layouts that use the class directly (e.g. chat) */
+  .mobile-safe-top {
+    flex-shrink: 0;
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+  }
+
+  html.capacitor-native .mobile-safe-top {
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+  }
+
+  /* ─── Body (scroll container) ─── */
+  .mobile-page-shell__body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .mobile-page-shell__body--scroll {
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    scroll-padding-top: 0;
+  }
+
+  .mobile-page-shell__body--scroll:focus-within {
+    scroll-padding-bottom: var(--keyboard-inset, 0px);
+  }
+
+  .mobile-page-shell__footer {
+    flex-shrink: 0;
+  }
+
+  /* SINGLE bottom reserve source for body with bottom nav */
+  .mobile-page-shell--reserve-bottom-nav .mobile-page-shell__body {
+    padding-bottom: var(--mobile-content-bottom-reserve);
+  }
+
+  /* Page content top padding: desktop value is suppressed on mobile
+     because the header slot already provides correct spacing */
+  .mobile-page-shell .app-page-content {
+    padding-top: 0;
+  }
+
+  /* ─── Fixed bottom tab bar ─── */
+  .athlete-mobile-tab-bar {
+    position: fixed;
+    right: 0;
+    left: 0;
+    z-index: 40;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    height: var(--mobile-nav-total-height);
+    box-sizing: border-box;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background: var(--app-nav-bg);
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    box-shadow: var(--app-nav-shadow);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  html:not(.dark) .athlete-mobile-tab-bar {
+    background: var(--app-nav-bg);
+    border-top-color: rgba(15, 23, 42, 0.08);
+    box-shadow: 0 -6px 20px rgba(15, 23, 42, 0.06);
+  }
+
+  .athlete-mobile-tab-bar__item {
+    display: flex;
+    height: 100%;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 0 8px;
+    color: var(--app-text-muted);
+    transition: color 0.15s ease;
+  }
+
+  .athlete-mobile-tab-bar .grid {
+    height: var(--mobile-tab-bar-height);
+  }
+
+  .athlete-mobile-tab-bar__icon-wrap {
+    display: flex;
+    height: 24px;
+    width: 24px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    transition:
+      background 0.15s ease,
+      transform 0.15s ease;
+  }
+
+  .athlete-mobile-tab-bar__item.is-active {
+    color: var(--app-accent);
+  }
+
+  .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
+    background: rgba(59, 130, 246, 0.14);
+    transform: scale(1.05);
+  }
+
+  .athlete-mobile-tab-bar__label {
+    display: none;
+  }
+
+  /* ─── Program week specific ─── */
+  .mobile-page-shell .program-mobile-week-nav--athlete-compact,
+  .mobile-page-shell__header .program-mobile-week-nav--athlete-compact {
+    padding-top: 0 !important;
+  }
+
+  .mobile-page-shell__header .chat-list-header,
+  .mobile-page-shell__header .chat-conversation-header {
+    padding-top: 0 !important;
+  }
+
+  .mobile-page-shell__header--program-week {
+    flex-shrink: 0;
+  }
+
+  .athlete-program-shell.mobile-page-shell > .athlete-program-main-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: var(--mobile-content-bottom-reserve);
+  }
+
+  .athlete-program-shell.mobile-page-shell .program-mobile-week-nav--athlete-compact {
+    flex-shrink: 0;
+  }
+
+  /* ─── Chat: only inner lists scroll ─── */
+  .chat-list-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-list-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  /* Chat conversation: full-screen flex shell (inbox keeps bottom tab bar). */
+  .app-viewport-root .app-shell.chat-shell.chat-shell--conversation {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 40;
+    width: 100% !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
+  .app-viewport-root .app-shell.chat-shell.chat-shell--conversation > .flex.min-h-0 {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .app-viewport-root .app-shell.chat-shell.chat-shell--conversation section.mobile-scroll {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    height: 100%;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .app-viewport-root .app-shell.chat-shell.chat-shell--conversation .chat-side-panel {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  /* Chat inbox: keep bottom tab bar visible (conversation view stays full-screen). */
+  main.app-shell.chat-shell--inbox {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+  }
+
+  main.app-shell.chat-shell--inbox > .flex.min-h-0 {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  main.app-shell.chat-shell--inbox section.mobile-scroll {
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+    min-height: 0;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  main.app-shell.chat-shell--inbox .chat-list-scroll {
+    padding-bottom: var(--mobile-content-bottom-reserve);
+  }
+
+  .chat-conversation-panel {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-conversation-header {
+    flex-shrink: 0;
+    align-items: center;
+    min-height: 44px;
+    padding-block: 0.3rem;
+    padding-inline: 0.65rem;
+    background: var(--app-bg) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .chat-conversation-header.mobile-safe-top {
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+  }
+
+  .chat-conversation-header .chat-conversation-avatar {
+    height: 2rem;
+    width: 2rem;
+  }
+
+  .chat-conversation-header .chat-conversation-title {
+    font-size: 0.9375rem;
+  }
+
+  .chat-conversation-header .chat-conversation-subtitle {
+    margin-top: 0;
+    font-size: 10px;
+  }
+
+  /* Strip glass styling from back/menu buttons in chat header — plain icons only. */
+  .chat-conversation-header .ui-icon-btn {
+    width: 36px;
+    height: 36px;
+    border: none !important;
+    background: transparent !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    box-shadow: none !important;
+  }
+
+  .chat-conversation-header .ui-icon-btn svg,
+  .chat-conversation-header .chat-ai-btn svg {
+    height: 1.125rem;
+    width: 1.125rem;
+  }
+
+  .chat-conversation-header .chat-ai-btn {
+    height: 32px;
+    width: 32px;
+  }
+
+  .chat-conversation-actions {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    gap: 2px;
+  }
+
+  /* When chat headers are inside a mobile-page-shell__header wrapper, that wrapper
+     already provides the safe-area padding — strip it from the inner element only
+     in that case (rule below). When used standalone via mobile-safe-top, keep it. */
+
+  .chat-messages-scroll {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+
+  .chat-side-panel--viewport-sync {
+    top: 0;
+    right: 0;
+    left: 0;
+    bottom: auto;
+    transform: none;
+    will-change: auto;
+    background: var(--app-bg);
+  }
+
+  .chat-mobile-shell.mobile-page-shell {
+    z-index: 40;
+  }
+
+  .chat-mobile-shell .mobile-page-shell__body {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .chat-mobile-shell .mobile-page-shell__body > .flex {
+    min-height: 0;
+    flex: 1 1 auto;
+  }
+
+  .chat-compose-stack {
+    position: relative;
+    right: auto;
+    left: auto;
+    bottom: auto;
+    z-index: auto;
+    flex-shrink: 0;
+    border-top: 1px solid var(--app-border);
+    background: var(--app-bg);
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
+  }
+
+  html[data-keyboard-open="true"] .chat-compose-stack {
+    padding-bottom: 0 !important;
+  }
+
+  .chat-compose-stack .chat-compose-footer {
+    padding-top: 0.375rem;
+    padding-bottom: 0;
+  }
+
+  /* Smaller, more compact input bar on mobile */
+  .chat-input-bar {
+    min-height: 44px !important;
+    align-items: center !important;
+    padding: 0.25rem 0.45rem 0.25rem 0.4rem !important;
+  }
+
+  /* Vertically centre placeholder + caret in the compose field */
+  .chat-input-bar > div,
+  .chat-message-input-wrap {
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+  }
+
+  .chat-input-bar .chat-compose-icon-btn {
+    width: 30px !important;
+    height: 30px !important;
+    margin: 0 !important;
+  }
+
+  .chat-send-btn {
+    width: 30px !important;
+    height: 30px !important;
+  }
+}
+
+/* Desktop: no top padding on header */
+@media (min-width: 1024px) {
+  .mobile-page-shell__header {
+    padding-top: 0;
+  }
+}

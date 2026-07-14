@@ -16,6 +16,7 @@ const COACH_ROUTES = [
   "/leaderboard",
   "/oefeningenbibliotheek",
   "/betalingen",
+  "/organisatie",
   "/merch",
   "/limitless-data",
   "/profile",

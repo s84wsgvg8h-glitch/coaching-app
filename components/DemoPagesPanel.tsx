@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { Search } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
 import {
   getDemoPages,
   groupDemoPages,
@@ -37,15 +37,15 @@ export default function DemoPagesPanel() {
           {persona === "atleet" ? "Atleet-pagina's" : "Coach-pagina's"}
         </p>
 
-        <div className="mt-3 flex items-center gap-2 rounded-lg border border-white/10 bg-black/25 px-2.5 py-1.5">
-          <Search className="h-3.5 w-3.5 text-app-muted" />
-          <input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Zoek…"
-            className="w-full bg-transparent text-[12px] text-app-text outline-none placeholder:text-app-muted"
-          />
-        </div>
+        <SearchInput
+          value={query}
+          onChange={setQuery}
+          placeholder="Zoek…"
+          variant="rounded"
+          compact
+          showClear={false}
+          className="mt-3"
+        />
 
         <div className="mt-3 space-y-3">
           {grouped.map(([group, items]) => (

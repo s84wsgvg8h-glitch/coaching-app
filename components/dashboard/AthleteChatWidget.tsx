@@ -1,17 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { Skeleton } from "@/components/ui/Skeleton";
 import { MessageCircle } from "lucide-react";
-import { useEffect, useState } from "react";
 import ChatAvatar from "@/components/chat/ChatAvatar";
-import {
-  CHAT_UNREAD_CHANGED_EVENT,
-  getUnreadCountForConversation,
-} from "@/lib/chatUnread";
-import {
-  loadAthleteCoachChatPreview,
-  type AthleteCoachChatPreview,
-} from "@/lib/athleteChatPreview";
+import { useAthleteCoachChatPreview } from "@/hooks/useAthleteCoachChatPreview";
 
 type AthleteChatWidgetProps = {
   athleteId: string;
@@ -40,52 +33,23 @@ function formatPreviewTime(value: string | null) {
 }
 
 export default function AthleteChatWidget({ athleteId }: AthleteChatWidgetProps) {
-  const [preview, setPreview] = useState<AthleteCoachChatPreview | null>(null);
-  const [loading, setLoading] = useState(true);
+  const { data: preview, isPending, isFetching } = useAthleteCoachChatPreview(
+    athleteId,
+    Boolean(athleteId),
+  );
+  const showSkeleton = isPending && !preview;
 
-  useEffect(() => {
-    let cancelled = false;
-
-    async function load() {
-      setLoading(true);
-      const data = await loadAthleteCoachChatPreview(athleteId);
-      if (!cancelled) {
-        setPreview(data);
-        setLoading(false);
-      }
-    }
-
-    void load();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [athleteId]);
-
-  useEffect(() => {
-    if (!preview?.coachId) return;
-
-    async function refreshUnread() {
-      const coachId = preview?.coachId;
-      if (!coachId) return;
-      const unreadCount = await getUnreadCountForConversation(
-        athleteId,
-        coachId,
-      );
-      setPreview((current) =>
-        current ? { ...current, unreadCount } : current,
-      );
-    }
-
-    void refreshUnread();
-    window.addEventListener(CHAT_UNREAD_CHANGED_EVENT, refreshUnread);
-    return () => window.removeEventListener(CHAT_UNREAD_CHANGED_EVENT, refreshUnread);
-  }, [athleteId, preview?.coachId]);
-
-  if (loading) {
+  if (showSkeleton) {
     return (
-      <div className="athlete-dashboard-card athlete-chat-widget">
-        <p className="text-sm text-app-muted">Chat laden...</p>
+      <div className="athlete-dashboard-card athlete-chat-widget animate-pulse">
+        <div className="flex gap-3">
+          <Skeleton className="h-12 w-12 shrink-0 rounded-full" />
+          <div className="min-w-0 flex-1 space-y-2">
+            <Skeleton className="h-3 w-16" />
+            <Skeleton className="h-4 w-28" />
+            <Skeleton className="h-3 w-full" />
+          </div>
+        </div>
       </div>
     );
   }
@@ -109,46 +73,56 @@ export default function AthleteChatWidget({ athleteId }: AthleteChatWidgetProps)
     );
   }
 
+  const hasUnread = preview.unreadCount > 0;
+
   return (
     <Link
       href={`/chat?from=${encodeURIComponent("/dashboard")}`}
-      className="athlete-dashboard-card athlete-chat-widget app-focus-ring block transition hover:border-app-accent/35"
+      className={`athlete-dashboard-card athlete-chat-widget app-focus-ring block${
+        isFetching ? " opacity-95" : ""
+      }`}
     >
-      <div className="flex items-start gap-3">
+      <div className="athlete-chat-widget-inner">
         <ChatAvatar
           name={preview.coachName}
           imageUrl={preview.coachAvatarUrl}
-          className="h-11 w-11 shrink-0 text-sm"
+          className="athlete-chat-widget-avatar shrink-0 text-sm"
         />
         <div className="min-w-0 flex-1">
-          <div className="flex items-start justify-between gap-2">
-            <div className="min-w-0">
-              <p className="athlete-dashboard-eyebrow">Chat</p>
+          <div className="flex items-center justify-between gap-2">
+            <p
+              className={`athlete-dashboard-eyebrow mb-0${
+                hasUnread ? " athlete-dashboard-eyebrow--alert" : ""
+              }`}
+            >
+              {hasUnread ? "Nieuw bericht" : "Chat"}
+            </p>
+            {preview.previewAt ? (
+              <span className="athlete-chat-widget-time shrink-0">
+                {formatPreviewTime(preview.previewAt)}
+              </span>
+            ) : null}
+          </div>
+          <div className="mt-1 flex items-start justify-between gap-2">
+            <div className="min-w-0 flex-1">
               <h2 className="truncate text-[15px] font-semibold text-app-text">
                 {preview.coachName}
               </h2>
+              <p className="athlete-chat-widget-preview line-clamp-2">
+                {preview.previewSender ? (
+                  <span className="font-medium text-app-text">
+                    {preview.previewSender}:{" "}
+                  </span>
+                ) : null}
+                {preview.previewText}
+              </p>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
-              {preview.previewAt ? (
-                <span className="text-[11px] text-app-muted">
-                  {formatPreviewTime(preview.previewAt)}
-                </span>
-              ) : null}
-              {preview.unreadCount > 0 ? (
-                <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-app-accent px-1.5 text-[10px] font-semibold text-white">
-                  {preview.unreadCount > 9 ? "9+" : preview.unreadCount}
-                </span>
-              ) : null}
-            </div>
-          </div>
-          <p className="mt-1 line-clamp-2 text-sm text-app-muted">
-            {preview.previewSender ? (
-              <span className="font-medium text-app-text">
-                {preview.previewSender}:{" "}
+            {hasUnread ? (
+              <span className="athlete-chat-widget-badge shrink-0">
+                {preview.unreadCount > 9 ? "9+" : preview.unreadCount}
               </span>
             ) : null}
-            {preview.previewText}
-          </p>
+          </div>
         </div>
       </div>
     </Link>
