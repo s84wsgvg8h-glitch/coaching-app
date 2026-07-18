@@ -148,7 +148,13 @@ export default function AppShell({
         {!isChatRoute ? <SystemBanner /> : null}
         {!isChatRoute ? <DemoModeBanner /> : null}
         {showAthleteNav && !isChatRoute ? (
-          <div className="athlete-app-layout min-w-0 flex-1">{children}</div>
+          <div
+            className={`athlete-app-layout min-w-0${
+              isAthleteProfileMobile ? "" : " flex-1"
+            }`}
+          >
+            {children}
+          </div>
         ) : (
           children
         )}

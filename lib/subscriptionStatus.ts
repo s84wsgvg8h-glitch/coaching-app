@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type Stripe from "stripe";
+import { listActiveStripeSubscriptionsForCustomer } from "@/lib/stripeCustomer";
 import { getSubscriptionPeriodBounds } from "@/lib/stripeSubscriptionPeriod";
 
 export type CoachingSubscriptionRow = {
@@ -225,4 +226,78 @@ export async function syncCoachingSubscriptionFromStripe(
     stripeConnectAccountId:
       connectContext?.stripeConnectAccountId ?? metadataConnectAccountId,
   });
+}
+
+const STRIPE_SUBSCRIPTION_SYNC_PRIORITY = [
+  "trialing",
+  "active",
+  "past_due",
+  "unpaid",
+  "incomplete",
+] as const;
+
+export function pickPrimaryCoachingStripeSubscription<
+  T extends { status: string },
+>(subscriptions: T[]): T | null {
+  if (subscriptions.length === 0) return null;
+
+  for (const status of STRIPE_SUBSCRIPTION_SYNC_PRIORITY) {
+    const match = subscriptions.find((subscription) => subscription.status === status);
+    if (match) return match;
+  }
+
+  return subscriptions[0] ?? null;
+}
+
+/** Backfill coaching_subscriptions when Stripe already has a subscription. */
+export async function ensureAthleteCoachingSubscriptionSynced(
+  service: SupabaseClient,
+  userId: string,
+): Promise<CoachingSubscriptionRow | null> {
+  const existing = await getSubscriptionStatus(service, userId);
+  if (existing && isSubscriptionAccessStatus(existing.status)) {
+    return existing;
+  }
+
+  const { data: profile } = await service
+    .from("profiles")
+    .select(
+      "stripe_customer_id, stripe_connect_customer_account_id, coach_id",
+    )
+    .eq("id", userId)
+    .maybeSingle();
+
+  const customerId = profile?.stripe_customer_id?.trim() || null;
+  const connectAccountId =
+    (profile?.stripe_connect_customer_account_id as string | null)?.trim() ||
+    null;
+
+  if (!customerId || !connectAccountId) {
+    return existing;
+  }
+
+  const stripeSubscriptions = await listActiveStripeSubscriptionsForCustomer(
+    customerId,
+    connectAccountId,
+  );
+  const primarySubscription = pickPrimaryCoachingStripeSubscription(
+    stripeSubscriptions,
+  );
+
+  if (!primarySubscription) {
+    return existing;
+  }
+
+  return syncCoachingSubscriptionFromStripe(
+    service,
+    primarySubscription,
+    userId,
+    {
+      coachId:
+        primarySubscription.metadata?.coach_id?.trim() ||
+        (profile?.coach_id as string | null) ||
+        null,
+      stripeConnectAccountId: connectAccountId,
+    },
+  );
 }

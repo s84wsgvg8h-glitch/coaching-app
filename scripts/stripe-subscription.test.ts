@@ -21,7 +21,10 @@ import {
 } from "../lib/stripeSubscriptionConfig";
 import { buildCheckoutSubscriptionBillingData, buildSubscriptionBillingParams } from "../lib/stripeBillingAnchor";
 import { getApplicationFeePercent } from "../lib/stripeConnect";
-import { isSubscriptionAccessStatus } from "../lib/subscriptionStatus";
+import {
+  isSubscriptionAccessStatus,
+  pickPrimaryCoachingStripeSubscription,
+} from "../lib/subscriptionStatus";
 import { isSubscriptionEnforcementEnabled } from "../lib/subscriptionEnforcement";
 import { hasLegacyCoachingBilling } from "../lib/coachingAccess";
 import { coachingPlanFromPaymentPrice, coachingPlanKeyForPaymentPrice } from "../lib/coachingPlanFromPrice";
@@ -35,6 +38,14 @@ function test(name: string, fn: () => void) {
     throw error;
   }
 }
+
+test("pickPrimaryCoachingStripeSubscription prefers trialing over active", () => {
+  const picked = pickPrimaryCoachingStripeSubscription([
+    { status: "active", id: "sub_active" },
+    { status: "trialing", id: "sub_trial" },
+  ] as Array<{ status: string; id: string }>);
+  assert.equal(picked?.id, "sub_trial");
+});
 
 test("isSubscriptionAccessStatus treats active and trialing as access", () => {
   assert.equal(isSubscriptionAccessStatus("active"), true);

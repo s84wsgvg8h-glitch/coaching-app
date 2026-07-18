@@ -34,11 +34,15 @@ export default function ProfileCoachingSubscriptionSection({
   const checkoutState = searchParams.get("checkout");
 
   const {
-    data: subscription,
+    data: subscriptionState,
     isLoading,
     error: queryError,
     refetch,
   } = useCoachingSubscription(userId);
+
+  const subscription = subscriptionState?.subscription ?? null;
+  const monthlyPrice = subscriptionState?.monthlyPrice ?? null;
+  const planLabel = subscriptionState?.planLabel ?? null;
 
   const [actionLoading, setActionLoading] = useState<"checkout" | "portal" | null>(
     null,
@@ -189,7 +193,7 @@ export default function ProfileCoachingSubscriptionSection({
   }, [checkoutState, refetch]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 pb-[calc(var(--mobile-nav-total-height)+1.5rem)] lg:pb-0">
       <div className="rounded-2xl border border-app-border/70 bg-app-surface/80 p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-app-border/70 bg-app-bg/70">
@@ -217,7 +221,11 @@ export default function ProfileCoachingSubscriptionSection({
                   Abonnement
                 </p>
                 <p className="mt-1 text-sm font-semibold text-app-text">
-                  Coaching abonnement
+                  {planLabel
+                    ? planLabel
+                    : monthlyPrice
+                      ? `Coaching abonnement €${monthlyPrice}`
+                      : "Coaching abonnement"}
                 </p>
               </div>
               <div className="rounded-xl border border-app-border/60 bg-app-bg/50 px-3 py-3">
@@ -284,7 +292,7 @@ export default function ProfileCoachingSubscriptionSection({
                 </button>
               ) : null}
 
-              {subscription ? (
+              {hasAccess ? (
                 <button
                   type="button"
                   onClick={() => void openPortal()}
@@ -296,7 +304,7 @@ export default function ProfileCoachingSubscriptionSection({
                   ) : (
                     <ExternalLink className="h-4 w-4" aria-hidden="true" />
                   )}
-                  Abonnement beheren
+                  Beheer abonnement
                 </button>
               ) : null}
             </div>

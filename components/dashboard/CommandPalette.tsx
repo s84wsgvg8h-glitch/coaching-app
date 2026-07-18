@@ -238,6 +238,12 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
           { id: "/planning", label: "Planning", href: "/planning", group: "Pagina's" },
           { id: "/meet-week", label: "Meet-week", href: "/meet-week", group: "Pagina's" },
           { id: "/betalingen", label: "Betalingen", href: "/betalingen", group: "Pagina's" },
+          {
+            id: "/coach/subscriptions",
+            label: "Abonnementen",
+            href: "/coach/subscriptions",
+            group: "Pagina's",
+          },
           { id: "/agenda", label: "Agenda", href: "/agenda", group: "Pagina's" },
         ]
       : [];

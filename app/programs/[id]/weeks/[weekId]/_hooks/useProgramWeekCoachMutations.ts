@@ -44,6 +44,7 @@ import type {
   ProgramExercise,
   ProgramWeek,
 } from "@/lib/programWeek/types";
+import { insertProgramExerciseForDay } from "@/lib/programExerciseCreate";
 import { supabase } from "@/lib/supabaseClient";
 
 export type UseProgramWeekCoachMutationsOptions = {
@@ -265,19 +266,19 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase.from("program_exercises").insert({
-          program_day_id: dayId,
+        const { error } = await insertProgramExerciseForDay({
+          dayId,
           name: normalizeExerciseName(rawName),
           sets: exerciseSets.trim(),
           reps: exerciseReps.trim(),
           load: loadValue,
           rpe: rpeValue,
           notes: "",
-          exercise_number: (exercisesByDay[dayId] || []).length + 1,
+          exerciseNumber: (exercisesByDay[dayId] || []).length + 1,
           priority: "",
         });
 
-        if (error) throw error;
+        if (error) throw new Error(error);
       });
     } catch {
       return;
@@ -326,19 +327,19 @@ export function useProgramWeekCoachMutations({
           if (error) throw error;
         }
 
-        const { error } = await supabase.from("program_exercises").insert({
-          program_day_id: dayId,
+        const { error } = await insertProgramExerciseForDay({
+          dayId,
           name,
           sets: (seed.sets ?? "").trim(),
           reps: (seed.reps ?? "").trim(),
           load: seed.load ?? "",
           rpe: seed.rpe ?? "",
           notes: (seed.notes ?? "").trim(),
-          exercise_number: insertAt + 1,
+          exerciseNumber: insertAt + 1,
           priority: seed.priority ?? "",
         });
 
-        if (error) throw error;
+        if (error) throw new Error(error);
       });
     } catch {
       return;
@@ -394,23 +395,19 @@ export function useProgramWeekCoachMutations({
               ? "Nieuwe oefening"
               : normalizeExerciseName(op.seed.name);
 
-          const { data: inserted, error } = await supabase
-            .from("program_exercises")
-            .insert({
-              program_day_id: op.dayId,
-              name,
-              sets: (op.seed.sets ?? "").trim(),
-              reps: (op.seed.reps ?? "").trim(),
-              load: op.seed.load ?? "",
-              rpe: op.seed.rpe ?? "",
-              notes: (op.seed.notes ?? "").trim(),
-              exercise_number: insertAt + 1,
-              priority: op.seed.priority ?? "",
-            })
-            .select("*")
-            .single();
+          const { exercise: inserted, error } = await insertProgramExerciseForDay({
+            dayId: op.dayId,
+            name,
+            sets: (op.seed.sets ?? "").trim(),
+            reps: (op.seed.reps ?? "").trim(),
+            load: op.seed.load ?? "",
+            rpe: op.seed.rpe ?? "",
+            notes: (op.seed.notes ?? "").trim(),
+            exerciseNumber: insertAt + 1,
+            priority: op.seed.priority ?? "",
+          });
 
-          if (error) throw error;
+          if (error) throw new Error(error);
 
           if (inserted) {
             setExercisesByDay((current) =>
@@ -793,24 +790,27 @@ export function useProgramWeekCoachMutations({
     );
 
     if (sourceExercises.length > 0) {
-      const exercisesToInsert = sourceExercises.map((exercise, index) => ({
-        program_day_id: createdDay.id,
-        name: normalizeExerciseName(exercise.name),
-        sets: exercise.sets || "",
-        reps: exercise.reps || "",
-        load: exercise.load || "",
-        rpe: exercise.rpe || "",
-        notes: exercise.notes || "",
-        exercise_number: index + 1,
-      }));
+      for (const [index, exercise] of sourceExercises.entries()) {
+        const { error: exerciseError } = await insertProgramExerciseForDay({
+          dayId: createdDay.id,
+          name: normalizeExerciseName(exercise.name),
+          sets: exercise.sets || "",
+          reps: exercise.reps || "",
+          load: exercise.load || "",
+          rpe: exercise.rpe || "",
+          notes: exercise.notes || "",
+          exerciseNumber: index + 1,
+          priority: exercise.priority ?? "",
+          exerciseFormat: exercise.exercise_format ?? "normal",
+          supersetGroup: exercise.superset_group ?? null,
+          restSeconds: exercise.rest_seconds ?? null,
+          exerciseLibraryId: exercise.exercise_library_id ?? null,
+        });
 
-      const { error: exerciseError } = await supabase
-        .from("program_exercises")
-        .insert(exercisesToInsert);
-
-      if (exerciseError) {
-        alert(exerciseError.message);
-        return;
+        if (exerciseError) {
+          alert(exerciseError);
+          return;
+        }
       }
     }
 

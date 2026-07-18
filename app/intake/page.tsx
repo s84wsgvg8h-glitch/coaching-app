@@ -186,7 +186,7 @@ export default function IntakePage() {
   }
 
   return (
-    <main className="auth-shell relative flex h-[100dvh] min-h-0 items-start justify-center overflow-y-auto overscroll-contain px-4 py-8 pt-safe pb-safe [-webkit-overflow-scrolling:touch]">
+    <main className="auth-shell intake-page-shell relative flex h-[100dvh] min-h-0 w-full flex-col items-start justify-start overflow-y-auto overscroll-y-auto px-4 py-8 pt-safe pb-[calc(env(safe-area-inset-bottom,0px)+2rem)] [-webkit-overflow-scrolling:touch]">
       <div className="auth-shell-glow pointer-events-none" aria-hidden="true" />
       <div className="ui-auth-card animate-fade-in w-full max-w-2xl">
         <OnboardingProgress />

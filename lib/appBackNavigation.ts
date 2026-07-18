@@ -155,6 +155,7 @@ export function getLogicalBackRoute(ctx: LogicalBackContext): string {
     "/agenda",
     "/planning",
     "/betalingen",
+    "/coach/subscriptions",
     "/organisatie",
     "/merch",
     "/limitless-data",

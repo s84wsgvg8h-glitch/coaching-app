@@ -141,6 +141,11 @@ export default function CoachAppSidebar() {
           label: "Organisatie",
           icon: <Building2 className="h-[18px] w-[18px]" strokeWidth={1.75} />,
         },
+        {
+          href: "/coach/subscriptions",
+          label: "Abonnementen",
+          icon: <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />,
+        },
       ],
     },
   ];

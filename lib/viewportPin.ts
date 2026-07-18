@@ -47,6 +47,18 @@ export function isChatPath(pathname = "") {
   return pathname === "/chat" || pathname.startsWith("/chat/");
 }
 
+/** Pages with their own inner scroll container (not document/body). */
+export function isMobileInnerScrollPath(pathname = "") {
+  if (typeof window !== "undefined" && !pathname) {
+    pathname = window.location.pathname;
+  }
+  return (
+    pathname === "/profile" ||
+    pathname.startsWith("/profile?") ||
+    pathname === "/intake"
+  );
+}
+
 function isCapacitorNative() {
   if (typeof document === "undefined") return false;
   return document.documentElement.classList.contains("capacitor-native");
@@ -71,6 +83,11 @@ export function pinAppViewport(pathname?: string) {
     root.style.height = "";
     root.style.bottom = "0px";
     root.style.transform = "";
+    return;
+  }
+
+  // Profile (inner scroll shell): no viewport pinning — avoids iOS snap-back.
+  if (isMobileInnerScrollPath(pathname)) {
     return;
   }
 

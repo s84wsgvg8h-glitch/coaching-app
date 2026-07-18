@@ -7,7 +7,7 @@ import { persistBlockEditModalNote } from "@/components/programs/ProgramBlockEdi
 import { persistWeekEditModalNote } from "@/components/programs/ProgramWeekEditModal";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
 import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
-import { normalizeExerciseName } from "@/lib/programWeek/exerciseUtils";
+import { duplicateProgramWeek } from "@/lib/programWeekDuplicate";
 import {
   createProgramMacrocycle,
   loadProgramMacrocycles,
@@ -450,18 +450,14 @@ export function useProgramWeekNavigation({
     }
 
     if (!firstCreatedWeekId) {
-      const { data: createdWeek, error: weekError } = await supabase
-        .from("program_weeks")
-        .insert({
-          title: "Week 1",
-          week_number: 1,
-          program_block_id: createdBlock.id,
-        })
-        .select("*")
-        .single();
+      const { week: createdWeek, error: weekError } = await createProgramWeekForBlock({
+        blockId: createdBlock.id,
+        title: "Week 1",
+        weekNumber: 1,
+      });
 
       if (weekError || !createdWeek) {
-        alert(weekError?.message || "Week kon niet worden aangemaakt");
+        alert(weekError || "Week kon niet worden aangemaakt");
         return;
       }
 
@@ -548,86 +544,19 @@ export function useProgramWeekNavigation({
     targetWeekNumber: number,
     targetTitle: string,
   ) {
-    const { data: createdWeek, error: weekError } = await supabase
-      .from("program_weeks")
-      .insert({
-        title: targetTitle,
-        week_number: targetWeekNumber,
-        program_block_id: targetBlockId,
-      })
-      .select("*")
-      .single();
+    const { week: createdWeek, error } = await duplicateProgramWeek({
+      sourceWeekId: sourceWeek.id,
+      targetBlockId,
+      targetWeekNumber,
+      targetTitle,
+    });
 
-    if (weekError || !createdWeek) {
-      alert(weekError?.message || "Week kon niet worden gekopieerd");
+    if (error || !createdWeek) {
+      alert(error || "Week kon niet worden gekopieerd");
       return null;
     }
 
-    const { data: sourceDays, error: daysLoadError } = await supabase
-      .from("program_days")
-      .select("*")
-      .eq("program_week_id", sourceWeek.id)
-      .order("day_number", { ascending: true });
-
-    if (daysLoadError) {
-      alert(daysLoadError.message);
-      return null;
-    }
-
-    for (const sourceDay of sourceDays || []) {
-      const { data: createdDay, error: dayError } = await supabase
-        .from("program_days")
-        .insert({
-          title: sourceDay.title,
-          day_number: sourceDay.day_number,
-          program_week_id: createdWeek.id,
-          notes: sourceDay.notes || "",
-          warmup: sourceDay.warmup || "",
-        })
-        .select("*")
-        .single();
-
-      if (dayError || !createdDay) {
-        alert(dayError?.message || "Dag kon niet worden gekopieerd");
-        return null;
-      }
-
-      const { data: sourceExercises, error: exercisesLoadError } =
-        await supabase
-          .from("program_exercises")
-          .select("*")
-          .eq("program_day_id", sourceDay.id)
-          .order("created_at", { ascending: true });
-
-      if (exercisesLoadError) {
-        alert(exercisesLoadError.message);
-        return null;
-      }
-
-      if ((sourceExercises || []).length > 0) {
-        const exercisesToInsert = (sourceExercises || []).map((exercise) => ({
-          program_day_id: createdDay.id,
-          name: normalizeExerciseName(exercise.name),
-          sets: exercise.sets || "",
-          reps: exercise.reps || "",
-          load: exercise.load || "",
-          rpe: exercise.rpe || "",
-          notes: exercise.notes || "",
-          priority: exercise.priority || "",
-        }));
-
-        const { error: insertExercisesError } = await supabase
-          .from("program_exercises")
-          .insert(exercisesToInsert);
-
-        if (insertExercisesError) {
-          alert(insertExercisesError.message);
-          return null;
-        }
-      }
-    }
-
-    return createdWeek as ProgramWeek;
+    return createdWeek;
   }
 
 

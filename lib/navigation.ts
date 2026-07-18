@@ -63,6 +63,12 @@ export function getNavLinks(
       description: "Maandprijzen en Stripe-koppeling.",
     },
     {
+      href: "/coach/subscriptions",
+      icon: "🔄",
+      title: "Abonnementen",
+      description: "Stripe-abonnementen van je atleten.",
+    },
+    {
       href: "/organisatie",
       icon: "🏢",
       title: "Organisatie",
@@ -180,6 +186,7 @@ const COACH_GROUP_MAP: Record<string, NavGroup["label"]> = {
   "/programs": "Data",
   "/merch": "Admin",
   "/betalingen": "Admin",
+  "/coach/subscriptions": "Admin",
   "/organisatie": "Admin",
   "/limitless-data": "Admin",
   "/admin": "Admin",
@@ -285,6 +292,7 @@ const PAGE_TITLE_OVERRIDES: Record<string, string> = {
   "/atleten-overzicht": "Atleten overzicht",
   "/athlete-profiles": "Atleten profielen",
   "/organisatie": "Organisatie",
+  "/coach/subscriptions": "Abonnementen",
   "/ai-vragen": "AI-vragen",
   "/statistics": "Statistieken",
   "/raw-data": "Ruwe data",

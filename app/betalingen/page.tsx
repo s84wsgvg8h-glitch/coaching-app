@@ -216,6 +216,14 @@ function BetalingenPageContent() {
         <PageHeader
           title="Betalingen"
           description="Overzicht van maandprijzen per atleet en Stripe-koppeling voor online betalingen."
+          actions={
+            <Link
+              href="/coach/subscriptions"
+              className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center rounded-xl border border-app-border-strong bg-app-surface-muted px-4 text-[13px] font-semibold text-app-text transition hover:border-app-accent/35 sm:w-auto"
+            >
+              Stripe-abonnementen
+            </Link>
+          }
         />
 
         {message ? (

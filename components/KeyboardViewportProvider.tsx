@@ -26,7 +26,9 @@ export function KeyboardViewportProvider({
 }) {
   const pathname = usePathname();
   const enabled =
-    !isChromelessRoute(pathname) && !pathname.startsWith("/chat");
+    !isChromelessRoute(pathname) &&
+    !pathname.startsWith("/chat") &&
+    pathname !== "/profile";
   const viewport = useKeyboardViewportSync(enabled);
 
   return (

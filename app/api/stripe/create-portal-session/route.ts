@@ -4,7 +4,9 @@ import { getAppUrl } from "@/lib/appUrl";
 import { getOrCreateStripeCustomer } from "@/lib/stripeCustomer";
 import { stripeConnectOptions } from "@/lib/stripeConnect";
 import { requireStripe } from "@/lib/stripe";
-import { getSubscriptionStatus } from "@/lib/subscriptionStatus";
+import {
+  ensureAthleteCoachingSubscriptionSynced,
+} from "@/lib/subscriptionStatus";
 import { requireSupabaseServiceClient } from "@/lib/supabaseService";
 
 export async function POST(request: NextRequest) {
@@ -30,7 +32,10 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const subscription = await getSubscriptionStatus(service, user.id);
+  const subscription = await ensureAthleteCoachingSubscriptionSynced(
+    service,
+    user.id,
+  );
   const connectAccountId =
     subscription?.stripe_connect_account_id?.trim() ||
     (profile?.stripe_connect_customer_account_id as string | null)?.trim() ||

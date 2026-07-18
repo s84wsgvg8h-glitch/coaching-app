@@ -2,8 +2,7 @@
 
 import { useLayoutEffect } from "react";
 import { usePathname } from "next/navigation";
-import { isChatPath } from "@/lib/viewportPin";
-import { pinAppViewport, syncMobileViewport } from "@/lib/viewportPin";
+import { isChatPath, isMobileInnerScrollPath, pinAppViewport, syncMobileViewport } from "@/lib/viewportPin";
 
 export default function AppViewportRoot({
   children,
@@ -12,6 +11,7 @@ export default function AppViewportRoot({
 }) {
   const pathname = usePathname();
   const chatRoute = isChatPath(pathname);
+  const innerScrollRoute = isMobileInnerScrollPath(pathname);
 
   useLayoutEffect(() => {
     if (chatRoute) {
@@ -26,6 +26,8 @@ export default function AppViewportRoot({
     }
 
     function onVisualViewportScroll() {
+      // Inner-scroll shells (profile): never react to rubber-band viewport drift.
+      if (innerScrollRoute) return;
       pinAppViewport(pathname);
       sync();
     }
@@ -71,7 +73,7 @@ export default function AppViewportRoot({
       document.removeEventListener("focusin", onFocusIn);
       document.removeEventListener("focusout", onFocusOut);
     };
-  }, [pathname, chatRoute]);
+  }, [pathname, chatRoute, innerScrollRoute]);
 
   useLayoutEffect(() => {
     syncMobileViewport(pathname);

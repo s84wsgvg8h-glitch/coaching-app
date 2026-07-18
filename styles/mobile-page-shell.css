@@ -98,6 +98,21 @@
     padding-bottom: max(1.5rem, env(safe-area-inset-bottom, 0px)) !important;
   }
 
+  /* Long intake form: top-aligned scroll (centering clips top fields on native). */
+  html.capacitor-native .auth-shell.intake-page-shell,
+  .app-viewport-root .auth-shell.intake-page-shell {
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    max-height: none !important;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
+    padding-top: max(1.5rem, env(safe-area-inset-top, 0px)) !important;
+    padding-bottom: max(2rem, calc(env(safe-area-inset-bottom, 0px) + 1.5rem)) !important;
+  }
+
   .app-viewport-root .athlete-route-loading-shell {
     position: absolute !important;
     inset: 0 !important;

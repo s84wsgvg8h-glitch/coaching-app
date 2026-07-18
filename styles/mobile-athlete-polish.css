@@ -329,15 +329,29 @@
     color: #f87171;
   }
 
-  html:not(.dark)   .app-shell--athlete-profile-mobile .mobile-page-shell__body {
+  .app-shell--athlete-profile-mobile .mobile-page-shell__body--scroll {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
-    overscroll-behavior: contain;
+    overscroll-behavior-y: auto;
+    touch-action: pan-y;
+  }
+
+  .app-shell--athlete-profile-mobile
+    .mobile-page-shell--reserve-bottom-nav
+    .mobile-page-shell__body {
+    padding-bottom: calc(var(--mobile-nav-total-height) + 1.5rem);
   }
 
   .app-shell--athlete-profile-mobile .athlete-app-layout {
-    min-height: 0;
+    flex: none;
+    min-height: min-content;
+    width: 100%;
+  }
+
+  .app-shell--athlete-profile-mobile .profile-settings-root {
+    flex: none;
+    min-height: min-content;
   }
 
   .shell-topbar-action-chip--active {

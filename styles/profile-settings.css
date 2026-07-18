@@ -33,11 +33,11 @@
   }
 
   .profile-settings-root {
-    min-height: 0;
-    flex: 1;
+    min-width: 0;
   }
 
   .profile-settings-main {
+    flex: none;
     border: none;
     border-radius: 16px;
     padding: 1rem;

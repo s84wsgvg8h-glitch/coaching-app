@@ -149,7 +149,7 @@ function ProfilePageContent() {
   }, [role]);
 
   function setSection(sectionId: string) {
-    router.replace(`/profile?section=${sectionId}`);
+    router.replace(`/profile?section=${sectionId}`, { scroll: false });
   }
 
   async function saveProfile(clearPasswordAfterSave = true) {
