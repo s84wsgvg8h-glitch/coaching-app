@@ -31,6 +31,21 @@ import {
 import { createProgramWeekNavElements } from "../_utils/programWeekNavElements";
 import ProgramWeekPageView from "./ProgramWeekPageView";
 
+type ProgramEditorView = "card" | "raw" | "athlete" | "progression";
+
+function getProgramEditorView(view: string | null): ProgramEditorView | null {
+  if (
+    view === "raw" ||
+    view === "card" ||
+    view === "athlete" ||
+    view === "progression"
+  ) {
+    return view;
+  }
+
+  return null;
+}
+
 export default function ProgramWeekPageProvider() {
   const params = useParams();
   const router = useRouter();
@@ -42,12 +57,22 @@ export default function ProgramWeekPageProvider() {
   const focusDayId = searchParams.get("focusDay");
   const embeddedInChat = searchParams.get("embedded") === "chat";
   const viewParam = searchParams.get("view");
+  const routeKey = `${blockId}:${weekId}`;
 
   const [blockIntakeWizard, setBlockIntakeWizard] =
     useState<BlockIntakeWizard | null>(null);
   const [templateApplyOpen, setTemplateApplyOpen] = useState(false);
   const [isPending, startTransition] = useTransition();
-  const [navigatingUrl, setNavigatingUrl] = useState("");
+  const [navigationState, setNavigationState] = useState({
+    routeKey,
+    url: "",
+  });
+  const navigatingUrl =
+    navigationState.routeKey === routeKey ? navigationState.url : "";
+  const setNavigatingUrl = useCallback(
+    (url: string) => setNavigationState({ routeKey, url }),
+    [routeKey],
+  );
   const [athleteCurrentMaxes, setAthleteCurrentMaxes] =
     useState<AthleteCurrentMaxes | null>(null);
   const [showE1rmInline, setShowE1rmInline] = useState(true);
@@ -58,20 +83,19 @@ export default function ProgramWeekPageProvider() {
   const [previewLibraryItem, setPreviewLibraryItem] =
     useState<ExerciseLibraryItem | null>(null);
   const [planningSplitOpen, setPlanningSplitOpen] = useState(false);
-  const [editorView, setEditorView] = useState<
-    "card" | "raw" | "athlete" | "progression"
-  >(() => {
-    if (
-      viewParam === "raw" ||
-      viewParam === "card" ||
-      viewParam === "athlete" ||
-      viewParam === "progression"
-    ) {
-      return viewParam;
-    }
-    return "card";
-  });
+  const [editorView, setEditorView] = useState<ProgramEditorView>(
+    () => getProgramEditorView(viewParam) ?? "card",
+  );
+  const [syncedViewParam, setSyncedViewParam] = useState(viewParam);
   const [planningPanelHeight, setPlanningPanelHeight] = useState(360);
+
+  if (viewParam !== syncedViewParam) {
+    setSyncedViewParam(viewParam);
+    const nextEditorView = getProgramEditorView(viewParam);
+    if (nextEditorView && nextEditorView !== editorView) {
+      setEditorView(nextEditorView);
+    }
+  }
 
   useOfflineSetSync(setOfflineQueueCount);
 
@@ -205,20 +229,8 @@ export default function ProgramWeekPageProvider() {
   }, [navigation.loadProgramNavigation]);
 
   useLayoutEffect(() => {
-    setNavigatingUrl("");
     void loadData();
   }, [blockId, weekId]);
-
-  useEffect(() => {
-    if (
-      viewParam === "raw" ||
-      viewParam === "card" ||
-      viewParam === "athlete" ||
-      viewParam === "progression"
-    ) {
-      setEditorView(viewParam);
-    }
-  }, [viewParam]);
 
   const videoRecorder = useProgramVideoRecorder({
     onUpload: (exercise, setNumber, file, caption) =>
@@ -464,7 +476,10 @@ export default function ProgramWeekPageProvider() {
     [days, exercisesByDay, currentBlock, week],
   );
 
-  const blockWeeks = weeksByBlock[blockId] || [];
+  const blockWeeks = useMemo(
+    () => weeksByBlock[blockId] || [],
+    [blockId, weeksByBlock],
+  );
   const progression = useProgramWeekProgressionSnapshot(
     isCoachView && editorView === "progression",
     blockWeeks,

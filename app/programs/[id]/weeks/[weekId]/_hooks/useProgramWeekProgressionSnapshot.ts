@@ -12,23 +12,24 @@ export function useProgramWeekProgressionSnapshot(
   enabled: boolean,
   weeks: ProgramWeek[],
 ) {
-  const [snapshot, setSnapshot] = useState<BlockProgressionSnapshot | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<{
+    requestKey: string;
+    snapshot: BlockProgressionSnapshot | null;
+  }>({ requestKey: "", snapshot: null });
+  const [refreshing, setRefreshing] = useState(false);
   const weekKey = useMemo(
     () => weeks.map((week) => week.id).join("|"),
     [weeks],
   );
+  const requestKey = enabled && weeks.length > 0 ? weekKey : "";
 
-  const loadSnapshot = useCallback(async () => {
+  const fetchSnapshot = useCallback(async () => {
     if (!enabled || weeks.length === 0) {
-      setSnapshot(null);
-      setLoading(false);
-      return;
+      return null;
     }
 
-    setLoading(true);
     try {
-      const nextSnapshot = await fetchBlockProgressionSnapshot(
+      return await fetchBlockProgressionSnapshot(
         weeks,
         async (weekIds) => {
           const { data, error } = await supabase
@@ -54,22 +55,43 @@ export function useProgramWeekProgressionSnapshot(
           return (data ?? []) as ProgramExercise[];
         },
       );
-
-      setSnapshot(nextSnapshot);
     } catch {
-      setSnapshot(null);
-    } finally {
-      setLoading(false);
+      return null;
     }
   }, [enabled, weeks]);
 
   useEffect(() => {
-    void loadSnapshot();
-  }, [loadSnapshot, weekKey]);
+    let cancelled = false;
+
+    void fetchSnapshot().then((snapshot) => {
+      if (!cancelled) {
+        setResult({ requestKey, snapshot });
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchSnapshot, requestKey]);
+
+  const refreshProgressionSnapshot = useCallback(async () => {
+    setRefreshing(true);
+    const snapshot = await fetchSnapshot();
+    setResult({ requestKey, snapshot });
+    setRefreshing(false);
+  }, [fetchSnapshot, requestKey]);
+
+  const hasActiveRequest = enabled && weeks.length > 0;
+  const snapshot =
+    hasActiveRequest && result.requestKey === requestKey
+      ? result.snapshot
+      : null;
+  const loading =
+    refreshing || (hasActiveRequest && result.requestKey !== requestKey);
 
   return {
     snapshot,
     loading,
-    refreshProgressionSnapshot: loadSnapshot,
+    refreshProgressionSnapshot,
   };
 }

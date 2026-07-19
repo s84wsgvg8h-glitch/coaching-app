@@ -143,7 +143,7 @@ export default function CoachSubscriptionsPage() {
     const token = session?.access_token;
 
     if (!token) {
-      window.location.href = "/login";
+      window.location.assign("/login");
       return;
     }
 
@@ -174,7 +174,7 @@ export default function CoachSubscriptionsPage() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        window.location.href = "/login";
+        window.location.assign("/login");
         return;
       }
 
@@ -185,7 +185,7 @@ export default function CoachSubscriptionsPage() {
         .maybeSingle();
 
       if (!isCoachLikeRole(profile?.role)) {
-        window.location.href = "/dashboard";
+        window.location.assign("/dashboard");
         return;
       }
 
@@ -210,7 +210,7 @@ export default function CoachSubscriptionsPage() {
     const token = session?.access_token;
 
     if (!token) {
-      window.location.href = "/login";
+      window.location.assign("/login");
       return;
     }
 

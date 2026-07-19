@@ -62,18 +62,6 @@ function ProfilePageContent() {
   useEffect(() => {
     if (!userId) return;
 
-    setEmail(authEmail);
-    setEditedEmail(authEmail);
-    if (authProfile?.full_name) {
-      setEditedFullName(authProfile.full_name);
-    }
-    if (authRole) {
-      setRole(authRole);
-    }
-    if (authProfile?.business_name) {
-      setBusinessName(authProfile.business_name);
-    }
-
     async function loadProfileDetails() {
       const client = getRealSupabase();
       const { data } = await client
@@ -82,16 +70,15 @@ function ProfilePageContent() {
         .eq("id", userId)
         .maybeSingle();
 
-      if (data) {
-        setEditedFullName(data.full_name || authProfile?.full_name || "");
-        setRole(data.role || authRole || "");
-        setLidnummer(data.lidnummer || "");
-        setGeboortedatum(data.geboortedatum || "");
-        setGoalsText((data.goals_text as string | null) || "");
-        setAvatarUrl(data.avatar_url || null);
-        setBusinessName(data.business_name || authProfile?.business_name || "");
-      }
-
+      setEmail(authEmail);
+      setEditedEmail(authEmail);
+      setEditedFullName(data?.full_name || authProfile?.full_name || "");
+      setRole(data?.role || authRole || "");
+      setLidnummer(data?.lidnummer || "");
+      setGeboortedatum(data?.geboortedatum || "");
+      setGoalsText((data?.goals_text as string | null) || "");
+      setAvatarUrl(data?.avatar_url || null);
+      setBusinessName(data?.business_name || authProfile?.business_name || "");
       setProfileLoaded(true);
     }
 

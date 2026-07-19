@@ -28,7 +28,7 @@ export type UseProgramWeekNavigationOptions = {
   router: AppRouterInstance;
   startTransition: TransitionStartFunction;
   navigatingUrl: string;
-  setNavigatingUrl: Dispatch<SetStateAction<string>>;
+  setNavigatingUrl: (url: string) => void;
   setCurrentBlock: Dispatch<SetStateAction<ProgramBlock | null>>;
   setWeek: Dispatch<SetStateAction<ProgramWeek | null>>;
   onReload: () => Promise<void>;

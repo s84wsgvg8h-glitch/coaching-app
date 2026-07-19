@@ -220,6 +220,8 @@ export default function ChatAppClient() {
   const [bootstrapping, setBootstrapping] = useState(
     () => !overviewQuery.data,
   );
+  const isBootstrapping =
+    bootstrapping || (overviewQuery.isPending && !overviewQuery.data);
   const [switchingConversation, setSwitchingConversation] = useState(false);
   const [userId, setUserId] = useState("");
   const [userRole, setUserRole] = useState("");
@@ -371,12 +373,6 @@ export default function ChatAppClient() {
       );
     }
 
-    if (overviewQuery.isPending && !overviewQuery.data) {
-      setBootstrapping(true);
-    } else if (overviewQuery.data) {
-      setBootstrapping(false);
-    }
-
     void syncOverview();
 
     return () => {
@@ -401,11 +397,11 @@ export default function ChatAppClient() {
 
   useEffect(() => {
     const athleteId = searchParams.get("athlete");
-    if (!athleteId || bootstrapping) return;
+    if (!athleteId || isBootstrapping) return;
     if (pathname === `/chat/${athleteId}`) return;
 
     router.replace(`/chat/${athleteId}`);
-  }, [bootstrapping, pathname, router, searchParams]);
+  }, [isBootstrapping, pathname, router, searchParams]);
 
   useEffect(() => {
     document.body.style.overflow = "hidden";
@@ -415,15 +411,15 @@ export default function ChatAppClient() {
   }, []);
 
   useEffect(() => {
-    if (!userId || bootstrapping) return;
+    if (!userId || isBootstrapping) return;
 
     isInitialScrollRef.current = true;
     shouldStickToBottomRef.current = true;
     void switchConversation(activeRoute);
-  }, [activeRoute.id, activeRoute.type, userId, bootstrapping]);
+  }, [activeRoute.id, activeRoute.type, userId, isBootstrapping]);
 
   useEffect(() => {
-    if (!userId || bootstrapping) return;
+    if (!userId || isBootstrapping) return;
 
     async function syncActiveConversationReadState() {
       if (activeUserId) {
@@ -449,7 +445,7 @@ export default function ChatAppClient() {
     }
 
     void syncActiveConversationReadState();
-  }, [activeUserId, activeGroupId, userId, bootstrapping]);
+  }, [activeUserId, activeGroupId, userId, isBootstrapping]);
 
   useEffect(() => {
     if (messages.length === 0) return;
@@ -593,7 +589,7 @@ export default function ChatAppClient() {
   });
 
   useEffect(() => {
-    if (bootstrapping) return;
+    if (isBootstrapping) return;
     if (!activeUserId && !activeGroupId) return;
     if (mediaCaptureOpen || broadcastOpen || pollCreateOpen || createGroupOpen) {
       return;
@@ -607,7 +603,7 @@ export default function ChatAppClient() {
   }, [
     activeUserId,
     activeGroupId,
-    bootstrapping,
+    isBootstrapping,
     mediaCaptureOpen,
     broadcastOpen,
     pollCreateOpen,
@@ -2946,7 +2942,7 @@ export default function ChatAppClient() {
           </div>
 
           <div className="chat-list-scroll">
-            {bootstrapping && (
+            {isBootstrapping && (
               <div className="px-4 py-4">
                 <SkeletonList rows={6} />
               </div>
@@ -2958,7 +2954,7 @@ export default function ChatAppClient() {
               )}
 
             {searchQuery.trim().length > 0 &&
-              !bootstrapping &&
+              !isBootstrapping &&
               filteredEntries.length === 0 && (
                 <p className="px-4 py-4 text-sm text-app-muted">Geen chats gevonden.</p>
               )}
@@ -3011,7 +3007,7 @@ export default function ChatAppClient() {
               </>
             )}
 
-            {searchQuery.trim().length < 2 && !bootstrapping && filteredEntries.length === 0 && (
+            {searchQuery.trim().length < 2 && !isBootstrapping && filteredEntries.length === 0 && (
               <p className="px-4 py-6 text-sm text-app-muted">
                 {listFilter === "unread"
                   ? "Geen ongelezen chats."
