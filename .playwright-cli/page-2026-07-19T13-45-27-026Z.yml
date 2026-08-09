@@ -1,0 +1,30 @@
+- generic [active] [ref=e1]:
+  - link "Naar inhoud" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - main [ref=e5]:
+    - generic [ref=e6]:
+      - paragraph [ref=e7]: Limitless Coaching
+      - heading "Inloggen" [level=1] [ref=e8]
+      - paragraph [ref=e9]: Welkom terug bij je coaching workspace
+      - generic [ref=e10]:
+        - generic [ref=e11]:
+          - generic [ref=e12]: E-mail
+          - textbox "E-mail" [ref=e13]:
+            - /placeholder: jij@email.nl
+        - generic [ref=e14]:
+          - generic [ref=e15]: Wachtwoord
+          - textbox "Wachtwoord" [ref=e16]:
+            - /placeholder: ••••••••
+        - link "Wachtwoord vergeten?" [ref=e18] [cursor=pointer]:
+          - /url: /reset-password
+        - button "Inloggen" [ref=e19]
+        - paragraph [ref=e20]:
+          - text: Door verder te gaan ga je akkoord met ons
+          - link "privacybeleid" [ref=e21] [cursor=pointer]:
+            - /url: /privacy
+          - text: en onze
+          - link "algemene voorwaarden" [ref=e22] [cursor=pointer]:
+            - /url: /voorwaarden
+          - text: .
+      - paragraph [ref=e24]: Nog geen account? Vraag je coach of admin om een uitnodigingslink.
+  - alert [ref=e25]
