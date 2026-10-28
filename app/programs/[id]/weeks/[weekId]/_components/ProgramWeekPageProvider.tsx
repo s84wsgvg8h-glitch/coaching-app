@@ -6,6 +6,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useOfflineSetSync } from "@/hooks/useOfflineSetSync";
 import { useOfflineProgramSync } from "@/hooks/useOfflineProgramSync";
 import { PROGRAM_OFFLINE_SYNC_COMPLETE_EVENT } from "@/lib/offlineProgramEditQueue";
+import { PROGRAM_BLOCK_EXERCISES_UPDATED_EVENT } from "@/lib/programWeek/applyExerciseAcrossBlock";
 import { useProgramVideoRecorder } from "@/hooks/useProgramVideoRecorder";
 import { useAuth } from "@/components/AuthProvider";
 import { insertAthleteExtraExerciseForDay, deleteAthleteExtraExercise, updateAthleteExtraExerciseName, type AthleteExtraExerciseInput } from "@/lib/athleteExtraExercise";
@@ -1019,6 +1020,25 @@ export default function ProgramWeekPageProvider() {
     blockWeeks,
     progressionAthleteId,
   );
+
+  useEffect(() => {
+    function handleBlockExercisesUpdated(event: Event) {
+      const detail = (event as CustomEvent<{ blockId?: string }>).detail;
+      if (detail?.blockId !== blockId) return;
+      void progression.refreshProgressionSnapshot({ silent: true });
+    }
+
+    window.addEventListener(
+      PROGRAM_BLOCK_EXERCISES_UPDATED_EVENT,
+      handleBlockExercisesUpdated,
+    );
+    return () => {
+      window.removeEventListener(
+        PROGRAM_BLOCK_EXERCISES_UPDATED_EVENT,
+        handleBlockExercisesUpdated,
+      );
+    };
+  }, [blockId, progression.refreshProgressionSnapshot]);
 
   const addAthleteExtraExercise = useCallback(
     async (

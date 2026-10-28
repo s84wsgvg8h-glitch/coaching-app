@@ -209,6 +209,7 @@ export type CoachProgramWeekContentProps = {
   compareCurrentBlock?: ProgramBlock | null;
   compareCurrentWeek?: ProgramWeek | null;
   onCompareOpenWeek?: (blockId: string, weekId: string) => void;
+  applyAllWeeksBlockId?: string;
 };
 
 export default function CoachProgramWeekContent({
@@ -306,6 +307,7 @@ export default function CoachProgramWeekContent({
   compareCurrentBlock = null,
   compareCurrentWeek = null,
   onCompareOpenWeek,
+  applyAllWeeksBlockId = "",
 }: CoachProgramWeekContentProps) {
   const [contextMenu, setContextMenu] = useState<
     | {
@@ -390,6 +392,7 @@ export default function CoachProgramWeekContent({
           showCompareView={isCoach}
           userId={userId}
           role={role}
+          applyAllWeeksBlockId={isCoach ? applyAllWeeksBlockId : ""}
         />
       )}
 

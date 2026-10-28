@@ -58,6 +58,10 @@ import {
 import { supabase } from "@/lib/supabaseClient";
 import { showAppToast } from "@/lib/appToast";
 import {
+  applyExercisePatchAcrossBlock,
+  isApplyAllWeeksActive,
+} from "@/lib/programWeek/applyExerciseAcrossBlock";
+import {
   applyExerciseMovePreview,
   EXERCISE_DROP_EMPTY_DAY,
   type ExerciseDropIndicator,
@@ -141,6 +145,27 @@ export function useProgramWeekCoachMutations({
   const [uitlegMode, setUitlegMode] = useState(false);
   const offlineCtx = { blockId, weekId };
   const creatingDayRef = useRef(false);
+
+  async function propagateExercisePatch(
+    exerciseId: string,
+    patch: Record<string, string | number | null>,
+  ) {
+    if (!isApplyAllWeeksActive(blockId)) return;
+
+    try {
+      await applyExercisePatchAcrossBlock({
+        blockId,
+        exerciseId,
+        patch,
+      });
+    } catch (error) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: string }).message || "")
+          : "";
+      showAppToast(message || "Andere weken konden niet worden bijgewerkt.");
+    }
+  }
 
   async function createDay(dayNumber: number) {
     if (creatingDayRef.current) return;
@@ -535,6 +560,9 @@ export function useProgramWeekCoachMutations({
           [field]: cleanValue,
         });
       });
+      await propagateExercisePatch(exerciseId, {
+        [field]: cleanValue as string | number | null,
+      });
     } catch {
       setExercisesByDay(previousExercisesByDay);
       await loadDays();
@@ -587,6 +615,10 @@ export function useProgramWeekCoachMutations({
       await runSave(async () => {
         await offlineUpdateProgramExercise(offlineCtx, exerciseId, cleanUpdates);
       });
+      await propagateExercisePatch(
+        exerciseId,
+        cleanUpdates as Record<string, string | number | null>,
+      );
       return true;
     } catch {
       setExercisesByDay(previousExercisesByDay);
@@ -622,6 +654,7 @@ export function useProgramWeekCoachMutations({
       await runSave(async () => {
         await offlineUpdateProgramExercise(offlineCtx, exerciseId, { priority });
       });
+      await propagateExercisePatch(exerciseId, { priority });
     } catch {
       setExercisesByDay(previousExercisesByDay);
       await loadDays();
@@ -651,6 +684,7 @@ export function useProgramWeekCoachMutations({
       await runSave(async () => {
         await offlineUpdateProgramExercise(offlineCtx, exerciseId, { notes: "" });
       });
+      await propagateExercisePatch(exerciseId, { notes: "" });
     } catch {
       setExercisesByDay(previousExercisesByDay);
       await loadDays();
@@ -697,6 +731,10 @@ export function useProgramWeekCoachMutations({
           load: newLoad,
           rpe: newRpe,
         });
+      });
+      await propagateExercisePatch(exercise.id, {
+        load: newLoad,
+        rpe: newRpe,
       });
     } catch {
       setExercisesByDay(previousExercisesByDay);

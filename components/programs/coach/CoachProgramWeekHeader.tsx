@@ -4,6 +4,10 @@ import { useState } from "react";
 import Link from "next/link";
 import { ChevronDown, ChevronLeft } from "lucide-react";
 import CoachProgramWeekCompareView from "@/components/programs/coach/CoachProgramWeekCompareView";
+import {
+  ApplyAllWeeksBadge,
+  ApplyAllWeeksButton,
+} from "@/components/programs/coach/ApplyAllWeeksControl";
 import CoachProgramWeekStatsModal from "@/components/programs/coach/CoachProgramWeekStatsModal";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
 import type {
@@ -49,6 +53,7 @@ type CoachProgramWeekHeaderProps = {
   onCompareOpenWeek?: (blockId: string, weekId: string) => void;
   userId?: string;
   role?: string;
+  applyAllWeeksBlockId?: string;
 };
 
 export function SbdSummaryPill({
@@ -259,6 +264,7 @@ export default function CoachProgramWeekHeader({
   onCompareOpenWeek,
   userId = "",
   role = "",
+  applyAllWeeksBlockId = "",
 }: CoachProgramWeekHeaderProps) {
   const showAthleteSwitcher = athleteOptions.length > 0 && onAthleteChange;
   const showCompare =
@@ -269,6 +275,12 @@ export default function CoachProgramWeekHeader({
     compareWeekId;
 
   return (
+    <>
+    {applyAllWeeksBlockId ? (
+      <div className="mb-2 lg:hidden">
+        <ApplyAllWeeksButton blockId={applyAllWeeksBlockId} fullWidth />
+      </div>
+    ) : null}
     <div className="coach-program-week-header-wrap hidden lg:block">
         <div className="coach-program-week-header-bar">
           <div className="coach-program-week-header-leading hidden lg:flex">
@@ -291,6 +303,7 @@ export default function CoachProgramWeekHeader({
           <div className="coach-program-week-header-trailing">
             {(showAthleteSwitcher ||
               showCompare ||
+              applyAllWeeksBlockId ||
               (showEditorViewToggle && onEditorViewChange)) ? (
               <div className="coach-program-week-header-center">
                 {showAthleteSwitcher ? (
@@ -300,6 +313,10 @@ export default function CoachProgramWeekHeader({
                     onAthleteChange={onAthleteChange}
                     disabled={athleteSwitching}
                   />
+                ) : null}
+
+                {applyAllWeeksBlockId ? (
+                  <ApplyAllWeeksButton blockId={applyAllWeeksBlockId} />
                 ) : null}
 
                 {showCompare ? (
@@ -329,5 +346,9 @@ export default function CoachProgramWeekHeader({
           </div>
         </div>
       </div>
+    {applyAllWeeksBlockId ? (
+      <ApplyAllWeeksBadge blockId={applyAllWeeksBlockId} />
+    ) : null}
+    </>
   );
 }

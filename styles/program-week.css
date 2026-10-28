@@ -2072,6 +2072,78 @@ html.dark .program-week-shell select {
   color: var(--app-text);
 }
 
+.coach-apply-all-weeks-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-height: var(--coach-program-header-control-height);
+  height: var(--coach-program-header-control-height);
+  padding: 0 0.85rem;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--app-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  white-space: nowrap;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.coach-apply-all-weeks-btn.is-full {
+  width: 100%;
+  min-height: 44px;
+  height: auto;
+}
+
+.coach-apply-all-weeks-btn:hover {
+  border-color: rgba(59, 130, 246, 0.45);
+  color: var(--app-text);
+}
+
+.coach-apply-all-weeks-btn.is-active {
+  border-color: rgba(59, 130, 246, 0.55);
+  background: rgba(59, 130, 246, 0.18);
+  color: #bfdbfe;
+}
+
+.coach-apply-all-weeks-badge {
+  position: fixed;
+  right: 1.25rem;
+  bottom: calc(4.75rem + env(safe-area-inset-bottom));
+  z-index: 45;
+  max-width: min(18rem, calc(100vw - 2rem));
+  padding: 0.7rem 0.9rem;
+  border-radius: 14px;
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  background: rgba(15, 23, 42, 0.94);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  color: #e2e8f0;
+  font-size: 0.8125rem;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .coach-apply-all-weeks-badge {
+    bottom: 1.25rem;
+  }
+}
+
+html:not(.dark) .coach-apply-all-weeks-btn.is-active {
+  color: #1d4ed8;
+  background: rgba(59, 130, 246, 0.14);
+}
+
+html:not(.dark) .coach-apply-all-weeks-badge {
+  background: #ffffff;
+  color: #0f172a;
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.12);
+}
+
 .coach-program-athlete-switcher {
   position: relative;
   display: inline-flex;

@@ -288,6 +288,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       showCompareView={isCoachView}
       userId={userId}
       role={role}
+      applyAllWeeksBlockId={isCoachView ? blockId : ""}
       compareCurrentDays={days}
       compareCurrentExercisesByDay={exercisesByDay}
       {...coachHeaderAthleteProps}
@@ -529,6 +530,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               showEditorViewToggle={isCoachLikeRole(role)}
               {...coachHeaderAthleteProps}
               {...coachCompareProps}
+              applyAllWeeksBlockId={isCoachView ? blockId : ""}
               days={days}
               exercisesByDay={exercisesByDay}
               creatingExerciseDayId={creatingExerciseDayId}
