@@ -1,9 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { Suspense, useEffect, useMemo, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ExternalLink, Loader2, RefreshCw } from "lucide-react";
+import { ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { Badge, PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import SearchInput from "@/components/ui/SearchInput";
@@ -201,7 +201,6 @@ export default function BetalingenPage() {
 function BetalingenPageContent() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(true);
-  const [refreshing, setRefreshing] = useState(false);
   const [connecting, setConnecting] = useState(false);
   const [overview, setOverview] = useState<CoachPaymentOverview | null>(null);
   const [subscriptions, setSubscriptions] = useState<CoachAthleteSubscriptionRow[]>(
@@ -210,9 +209,6 @@ function BetalingenPageContent() {
   const [stripeConnected, setStripeConnected] = useState(false);
   const [stripeConfigured, setStripeConfigured] = useState(true);
   const [stripePendingOnboarding, setStripePendingOnboarding] = useState(false);
-  const [stripeStatus, setStripeStatus] = useState<StripeConnectUiStatus | null>(
-    null,
-  );
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
   const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
@@ -261,7 +257,6 @@ function BetalingenPageContent() {
       accountId: payload.accountId,
     };
 
-    setStripeStatus(nextStatus);
     setStripeConfigured(nextStatus.configured);
     setStripeConnected(nextStatus.connected);
     setStripePendingOnboarding(nextStatus.pendingOnboarding);
@@ -288,9 +283,7 @@ function BetalingenPageContent() {
   }
 
   async function loadPage(options?: { silent?: boolean }) {
-    if (options?.silent) {
-      setRefreshing(true);
-    } else {
+    if (!options?.silent) {
       setLoading(true);
     }
 
@@ -328,7 +321,6 @@ function BetalingenPageContent() {
       setStripeConfigured(true);
       setSubscriptions([]);
       setLoading(false);
-      setRefreshing(false);
       return;
     }
 
@@ -338,26 +330,54 @@ function BetalingenPageContent() {
         refreshStripeStatus(token),
         loadSubscriptions(token),
       ]);
-      const stripeParam = searchParams.get("stripe");
-      if (
-        stripeStatusError &&
-        stripeParam !== "success" &&
-        stripeParam !== "refresh"
-      ) {
-        setMessage(stripeStatusError);
-      } else if (subscriptionError) {
-        setMessage(subscriptionError);
+      if (!options?.silent) {
+        const stripeParam = searchParams.get("stripe");
+        if (
+          stripeStatusError &&
+          stripeParam !== "success" &&
+          stripeParam !== "refresh"
+        ) {
+          setMessage(stripeStatusError);
+        } else if (subscriptionError) {
+          setMessage(subscriptionError);
+        }
       }
     }
 
     setLoading(false);
-    setRefreshing(false);
   }
+
+  const reloadLiveRef = useRef<() => void>(() => {});
+  reloadLiveRef.current = () => {
+    void loadPage({ silent: true });
+  };
 
   useEffect(() => {
     void loadPage();
     // searchParams is read for the banner, not as a reload trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    let lastFetchAt = Date.now();
+
+    const reloadIfDue = () => {
+      if (document.visibilityState === "hidden") return;
+      const now = Date.now();
+      if (now - lastFetchAt < 4000) return;
+      lastFetchAt = now;
+      reloadLiveRef.current();
+    };
+
+    const interval = window.setInterval(reloadIfDue, 10000);
+    document.addEventListener("visibilitychange", reloadIfDue);
+    window.addEventListener("focus", reloadIfDue);
+
+    return () => {
+      window.clearInterval(interval);
+      document.removeEventListener("visibilitychange", reloadIfDue);
+      window.removeEventListener("focus", reloadIfDue);
+    };
   }, []);
 
   useEffect(() => {
@@ -476,19 +496,20 @@ function BetalingenPageContent() {
       <PageContainer size="full">
         <PageHeader
           title="Betalingen"
-          description="Maandprijzen en Stripe-abonnementen per atleet. Zie direct wie er al een abonnement heeft."
           actions={
             <button
               type="button"
-              onClick={() => void loadPage({ silent: true })}
-              disabled={loading || refreshing}
-              className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border-strong bg-app-surface px-4 text-[13px] font-semibold text-app-text transition hover:border-app-accent/35 disabled:opacity-60 sm:w-auto"
+              onClick={() => void handleConnectStripe()}
+              disabled={loading || connecting || !stripeConfigured}
+              className="app-btn-primary w-full disabled:opacity-50 sm:w-auto"
             >
-              <RefreshCw
-                className={`h-4 w-4 ${refreshing ? "animate-spin" : ""}`}
-                aria-hidden="true"
-              />
-              Vernieuwen
+              {connecting
+                ? "Stripe openen..."
+                : !overview || stripeConnected || overview.stripeConnectOnboardedAt
+                  ? "Beheer Stripe"
+                  : stripePendingOnboarding || overview?.stripeConnectAccountId
+                    ? "Koppeling afronden"
+                    : "Koppel met Stripe"}
             </button>
           }
         />
@@ -505,8 +526,7 @@ function BetalingenPageContent() {
             Betalingen laden…
           </Panel>
         ) : (
-          <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]">
-            <div className="min-w-0">
+          <div className="min-w-0">
               <div className="mb-4 flex flex-col gap-3">
                 <SearchInput
                   value={search}
@@ -591,17 +611,6 @@ function BetalingenPageContent() {
                   </>
                 )}
               </Panel>
-            </div>
-
-            <StripeConnectPanel
-              overview={overview}
-              stripeConfigured={stripeConfigured}
-              stripeConnected={stripeConnected}
-              stripePendingOnboarding={stripePendingOnboarding}
-              stripeStatus={stripeStatus}
-              connecting={connecting}
-              onConnect={() => void handleConnectStripe()}
-            />
           </div>
         )}
       </PageContainer>
@@ -644,7 +653,7 @@ function PaymentAthleteRow({
 
   return (
     <tr className="border-b border-app-border/70 last:border-b-0">
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-middle">
         {row.athleteId ? (
           <Link
             href={`/athletes/${row.athleteId}`}
@@ -659,9 +668,9 @@ function PaymentAthleteRow({
           <p className="mt-0.5 text-[12px] text-app-muted">{row.athleteEmail}</p>
         ) : null}
       </td>
-      <td className="px-4 py-3 align-top">{formatPaymentPrice(row.monthlyPrice)}</td>
-      <td className="px-4 py-3 align-top">{row.paymentDay ?? "—"}</td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-middle">{formatPaymentPrice(row.monthlyPrice)}</td>
+      <td className="px-4 py-3 align-middle">{row.paymentDay ?? "—"}</td>
+      <td className="px-4 py-3 align-middle">
         <SubscriptionStatus subscription={row.subscription} />
         {row.subscription?.cancelAtPeriodEnd ? (
           <p className="mt-1 text-[11px] font-medium text-amber-400">
@@ -669,8 +678,8 @@ function PaymentAthleteRow({
           </p>
         ) : null}
       </td>
-      <td className="px-4 py-3 align-top text-app-muted">{nextPaymentLabel(row)}</td>
-      <td className="px-4 py-3 align-top">
+      <td className="px-4 py-3 align-middle text-app-muted">{nextPaymentLabel(row)}</td>
+      <td className="px-4 py-3 align-middle">
         {subscriptionId ? (
           <button
             type="button"
@@ -759,114 +768,5 @@ function PaymentAthleteCard({
         </button>
       ) : null}
     </article>
-  );
-}
-
-function StripeConnectPanel({
-  overview,
-  stripeConfigured,
-  stripeConnected,
-  stripePendingOnboarding,
-  stripeStatus,
-  connecting,
-  onConnect,
-}: {
-  overview: CoachPaymentOverview;
-  stripeConfigured: boolean;
-  stripeConnected: boolean;
-  stripePendingOnboarding: boolean;
-  stripeStatus: StripeConnectUiStatus | null;
-  connecting: boolean;
-  onConnect: () => void;
-}) {
-  return (
-    <Panel>
-      <h2 className="text-[15px] font-semibold text-app-text">Stripe</h2>
-      <p className="mt-2 text-[13px] leading-6 text-app-muted">
-        Koppel je Stripe-account zodat atleten rechtstreeks bij jou betalen.
-        Limitless Coaching rekent geen platformfee.
-      </p>
-
-      <div className="mt-4 space-y-2">
-        <div className="rounded-xl border border-app-border bg-app-surface-muted/40 px-3 py-2.5">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
-            Status
-          </p>
-          <p className="mt-1 text-[13px] font-medium text-app-text">
-            {!stripeConfigured
-              ? "Platform niet geconfigureerd"
-              : stripeConnected || overview.stripeConnectOnboardedAt
-                ? "Stripe actief"
-                : stripePendingOnboarding || overview.stripeConnectAccountId
-                  ? "Koppeling nog afronden"
-                  : "Nog niet gekoppeld"}
-          </p>
-        </div>
-
-        {stripeStatus ? (
-          <div className="grid grid-cols-2 gap-2 text-[12px]">
-            <div className="rounded-xl border border-app-border bg-app-surface-muted/30 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wide text-app-muted">
-                Betalingen
-              </p>
-              <p className="mt-1 font-medium text-app-text">
-                {stripeStatus.chargesEnabled ? "Ingeschakeld" : "Uit"}
-              </p>
-            </div>
-            <div className="rounded-xl border border-app-border bg-app-surface-muted/30 px-3 py-2">
-              <p className="text-[10px] uppercase tracking-wide text-app-muted">
-                Uitbetalingen
-              </p>
-              <p className="mt-1 font-medium text-app-text">
-                {stripeStatus.payoutsEnabled ? "Ingeschakeld" : "Uit"}
-              </p>
-            </div>
-          </div>
-        ) : null}
-
-        {stripeStatus &&
-        (stripeStatus.requirementsDue.length > 0 ||
-          stripeStatus.requirementsPastDue.length > 0) ? (
-          <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-amber-600 dark:text-amber-300">
-              Onboarding vereist
-            </p>
-            <ul className="mt-2 space-y-1 text-[12px] leading-5 text-app-text">
-              {[...stripeStatus.requirementsPastDue, ...stripeStatus.requirementsDue]
-                .slice(0, 6)
-                .map((item) => (
-                  <li key={item}>• {item.replaceAll(".", " ")}</li>
-                ))}
-            </ul>
-          </div>
-        ) : null}
-      </div>
-
-      {!stripeConfigured ? (
-        <p className="mt-3 text-[12px] leading-5 text-app-muted">
-          Voeg{" "}
-          <code className="rounded bg-app-surface-muted px-1 py-0.5 text-[11px]">
-            STRIPE_SECRET_KEY
-          </code>{" "}
-          toe in Vercel Production en redeploy. Daarna kun je hier je
-          Stripe-account koppelen.
-        </p>
-      ) : null}
-
-      <button
-        type="button"
-        onClick={onConnect}
-        disabled={connecting || !stripeConfigured}
-        className="app-btn-primary mt-4 w-full disabled:opacity-50"
-      >
-        {connecting
-          ? "Stripe openen..."
-          : stripeConnected
-            ? "Stripe beheren"
-            : stripePendingOnboarding || overview.stripeConnectAccountId
-              ? "Koppeling afronden"
-              : "Koppel met Stripe"}
-      </button>
-    </Panel>
   );
 }
