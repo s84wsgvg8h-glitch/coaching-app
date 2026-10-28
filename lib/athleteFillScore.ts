@@ -271,3 +271,11 @@ export function getFillScoreColorClass(percentage: number) {
   if (percentage >= 70) return "text-yellow-600";
   return "text-red-600";
 }
+
+/** Athlete dashboard mobile — blue accent instead of green for high scores. */
+export function getAthleteDashboardFillScoreColorClass(percentage: number) {
+  if (percentage >= 90) return "athlete-dashboard-fill-tone--high";
+  if (percentage >= 70) return "athlete-dashboard-fill-tone--mid";
+  if (percentage >= 50) return "text-yellow-500";
+  return "text-red-500";
+}

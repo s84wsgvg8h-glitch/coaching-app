@@ -8,11 +8,7 @@ import { SkeletonList } from "@/components/ui/Skeleton";
 import Toast, { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/ConfirmProvider";
 import AthleteMetricBar from "@/components/coach/athletes/AthleteMetricBar";
-import AthletesFilterTabs, {
-  type AthletesQuickFilter,
-} from "@/components/coach/athletes/AthletesFilterTabs";
 import AthletesHeader from "@/components/coach/athletes/AthletesHeader";
-import AthletesSearchBar from "@/components/coach/athletes/AthletesSearchBar";
 import { athletesGlassCard } from "@/components/coach/athletes/athletesCrmClasses";
 import AthleteOverviewDesktopRow, {
   AthleteOverviewMobileCard,
@@ -22,7 +18,6 @@ import AthleteOverviewDesktopRow, {
 import { supabase } from "@/lib/supabaseClient";
 import { isAdminRole, isCoachLikeRole } from "@/lib/authRoles";
 import {
-  buildMonthlyPaymentHistory,
   formatPaymentPrice,
   formatPaymentPriceCompact,
   loadTotalAthleteIncome,
@@ -67,16 +62,8 @@ type SortKey =
   | "lastActivity";
 
 type SortDir = "asc" | "desc";
-type QuickFilter = AthletesQuickFilter;
 
 export type { AthleteOverviewExportColumn as ColumnKey } from "@/lib/athleteOverviewCsv";
-
-function isAthleteBehind(
-  row: CoachAthleteOverviewRow,
-  status: AthleteStatus,
-) {
-  return status !== "active" || row.fillScore < 70;
-}
 
 function titleCaseName(name: string) {
   return name
@@ -136,7 +123,6 @@ export default function AthleteOverviewPanel({
   const [loading, setLoading] = useState(true);
   const [scoresLoading, setScoresLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [quickFilter, setQuickFilter] = useState<QuickFilter>("all");
   const [sortKey, setSortKey] = useState<SortKey>("name");
   const [sortDir, setSortDir] = useState<SortDir>("asc");
   const [dailyTrackingByAthlete, setDailyTrackingByAthlete] = useState<
@@ -393,32 +379,11 @@ export default function AthleteOverviewPanel({
     );
   }, [rows]);
 
-  const overduePaymentCount = useMemo(() => {
-    let count = 0;
-    for (const row of rows) {
-      const history = buildMonthlyPaymentHistory(row.betalingPrijs, row.betalingDag);
-      count += history.filter((entry) => entry.status === "overdue").length;
-    }
-    return count;
-  }, [rows]);
-
   const filtered = useMemo(() => {
     const query = search.trim().toLowerCase();
 
     const base = rows.filter((row) => {
       if (query && !row.fullName.toLowerCase().includes(query)) return false;
-
-      if (quickFilter === "all") return true;
-
-      if (quickFilter === "non-compliant") {
-        const status = getRowStatus(row);
-        return isAthleteBehind(row, status);
-      }
-
-      if (quickFilter === "meet-prep") {
-        return row.weeksOut !== null && row.weeksOut <= 8;
-      }
-
       return true;
     });
 
@@ -465,7 +430,7 @@ export default function AthleteOverviewPanel({
 
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [rows, search, quickFilter, sortKey, sortDir, getRowStatus, lastActivityByAthlete]);
+  }, [rows, search, sortKey, sortDir, getRowStatus, lastActivityByAthlete]);
 
   const handleExport = useCallback(() => {
     downloadAthleteOverviewCsv(filtered, "fillScore", "Invulscore");
@@ -495,12 +460,12 @@ export default function AthleteOverviewPanel({
           });
         }}
         onInvite={onInviteClick}
+        search={search}
+        onSearchChange={setSearch}
       />
 
-      <div className="mb-5 flex flex-wrap items-center gap-2">
-        <AthletesSearchBar value={search} onChange={setSearch} />
-        <AthletesFilterTabs value={quickFilter} onChange={setQuickFilter} />
-        {selectionMode && selectedAthleteIds.length > 0 ? (
+      {selectionMode && selectedAthleteIds.length > 0 ? (
+        <div className="mb-5 hidden lg:block">
           <button
             type="button"
             onClick={() => void removeSelectedAthletes()}
@@ -508,8 +473,8 @@ export default function AthleteOverviewPanel({
           >
             Verwijder {selectedAthleteIds.length} geselecteerd
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
 
       <AthleteMetricBar
         athleteCount={rows.length}
@@ -519,7 +484,6 @@ export default function AthleteOverviewPanel({
             : "—"
         }
         avgFillScoreLabel={`${avgFillScore}%`}
-        overdueCount={overduePaymentCount}
         scoresLoading={scoresLoading}
       />
 
@@ -622,17 +586,15 @@ export default function AthleteOverviewPanel({
           <EmptyState
             icon="athletes"
             title={
-              quickFilter === "all" && !search.trim()
-                ? "Nodig je eerste atleet uit"
-                : "Geen atleten gevonden"
+              !search.trim() ? "Nodig je eerste atleet uit" : "Geen atleten gevonden"
             }
             description={
-              quickFilter === "all" && !search.trim()
+              !search.trim()
                 ? "Deel een uitnodigingslink om je eerste atleet te koppelen en te beginnen met coachen."
-                : "Pas je zoekopdracht of filters aan om atleten te vinden."
+                : "Pas je zoekopdracht aan om atleten te vinden."
             }
             action={
-              quickFilter === "all" && !search.trim() && onInviteClick ? (
+              !search.trim() && onInviteClick ? (
                 <button
                   type="button"
                   onClick={onInviteClick}
@@ -666,9 +628,6 @@ export default function AthleteOverviewPanel({
                       coachRole,
                       selectionMode,
                       selected: selectedAthleteIds.includes(row.id),
-                      highlightRow:
-                        quickFilter === "non-compliant" &&
-                        isAthleteBehind(row, rowStatus),
                       columnCount: tableColumnCount,
                       onToggleSelect: (selected: boolean) =>
                         setSelectedAthleteIds((current) =>
@@ -704,10 +663,6 @@ export default function AthleteOverviewPanel({
                     coachRole={coachRole}
                     selectionMode={selectionMode}
                     selected={selectedAthleteIds.includes(row.id)}
-                    highlightRow={
-                      quickFilter === "non-compliant" &&
-                      isAthleteBehind(row, rowStatus)
-                    }
                     columnCount={tableColumnCount}
                     onToggleSelect={(selected) =>
                       setSelectedAthleteIds((current) =>

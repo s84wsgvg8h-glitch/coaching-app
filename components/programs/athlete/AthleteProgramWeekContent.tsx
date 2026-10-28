@@ -1,12 +1,18 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import ProgramDayCoachNoteField from "@/components/programs/ProgramDayCoachNoteField";
 import { AthleteProgramDayHeader } from "@/components/programs/athlete/AthleteProgramSidebar";
+import AthleteAddExtraExerciseModal from "@/components/programs/athlete/AthleteAddExtraExerciseModal";
 import AthleteDayCheckinCard from "@/components/programs/athlete/AthleteDayCheckinCard";
 import AthleteExerciseCard, {
   getAthletePriorityBadgeClass,
 } from "@/components/programs/athlete/AthleteExerciseCard";
+import {
+  isAthleteExtraExercise,
+  type AthleteExtraExerciseInput,
+} from "@/lib/athleteExtraExercise";
+import { isAthleteChoiceExercise } from "@/lib/athleteExerciseVariation";
 import { getPrescribedKgFromExercise } from "@/lib/exercisePrescription";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
 import { sortExercisesForDay } from "@/lib/programWeek/sortExercises";
@@ -16,6 +22,7 @@ import type {
   ProgramDay,
   ProgramExercise,
 } from "@/lib/programWeek/types";
+import { formatProgramDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 
 type AthleteProgramWeekContentProps = {
   mobileWeekNav: ReactNode;
@@ -59,6 +66,13 @@ type AthleteProgramWeekContentProps = {
   capitalizeExerciseName: (name: string) => string;
   openAthleteExercisePanel: (exerciseId: string) => void;
   setPreviewLibraryItem: (item: ExerciseLibraryItem) => void;
+  onAddExtraExercise?: (
+    dayId: string,
+    payload: Pick<AthleteExtraExerciseInput, "name" | "sets" | "reps" | "rpe">,
+  ) => Promise<void>;
+  onDeleteExtraExercise?: (exerciseId: string) => Promise<void>;
+  addingExtraExercise?: boolean;
+  deletingExtraExerciseId?: string;
   readOnly?: boolean;
 };
 
@@ -90,11 +104,39 @@ export default function AthleteProgramWeekContent({
   capitalizeExerciseName,
   openAthleteExercisePanel,
   setPreviewLibraryItem,
+  onAddExtraExercise,
+  onDeleteExtraExercise,
+  addingExtraExercise = false,
+  deletingExtraExerciseId = "",
   readOnly = false,
 }: AthleteProgramWeekContentProps) {
+  const [extraExerciseDayId, setExtraExerciseDayId] = useState<string | null>(
+    null,
+  );
+
+  const extraExerciseDay = useMemo(
+    () => days.find((day) => day.id === extraExerciseDayId) ?? null,
+    [days, extraExerciseDayId],
+  );
+
+  const canAddExtraExercise =
+    !readOnly && Boolean(userId) && Boolean(onAddExtraExercise);
+
   return (
     <div className="athlete-program-main min-w-0 max-w-full overflow-x-hidden">
       {mobileWeekNav}
+
+      <AthleteAddExtraExerciseModal
+        open={Boolean(extraExerciseDayId)}
+        dayTitle={formatProgramDayTitle(extraExerciseDay?.title) || "deze dag"}
+        saving={addingExtraExercise}
+        onClose={() => setExtraExerciseDayId(null)}
+        onSubmit={async (payload) => {
+          if (!extraExerciseDayId || !onAddExtraExercise) return;
+          await onAddExtraExercise(extraExerciseDayId, payload);
+          setExtraExerciseDayId(null);
+        }}
+      />
 
       <div className="athlete-program-days-grid">
         {days.map((day) => {
@@ -113,6 +155,8 @@ export default function AthleteProgramWeekContent({
                 dateLabel={getDayDate(day)}
                 hasNote={Boolean(checkin.notes?.trim())}
                 notesOpen={openAthleteDayNotesId === day.id}
+                showAddExercise={canAddExtraExercise}
+                onAddExercise={() => setExtraExerciseDayId(day.id)}
                 onToggleNotes={() =>
                   setOpenAthleteDayNotesId((current) =>
                     current === day.id ? "" : day.id,
@@ -196,6 +240,8 @@ export default function AthleteProgramWeekContent({
                       kgValue.replace(",", "."),
                     );
                     const priority = getExercisePriority(exercise);
+                    const isExtra = isAthleteExtraExercise(exercise);
+                    const isAthleteChoice = isAthleteChoiceExercise(exercise);
 
                     return (
                       <div key={exercise.id} id={`exercise-${exercise.id}`}>
@@ -203,9 +249,14 @@ export default function AthleteProgramWeekContent({
                           name={
                             capitalizeExerciseName(exercise.name) || "Oefening"
                           }
-                          priorityLabel={getExercisePriorityLabel(exercise)}
+                          priorityLabel={
+                            isExtra ? "" : getExercisePriorityLabel(exercise)
+                          }
                           priorityClass={getAthletePriorityBadgeClass(priority)}
                           hasLibraryVideo={Boolean(linkedLibraryItem)}
+                          isExtra={isExtra}
+                          isAthleteChoice={isAthleteChoice}
+                          athleteChoiceExercise={exercise}
                           sets={exercise.sets || "—"}
                           reps={exercise.reps || "—"}
                           rpe={getDisplayIntensity(exercise)}
@@ -226,6 +277,12 @@ export default function AthleteProgramWeekContent({
                               ? () => setPreviewLibraryItem(linkedLibraryItem)
                               : undefined
                           }
+                          onDelete={
+                            isExtra && onDeleteExtraExercise && !readOnly
+                              ? () => onDeleteExtraExercise(exercise.id)
+                              : undefined
+                          }
+                          deleting={deletingExtraExerciseId === exercise.id}
                         />
                       </div>
                     );

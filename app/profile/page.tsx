@@ -31,13 +31,20 @@ import ProfileCoachingSubscriptionSection from "@/components/profile/ProfileCoac
 import ProfileSettingsLayout, {
   type ProfileSettingsSection,
 } from "@/components/profile/ProfileSettingsLayout";
+import ProfileLanguageToggle from "@/components/profile/ProfileLanguageToggle";
+import { useLocale } from "@/components/LocaleProvider";
 import { AthleteProfileSkeleton } from "@/components/mobile/AthleteMobileSkeletons";
 import { updateProfileAvatar, uploadAvatar, toStorageMetadata } from "@/lib/chatAvatars";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import {
+  PROFILE_DETAILS_SELECT,
+  type ProfileDetailsRow,
+} from "@/lib/profileDetails";
 import "@/styles/profile-settings.css";
 
 function ProfilePageContent() {
   const router = useRouter();
+  const { t, locale } = useLocale();
   const searchParams = useSearchParams();
   const activeSection = searchParams.get("section") || "account";
   const { userId, role: authRole, email: authEmail, profile: authProfile } = useAuth();
@@ -62,27 +69,40 @@ function ProfilePageContent() {
   useEffect(() => {
     if (!userId) return;
 
+    let cancelled = false;
+
     async function loadProfileDetails() {
       const client = getRealSupabase();
       const { data } = await client
         .from("profiles")
-        .select("*")
+        .select(PROFILE_DETAILS_SELECT)
         .eq("id", userId)
         .maybeSingle();
 
+      if (cancelled) return;
+
       setEmail(authEmail);
       setEditedEmail(authEmail);
-      setEditedFullName(data?.full_name || authProfile?.full_name || "");
-      setRole(data?.role || authRole || "");
-      setLidnummer(data?.lidnummer || "");
-      setGeboortedatum(data?.geboortedatum || "");
-      setGoalsText((data?.goals_text as string | null) || "");
-      setAvatarUrl(data?.avatar_url || null);
-      setBusinessName(data?.business_name || authProfile?.business_name || "");
+
+      if (data) {
+        const row = data as ProfileDetailsRow;
+        setEditedFullName(row.full_name || authProfile?.full_name || "");
+        setRole(row.role || authRole || "");
+        setLidnummer(row.lidnummer || "");
+        setGeboortedatum(row.geboortedatum || "");
+        setGoalsText(row.goals_text || "");
+        setAvatarUrl(row.avatar_url || null);
+        setBusinessName(row.business_name || authProfile?.business_name || "");
+      }
+
       setProfileLoaded(true);
     }
 
     void loadProfileDetails();
+
+    return () => {
+      cancelled = true;
+    };
   }, [userId, authEmail, authProfile, authRole]);
 
   useEffect(() => {
@@ -118,22 +138,47 @@ function ProfilePageContent() {
   const sections = useMemo<ProfileSettingsSection[]>(() => {
     if (role === "atleet") {
       return [
-        { id: "account", label: "Account", group: "Algemeen", icon: User },
-        { id: "subscription", label: "Abonnement", group: "Algemeen", icon: CreditCard },
-        { id: "maxes", label: "Maxes & RPE", group: "Training", icon: Dumbbell },
-        { id: "athlete", label: "Atleetgegevens", group: "Training", icon: IdCard },
-        { id: "intake", label: "Intake", group: "Training", icon: ClipboardList },
-        { id: "injuries", label: "Blessures", group: "Training", icon: HeartPulse },
-        { id: "preferences", label: "Voorkeuren", group: "Algemeen", icon: Settings2 },
+        { id: "account", label: t("profile.account"), group: t("common.general"), icon: User },
+        {
+          id: "subscription",
+          label: t("profile.subscription"),
+          group: t("common.general"),
+          icon: CreditCard,
+        },
+        { id: "maxes", label: t("profile.maxes"), group: t("common.training"), icon: Dumbbell },
+        {
+          id: "athlete",
+          label: t("profile.athleteDetails"),
+          group: t("common.training"),
+          icon: IdCard,
+        },
+        { id: "intake", label: t("profile.intake"), group: t("common.training"), icon: ClipboardList },
+        { id: "injuries", label: t("profile.injuries"), group: t("common.training"), icon: HeartPulse },
+        {
+          id: "preferences",
+          label: t("profile.preferences"),
+          group: t("common.general"),
+          icon: Settings2,
+        },
       ];
     }
 
     return [
-      { id: "account", label: "Account", group: "Algemeen", icon: User },
-      { id: "settings", label: "Instellingen", group: "Platform", icon: SlidersHorizontal },
-      { id: "preferences", label: "Voorkeuren", group: "Algemeen", icon: Settings2 },
+      { id: "account", label: t("profile.account"), group: t("common.general"), icon: User },
+      {
+        id: "settings",
+        label: t("profile.settings"),
+        group: t("common.platform"),
+        icon: SlidersHorizontal,
+      },
+      {
+        id: "preferences",
+        label: t("profile.preferences"),
+        group: t("common.general"),
+        icon: Settings2,
+      },
     ];
-  }, [role]);
+  }, [role, locale, t]);
 
   function setSection(sectionId: string) {
     router.replace(`/profile?section=${sectionId}`, { scroll: false });
@@ -141,7 +186,7 @@ function ProfilePageContent() {
 
   async function saveProfile(clearPasswordAfterSave = true) {
     if (!editedFullName.trim()) {
-      setMessage("Vul een naam in.");
+      setMessage(t("profile.nameRequired"));
       return;
     }
 
@@ -160,7 +205,7 @@ function ProfilePageContent() {
 
     if (profileError) {
       setSaving(false);
-      setMessage("Er ging iets mis bij het opslaan van je profiel.");
+      setMessage(t("profile.saveFailed"));
       return;
     }
 
@@ -179,7 +224,7 @@ function ProfilePageContent() {
 
       if (authError) {
         setSaving(false);
-        setMessage("Profiel opgeslagen, maar email/wachtwoord aanpassen is niet gelukt.");
+        setMessage(t("profile.authSaveFailed"));
         return;
       }
     }
@@ -189,7 +234,7 @@ function ProfilePageContent() {
       setEditedPassword("");
     }
     setSaving(false);
-    setMessage("Profiel opgeslagen.");
+    setMessage(t("profile.saved"));
     if (saveMessageTimer.current) {
       window.clearTimeout(saveMessageTimer.current);
     }
@@ -218,7 +263,7 @@ function ProfilePageContent() {
 
     if (error || !url) {
       setSaving(false);
-      setMessage(error?.message || "Profielfoto uploaden mislukt.");
+      setMessage(error?.message || t("profile.photoFailed"));
       return;
     }
 
@@ -235,31 +280,31 @@ function ProfilePageContent() {
     }
 
     setAvatarUrl(url);
-    setMessage("Profielfoto opgeslagen.");
+    setMessage(t("profile.photoSaved"));
   }
 
   const sectionTitle =
-    sections.find((section) => section.id === activeSection)?.label || "Profiel";
+    sections.find((section) => section.id === activeSection)?.label || t("profile.title");
 
   const sectionSubtitle =
     activeSection === "account"
-      ? "Naam, e-mail en profielfoto."
+      ? t("profile.accountSubtitle")
       : activeSection === "preferences"
-        ? "Thema, weergave en notificaties."
+        ? t("profile.preferencesSubtitle")
         : activeSection === "settings"
-          ? "Checklist, intake en coach-instellingen."
-          : "Beheer je traininggegevens en profiel.";
+          ? t("profile.settingsSubtitle")
+          : t("profile.defaultSubtitle");
 
   if (!userId) {
     return (
-      <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6 lg:px-8">
+      <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6 lg:px-8">
         <AthleteProfileSkeleton />
       </AppShell>
     );
   }
 
   return (
-    <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6 lg:px-8">
+    <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6 lg:px-8">
       {!profileLoaded ? (
         <AthleteProfileSkeleton />
       ) : (
@@ -277,7 +322,7 @@ function ProfilePageContent() {
                 href="/dashboard"
                 className="profile-dashboard-link app-focus-ring hidden sm:inline-flex"
               >
-                Dashboard
+                {t("common.dashboard")}
               </Link>
             ) : null}
             <div className="hidden sm:block">
@@ -285,7 +330,7 @@ function ProfilePageContent() {
             </div>
           </div>
         }
-        mobileHeaderExtra={<ProfileLogoutButton />}
+        mobileFooter={<ProfileLogoutButton />}
       >
         {activeSection === "account" && (
           <div className="space-y-6">
@@ -297,11 +342,11 @@ function ProfilePageContent() {
               />
               <div className="min-w-0 flex-1">
                 <p className="truncate text-base font-semibold text-app-text">
-                  {editedFullName || "Naamloos"}
+                  {editedFullName || t("profile.unnamed")}
                 </p>
                 <p className="truncate text-sm text-app-muted">{email || "—"}</p>
                 <label className="profile-avatar-btn mt-3">
-                  Profielfoto wijzigen
+                  {t("profile.changePhoto")}
                   <input
                     type="file"
                     accept="image/*"
@@ -314,7 +359,7 @@ function ProfilePageContent() {
 
             <div className="profile-field-grid">
               <label className="profile-field">
-                <span className="profile-field-label">Volledige naam</span>
+                <span className="profile-field-label">{t("profile.fullName")}</span>
                 <input
                   type="text"
                   value={editedFullName}
@@ -323,7 +368,7 @@ function ProfilePageContent() {
                 />
               </label>
               <label className="profile-field">
-                <span className="profile-field-label">E-mail</span>
+                <span className="profile-field-label">{t("profile.email")}</span>
                 <input
                   type="email"
                   value={editedEmail}
@@ -332,28 +377,28 @@ function ProfilePageContent() {
                 />
               </label>
               <label className="profile-field">
-                <span className="profile-field-label">Nieuw wachtwoord</span>
+                <span className="profile-field-label">{t("profile.newPassword")}</span>
                 <input
                   type="password"
                   value={editedPassword}
                   onChange={(event) => setEditedPassword(event.target.value)}
                   onBlur={() => void savePasswordOnBlur()}
-                  placeholder="Laat leeg om niet te wijzigen"
+                  placeholder={t("profile.passwordPlaceholder")}
                   className="profile-field-input"
                 />
               </label>
               <div className="profile-field">
-                <span className="profile-field-label">Rol</span>
+                <span className="profile-field-label">{t("profile.role")}</span>
                 <div className="profile-field-readonly">{role}</div>
               </div>
               {isCoachLikeRole(role) ? (
                 <label className="profile-field md:col-span-2">
-                  <span className="profile-field-label">Bedrijfsnaam</span>
+                  <span className="profile-field-label">{t("profile.businessName")}</span>
                   <input
                     type="text"
                     value={businessName}
                     onChange={(event) => setBusinessName(event.target.value)}
-                    placeholder="Naam van je coachingbedrijf"
+                    placeholder={t("profile.businessNamePlaceholder")}
                     className="profile-field-input"
                   />
                 </label>
@@ -361,14 +406,14 @@ function ProfilePageContent() {
             </div>
 
             <div className="profile-save-status">
-              {saving ? <span>Opslaan…</span> : null}
+              {saving ? <span>{t("common.saving")}</span> : null}
               {message ? <span>{message}</span> : null}
-              {!saving && !message ? (
-                <span>Wijzigingen worden automatisch opgeslagen</span>
-              ) : null}
+              {!saving && !message ? <span>{t("profile.autoSave")}</span> : null}
             </div>
 
-            <ProfileDeleteAccountSection />
+            <div className="profile-account-danger-zone space-y-3">
+              <ProfileDeleteAccountSection />
+            </div>
           </div>
         )}
 
@@ -406,20 +451,23 @@ function ProfilePageContent() {
         {activeSection === "preferences" && (
           <div className="space-y-3">
             <div className="profile-pref-card">
-              <p className="profile-pref-card-title">Weergave</p>
-              <p className="profile-pref-card-desc">
-                Kies tussen light en dark mode voor de hele app.
-              </p>
+              <p className="profile-pref-card-title">{t("profile.language")}</p>
+              <p className="profile-pref-card-desc">{t("profile.languageDesc")}</p>
+              <div className="profile-pref-card-body">
+                <ProfileLanguageToggle />
+              </div>
+            </div>
+            <div className="profile-pref-card">
+              <p className="profile-pref-card-title">{t("profile.display")}</p>
+              <p className="profile-pref-card-desc">{t("profile.displayDesc")}</p>
               <div className="profile-pref-card-body">
                 <ThemeToggle compact />
               </div>
             </div>
             {userId ? (
               <div className="profile-pref-card">
-                <p className="profile-pref-card-title">Pushnotificaties</p>
-                <p className="profile-pref-card-desc">
-                  Ontvang meldingen over berichten en belangrijke updates.
-                </p>
+                <p className="profile-pref-card-title">{t("profile.pushNotifications")}</p>
+                <p className="profile-pref-card-desc">{t("profile.pushNotificationsDesc")}</p>
                 <div className="profile-pref-card-body">
                   <PushNotificationPrompt userId={userId} />
                 </div>
@@ -445,7 +493,7 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <AppShell contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6">
+        <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6">
           <AthleteProfileSkeleton />
         </AppShell>
       }

@@ -20,14 +20,19 @@
 
   .chat-shell .chat-bubble-own,
   .chat-shell .chat-bubble-other {
-    max-width: min(82vw, 100%);
-    padding: 0.45rem 0.7rem;
+    max-width: min(75vw, 100%);
+    padding: 7px 12px 8px;
   }
 
   .chat-shell .chat-bubble-own p,
   .chat-shell .chat-bubble-other p {
-    font-size: 13px;
-    line-height: 1.4;
+    font-size: var(--chat-bubble-font-size, 15px);
+    line-height: var(--chat-bubble-line-height, 20px);
+  }
+
+  .chat-shell .chat-bubble-text {
+    font-size: var(--chat-bubble-font-size, 15px);
+    line-height: var(--chat-bubble-line-height, 20px);
   }
 
   .chat-shell .chat-media-card img,
@@ -44,12 +49,13 @@
   }
 
   .chat-conversation-title {
-    font-size: 15px;
+    font-size: 13px;
     line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   .chat-conversation-subtitle {
-    font-size: 11px;
+    font-size: 10px;
     line-height: 1.2;
   }
 }

@@ -8,28 +8,41 @@ export type DuplicateProgramWeekInput = {
   targetTitle: string;
 };
 
-export async function duplicateProgramWeek(
+export async function duplicateProgramWeekId(
   input: DuplicateProgramWeekInput,
-): Promise<{ week: ProgramWeek | null; error: string | null }> {
+): Promise<{ weekId: string | null; error: string | null }> {
   const { data: newWeekId, error } = await supabase.rpc("duplicate_program_week", {
     p_source_week_id: input.sourceWeekId,
     p_target_block_id: input.targetBlockId,
     p_target_week_number: input.targetWeekNumber,
     p_target_title: input.targetTitle.trim(),
+    p_extra_day_offset: null,
   });
 
   if (error) {
-    return { week: null, error: error.message };
+    return { weekId: null, error: error.message };
   }
 
   if (!newWeekId || typeof newWeekId !== "string") {
-    return { week: null, error: "Week kon niet worden gekopieerd." };
+    return { weekId: null, error: "Week kon niet worden gekopieerd." };
+  }
+
+  return { weekId: newWeekId, error: null };
+}
+
+export async function duplicateProgramWeek(
+  input: DuplicateProgramWeekInput,
+): Promise<{ week: ProgramWeek | null; error: string | null }> {
+  const { weekId, error } = await duplicateProgramWeekId(input);
+
+  if (error || !weekId) {
+    return { week: null, error: error || "Week kon niet worden gekopieerd." };
   }
 
   const { data: week, error: fetchError } = await supabase
     .from("program_weeks")
     .select("*")
-    .eq("id", newWeekId)
+    .eq("id", weekId)
     .single();
 
   if (fetchError || !week) {

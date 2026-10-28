@@ -250,31 +250,18 @@ export function getMessageBubbleRadiusClass(
   groupedWithPrevious: boolean,
   groupedWithNext: boolean,
 ) {
-  if (!groupedWithPrevious && !groupedWithNext) return "";
-
-  if (isMine) {
-    if (groupedWithPrevious && groupedWithNext) {
-      return "rounded-l-2xl rounded-r-md";
-    }
-    if (groupedWithPrevious) {
-      return "rounded-l-2xl rounded-tr-md rounded-br-[6px]";
-    }
-    if (groupedWithNext) {
-      return "rounded-l-2xl rounded-tr-2xl rounded-br-md";
-    }
-  }
+  const side = isMine ? "own" : "other";
 
   if (groupedWithPrevious && groupedWithNext) {
-    return "rounded-r-2xl rounded-l-md";
+    return `chat-bubble-shape-${side}-middle`;
   }
-  if (groupedWithPrevious) {
-    return "rounded-r-2xl rounded-tl-md rounded-bl-[6px]";
+  if (!groupedWithPrevious && groupedWithNext) {
+    return `chat-bubble-shape-${side}-first`;
   }
-  if (groupedWithNext) {
-    return "rounded-r-2xl rounded-tl-2xl rounded-bl-md";
+  if (groupedWithPrevious && !groupedWithNext) {
+    return `chat-bubble-shape-${side}-last chat-bubble-has-tail-${side}`;
   }
-
-  return "";
+  return `chat-bubble-shape-${side}-single chat-bubble-has-tail-${side}`;
 }
 
 export async function sendExerciseVideoMessageToCoach(params: {

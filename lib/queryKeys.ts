@@ -15,9 +15,16 @@ export const queryKeys = {
     ["athlete-dashboard-items", athleteId] as const,
   coachCalendarEvents: (coachId: string) =>
     ["coach-calendar-events", coachId] as const,
-  coachTodos: (coachId: string) => ["coach-todos", coachId] as const,
+  coachTodos: (coachId: string, role?: string) =>
+    ["coach-todos", coachId, role ?? ""] as const,
+  coachNavBadges: (coachId: string, role: string) =>
+    ["coach-nav-badges", coachId, role] as const,
+  coachDashboard: (coachId: string, role: string) =>
+    ["coach-dashboard", coachId, role] as const,
   teamEngagement: (coachId: string, role: string) =>
     ["team-engagement", coachId, role] as const,
   teamFillScores: (coachId: string, isAdmin: boolean) =>
     ["team-fill-scores", coachId, isAdmin] as const,
+  coachProgramAthletes: (coachId: string) =>
+    ["coach-program-athletes", coachId] as const,
 } as const;

@@ -244,8 +244,8 @@ export function useProgramVideoRecorder({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: cameraFacingMode,
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
+          width: { ideal: 720, max: 1280 },
+          height: { ideal: 480, max: 720 },
         },
         // Video-only: avoids iOS pausing background music (Spotify, Apple Music).
         audio: false,
@@ -365,10 +365,10 @@ export function useProgramVideoRecorder({
     try {
       recordedChunksRef.current = [];
 
-      const recorder = new MediaRecorder(
-        stream,
-        mimeType ? { mimeType } : undefined,
-      );
+      const recorder = new MediaRecorder(stream, {
+        ...(mimeType ? { mimeType } : {}),
+        videoBitsPerSecond: 1_500_000,
+      });
 
       mediaRecorderRef.current = recorder;
 
@@ -601,6 +601,7 @@ export function useProgramVideoRecorder({
       return;
     }
 
+    const target = videoRecorderTarget;
     const endTime = trimEnd || videoDuration || 0;
     let fileToUpload = recordedVideoFile;
     const skipTrim =
@@ -623,14 +624,15 @@ export function useProgramVideoRecorder({
         }
       }
 
+      closeVideoRecorder();
+      showAppToast("Video uploaden…");
+
       await onUpload(
-        videoRecorderTarget.exercise,
-        videoRecorderTarget.setNumber,
+        target.exercise,
+        target.setNumber,
         fileToUpload,
         videoCaption.trim() || null,
       );
-
-      closeVideoRecorder();
     } catch (error: unknown) {
       console.error("SAVE VIDEO ERROR:", error);
       showAppToast(error instanceof Error ? error.message : "Video opslaan mislukt");

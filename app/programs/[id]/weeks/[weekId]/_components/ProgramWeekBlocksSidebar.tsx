@@ -5,12 +5,13 @@ import ProgramNavSidebarRail from "@/components/programs/ProgramNavSidebarRail";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
 import ProgramWeekAddMenu from "./ProgramWeekAddMenu";
+import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { DELETE_X_BTN } from "@/lib/programWeek/constants";
 import { formatDate } from "@/lib/programWeek/dateFormatting";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
-import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
+import type { WeekDropIndicator } from "@/lib/programWeekMove";
 
 export type ProgramWeekBlocksSidebarProps = {
   role: string;
@@ -56,8 +57,27 @@ export type ProgramWeekBlocksSidebarProps = {
   createWeek: (targetBlockId: string) => void | Promise<void>;
   duplicateBlock: (block: ProgramBlock) => void | Promise<void>;
   deleteBlock: (block: ProgramBlock) => void | Promise<void>;
+  pendingBlockAction: { blockId: string; type: "duplicate" | "delete" } | null;
   duplicateWeek: (week: ProgramWeek) => void | Promise<void>;
   deleteWeek: (week: ProgramWeek) => void | Promise<void>;
+  draggedWeekId?: string;
+  weekDropIndicator?: WeekDropIndicator | null;
+  movingWeek?: boolean;
+  onWeekDragStart?: (
+    event: React.DragEvent<HTMLDivElement>,
+    week: ProgramWeek,
+  ) => void;
+  onWeekDragEnd?: () => void;
+  onWeekDragOver?: (
+    event: React.DragEvent<HTMLElement>,
+    blockId: string,
+    targetWeekId: string | null,
+    position: WeekDropIndicator["position"],
+  ) => void;
+  onWeekListDragOver?: (
+    event: React.DragEvent<HTMLElement>,
+    blockId: string,
+  ) => void;
 } & Pick<
   ProgramWeekAddMenuProps,
   | "programAddMenuOpen"
@@ -116,10 +136,20 @@ export default function ProgramWeekBlocksSidebar({
   createWeek,
   duplicateBlock,
   deleteBlock,
+  pendingBlockAction,
   duplicateWeek,
   deleteWeek,
+  draggedWeekId = "",
+  weekDropIndicator = null,
+  movingWeek = false,
+  onWeekDragStart,
+  onWeekDragEnd,
+  onWeekDragOver,
+  onWeekListDragOver,
 }: ProgramWeekBlocksSidebarProps) {
   const coachProgramUi = isCoachLikeRole(role);
+  const isBlockActionPending = (targetBlockId: string) =>
+    pendingBlockAction?.blockId === targetBlockId;
   const orderedSidebarBlocks = [
     ...navMacrocycles.flatMap((macrocycle) =>
       navBlocks.filter((block) => block.macrocycle_id === macrocycle.id),
@@ -195,8 +225,7 @@ export default function ProgramWeekBlocksSidebar({
                           }`
                     }
                   >
-                    <h2 className="text-lg font-bold">Programma</h2>
-                    <p className="text-xs text-gray-500">Macrocycles, blocks en weken</p>
+                    <h2 className="text-lg font-bold">Planning</h2>
                   </div>
       
                   {!coachProgramUi ? (
@@ -215,8 +244,8 @@ export default function ProgramWeekBlocksSidebar({
                     <ProgramWeekAddMenu
                       buttonClassName={
                         coachProgramUi
-                          ? "coach-program-sidebar-add-btn flex h-9 w-9 min-w-9 items-center justify-center rounded-xl text-xl text-white"
-                          : "flex h-9 w-9 min-w-9 items-center justify-center rounded-xl bg-black text-xl text-white"
+                          ? "coach-program-sidebar-add-btn flex h-9 w-9 shrink-0 items-center justify-center rounded-full p-0 text-white"
+                          : "flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-black p-0 text-white"
                       }
                       programAddMenuOpen={programAddMenuOpen}
                       setProgramAddMenuOpen={setProgramAddMenuOpen}
@@ -377,7 +406,22 @@ export default function ProgramWeekBlocksSidebar({
                         <div
                           className={`rounded-2xl border overflow-hidden ${
                             activeBlock ? "border-black" : "border-gray-200"
+                          } ${
+                            weekDropIndicator?.blockId === block.id &&
+                            !isOpen
+                              ? "ring-2 ring-brand-blue/40"
+                              : ""
                           }`}
+                          onDragOver={(event) => {
+                            if (!isCoachLikeRole(role) || !draggedWeekId) return;
+                            if (!isOpen) {
+                              setOpenBlockIds((current) => ({
+                                ...current,
+                                [block.id]: true,
+                              }));
+                            }
+                            onWeekListDragOver?.(event, block.id);
+                          }}
                         >
                           <div
                             className={`group/block p-3 ${
@@ -438,19 +482,29 @@ export default function ProgramWeekBlocksSidebar({
       
                                   <button
                                     type="button"
+                                    disabled={Boolean(pendingBlockAction)}
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      duplicateBlock(block);
+                                      void duplicateBlock(block);
                                     }}
-                                    className={`w-7 h-7 rounded-lg text-xs ${
+                                    className={`w-7 h-7 rounded-lg text-xs disabled:cursor-not-allowed disabled:opacity-60 ${
                                       activeBlock
                                         ? "bg-white/20 hover:bg-white/30 text-white"
                                         : "bg-white hover:bg-gray-100 text-black"
                                     }`}
                                     title="Dupliceren"
+                                    aria-busy={
+                                      isBlockActionPending(block.id) &&
+                                      pendingBlockAction?.type === "duplicate"
+                                    }
                                   >
-                                    ⧉
+                                    {isBlockActionPending(block.id) &&
+                                    pendingBlockAction?.type === "duplicate" ? (
+                                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                                    ) : (
+                                      "⧉"
+                                    )}
                                   </button>
 
                                   <CreateTemplateButton
@@ -464,17 +518,27 @@ export default function ProgramWeekBlocksSidebar({
       
                                   <button
                                     type="button"
+                                    disabled={Boolean(pendingBlockAction)}
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      deleteBlock(block);
+                                      void deleteBlock(block);
                                     }}
-                                    className={`${DELETE_X_BTN} opacity-0 group-hover/block:opacity-100 ${
+                                    className={`${DELETE_X_BTN} opacity-0 group-hover/block:opacity-100 disabled:cursor-not-allowed disabled:opacity-60 ${
                                       activeBlock ? "opacity-100" : ""
                                     }`}
                                     title="Verwijderen"
+                                    aria-busy={
+                                      isBlockActionPending(block.id) &&
+                                      pendingBlockAction?.type === "delete"
+                                    }
                                   >
-                                    ✕
+                                    {isBlockActionPending(block.id) &&
+                                    pendingBlockAction?.type === "delete" ? (
+                                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                                    ) : (
+                                      "✕"
+                                    )}
                                   </button>
                                 </div>
                               )}
@@ -482,23 +546,56 @@ export default function ProgramWeekBlocksSidebar({
                           </div>
       
                           {isOpen && (
-                            <div className="p-2 bg-white space-y-2">
+                            <div
+                              className="p-2 bg-white space-y-2"
+                              onDragOver={(event) =>
+                                onWeekListDragOver?.(event, block.id)
+                              }
+                            >
                               {blockWeeks.map((item) => {
                                 const activeWeek = item.id === weekId;
-      
+                                const showDropBefore =
+                                  weekDropIndicator?.blockId === block.id &&
+                                  weekDropIndicator.targetWeekId === item.id &&
+                                  weekDropIndicator.position === "before";
+                                const isDragging = draggedWeekId === item.id;
+
                                 return (
-                                  <div
-                                    key={item.id}
-                                    className={`group/week rounded-xl ${
-                                      coachProgramUi
-                                        ? `coach-program-sidebar-week ${
-                                            activeWeek ? "is-active" : ""
-                                          }`
-                                        : activeWeek
-                                          ? "bg-black text-white"
-                                          : "bg-gray-100 text-black"
-                                    }`}
-                                  >
+                                  <div key={item.id} className="relative">
+                                    {showDropBefore ? (
+                                      <div
+                                        className="coach-program-sidebar-week-drop-line"
+                                        aria-hidden
+                                      />
+                                    ) : null}
+                                    <div
+                                      draggable={
+                                        isCoachLikeRole(role) &&
+                                        Boolean(onWeekDragStart) &&
+                                        !movingWeek
+                                      }
+                                      onDragStart={(event) =>
+                                        onWeekDragStart?.(event, item)
+                                      }
+                                      onDragEnd={onWeekDragEnd}
+                                      onDragOver={(event) =>
+                                        onWeekDragOver?.(
+                                          event,
+                                          block.id,
+                                          item.id,
+                                          "after",
+                                        )
+                                      }
+                                      className={`group/week rounded-xl ${
+                                        coachProgramUi
+                                          ? `coach-program-sidebar-week ${
+                                              activeWeek ? "is-active" : ""
+                                            }`
+                                          : activeWeek
+                                            ? "bg-black text-white"
+                                            : "bg-gray-100 text-black"
+                                      } ${isDragging ? "coach-program-sidebar-week--dragging" : ""}`}
+                                    >
                                     <div className="flex items-center gap-2 p-2">
                                         <button
                                           type="button"
@@ -573,9 +670,18 @@ export default function ProgramWeekBlocksSidebar({
                                           </>
                                         )}
                                       </div>
+                                    </div>
                                   </div>
                                 );
                               })}
+
+                              {weekDropIndicator?.blockId === block.id &&
+                              weekDropIndicator.targetWeekId === null ? (
+                                <div
+                                  className="coach-program-sidebar-week-drop-line"
+                                  aria-hidden
+                                />
+                              ) : null}
       
                               {isCoachLikeRole(role) &&
                                 creatingWeekBlockId !== block.id && (
@@ -641,6 +747,7 @@ export default function ProgramWeekBlocksSidebar({
                       );
                     })}
                   </div>
+
                 </div>
                 </div>
               </aside>

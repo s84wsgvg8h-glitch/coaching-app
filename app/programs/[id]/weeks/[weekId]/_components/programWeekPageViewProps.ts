@@ -1,4 +1,5 @@
 import type { Dispatch, ReactNode, RefObject, SetStateAction } from "react";
+import type { AthleteExtraExerciseInput } from "@/lib/athleteExtraExercise";
 import type { BlockIntakeWizard } from "@/lib/blockIntakeWizard";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
@@ -16,6 +17,8 @@ import type {
   ProgramWeek,
 } from "@/lib/programWeek/types";
 import type { useProgramVideoRecorder } from "@/hooks/useProgramVideoRecorder";
+import type { CoachProgramAthleteOption } from "@/components/programs/coach/CoachProgramWeekHeader";
+import type { ProgramSidebarCompetitionEntry } from "@/lib/programWeek/competitionSidebar";
 
 type VideoRecorderApi = ReturnType<typeof useProgramVideoRecorder>;
 
@@ -40,6 +43,8 @@ export type ProgramWeekPageViewProps = {
       isActive: boolean;
     }>;
   }>;
+  sidebarCompetitions: ProgramSidebarCompetitionEntry[];
+  sidebarAthleteId: string;
   setOpenBlockIds: Dispatch<SetStateAction<Record<string, boolean>>>;
   goToProgram: ViewHandler;
   blocksSidebar: ReactNode;
@@ -72,13 +77,37 @@ export type ProgramWeekPageViewProps = {
   getExercisePriorityLabel: ViewHandler;
   openAthleteExercisePanel: ViewHandler;
   setPreviewLibraryItem: Dispatch<SetStateAction<ExerciseLibraryItem | null>>;
+  onAddExtraExercise?: (
+    dayId: string,
+    payload: Pick<AthleteExtraExerciseInput, "name" | "sets" | "reps" | "rpe">,
+  ) => Promise<void>;
+  onDeleteExtraExercise?: (exerciseId: string) => Promise<void>;
+  onRenameExtraExercise?: (exerciseId: string, name: string) => Promise<void>;
+  onChooseExerciseVariation?: (
+    exerciseId: string,
+    variationName: string,
+  ) => Promise<void>;
+  onToggleAthleteVariationMode?: (
+    exerciseId: string,
+    enabled: boolean,
+    baseName?: string,
+  ) => void | Promise<void>;
+  addingExtraExercise: boolean;
+  deletingExtraExerciseId: string;
+  renamingExtraExerciseId: string;
+  choosingVariationExerciseId: string;
   blockWeekNav: ReactNode;
   editorView: "card" | "raw" | "athlete" | "progression";
   setEditorView: Dispatch<
     SetStateAction<"card" | "raw" | "athlete" | "progression">
   >;
+  registerProgramEditFlush: (flush: (() => Promise<void>) | null) => void;
   setPlanningSplitOpen: Dispatch<SetStateAction<boolean>>;
   athleteId: string | null;
+  coachAthleteOptions: CoachProgramAthleteOption[];
+  currentCoachAthleteId: string;
+  onCoachAthleteChange?: (athleteId: string) => void;
+  coachAthleteSwitching: boolean;
   programSearchContext: ProgramSearchContext;
   creatingExerciseDayId: string;
   openDayNoteId: string;
@@ -132,6 +161,7 @@ export type ProgramWeekPageViewProps = {
   handleExerciseDragStart: ViewHandler;
   handleExerciseDragOver: ViewHandler;
   handleExerciseDragOverDay: ViewHandler;
+  handleExerciseDragOverDayTail: ViewHandler;
   saveExerciseOrder: ViewHandler;
   updateExerciseLocal: ViewHandler;
   saveExerciseField: ViewHandler;
@@ -183,6 +213,10 @@ export type ProgramWeekPageViewProps = {
   getAverageFromRows: ViewHandler;
   videoRecorder: VideoRecorderApi;
   offlineQueueCount: number;
+  offlineSyncSyncing: boolean;
+  offlineSyncOnline: boolean;
+  onRetryOfflineSync: () => void | Promise<void>;
+  onDismissOfflineSync: () => void;
   templateApplyOpen: boolean;
   setTemplateApplyOpen: Dispatch<SetStateAction<boolean>>;
   planningAthleteId: string;
@@ -211,8 +245,11 @@ export type ProgramWeekPageViewProps = {
   athleteDisplayName: string;
   progressionSnapshot: BlockProgressionSnapshot | null;
   progressionLoading: boolean;
+  progressionBlocks: ProgramBlock[];
+  progressionWeeksByBlock: Record<string, ProgramWeek[]>;
   onProgressionSaveCell: (
     exerciseId: string,
     updates: { load: string; reps: string; rpe: string },
   ) => void | Promise<void>;
+  onPullToRefresh?: () => Promise<void> | void;
 };

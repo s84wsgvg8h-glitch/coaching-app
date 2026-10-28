@@ -16,6 +16,99 @@
     );
 }
 
+@media (max-width: 1023px) {
+  .app-viewport-root:has(.athletes-crm-layout)::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background:
+      radial-gradient(
+        ellipse 50% 40% at 15% 0%,
+        rgba(79, 140, 255, 0.09),
+        transparent 55%
+      ),
+      radial-gradient(
+        ellipse 40% 30% at 85% 10%,
+        rgba(79, 140, 255, 0.06),
+        transparent 50%
+      ),
+      var(--app-bg);
+  }
+
+  .app-viewport-root:has(.athletes-crm-layout) > .app-viewport-inner {
+    position: relative;
+    z-index: 1;
+  }
+
+  .mobile-page-shell:has(.athletes-crm-layout) {
+    position: relative;
+    background: transparent;
+  }
+
+  .mobile-page-shell:has(.athletes-crm-layout) > .mobile-safe-top,
+  .mobile-page-shell:has(.athletes-crm-layout) .mobile-page-shell__body {
+    position: relative;
+    z-index: 1;
+    background: transparent !important;
+  }
+
+  .athletes-crm-layout {
+    position: relative;
+    min-height: 100%;
+  }
+
+  .athletes-crm-main {
+    min-height: 100%;
+    background: transparent;
+  }
+
+  .athletes-crm-glow {
+    display: none;
+  }
+
+  .athletes-header-search-field.app-search-field {
+    min-height: 44px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: none;
+  }
+
+  .athletes-header-search-field.app-search-field:focus-within {
+    border-color: rgba(79, 140, 255, 0.45) !important;
+    box-shadow: none;
+  }
+
+  .athletes-header-search-field.app-search-field .app-search-input,
+  .athletes-header-search-field.app-search-field .app-search-input:focus,
+  .athletes-header-search-field.app-search-field .app-search-input:focus-visible,
+  html.dark
+    .athletes-header-search-field.app-search-field
+    .app-search-input,
+  html.dark
+    .athletes-header-search-field.app-search-field
+    .app-search-input:focus,
+  html.dark
+    .athletes-header-search-field.app-search-field
+    .app-search-input:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+}
+
+.athletes-header-icon-btn {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  aspect-ratio: 1;
+  padding: 0;
+  line-height: 0;
+}
+
 .athletes-sidebar-panel {
   border-right: 1px solid rgba(255, 255, 255, 0.08);
   background: var(--glass-surface-bg);
@@ -159,6 +252,90 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: var(--app-surface-muted);
   color: var(--app-muted);
+}
+
+/* Last-activity badge next to athlete name — greener when recent, redder when inactive */
+.athletes-activity-badge {
+  border: 1px solid transparent;
+  font-weight: 600;
+}
+
+.athletes-activity-badge--fresh {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(16, 185, 129, 0.14);
+  color: #34d399;
+}
+
+.athletes-activity-badge--recent {
+  border-color: rgba(52, 211, 153, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+  color: #6ee7b7;
+}
+
+.athletes-activity-badge--warm {
+  border-color: rgba(245, 158, 11, 0.35);
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+}
+
+.athletes-activity-badge--aging {
+  border-color: rgba(251, 146, 60, 0.38);
+  background: rgba(249, 115, 22, 0.14);
+  color: #fb923c;
+}
+
+.athletes-activity-badge--inactive {
+  border-color: rgba(248, 113, 113, 0.38);
+  background: rgba(239, 68, 68, 0.14);
+  color: #f87171;
+}
+
+.athletes-activity-badge--stale {
+  border-color: rgba(239, 68, 68, 0.45);
+  background: rgba(220, 38, 38, 0.2);
+  color: #fca5a5;
+}
+
+.athletes-activity-badge--unknown {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: var(--app-surface-muted);
+  color: var(--app-muted);
+}
+
+html:not(.dark) .athletes-activity-badge--fresh {
+  border-color: rgba(16, 185, 129, 0.28);
+  background: rgba(16, 185, 129, 0.1);
+  color: rgb(5, 150, 105);
+}
+
+html:not(.dark) .athletes-activity-badge--recent {
+  border-color: rgba(16, 185, 129, 0.22);
+  background: rgba(16, 185, 129, 0.08);
+  color: rgb(4, 120, 87);
+}
+
+html:not(.dark) .athletes-activity-badge--warm {
+  border-color: rgba(245, 158, 11, 0.28);
+  background: rgba(245, 158, 11, 0.1);
+  color: rgb(180, 83, 9);
+}
+
+html:not(.dark) .athletes-activity-badge--aging {
+  border-color: rgba(249, 115, 22, 0.28);
+  background: rgba(249, 115, 22, 0.1);
+  color: rgb(194, 65, 12);
+}
+
+html:not(.dark) .athletes-activity-badge--inactive {
+  border-color: rgba(239, 68, 68, 0.28);
+  background: rgba(239, 68, 68, 0.1);
+  color: rgb(185, 28, 28);
+}
+
+html:not(.dark) .athletes-activity-badge--stale {
+  border-color: rgba(220, 38, 38, 0.32);
+  background: rgba(220, 38, 38, 0.12);
+  color: rgb(153, 27, 27);
 }
 
 .athletes-filter-tab {
@@ -341,20 +518,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
-  padding: 3px;
-  border-radius: 10px;
+  gap: 1px;
+  padding: 2px;
+  border-radius: 9px;
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(255, 255, 255, 0.03);
 }
 
 .athletes-action-btn {
   display: inline-flex;
-  height: 30px;
-  width: 30px;
+  height: 26px;
+  width: 26px;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 7px;
   border: 1px solid transparent;
   color: var(--app-accent);
   transition:
@@ -379,6 +556,12 @@
   border-color: rgba(244, 63, 94, 0.2);
   color: rgb(251, 113, 133);
   box-shadow: 0 0 12px rgba(244, 63, 94, 0.1);
+}
+
+.athletes-action-btn--active {
+  border-color: rgba(79, 140, 255, 0.35);
+  background: rgba(79, 140, 255, 0.12);
+  color: var(--app-accent);
 }
 
 .athletes-export-btn {
@@ -440,9 +623,93 @@
   color: var(--app-text-subtle);
 }
 
+@media (max-width: 1023px) {
+  .athletes-metric-bar {
+    border-radius: 14px;
+  }
+
+  .athletes-metric-bar .athletes-metric-segment {
+    gap: 0.2rem;
+    padding: 0.45rem 0.2rem;
+  }
+
+  .athletes-metric-bar .athletes-metric-segment:hover {
+    transform: none;
+  }
+
+  .athletes-metric-bar .athletes-metric-value {
+    font-size: 0.875rem;
+    line-height: 1.1;
+  }
+
+  .athletes-metric-bar .athletes-metric-label {
+    font-size: 7px;
+    letter-spacing: 0.05em;
+    line-height: 1.2;
+  }
+
+  .athletes-metric-bar .athletes-metric-label-row {
+    margin-top: 0;
+    justify-content: center;
+  }
+}
+
+.athletes-mobile-detail-chip {
+  display: inline-flex;
+  align-items: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 11px;
+  line-height: 1.2;
+  font-weight: 500;
+  font-variant-numeric: tabular-nums;
+  color: var(--app-text-muted);
+}
+
+button.athletes-mobile-detail-chip {
+  cursor: pointer;
+}
+
+.athletes-mobile-detail-chip .athletes-weeks-out-trigger,
+.athletes-mobile-detail-chip button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  color: inherit;
+}
+
+.athletes-mobile-detail-chip .border-b {
+  border-bottom: none !important;
+  cursor: inherit;
+}
+
+.athletes-mobile-detail-grid {
+  display: flex;
+  width: 100%;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem 0.25rem;
+}
+
+.athletes-mobile-detail-grid > .athletes-mobile-detail-chip,
+.athletes-mobile-detail-grid > span.athletes-mobile-detail-chip,
+.athletes-mobile-detail-grid > button.athletes-mobile-detail-chip {
+  flex: 1 1 0;
+  min-width: 2.75rem;
+  justify-content: center;
+  text-align: center;
+}
+
 .athletes-mobile-card {
   cursor: pointer;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.athletes-mobile-card--selection {
+  cursor: default;
 }
 
 .athletes-mobile-card:focus-visible {
@@ -495,6 +762,7 @@
 
 @media (max-width: 1023px) {
   .athletes-crm-inner {
+    padding-top: 0.75rem;
     padding-bottom: 0;
   }
 }

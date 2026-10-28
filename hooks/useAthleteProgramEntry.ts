@@ -29,8 +29,14 @@ async function fetchAthleteProgramEntry(
   const result = await resolveProgramEntryForAthlete(athleteId, actingUserId);
 
   if (result.data) {
-    const href = buildProgramWeekPath(result.data);
-    cacheAthleteProgramHref(href);
+    const coachViewing = actingUserId !== athleteId;
+    const href = buildProgramWeekPath(
+      result.data,
+      coachViewing ? { coachViewingAthlete: true } : undefined,
+    );
+    if (!coachViewing) {
+      cacheAthleteProgramHref(href);
+    }
     return {
       entry: result.data,
       error: result.error,
@@ -58,6 +64,8 @@ export function useAthleteProgramEntry(
     queryFn: () => fetchAthleteProgramEntry(athleteId, actingUserId),
     enabled: enabled && Boolean(athleteId && actingUserId),
     ...athleteQueryDefaults,
+    staleTime: 0,
+    refetchOnMount: "always",
   });
 }
 
@@ -86,6 +94,20 @@ export function prefetchAthleteProgramEntry(
     queryFn: () => fetchAthleteProgramEntry(athleteId, actingUserId),
     ...athleteQueryDefaults,
   });
+}
+
+export function prefetchCoachAthleteProgramEntries(
+  queryClient: ReturnType<typeof useQueryClient>,
+  coachId: string,
+  athleteIds: string[],
+  limit = 16,
+) {
+  const uniqueIds = [...new Set(athleteIds.filter(Boolean))].slice(0, limit);
+  return Promise.all(
+    uniqueIds.map((athleteId) =>
+      prefetchAthleteProgramEntry(queryClient, athleteId, coachId),
+    ),
+  );
 }
 
 export function getCachedAthleteProgramHref(

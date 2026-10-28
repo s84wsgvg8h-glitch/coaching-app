@@ -3,7 +3,7 @@ import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSke
 
 export default function LeaderboardLoading() {
   return (
-    <AppShellRouteLoading>
+    <AppShellRouteLoading hideMobileTopBar>
       <AthleteGenericPageSkeleton rows={8} />
     </AppShellRouteLoading>
   );

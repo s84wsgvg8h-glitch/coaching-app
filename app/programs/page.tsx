@@ -12,57 +12,82 @@ import { PageLoading } from "@/components/ui/Skeleton";
 import { showAppToast } from "@/lib/appToast";
 import { getCoachLastAthleteId, setCoachLastAthleteId } from "@/lib/coachLastAthlete";
 import {
-  applyAthleteScope,
-  loadCoachOrgContext,
-} from "@/lib/orgAthleteScope";
-import { supabase } from "@/lib/supabaseClient";
+  loadCoachProgramAthletes,
+  type CoachProgramAthleteRow,
+} from "@/lib/coachProgramAthletes";
 import { useAuth } from "@/components/AuthProvider";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import {
+  getCachedAthleteProgramHref,
   prefetchAthleteProgramEntry,
+  prefetchCoachAthleteProgramEntries,
   useAthleteProgramEntry,
   type AthleteProgramEntryResult,
 } from "@/hooks/useAthleteProgramEntry";
 import { readAthleteProgramHrefSession } from "@/lib/programEntrySessionCache";
+import { prefetchProgramWeekFromHref } from "@/lib/prefetchProgramWeekFromHref";
 import { queryKeys } from "@/lib/queryKeys";
 import {
-  buildProgramWeekPath,
   isNoAthleteProgramMessage,
   NO_ATHLETE_PROGRAM_MESSAGE,
-  resolveProgramEntryForAthlete,
 } from "@/lib/programNavigation";
-
-type CoachAthleteOption = {
-  id: string;
-  full_name: string | null;
-};
 
 function CoachProgramAthletePicker({
   athletes,
   coachId,
 }: {
-  athletes: CoachAthleteOption[];
+  athletes: CoachProgramAthleteRow[];
   coachId: string;
 }) {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const [openingId, setOpeningId] = useState<string | null>(null);
+
+  useEffect(() => {
+    void prefetchCoachAthleteProgramEntries(
+      queryClient,
+      coachId,
+      athletes.map((athlete) => athlete.id),
+    );
+  }, [athletes, coachId, queryClient]);
+
+  function prefetchAthleteWeek(athleteId: string) {
+    const href = getCachedAthleteProgramHref(queryClient, athleteId, coachId);
+    if (href && href !== "/programs") {
+      void prefetchProgramWeekFromHref(queryClient, href, {
+        userId: coachId,
+        role: "coach",
+      });
+    }
+  }
 
   async function openProgram(athleteId: string) {
     setOpeningId(athleteId);
     setCoachLastAthleteId(athleteId);
 
-    const { data: entry, error } = await resolveProgramEntryForAthlete(
-      athleteId,
-      coachId,
+    let cached = queryClient.getQueryData<AthleteProgramEntryResult>(
+      queryKeys.athleteProgramEntry(athleteId, coachId),
     );
 
-    if (error || !entry) {
-      showAppToast(error || "Geen programma gevonden voor deze atleet.");
+    if (!cached) {
+      await prefetchAthleteProgramEntry(queryClient, athleteId, coachId);
+      cached = queryClient.getQueryData<AthleteProgramEntryResult>(
+        queryKeys.athleteProgramEntry(athleteId, coachId),
+      );
+    }
+
+    if (!cached?.hasProgram || !cached.href || cached.href === "/programs") {
+      showAppToast(cached?.error || "Geen programma gevonden voor deze atleet.");
       setOpeningId(null);
       return;
     }
 
-    router.replace(buildProgramWeekPath(entry, { coachViewingAthlete: true }));
+    await prefetchProgramWeekFromHref(queryClient, cached.href, {
+      userId: coachId,
+      role: "coach",
+    });
+
+    router.replace(cached.href);
   }
 
   if (athletes.length === 0) {
@@ -111,6 +136,8 @@ function CoachProgramAthletePicker({
                 <button
                   type="button"
                   disabled={openingId === athlete.id}
+                  onPointerEnter={() => prefetchAthleteWeek(athlete.id)}
+                  onFocus={() => prefetchAthleteWeek(athlete.id)}
                   onClick={() => void openProgram(athlete.id)}
                   className="app-focus-ring flex w-full min-h-[52px] items-center gap-3 px-5 py-3.5 text-left transition hover:bg-app-surface-hover disabled:opacity-60"
                 >
@@ -156,9 +183,9 @@ function ProgramsRedirectContent() {
     role === "atleet" && !authLoading && Boolean(userId),
   );
   const [emptyMessage, setEmptyMessage] = useState<string | null>(null);
-  const [coachAthletes, setCoachAthletes] = useState<CoachAthleteOption[] | null>(
-    null,
-  );
+  const [coachAthletes, setCoachAthletes] = useState<
+    CoachProgramAthleteRow[] | null
+  >(null);
   const [showCoachPicker, setShowCoachPicker] = useState(false);
 
   useLayoutEffect(() => {
@@ -204,58 +231,81 @@ function ProgramsRedirectContent() {
           athleteQuery || getCoachLastAthleteId() || null;
 
         if (!targetAthleteId) {
-          const ctx = await loadCoachOrgContext(userId);
-          if (!ctx) {
+          const cachedAthletes = queryClient.getQueryData<CoachProgramAthleteRow[]>(
+            queryKeys.coachProgramAthletes(userId),
+          );
+
+          if (cachedAthletes) {
+            setCoachAthletes(cachedAthletes);
             setShowCoachPicker(true);
-            setCoachAthletes([]);
+            void prefetchCoachAthleteProgramEntries(
+              queryClient,
+              userId,
+              cachedAthletes.map((athlete) => athlete.id),
+            );
             return;
           }
 
-          let query = supabase
-            .from("profiles")
-            .select("id, full_name")
-            .eq("role", "atleet")
-            .order("full_name", { ascending: true })
-            .limit(50);
-
-          query = applyAthleteScope(query, ctx);
-          const { data } = await query;
-          setCoachAthletes(data || []);
+          const athletes = await loadCoachProgramAthletes(userId);
+          queryClient.setQueryData(
+            queryKeys.coachProgramAthletes(userId),
+            athletes,
+          );
+          setCoachAthletes(athletes);
           setShowCoachPicker(true);
+          void prefetchCoachAthleteProgramEntries(
+            queryClient,
+            userId,
+            athletes.map((athlete) => athlete.id),
+          );
           return;
         }
 
-        const { data: entry, error } = await resolveProgramEntryForAthlete(
-          targetAthleteId,
-          userId,
+        let cached = queryClient.getQueryData<AthleteProgramEntryResult>(
+          queryKeys.athleteProgramEntry(targetAthleteId, userId),
         );
 
-        if (error || !entry) {
+        if (!cached) {
+          await prefetchAthleteProgramEntry(
+            queryClient,
+            targetAthleteId,
+            userId,
+          );
+          cached = queryClient.getQueryData<AthleteProgramEntryResult>(
+            queryKeys.athleteProgramEntry(targetAthleteId, userId),
+          );
+        }
+
+        if (!cached?.hasProgram || !cached.href || cached.href === "/programs") {
           if (!athleteQuery) {
-            const ctx = await loadCoachOrgContext(userId);
-            if (ctx) {
-              let query = supabase
-                .from("profiles")
-                .select("id, full_name")
-                .eq("role", "atleet")
-                .order("full_name", { ascending: true })
-                .limit(50);
-              query = applyAthleteScope(query, ctx);
-              const { data } = await query;
-              setCoachAthletes(data || []);
-              setShowCoachPicker(true);
-              showAppToast(error || "Geen programma gevonden voor deze atleet.");
-              return;
-            }
+            const athletes =
+              queryClient.getQueryData<CoachProgramAthleteRow[]>(
+                queryKeys.coachProgramAthletes(userId),
+              ) ?? (await loadCoachProgramAthletes(userId));
+
+            queryClient.setQueryData(
+              queryKeys.coachProgramAthletes(userId),
+              athletes,
+            );
+            setCoachAthletes(athletes);
+            setShowCoachPicker(true);
+            showAppToast(
+              cached?.error || "Geen programma gevonden voor deze atleet.",
+            );
+            return;
           }
 
-          showAppToast(error || "Geen programma gevonden voor deze atleet.");
+          showAppToast(cached?.error || "Geen programma gevonden voor deze atleet.");
           router.replace(`/athletes/${targetAthleteId}`);
           return;
         }
 
         setCoachLastAthleteId(targetAthleteId);
-        router.replace(buildProgramWeekPath(entry, { coachViewingAthlete: true }));
+        await prefetchProgramWeekFromHref(queryClient, cached.href, {
+          userId,
+          role,
+        });
+        router.replace(cached.href);
         return;
       }
 

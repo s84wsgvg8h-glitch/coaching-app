@@ -35,7 +35,7 @@ export default function CoachInboxPanel({
           <h2 className="text-[13px] font-semibold tracking-tight text-app-text">
             Inbox
           </h2>
-          <p className="text-[11px] text-app-muted">
+          <p className="dashboard-inbox-subtitle text-[11px] text-app-muted">
             {compact ? "Snelle acties" : "Acties die vandaag aandacht vragen"}
           </p>
         </div>

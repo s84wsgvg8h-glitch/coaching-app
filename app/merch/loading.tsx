@@ -3,7 +3,7 @@ import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSke
 
 export default function MerchLoading() {
   return (
-    <AppShellRouteLoading>
+    <AppShellRouteLoading hideMobileTopBar>
       <AthleteGenericPageSkeleton rows={4} />
     </AppShellRouteLoading>
   );

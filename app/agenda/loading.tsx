@@ -1,5 +1,10 @@
-import { PageLoading } from "@/components/ui/Skeleton";
+import AppShellRouteLoading from "@/components/loading/AppShellRouteLoading";
+import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSkeletons";
 
 export default function AgendaLoading() {
-  return <PageLoading label="Agenda laden…" />;
+  return (
+    <AppShellRouteLoading>
+      <AthleteGenericPageSkeleton rows={6} />
+    </AppShellRouteLoading>
+  );
 }

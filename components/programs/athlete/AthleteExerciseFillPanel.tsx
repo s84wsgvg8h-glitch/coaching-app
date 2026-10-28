@@ -1,8 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { Pencil } from "lucide-react";
 import { normalizeExerciseFormat } from "@/lib/exerciseFormat";
+import {
+  getAthleteVariationBaseName,
+  hasAthleteChosenVariation,
+  isAthleteChoiceExercise,
+} from "@/lib/athleteExerciseVariation";
+import AthleteChoiceVariationBadge from "@/components/programs/week/AthleteChoiceVariationBadge";
 import {
   ATHLETE_PLACEHOLDER_INPUT_CLASS,
   isEmptySetField,
@@ -15,6 +22,7 @@ import type {
   ProgramDay,
   ProgramExercise,
 } from "@/lib/programWeek/types";
+import { formatProgramDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 
 type AthleteExerciseFillPanelProps = {
   day: ProgramDay;
@@ -60,7 +68,48 @@ type AthleteExerciseFillPanelProps = {
     field: "reps" | "weight" | "rpe",
   ) => string;
   readOnly?: boolean;
+  canRenameExercise?: boolean;
+  renamingExercise?: boolean;
+  onRenameExercise?: (name: string) => Promise<void>;
+  canChooseVariation?: boolean;
+  choosingVariation?: boolean;
+  onChooseVariation?: (variationName: string) => Promise<void>;
 };
+
+function scrollFillPanelFieldIntoView(
+  target: HTMLElement,
+  scrollContainer: HTMLElement,
+) {
+  const run = () => {
+    const viewport = window.visualViewport;
+    const padding = 16;
+    const targetRect = target.getBoundingClientRect();
+
+    if (viewport) {
+      const visibleTop = viewport.offsetTop + padding;
+      const visibleBottom = viewport.offsetTop + viewport.height - padding;
+
+      if (targetRect.bottom > visibleBottom) {
+        scrollContainer.scrollTop += targetRect.bottom - visibleBottom;
+      } else if (targetRect.top < visibleTop) {
+        scrollContainer.scrollTop -= visibleTop - targetRect.top;
+      }
+      return;
+    }
+
+    const containerRect = scrollContainer.getBoundingClientRect();
+    if (targetRect.bottom > containerRect.bottom - padding) {
+      scrollContainer.scrollTop +=
+        targetRect.bottom - containerRect.bottom + padding;
+    } else if (targetRect.top < containerRect.top + padding) {
+      scrollContainer.scrollTop -= containerRect.top + padding - targetRect.top;
+    }
+  };
+
+  requestAnimationFrame(() => {
+    requestAnimationFrame(run);
+  });
+}
 
 export default function AthleteExerciseFillPanel({
   day,
@@ -95,11 +144,96 @@ export default function AthleteExerciseFillPanel({
   getE1rmLabel,
   getAverageFromRows,
   readOnly = false,
+  canRenameExercise = false,
+  renamingExercise = false,
+  onRenameExercise,
+  canChooseVariation = false,
+  choosingVariation = false,
+  onChooseVariation,
 }: AthleteExerciseFillPanelProps) {
   const panelRef = useRef<HTMLElement>(null);
   const dismissHandleRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
+  const titleInputRef = useRef<HTMLInputElement>(null);
+  const variationInputRef = useRef<HTMLInputElement>(null);
+  const [editingTitle, setEditingTitle] = useState(false);
+  const [titleDraft, setTitleDraft] = useState(exerciseTitle);
+  const variationBaseName = getAthleteVariationBaseName(exercise);
+  const [variationDraft, setVariationDraft] = useState(
+    hasAthleteChosenVariation(exercise) ? exercise.name?.trim() || "" : "",
+  );
+
+  useEffect(() => {
+    setTitleDraft(exerciseTitle);
+    setEditingTitle(false);
+  }, [exercise.id, exerciseTitle]);
+
+  useEffect(() => {
+    setVariationDraft(
+      hasAthleteChosenVariation(exercise) ? exercise.name?.trim() || "" : "",
+    );
+  }, [exercise.id, exercise.name, exercise.exercise_format, exercise.variation_base_name]);
+
+  useEffect(() => {
+    if (!editingTitle) return;
+    titleInputRef.current?.focus();
+    titleInputRef.current?.select();
+  }, [editingTitle]);
+
+  const commitRename = useCallback(async () => {
+    const trimmed = titleDraft.trim();
+    if (!trimmed) {
+      setTitleDraft(exerciseTitle);
+      setEditingTitle(false);
+      return;
+    }
+
+    if (trimmed === exerciseTitle || !onRenameExercise) {
+      setEditingTitle(false);
+      setTitleDraft(exerciseTitle);
+      return;
+    }
+
+    try {
+      await onRenameExercise(trimmed);
+      setEditingTitle(false);
+    } catch {
+      setTitleDraft(exerciseTitle);
+      setEditingTitle(false);
+    }
+  }, [exerciseTitle, onRenameExercise, titleDraft]);
+
+  const cancelRename = useCallback(() => {
+    setTitleDraft(exerciseTitle);
+    setEditingTitle(false);
+  }, [exerciseTitle]);
+
+  const commitVariation = useCallback(async () => {
+    const trimmed = variationDraft.trim();
+    if (!trimmed || !onChooseVariation) return;
+
+    if (
+      hasAthleteChosenVariation(exercise) &&
+      trimmed === exercise.name?.trim()
+    ) {
+      return;
+    }
+
+    try {
+      await onChooseVariation(trimmed);
+    } catch {
+      setVariationDraft(
+        hasAthleteChosenVariation(exercise) ? exercise.name?.trim() || "" : "",
+      );
+    }
+  }, [exercise, onChooseVariation, variationDraft]);
+
+  const handleFieldFocus = useCallback((target: HTMLElement) => {
+    const body = bodyRef.current;
+    if (!body) return;
+    scrollFillPanelFieldIntoView(target, body);
+  }, []);
 
   function handleNumericSetUpdate(
     setNumber: number,
@@ -129,19 +263,16 @@ export default function AthleteExerciseFillPanel({
     }
 
     function canStartDrag(target: EventTarget | null) {
-      if (!handle || !header || !body) return false;
-      if (body.scrollTop > 2) return false;
+      if (!handle || !header) return false;
       if (!target || !(target instanceof Element)) return false;
       if (
         target.closest(
-          "input, textarea, button, a, video, .athlete-set-copy-btn, .athlete-set-video-btn",
+          "input, textarea, button, a, video, .athlete-set-copy-btn, .athlete-set-video-btn, .athlete-exercise-panel-rename",
         )
       ) {
         return false;
       }
-      if (handle.contains(target) || header.contains(target)) return true;
-      if (body.contains(target)) return true;
-      return false;
+      return handle.contains(target) || header.contains(target);
     }
 
     function onTouchStart(event: TouchEvent) {
@@ -197,6 +328,44 @@ export default function AthleteExerciseFillPanel({
     };
   }, [onClose]);
 
+  useEffect(() => {
+    const body = bodyRef.current;
+    if (!body) return;
+
+    const mobileQuery = window.matchMedia("(max-width: 1023px)");
+    if (!mobileQuery.matches) return;
+
+    function syncFocusedField() {
+      const scrollContainer = bodyRef.current;
+      if (!scrollContainer) return;
+
+      const active = document.activeElement;
+      if (!(active instanceof HTMLElement) || !scrollContainer.contains(active)) return;
+      scrollFillPanelFieldIntoView(active, scrollContainer);
+    }
+
+    function onFocusIn(event: FocusEvent) {
+      const scrollContainer = bodyRef.current;
+      if (!scrollContainer) return;
+
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) return;
+      if (!target.matches("input, textarea")) return;
+      scrollFillPanelFieldIntoView(target, scrollContainer);
+    }
+
+    body.addEventListener("focusin", onFocusIn);
+
+    window.visualViewport?.addEventListener("resize", syncFocusedField);
+    window.visualViewport?.addEventListener("scroll", syncFocusedField);
+
+    return () => {
+      body.removeEventListener("focusin", onFocusIn);
+      window.visualViewport?.removeEventListener("resize", syncFocusedField);
+      window.visualViewport?.removeEventListener("scroll", syncFocusedField);
+    };
+  }, []);
+
   return (
     <div
       className={`athlete-exercise-panel-root fixed inset-0 z-50 overflow-x-hidden ${
@@ -213,7 +382,7 @@ export default function AthleteExerciseFillPanel({
       <section
         ref={panelRef}
         data-athlete-set-panel="true"
-        className="athlete-exercise-panel absolute bottom-0 left-0 right-0 flex h-[min(78dvh,calc(100dvh-env(safe-area-inset-bottom)-0.5rem))] w-full max-w-full min-w-0 max-lg:animate-[slidepanel_0.22s_ease-out] flex-col overflow-hidden lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[82vh] lg:w-[min(640px,calc(100vw-32px))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:animate-[floatpanel_0.18s_ease-out]"
+        className="athlete-exercise-panel absolute bottom-0 left-0 right-0 flex w-full max-w-full min-w-0 max-lg:animate-[slidepanel_0.22s_ease-out] flex-col overflow-hidden lg:bottom-auto lg:left-1/2 lg:top-1/2 lg:h-auto lg:max-h-[82vh] lg:w-[min(640px,calc(100vw-32px))] lg:-translate-x-1/2 lg:-translate-y-1/2 lg:animate-[floatpanel_0.18s_ease-out]"
         onClick={(event) => event.stopPropagation()}
       >
         <div
@@ -230,24 +399,60 @@ export default function AthleteExerciseFillPanel({
         >
           <div className="min-w-0 flex-1 pr-2">
             <p className="mb-1.5 text-xs text-app-muted md:text-sm">
-              {day.title} · {dayDateLabel}
+              {formatProgramDayTitle(day.title)} · {dayDateLabel}
             </p>
-            <h2 className="text-xl font-bold leading-tight text-app-text md:text-2xl">
-              {exerciseTitle}
-            </h2>
+            {editingTitle ? (
+              <input
+                ref={titleInputRef}
+                value={titleDraft}
+                onChange={(event) => setTitleDraft(event.target.value)}
+                onBlur={() => void commitRename()}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    event.preventDefault();
+                    void commitRename();
+                  }
+                  if (event.key === "Escape") {
+                    event.preventDefault();
+                    cancelRename();
+                  }
+                }}
+                disabled={renamingExercise || readOnly}
+                maxLength={120}
+                className="w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-lg font-bold text-app-text outline-none focus:border-app-accent focus:ring-2 focus:ring-app-accent/20 md:text-2xl"
+                aria-label="Oefeningnaam"
+              />
+            ) : (
+              <h2 className="text-xl font-bold leading-tight text-app-text md:text-2xl">
+                {exerciseTitle}
+              </h2>
+            )}
             <p className="mt-1 text-xs text-app-muted md:text-sm">
               Voorgeschreven: {prescribedLabel}
             </p>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="athlete-exercise-panel-close"
-            aria-label="Sluiten"
-          >
-            ✕
-          </button>
+          <div className="athlete-exercise-panel-header-actions flex shrink-0 items-center gap-2">
+            {canRenameExercise && onRenameExercise && !readOnly && !editingTitle ? (
+              <button
+                type="button"
+                onClick={() => setEditingTitle(true)}
+                disabled={renamingExercise}
+                className="athlete-exercise-panel-rename app-focus-ring"
+                aria-label="Naam wijzigen"
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+              </button>
+            ) : null}
+            <button
+              type="button"
+              onClick={onClose}
+              className="athlete-exercise-panel-close"
+              aria-label="Sluiten"
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         <div
@@ -258,6 +463,84 @@ export default function AthleteExerciseFillPanel({
             <p className="mb-3 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-xs text-app-muted">
               Alleen bekijken — dit is precies wat de atleet ziet en heeft ingevuld.
             </p>
+          ) : null}
+          {canChooseVariation && isAthleteChoiceExercise(exercise) ? (
+            <div className="mb-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 px-3 py-3 md:px-4">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <p className="text-xs font-semibold uppercase tracking-wide text-violet-300">
+                  Jouw variatie
+                </p>
+                <AthleteChoiceVariationBadge exercise={exercise} variant="athlete" />
+              </div>
+              <p className="mb-3 text-sm text-app-muted">
+                Kies welke variatie je doet voor{" "}
+                <span className="font-medium text-app-text">
+                  {variationBaseName || "deze oefening"}
+                </span>
+                . Dit geldt voor alle weken in dit block.
+              </p>
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  ref={variationInputRef}
+                  type="text"
+                  value={variationDraft}
+                  onChange={(event) => setVariationDraft(event.target.value)}
+                  onFocus={(event) => handleFieldFocus(event.currentTarget)}
+                  onKeyDown={(event) => {
+                    if (event.key === "Enter") {
+                      event.preventDefault();
+                      void commitVariation();
+                    }
+                  }}
+                  disabled={choosingVariation || readOnly}
+                  maxLength={120}
+                  placeholder={`Bijv. wide grip ${variationBaseName || "variatie"}`}
+                  className="min-h-11 flex-1 rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-base text-app-text outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-400/20"
+                  aria-label="Gekozen variatie"
+                />
+                <button
+                  type="button"
+                  onClick={() => void commitVariation()}
+                  disabled={
+                    choosingVariation ||
+                    readOnly ||
+                    !variationDraft.trim() ||
+                    (hasAthleteChosenVariation(exercise) &&
+                      variationDraft.trim() === exercise.name?.trim())
+                  }
+                  className="app-btn-primary min-h-11 shrink-0 px-4 disabled:opacity-50"
+                >
+                  {choosingVariation ? "Opslaan…" : "Variatie opslaan"}
+                </button>
+              </div>
+              {hasAthleteChosenVariation(exercise) ? (
+                <p className="mt-2 text-xs text-violet-300">
+                  Huidige keuze: {exercise.name}
+                </p>
+              ) : null}
+            </div>
+          ) : isAthleteChoiceExercise(exercise) ? (
+            <div className="mb-4 rounded-2xl border border-violet-500/25 bg-violet-500/10 px-3 py-3 md:px-4">
+              <div className="mb-2 flex flex-wrap items-center gap-2">
+                <AthleteChoiceVariationBadge exercise={exercise} variant="athlete" />
+              </div>
+              <p className="text-sm text-app-muted">
+                De atleet kiest zelf de variatie voor{" "}
+                <span className="font-medium text-app-text">
+                  {variationBaseName || "deze oefening"}
+                </span>
+                .
+              </p>
+              {hasAthleteChosenVariation(exercise) ? (
+                <p className="mt-2 text-xs text-violet-300">
+                  Huidige keuze: {exercise.name}
+                </p>
+              ) : (
+                <p className="mt-2 text-xs text-violet-300">
+                  Nog geen variatie ingevuld door de atleet.
+                </p>
+              )}
+            </div>
           ) : null}
           <div className="athlete-exercise-panel-action-chips mb-4 pt-2">
             <button
@@ -295,6 +578,7 @@ export default function AthleteExerciseFillPanel({
               value={exerciseNote}
               onChange={(event) => onExerciseNoteChange(event.target.value)}
               onBlur={(event) => onExerciseNoteBlur(event.target.value)}
+              onFocus={(event) => handleFieldFocus(event.currentTarget)}
               placeholder="Schrijf hier je note bij deze oefening..."
               className="athlete-exercise-panel-notes-input mb-4"
               readOnly={readOnly}
@@ -431,6 +715,7 @@ export default function AthleteExerciseFillPanel({
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "reps", event.target.value)
                         }
+                        onFocus={(event) => handleFieldFocus(event.currentTarget)}
                         onKeyDown={onSetKeyDown}
                         placeholder={
                           normalizeExerciseFormat(exercise.exercise_format) === "amrap"
@@ -456,6 +741,7 @@ export default function AthleteExerciseFillPanel({
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "weight", event.target.value)
                         }
+                        onFocus={(event) => handleFieldFocus(event.currentTarget)}
                         onKeyDown={onSetKeyDown}
                         placeholder="100"
                         inputMode="decimal"
@@ -477,6 +763,7 @@ export default function AthleteExerciseFillPanel({
                         onBlur={(event) =>
                           onSaveSet(row.set_number, "rpe", event.target.value)
                         }
+                        onFocus={(event) => handleFieldFocus(event.currentTarget)}
                         onKeyDown={onSetKeyDown}
                         placeholder="8"
                         inputMode="decimal"

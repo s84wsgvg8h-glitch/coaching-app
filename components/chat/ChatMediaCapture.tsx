@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { Image as ImageIcon } from "lucide-react";
+import { Image as ImageIcon, X, Zap } from "lucide-react";
 
 type CaptureMode = "photo" | "video";
 
@@ -187,7 +187,7 @@ export default function ChatMediaCapture({
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
           facingMode: cameraFacingMode,
-          width: { ideal: 640, max: 1280 },
+          width: { ideal: 720, max: 1280 },
           height: { ideal: 480, max: 720 },
         },
         audio: withAudio,
@@ -338,7 +338,9 @@ export default function ChatMediaCapture({
 
       const recorder = new MediaRecorder(
         stream,
-        mimeType ? { mimeType } : undefined,
+        mimeType
+          ? { mimeType, videoBitsPerSecond: 1_500_000 }
+          : { videoBitsPerSecond: 1_500_000 },
       );
 
       mediaRecorderRef.current = recorder;
@@ -464,39 +466,46 @@ export default function ChatMediaCapture({
           <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/95 to-transparent" />
 
-          <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] flex items-center justify-between">
+          <div className="absolute inset-x-4 top-[max(16px,env(safe-area-inset-top))] grid grid-cols-[44px_minmax(0,1fr)_44px] items-center gap-2">
             <button
               type="button"
               onClick={handleClose}
-              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-3xl font-light text-white backdrop-blur active:scale-95"
+              className="flex h-11 w-11 items-center justify-center rounded-full bg-black/45 text-white backdrop-blur active:scale-95"
               aria-label="Sluiten"
             >
-              ×
+              <X className="h-6 w-6" strokeWidth={2.25} />
             </button>
+
+            <div className="flex min-w-0 justify-center">
+              {isRecordingVideo ? (
+                <div className="flex max-w-full items-center gap-2 rounded-full bg-black/55 px-3.5 py-2 text-sm font-semibold text-white backdrop-blur">
+                  <span className="h-2.5 w-2.5 shrink-0 animate-pulse rounded-full bg-red-500" />
+                  <span className="tabular-nums">{formatVideoTime(recordingSeconds)}</span>
+                </div>
+              ) : null}
+            </div>
 
             <button
               type="button"
               onClick={() => void toggleFlash()}
               disabled={!flashSupported || isRecordingVideo}
               className={`flex h-11 w-11 items-center justify-center rounded-full backdrop-blur active:scale-95 disabled:opacity-30 ${
-                flashOn ? "bg-yellow-300 text-app-text" : "bg-black/45 text-white"
+                flashOn ? "bg-white/20" : "bg-black/45"
               }`}
               aria-label="Flits"
             >
-              ⚡
+              <Zap
+                className={`h-5 w-5 ${
+                  flashOn ? "fill-yellow-300 text-yellow-300" : "text-white"
+                }`}
+                strokeWidth={2}
+              />
             </button>
           </div>
 
           {cameraError && (
             <div className="absolute left-5 right-5 top-28 rounded-3xl bg-red-500/90 p-4 text-center text-sm font-bold text-white shadow-2xl">
               {cameraError}
-            </div>
-          )}
-
-          {isRecordingVideo && (
-            <div className="absolute left-1/2 top-[max(86px,calc(env(safe-area-inset-top)+70px))] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-black text-white backdrop-blur">
-              <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
-              {formatVideoTime(recordingSeconds)}
             </div>
           )}
 

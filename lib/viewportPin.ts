@@ -54,7 +54,7 @@ export function isMobileInnerScrollPath(pathname = "") {
   }
   return (
     pathname === "/profile" ||
-    pathname.startsWith("/profile?") ||
+    pathname.startsWith("/profile/") ||
     pathname === "/intake"
   );
 }

@@ -134,6 +134,16 @@
     overflow: hidden;
   }
 
+  .app-viewport-root .coach-program-shell {
+    position: absolute !important;
+    inset: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: none !important;
+    min-height: 0 !important;
+    overflow: hidden;
+  }
+
   .athlete-program-shell.mobile-page-shell .mobile-page-shell__header--program-week {
     overflow: visible;
     z-index: 30;
@@ -211,10 +221,24 @@
     padding-bottom: var(--mobile-content-bottom-reserve);
   }
 
+  .mobile-page-shell--reserve-bottom-nav .mobile-page-shell__body--scroll {
+    padding-bottom: var(--mobile-content-bottom-reserve) !important;
+    scroll-padding-bottom: var(--mobile-content-bottom-reserve);
+  }
+
   /* Page content top padding: desktop value is suppressed on mobile
      because the header slot already provides correct spacing */
   .mobile-page-shell .app-page-content {
     padding-top: 0;
+  }
+
+  .mobile-page-shell .app-page-content--profile-mobile {
+    display: flex;
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    min-height: min-content;
+    flex-direction: column;
   }
 
   /* ─── Fixed bottom tab bar ─── */
@@ -248,10 +272,28 @@
     height: 100%;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
-    padding: 0 8px;
+    justify-content: flex-end;
+    padding: 0 8px 1px;
     color: var(--app-text-muted);
+    background: transparent;
+    outline: none;
+    box-shadow: none;
+    -webkit-tap-highlight-color: transparent;
+    tap-highlight-color: transparent;
     transition: color 0.15s ease;
+  }
+
+  .athlete-mobile-tab-bar__item:focus,
+  .athlete-mobile-tab-bar__item:focus-visible,
+  .athlete-mobile-tab-bar__item:active {
+    outline: none;
+    background: transparent;
+    box-shadow: none;
+  }
+
+  .athlete-mobile-tab-bar__item.is-active,
+  .athlete-mobile-tab-bar__item:active {
+    color: var(--app-accent);
   }
 
   .athlete-mobile-tab-bar .grid {
@@ -264,19 +306,6 @@
     width: 24px;
     align-items: center;
     justify-content: center;
-    border-radius: 9999px;
-    transition:
-      background 0.15s ease,
-      transform 0.15s ease;
-  }
-
-  .athlete-mobile-tab-bar__item.is-active {
-    color: var(--app-accent);
-  }
-
-  .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
-    background: rgba(59, 130, 246, 0.14);
-    transform: scale(1.05);
   }
 
   .athlete-mobile-tab-bar__label {
@@ -310,6 +339,27 @@
 
   .athlete-program-shell.mobile-page-shell .program-mobile-week-nav--athlete-compact {
     flex-shrink: 0;
+  }
+
+  /* Athlete program week: one vertical scroll container (main), not the shell body */
+  .mobile-page-shell__body--scroll:has(.athlete-program-shell) {
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .mobile-page-shell--reserve-bottom-nav
+    .mobile-page-shell__body--scroll:has(.athlete-program-shell) {
+    padding-bottom: 0;
+  }
+
+  .mobile-page-shell__body--scroll:has(.athlete-program-shell) .athlete-app-layout,
+  .mobile-page-shell__body--scroll:has(.athlete-program-shell) .app-page-content {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+    height: 100%;
+    padding-bottom: 0;
   }
 
   /* ─── Chat: only inner lists scroll ─── */
@@ -419,12 +469,15 @@
   }
 
   .chat-conversation-header .chat-conversation-title {
-    font-size: 0.9375rem;
+    font-size: 0.8125rem;
+    line-height: 1.2;
+    letter-spacing: -0.01em;
   }
 
   .chat-conversation-header .chat-conversation-subtitle {
-    margin-top: 0;
-    font-size: 10px;
+    margin-top: 1px;
+    font-size: 0.625rem;
+    line-height: 1.2;
   }
 
   /* Strip glass styling from back/menu buttons in chat header — plain icons only. */
@@ -503,7 +556,7 @@
     bottom: auto;
     z-index: auto;
     flex-shrink: 0;
-    border-top: 1px solid var(--app-border);
+    border-top: 1px solid rgba(255, 255, 255, 0.035);
     background: var(--app-bg);
     padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px));
   }
@@ -517,36 +570,90 @@
     padding-bottom: 0;
   }
 
-  /* Smaller, more compact input bar on mobile */
-  .chat-input-bar {
-    min-height: 44px !important;
-    align-items: center !important;
-    padding: 0.25rem 0.45rem 0.25rem 0.4rem !important;
+  /* WhatsApp-style compact compose row on mobile */
+  .chat-compose-row {
+    align-items: flex-end;
+    gap: 4px;
   }
 
-  /* Vertically centre placeholder + caret in the compose field */
-  .chat-input-bar > div,
+  .chat-input-bar {
+    min-height: 34px !important;
+    padding: 0 10px !important;
+  }
+
+  .chat-compose-leading-actions .chat-compose-icon-btn,
+  .chat-compose-trailing-actions .chat-compose-icon-btn {
+    width: 36px !important;
+    height: 36px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
   .chat-message-input-wrap {
     display: flex;
     align-items: center;
-    min-height: 30px;
+    min-height: 20px;
   }
 
-  .chat-input-bar .chat-compose-icon-btn {
-    width: 30px !important;
-    height: 30px !important;
+  .chat-input-bar .chat-message-input {
+    padding: 6px 0 !important;
+    line-height: 20px !important;
+    min-height: 20px !important;
     margin: 0 !important;
+    align-self: center;
   }
 
   .chat-send-btn {
-    width: 30px !important;
-    height: 30px !important;
+    width: 36px !important;
+    height: 36px !important;
+  }
+
+  /* Pull-to-refresh */
+  .mobile-ptr-content {
+    display: flex;
+    min-height: 100%;
+    flex-direction: column;
+  }
+
+  .mobile-ptr-indicator {
+    display: flex;
+    flex-shrink: 0;
+    align-items: flex-end;
+    justify-content: center;
+    overflow: hidden;
+    color: var(--app-text-muted);
+  }
+
+  .mobile-ptr-indicator__icon {
+    margin-bottom: 0.35rem;
+    color: var(--app-accent);
+    transition: opacity 0.12s ease;
+  }
+
+  .mobile-ptr-indicator__icon--ready {
+    color: var(--app-accent);
+  }
+
+  @keyframes mobile-ptr-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .mobile-ptr-indicator__icon--spinning {
+    animation: mobile-ptr-spin 0.75s linear infinite;
   }
 }
 
-/* Desktop: no top padding on header */
+/* Desktop: unified AppShell content frame */
 @media (min-width: 1024px) {
   .mobile-page-shell__header {
     padding-top: 0;
+  }
+
+  .app-shell-content-frame.mobile-page-shell--reserve-bottom-nav
+    .mobile-page-shell__body--scroll {
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: 0;
   }
 }

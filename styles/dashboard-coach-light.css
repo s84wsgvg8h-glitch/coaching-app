@@ -110,9 +110,10 @@ html:not(.dark) .premium-coach-ui .coach-app-sidebar {
 }
 
 @media (min-width: 1024px) {
-  html:not(.dark) .premium-coach-ui .coach-app-sidebar:hover {
+  html:not(.dark) .premium-coach-ui .coach-app-sidebar--pinned,
+  html:not(.dark) .premium-coach-ui .coach-app-sidebar--pinned:hover {
     width: var(--dashboard-sidebar-expanded-width);
-    box-shadow: 8px 0 28px rgba(15, 23, 42, 0.08);
+    box-shadow: none;
   }
 }
 

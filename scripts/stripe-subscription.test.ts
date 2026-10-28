@@ -161,7 +161,7 @@ test("coaching webhook handles async checkout payments", () => {
 test("application fee percent defaults safely", () => {
   const previous = process.env.STRIPE_APPLICATION_FEE_PERCENT;
   delete process.env.STRIPE_APPLICATION_FEE_PERCENT;
-  assert.equal(getApplicationFeePercent(), 10);
+  assert.equal(getApplicationFeePercent(), 0);
   process.env.STRIPE_APPLICATION_FEE_PERCENT = "15";
   assert.equal(getApplicationFeePercent(), 15);
   if (previous === undefined) delete process.env.STRIPE_APPLICATION_FEE_PERCENT;

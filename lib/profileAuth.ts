@@ -22,14 +22,6 @@ export async function loadAuthenticatedProfile(
   if (!rpcError && Array.isArray(rpcRows) && rpcRows.length > 0) {
     const row = rpcRows[0] as AuthenticatedProfile;
     if (row.id === userId) {
-      if (row.role === "pending" && row.pending_kind == null) {
-        const { data: pendingRow } = await client
-          .from("profiles")
-          .select("pending_kind")
-          .eq("id", userId)
-          .maybeSingle();
-        return { ...row, pending_kind: pendingRow?.pending_kind ?? null };
-      }
       return row;
     }
   }

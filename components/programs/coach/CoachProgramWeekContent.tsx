@@ -1,10 +1,15 @@
 "use client";
 
 import type { ReactNode, RefObject } from "react";
+import { useEffect, useState } from "react";
 import { Copy, GripVertical } from "lucide-react";
 import CoachExerciseNameInput from "@/components/programs/coach/CoachExerciseNameInput";
+import AthleteChoiceVariationBadge from "@/components/programs/week/AthleteChoiceVariationBadge";
+import { isAthleteExtraExercise } from "@/lib/athleteExtraExercise";
+import { isAthleteChoiceExercise } from "@/lib/athleteExerciseVariation";
 import CoachProgramDayHeader from "@/components/programs/coach/CoachProgramDayHeader";
 import CoachProgramWeekHeader, {
+  CoachProgramWeekStatsFooter,
   type CoachProgramAthleteOption,
   type CoachSbdSummaryItem,
   type EditorView,
@@ -30,8 +35,10 @@ import { SHOW_EXERCISE_PRIORITY_UI } from "@/lib/programWeek/editorFlags";
 import { sortExercisesForDay } from "@/lib/programWeek/sortExercises";
 import type { ProgramSearchContext } from "@/lib/programSearch";
 import type {
+  ProgramBlock,
   ProgramDay,
   ProgramExercise,
+  ProgramWeek,
 } from "@/lib/programWeek/types";
 import { priorityOptions } from "@/lib/programWeek/types";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
@@ -130,7 +137,11 @@ export type CoachProgramWeekContentProps = {
     e: React.DragEvent<HTMLDivElement>,
     dayId: string,
   ) => void;
-  saveExerciseOrder: (dayId: string) => void | Promise<void>;
+  handleExerciseDragOverDayTail: (
+    e: React.DragEvent<HTMLDivElement>,
+    dayId: string,
+  ) => void;
+  saveExerciseOrder: (dayId?: string) => void | Promise<void>;
   updateExerciseLocal: (
     dayId: string,
     exerciseId: string,
@@ -186,6 +197,18 @@ export type CoachProgramWeekContentProps = {
   currentAthleteId?: string;
   onAthleteChange?: (athleteId: string) => void;
   athleteSwitching?: boolean;
+  onToggleAthleteVariationMode?: (
+    exerciseId: string,
+    enabled: boolean,
+    baseName?: string,
+  ) => void | Promise<void>;
+  compareNavBlocks?: ProgramBlock[];
+  compareWeeksByBlock?: Record<string, ProgramWeek[]>;
+  compareBlockId?: string;
+  compareWeekId?: string;
+  compareCurrentBlock?: ProgramBlock | null;
+  compareCurrentWeek?: ProgramWeek | null;
+  onCompareOpenWeek?: (blockId: string, weekId: string) => void;
 };
 
 export default function CoachProgramWeekContent({
@@ -251,6 +274,7 @@ export default function CoachProgramWeekContent({
   handleExerciseDragStart,
   handleExerciseDragOver,
   handleExerciseDragOverDay,
+  handleExerciseDragOverDayTail,
   saveExerciseOrder,
   updateExerciseLocal,
   saveExerciseField,
@@ -274,19 +298,79 @@ export default function CoachProgramWeekContent({
   currentAthleteId,
   onAthleteChange,
   athleteSwitching,
+  onToggleAthleteVariationMode,
+  compareNavBlocks = [],
+  compareWeeksByBlock = {},
+  compareBlockId = "",
+  compareWeekId = "",
+  compareCurrentBlock = null,
+  compareCurrentWeek = null,
+  onCompareOpenWeek,
 }: CoachProgramWeekContentProps) {
+  const [contextMenu, setContextMenu] = useState<
+    | {
+        x: number;
+        y: number;
+        target: "exercise";
+        exercise: ProgramExercise;
+      }
+    | {
+        x: number;
+        y: number;
+        target: "day";
+        dayId: string;
+      }
+    | null
+  >(null);
+
+  useEffect(() => {
+    const closeMenu = () => setContextMenu(null);
+    window.addEventListener("click", closeMenu);
+    window.addEventListener("scroll", closeMenu, true);
+    return () => {
+      window.removeEventListener("click", closeMenu);
+      window.removeEventListener("scroll", closeMenu, true);
+    };
+  }, []);
+
+  const openExerciseContextMenu = (
+    event: React.MouseEvent,
+    exercise: ProgramExercise,
+  ) => {
+    if (!isCoach) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      target: "exercise",
+      exercise,
+    });
+  };
+
+  const openDayContextMenu = (event: React.MouseEvent, dayId: string) => {
+    if (!isCoach) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+    setContextMenu({
+      x: event.clientX,
+      y: event.clientY,
+      target: "day",
+      dayId,
+    });
+  };
+
   return (
     <div className="coach-program-main max-w-full">
+      {!embeddedInChat && mobileWeekNav}
+
       {!embeddedInChat && (
         <CoachProgramWeekHeader
           blockTitle={blockTitle}
           weekTitle={weekTitle}
-          programSearchContext={programSearchContext}
-          planningSplitOpen={planningSplitOpen}
-          onTogglePlanning={onTogglePlanning}
           backHref={backHref}
-          sbdWeekSummary={sbdWeekSummary}
-          weekStatsReport={weekStatsReport}
           editorView={editorView}
           onEditorViewChange={onEditorViewChange}
           showEditorViewToggle={showEditorViewToggle}
@@ -294,10 +378,20 @@ export default function CoachProgramWeekContent({
           currentAthleteId={currentAthleteId}
           onAthleteChange={onAthleteChange}
           athleteSwitching={athleteSwitching}
+          compareNavBlocks={compareNavBlocks}
+          compareWeeksByBlock={compareWeeksByBlock}
+          compareBlockId={compareBlockId}
+          compareWeekId={compareWeekId}
+          compareCurrentBlock={compareCurrentBlock}
+          compareCurrentWeek={compareCurrentWeek}
+          compareCurrentDays={days}
+          compareCurrentExercisesByDay={exercisesByDay}
+          onCompareOpenWeek={onCompareOpenWeek}
+          showCompareView={isCoach}
+          userId={userId}
+          role={role}
         />
       )}
-
-      {!embeddedInChat && mobileWeekNav}
 
               <div className="coach-program-days-grid">
                 {days.map((day) => {
@@ -328,9 +422,20 @@ export default function CoachProgramWeekContent({
                   return (
                     <div
                       key={day.id}
-                      onDragOver={(e) => handleDragOver(e, day.id)}
+                      onDragOver={(e) => {
+                        if (draggedExercise) {
+                          handleExerciseDragOverDay(e, day.id);
+                          return;
+                        }
+                        handleDragOver(e, day.id);
+                      }}
                       onDrop={(e) => {
                         e.preventDefault();
+                        e.stopPropagation();
+                        if (draggedExercise) {
+                          void saveExerciseOrder(day.id);
+                          return;
+                        }
                         void saveDayOrder();
                       }}
                       className={`coach-program-day-column group/day relative flex w-full min-w-0 flex-col transform-gpu transition-[transform,opacity,filter] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] will-change-transform ${
@@ -360,7 +465,7 @@ export default function CoachProgramWeekContent({
                               handleDragStart(day.id);
                             }}
                             onDragEnd={() => void saveDayOrder()}
-                            className="coach-program-drag-handle mt-1 shrink-0"
+                            className="coach-program-drag-handle shrink-0"
                             aria-label="Dag verplaatsen"
                             title="Sleep om dag te verplaatsen"
                           >
@@ -401,16 +506,21 @@ export default function CoachProgramWeekContent({
                             : ""
                         } ${
                           isExerciseDropTarget
-                            ? "border-brand-blue/40 shadow-lg"
+                            ? "border-brand-blue/40 shadow-lg ring-2 ring-brand-blue/20"
                             : ""
                         } ${
                           dayHasExercises ||
                           isAddingExercise ||
                           noteOpen ||
                           warmupOpen
-                            ? "min-h-[420px]"
-                            : "min-h-[230px]"
+                            ? "max-lg:min-h-0 lg:min-h-[420px]"
+                            : "max-lg:min-h-0 lg:min-h-[230px]"
                         }`}
+                        onDragOver={(e) => {
+                          if (!draggedExercise) return;
+                          handleExerciseDragOverDay(e, day.id);
+                        }}
+                        onContextMenu={(event) => openDayContextMenu(event, day.id)}
                       >
                       <div className="flex flex-col h-full">
                         <div className="coach-program-day-chips">
@@ -422,16 +532,6 @@ export default function CoachProgramWeekContent({
                                 className="program-day-chip program-day-chip-warmup"
                               >
                                 Warmup
-                              </button>
-                            )}
-
-                            {isCoach && !day.notes?.trim() && (
-                              <button
-                                type="button"
-                                onClick={() => setOpenDayNoteId(day.id)}
-                                className="program-day-chip program-day-chip-notes"
-                              >
-                                Notes
                               </button>
                             )}
 
@@ -599,18 +699,25 @@ export default function CoachProgramWeekContent({
                             onDrop={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
+                              void saveExerciseOrder(day.id);
                             }}
                             className="coach-program-exercise-day-drop-zone mt-1.5 flex min-h-[120px] flex-1 items-center justify-center rounded-[var(--coach-program-radius)] border border-dashed border-brand-blue/35 bg-brand-blue/[0.04]"
                           >
-                            <div
-                              className="coach-program-drop-line coach-program-drop-line--exercise static w-[calc(100%-2rem)]"
-                              aria-hidden
-                            />
+                            <p className="pointer-events-none text-xs font-semibold text-brand-blue/70">
+                              Sleep oefening hierheen
+                            </p>
                           </div>
                         ) : null}
 
                         {dayHasExercises && (
-                          <div className="space-y-1.5 mt-1.5">
+                          <div
+                            className="space-y-1.5 mt-1.5"
+                            onDragOver={(e) => {
+                              if (!draggedExercise) return;
+                              e.preventDefault();
+                              handleExerciseDragOverDay(e, day.id);
+                            }}
+                          >
                             {exercises.map((exercise) => {
                               const exerciseNoteOpen =
                                 openExerciseNoteId === exercise.id;
@@ -673,6 +780,9 @@ export default function CoachProgramWeekContent({
 
                                   <div
                                     draggable={isCoach}
+                                    onContextMenu={(event) =>
+                                      openExerciseContextMenu(event, exercise)
+                                    }
                                     onDragStart={(e) => {
                                       if (isExerciseCardDragBlockedTarget(e.target)) {
                                         e.preventDefault();
@@ -682,7 +792,7 @@ export default function CoachProgramWeekContent({
                                       setDragPreviewFromElement(e, e.currentTarget);
                                       handleExerciseDragStart(day.id, exercise.id);
                                     }}
-                                    onDragEnd={() => void saveExerciseOrder(day.id)}
+                                    onDragEnd={() => void saveExerciseOrder()}
                                     onMouseDown={(e) => {
                                       if (
                                         (e.target as HTMLElement).closest(
@@ -711,6 +821,7 @@ export default function CoachProgramWeekContent({
                                     onDrop={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
+                                      void saveExerciseOrder();
                                     }}
                                     title={
                                       isCoach
@@ -799,26 +910,10 @@ export default function CoachProgramWeekContent({
                                             className="coach-program-exercise-name"
                                           />
                                         </div>
-
-                                        {isCoach && (
-                                          <button
-                                            type="button"
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              e.stopPropagation();
-                                              setOpenExerciseNoteId(
-                                                exerciseNoteOpen ? "" : exercise.id,
-                                              );
-                                            }}
-                                            className={`program-day-chip program-day-chip-notes shrink-0 ${
-                                              exerciseNoteOpen || exercise.notes?.trim()
-                                                ? "program-day-chip-notes-active"
-                                                : ""
-                                            }`}
-                                          >
-                                            Notes
-                                          </button>
-                                        )}
+                                        <AthleteChoiceVariationBadge
+                                          exercise={exercise}
+                                          variant="coach"
+                                        />
                                       </div>
 
                                       {SHOW_EXERCISE_PRIORITY_UI &&
@@ -1056,11 +1151,11 @@ export default function CoachProgramWeekContent({
                                             e.target.value,
                                           )
                                         }
-                                        onBlur={() => {
+                                        onBlur={(e) => {
                                           void saveExerciseField(
                                             exercise.id,
                                             "notes",
-                                            exercise.notes || "",
+                                            e.target.value,
                                           );
                                         }}
                                         onKeyDown={(e) => {
@@ -1069,7 +1164,7 @@ export default function CoachProgramWeekContent({
                                             void saveExerciseField(
                                               exercise.id,
                                               "notes",
-                                              exercise.notes || "",
+                                              e.currentTarget.value,
                                             );
                                           }
                                         }}
@@ -1131,13 +1226,14 @@ export default function CoachProgramWeekContent({
                             {isCoach && isExerciseDropTarget ? (
                               <div
                                 onDragOver={(e) =>
-                                  handleExerciseDragOverDay(e, day.id)
+                                  handleExerciseDragOverDayTail(e, day.id)
                                 }
                                 onDrop={(e) => {
                                   e.preventDefault();
                                   e.stopPropagation();
+                                  void saveExerciseOrder();
                                 }}
-                                className="min-h-8"
+                                className="coach-program-exercise-day-drop-tail min-h-8 rounded-lg border border-dashed border-brand-blue/25"
                                 aria-hidden
                               />
                             ) : null}
@@ -1274,37 +1370,78 @@ export default function CoachProgramWeekContent({
                 })}
 
                 {isCoach && !isCreatingDay && (
-                  <button
-                    type="button"
-                    onClick={() => setIsCreatingDay(true)}
-                    className="coach-program-add-day"
-                  >
-                    <div className="coach-program-add-day-icon">+</div>
-                    <p className="coach-program-add-day-title">Nieuwe dag toevoegen</p>
-                    <p className="coach-program-add-day-subtitle">
-                      Plan een nieuwe trainingsdag in deze week.
-                    </p>
-                  </button>
+                  <div className="coach-program-add-day-column">
+                    <div
+                      className="coach-program-add-day-header-spacer coach-program-day-header-row flex items-start gap-1"
+                      aria-hidden="true"
+                    >
+                      <span className="coach-program-drag-handle mt-1 shrink-0 invisible">
+                        <GripVertical className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="coach-program-day-header">
+                          <div className="coach-program-day-header-row-inner">
+                            <span className="coach-program-day-pill coach-program-day-pill-title invisible">
+                              &nbsp;
+                            </span>
+                            <span className="coach-program-day-pill coach-program-day-pill-date invisible">
+                              &nbsp;
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsCreatingDay(true)}
+                      className="coach-program-add-day"
+                    >
+                      <div className="coach-program-add-day-icon">+</div>
+                      <p className="coach-program-add-day-title">Nieuwe dag toevoegen</p>
+                      <p className="coach-program-add-day-subtitle">
+                        Plan een nieuwe trainingsdag in deze week.
+                      </p>
+                    </button>
+                  </div>
                 )}
 
                 {isCoach && isCreatingDay && (
-                  <div className="coach-program-add-day-form">
-                    <div>
-                      <h2>Nieuwe dag</h2>
-
-                      <input
-                        ref={newDayInputRef}
-                        value={newDayTitle}
-                        onChange={(e) => setNewDayTitle(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") {
-                            createDay(days.length + 1);
-                          }
-                        }}
-                        placeholder="Bijvoorbeeld: Borst training"
-                        className="coach-program-inline-form-input coach-program-inline-form-input-name"
-                      />
+                  <div className="coach-program-add-day-column">
+                    <div
+                      className="coach-program-add-day-header-spacer coach-program-day-header-row flex items-start gap-1"
+                      aria-hidden="true"
+                    >
+                      <span className="coach-program-drag-handle mt-1 shrink-0 invisible">
+                        <GripVertical className="h-4 w-4" aria-hidden />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="coach-program-day-header">
+                          <div className="coach-program-day-header-row-inner">
+                            <span className="coach-program-day-pill coach-program-day-pill-title invisible">
+                              &nbsp;
+                            </span>
+                            <span className="coach-program-day-pill coach-program-day-pill-date invisible">
+                              &nbsp;
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
+                    <div className="coach-program-add-day-form">
+                    <h2>Nieuwe dag</h2>
+
+                    <input
+                      ref={newDayInputRef}
+                      value={newDayTitle}
+                      onChange={(e) => setNewDayTitle(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                          createDay(days.length + 1);
+                        }
+                      }}
+                      placeholder="Bijvoorbeeld: Borst training"
+                      className="coach-program-inline-form-input coach-program-inline-form-input-name"
+                    />
 
                     <div className="coach-program-inline-form-actions">
                       <button
@@ -1326,9 +1463,74 @@ export default function CoachProgramWeekContent({
                         Annuleer
                       </button>
                     </div>
+                    </div>
                   </div>
                 )}
               </div>
+
+      {!embeddedInChat && (
+        <CoachProgramWeekStatsFooter
+          weekTitle={weekTitle}
+          sbdWeekSummary={sbdWeekSummary}
+          weekStatsReport={weekStatsReport}
+        />
+      )}
+
+      {contextMenu && isCoach ? (
+        <div
+          className="coach-program-raw-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          role="menu"
+          onClick={(event) => event.stopPropagation()}
+        >
+          {contextMenu.target === "day" ? (
+            <button
+              type="button"
+              role="menuitem"
+              onClick={() => {
+                setOpenDayNoteId(contextMenu.dayId);
+                setContextMenu(null);
+              }}
+            >
+              Note
+            </button>
+          ) : (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpenExerciseNoteId(contextMenu.exercise.id);
+                  setContextMenu(null);
+                }}
+              >
+                Note
+              </button>
+              {onToggleAthleteVariationMode &&
+              !isAthleteExtraExercise(contextMenu.exercise) ? (
+                <button
+                  type="button"
+                  role="menuitem"
+                  onClick={() => {
+                    const { exercise } = contextMenu;
+                    const enabled = !isAthleteChoiceExercise(exercise);
+                    void onToggleAthleteVariationMode(
+                      exercise.id,
+                      enabled,
+                      exercise.name?.trim() || undefined,
+                    );
+                    setContextMenu(null);
+                  }}
+                >
+                  {isAthleteChoiceExercise(contextMenu.exercise)
+                    ? "Variatie-modus uitzetten"
+                    : "Atleet kiest variatie"}
+                </button>
+              ) : null}
+            </>
+          )}
+        </div>
+      ) : null}
             </div>
   );
 }

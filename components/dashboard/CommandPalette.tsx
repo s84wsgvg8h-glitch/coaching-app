@@ -1,48 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import SearchInput from "@/components/ui/SearchInput";
 import { useRouter } from "next/navigation";
-import { supabase } from "@/lib/supabaseClient";
-import { getNavLinks } from "@/lib/navigation";
-import { isCoachLikeRole } from "@/lib/authRoles";
 import { useAuth } from "@/components/AuthProvider";
-import { getDemoPages } from "@/lib/demo/demoPages";
-import { getDemoPersona, isDemoMode } from "@/lib/demo/demoMode";
-import { buildProgramWeekPath, resolveProgramEntryForAthlete } from "@/lib/programNavigation";
 import { trackEvent } from "@/lib/analytics";
-import {
-  applyAthleteScope,
-  loadCoachOrgContext,
-} from "@/lib/orgAthleteScope";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
+import {
+  useCommandPaletteSearch,
+  useFilteredCommandItems,
+} from "@/hooks/useCommandPaletteSearch";
+import type { CommandItem } from "@/lib/commandPaletteSearch";
 
 type CommandPaletteProps = {
   open: boolean;
   onClose: () => void;
 };
 
-type CommandItem = {
-  id: string;
-  label: string;
-  hint?: string;
-  href?: string;
-  group: string;
-  keywords?: string;
-};
-
 export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const router = useRouter();
-  const { role, userId } = useAuth();
+  const { role } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
-  const [athletes, setAthletes] = useState<
-    Array<{ id: string; full_name: string | null }>
-  >([]);
-  const [programs, setPrograms] = useState<
-    Array<{ athleteId: string; athleteName: string; href: string; label: string }>
-  >([]);
-  const [athleteProgramHref, setAthleteProgramHref] = useState<string | null>(null);
+  const { items } = useCommandPaletteSearch({ enabled: open });
+  const filtered = useFilteredCommandItems(items, query);
 
   useEffect(() => {
     if (!open) {
@@ -54,244 +35,7 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
     }
 
     trackEvent("command_palette_opened");
-
-    async function loadData() {
-      if (!userId) {
-        setAthletes([]);
-        setPrograms([]);
-        setAthleteProgramHref(null);
-        return;
-      }
-
-      if (role === "atleet") {
-        const { data: entry } = await resolveProgramEntryForAthlete(userId, userId);
-        setAthleteProgramHref(entry ? buildProgramWeekPath(entry) : "/programs");
-        setAthletes([]);
-        setPrograms([]);
-        return;
-      }
-
-      if (!isCoachLikeRole(role)) {
-        setAthletes([]);
-        setPrograms([]);
-        setAthleteProgramHref(null);
-        return;
-      }
-
-      const ctx = await loadCoachOrgContext(userId);
-      if (!ctx) {
-        setAthletes([]);
-        setPrograms([]);
-        return;
-      }
-
-      let query = supabase
-        .from("profiles")
-        .select("id, full_name")
-        .eq("role", "atleet")
-        .order("full_name", { ascending: true })
-        .limit(40);
-
-      query = applyAthleteScope(query, ctx);
-      const { data } = await query;
-
-      const athleteRows = data || [];
-      setAthletes(athleteRows);
-
-      const programItems: Array<{
-        athleteId: string;
-        athleteName: string;
-        href: string;
-        label: string;
-      }> = [];
-
-      for (const athlete of athleteRows.slice(0, 12)) {
-        const { data: entry } = await resolveProgramEntryForAthlete(
-          athlete.id,
-          userId,
-        );
-        if (!entry) continue;
-        programItems.push({
-          athleteId: athlete.id,
-          athleteName: athlete.full_name || "Atleet",
-          href: buildProgramWeekPath(entry, { coachViewingAthlete: true }),
-          label: `Programma — ${athlete.full_name || "Atleet"}`,
-        });
-      }
-
-      setPrograms(programItems);
-    }
-
-    void loadData();
-  }, [open, role, userId]);
-
-  const items = useMemo<CommandItem[]>(() => {
-    const nav = getNavLinks(role).map((item) => ({
-      id: item.href,
-      label: item.title,
-      hint: item.description,
-      href: item.href,
-      group: "Pagina's",
-      keywords: item.description,
-    }));
-
-    const athleteQuickActions: CommandItem[] =
-      role === "atleet"
-        ? [
-            {
-              id: "qa-fill",
-              label: "Vandaag invullen",
-              hint: "Open je programma van vandaag",
-              href: athleteProgramHref || "/programs",
-              group: "Snelle acties",
-            },
-            {
-              id: "qa-chat-athlete",
-              label: "Open chat",
-              href: "/chat",
-              group: "Snelle acties",
-            },
-            {
-              id: "qa-data",
-              label: "Open data",
-              href: "/data",
-              group: "Snelle acties",
-            },
-            {
-              id: "qa-todo-athlete",
-              label: "Taken & habits",
-              href: "/todo",
-              group: "Snelle acties",
-            },
-          ]
-        : [];
-
-    const quickActions: CommandItem[] = isCoachLikeRole(role)
-      ? [
-          {
-            id: "qa-dashboard",
-            label: "Open dashboard",
-            href: "/dashboard",
-            group: "Snelle acties",
-          },
-          {
-            id: "qa-chat",
-            label: "Open chat",
-            href: "/chat",
-            group: "Snelle acties",
-          },
-          {
-            id: "qa-todo",
-            label: "Nieuwe taak",
-            href: "/todo",
-            group: "Snelle acties",
-          },
-          {
-            id: "qa-athletes",
-            label: "Atleten / uitnodigen",
-            href: "/athletes",
-            group: "Snelle acties",
-          },
-          {
-            id: "qa-competition",
-            label: "Nieuwe wedstrijd",
-            href: "/wedstrijd-kalender",
-            group: "Snelle acties",
-          },
-        ]
-      : [];
-
-    const athleteItems = athletes.map((athlete) => ({
-      id: `athlete-${athlete.id}`,
-      label: athlete.full_name || "Atleet",
-      hint: "Atleet hub",
-      href: `/athletes/${athlete.id}`,
-      group: "Atleten",
-    }));
-
-    const programItems = programs.map((program) => ({
-      id: `program-${program.athleteId}`,
-      label: program.label,
-      hint: "Programma openen",
-      href: program.href,
-      group: "Programma's",
-      keywords: program.athleteName,
-    }));
-
-    const demoBrowseItems: CommandItem[] = isDemoMode()
-      ? getDemoPages(getDemoPersona()).map((page) => ({
-          id: `demo-${page.href}`,
-          label: page.label,
-          hint: page.group,
-          href: page.href,
-          group: "Demo — alle pagina's",
-          keywords: page.description,
-        }))
-      : [];
-
-    const extraCoachPages: CommandItem[] = isCoachLikeRole(role)
-      ? [
-          { id: "/todo", label: "To-do", href: "/todo", group: "Pagina's" },
-          { id: "/athletes", label: "Atleten", href: "/athletes", group: "Pagina's" },
-          { id: "/chat", label: "Chat", href: "/chat", group: "Pagina's" },
-          { id: "/video-review", label: "Video review", href: "/video-review", group: "Pagina's" },
-          { id: "/planning", label: "Planning", href: "/planning", group: "Pagina's" },
-          { id: "/meet-week", label: "Meet-week", href: "/meet-week", group: "Pagina's" },
-          { id: "/betalingen", label: "Betalingen", href: "/betalingen", group: "Pagina's" },
-          {
-            id: "/coach/subscriptions",
-            label: "Abonnementen",
-            href: "/coach/subscriptions",
-            group: "Pagina's",
-          },
-          { id: "/agenda", label: "Agenda", href: "/agenda", group: "Pagina's" },
-        ]
-      : [];
-
-    const extraAthletePages: CommandItem[] =
-      role === "atleet"
-        ? [
-            { id: "/programs", label: "Programma", href: "/programs", group: "Pagina's" },
-            { id: "/chat-athlete", label: "Chat", href: "/chat", group: "Pagina's" },
-            { id: "/data-athlete", label: "Data", href: "/data", group: "Pagina's" },
-            { id: "/invulscore", label: "Invulscore", href: "/invulscore", group: "Pagina's" },
-            { id: "/video-gallery", label: "Video", href: "/video-gallery", group: "Pagina's" },
-            { id: "/kennisbank-athlete", label: "Kennisbank", href: "/kennisbank", group: "Pagina's" },
-            { id: "/meet-week", label: "Meet-week", href: "/meet-week", group: "Pagina's" },
-            { id: "/merch", label: "Merch", href: "/merch", group: "Pagina's" },
-            { id: "/leaderboard-athlete", label: "Leaderboard", href: "/leaderboard", group: "Pagina's" },
-            { id: "/doelen", label: "Doelen", href: "/doelen", group: "Pagina's" },
-          ]
-        : [];
-
-    const mergedNav: CommandItem[] = [...nav];
-    for (const extra of [...extraCoachPages, ...extraAthletePages]) {
-      if (!mergedNav.some((item) => item.href === extra.href)) {
-        mergedNav.push(extra);
-      }
-    }
-
-    return [
-      ...athleteQuickActions,
-      ...quickActions,
-      ...demoBrowseItems,
-      ...mergedNav,
-      ...athleteItems,
-      ...programItems,
-    ];
-  }, [athleteProgramHref, athletes, programs, role]);
-
-  const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase();
-    if (!q) return items;
-    return items.filter(
-      (item) =>
-        item.label.toLowerCase().includes(q) ||
-        item.hint?.toLowerCase().includes(q) ||
-        item.keywords?.toLowerCase().includes(q) ||
-        item.group.toLowerCase().includes(q),
-    );
-  }, [items, query]);
+  }, [open]);
 
   const run = useCallback(
     (item: CommandItem) => {

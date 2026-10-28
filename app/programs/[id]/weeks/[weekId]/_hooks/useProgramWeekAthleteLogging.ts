@@ -460,18 +460,33 @@ export function useProgramWeekAthleteLogging({
 
     const videoKey = getAthleteSetVideoKey(exercise.id, setNumber);
     const previousVideos = athleteVideosBySet;
+    const currentVideo = athleteVideosBySet[videoKey];
+    const localPreviewUrl = URL.createObjectURL(file);
+
+    setAthleteVideosBySet((current) => ({
+      ...current,
+      [videoKey]: {
+        program_exercise_id: exercise.id,
+        athlete_id: ownerAthleteId,
+        set_number: setNumber,
+        video_url: localPreviewUrl,
+        video_path: null,
+        file_name: file.name,
+        caption,
+      },
+    }));
 
     setUploadingVideoSetKey(videoKey);
 
+    if (currentVideo?.video_path) {
+      void supabase.storage
+        .from("exercise-videos")
+        .remove([currentVideo.video_path]);
+    }
+
+    const thumbnailPromise = captureVideoThumbnail(file).catch(() => null);
+
     try {
-      const currentVideo = athleteVideosBySet[videoKey];
-
-      if (currentVideo?.video_path) {
-        await supabase.storage
-          .from("exercise-videos")
-          .remove([currentVideo.video_path]);
-      }
-
       const extension = file.name.split(".").pop() || "mp4";
       const safeFileName = `${Date.now()}-set-${setNumber}.${extension}`;
       const filePath = `${ownerAthleteId}/${exercise.id}/set-${setNumber}/${safeFileName}`;
@@ -524,16 +539,48 @@ export function useProgramWeekAthleteLogging({
         if (insertError) throw insertError;
       }
 
+      URL.revokeObjectURL(localPreviewUrl);
+
       setAthleteVideosBySet((current) => ({
         ...current,
         [videoKey]: videoRow,
       }));
 
-      let thumbnailUrl: string | null = null;
+      setUploadingVideoSetKey("");
 
-      try {
-        const thumbnailBlob = await captureVideoThumbnail(file);
-        const thumbnailPath = `${ownerAthleteId}/${exercise.id}/set-${setNumber}/thumb-${Date.now()}.jpg`;
+      void finalizeAthleteSetVideoDelivery({
+        exercise,
+        setNumber,
+        ownerAthleteId,
+        publicVideoUrl: publicUrlData.publicUrl,
+        caption,
+        thumbnailPromise,
+      });
+    } catch (error: unknown) {
+      console.error("VIDEO UPLOAD ERROR:", error);
+      console.error("VIDEO UPLOAD ERROR JSON:", JSON.stringify(error, null, 2));
+      URL.revokeObjectURL(localPreviewUrl);
+      setAthleteVideosBySet(previousVideos);
+      alert(getUnknownErrorMessage(error, "Video uploaden mislukt"));
+      setUploadingVideoSetKey("");
+    }
+  }
+
+  async function finalizeAthleteSetVideoDelivery(params: {
+    exercise: ProgramExercise;
+    setNumber: number;
+    ownerAthleteId: string;
+    publicVideoUrl: string;
+    caption: string | null;
+    thumbnailPromise: Promise<Blob | null>;
+  }) {
+    let thumbnailUrl: string | null = null;
+
+    try {
+      const thumbnailBlob = await params.thumbnailPromise;
+
+      if (thumbnailBlob) {
+        const thumbnailPath = `${params.ownerAthleteId}/${params.exercise.id}/set-${params.setNumber}/thumb-${Date.now()}.jpg`;
 
         const { error: thumbnailUploadError } = await supabase.storage
           .from("exercise-videos")
@@ -549,42 +596,35 @@ export function useProgramWeekAthleteLogging({
 
           thumbnailUrl = thumbnailPublicUrl.publicUrl;
         }
-      } catch (thumbnailError) {
-        console.error("VIDEO THUMBNAIL ERROR:", thumbnailError);
       }
+    } catch (thumbnailError) {
+      console.error("VIDEO THUMBNAIL ERROR:", thumbnailError);
+    }
 
-      if (role === "atleet" && userId && athleteCoachId) {
-        const setRow = getSetRowsForExercise(exercise).find(
-          (row) => row.set_number === setNumber,
-        );
+    if (role !== "atleet" || !userId || !athleteCoachId) return;
 
-        const { error: routeError } = await routeAthleteExerciseVideo({
-          athleteId: userId,
-          coachId: athleteCoachId,
-          target: videoSubmitTarget,
-          videoUrl: publicUrlData.publicUrl,
-          thumbnailUrl,
-          caption,
-          exerciseName: normalizeExerciseName(exercise.name),
-          setNumber,
-          reps: setRow?.reps || null,
-          coachReps: exercise.reps || null,
-          weight: setRow?.weight || null,
-          rpe: setRow?.rpe || null,
-          priority: exercise.priority || null,
-        });
+    const setRow = getSetRowsForExercise(params.exercise).find(
+      (row) => row.set_number === params.setNumber,
+    );
 
-        if (routeError) {
-          console.error("VIDEO ROUTE ERROR:", routeError);
-        }
-      }
-    } catch (error: unknown) {
-      console.error("VIDEO UPLOAD ERROR:", error);
-      console.error("VIDEO UPLOAD ERROR JSON:", JSON.stringify(error, null, 2));
-      setAthleteVideosBySet(previousVideos);
-      alert(getUnknownErrorMessage(error, "Video uploaden mislukt"));
-    } finally {
-      setUploadingVideoSetKey("");
+    const { error: routeError } = await routeAthleteExerciseVideo({
+      athleteId: userId,
+      coachId: athleteCoachId,
+      target: videoSubmitTarget,
+      videoUrl: params.publicVideoUrl,
+      thumbnailUrl,
+      caption: params.caption,
+      exerciseName: normalizeExerciseName(params.exercise.name),
+      setNumber: params.setNumber,
+      reps: setRow?.reps || null,
+      coachReps: params.exercise.reps || null,
+      weight: setRow?.weight || null,
+      rpe: setRow?.rpe || null,
+      priority: params.exercise.priority || null,
+    });
+
+    if (routeError) {
+      console.error("VIDEO ROUTE ERROR:", routeError);
     }
   }
 

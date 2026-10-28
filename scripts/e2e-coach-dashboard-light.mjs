@@ -138,11 +138,6 @@ async function main() {
     const bottom = scope.querySelector(".dashboard-cockpit-bottom");
     const inboxDesktop = scope.querySelector(".dashboard-cockpit-panel--inbox-desktop");
     const alerts = scope.querySelector(".dashboard-cockpit-panel--alerts");
-    const quickActions = scope.querySelector(".dashboard-quick-actions--cockpit");
-    const quickBtn = quickActions?.querySelector(".dashboard-quick-action-btn");
-    const quickGrid = quickActions
-      ? getComputedStyle(quickActions).gridTemplateColumns
-      : "";
     const bottomHidden = bottom ? !isVisible(bottom) : true;
     const inboxVisible = inboxDesktop ? isVisible(inboxDesktop) : false;
     const alertsHidden = alerts ? !isVisible(alerts) : true;
@@ -164,16 +159,12 @@ async function main() {
       bottomHidden,
       inboxVisible,
       alertsHidden,
-      quickGrid,
-      quickBtnCount:
-        quickActions?.querySelectorAll(".dashboard-quick-action-btn").length ?? 0,
       kpiCards,
       kpiAccents,
       focusRows,
       urgencyBars,
       shellBg: bg,
       cardBg,
-      quickBtnFlexDir: quickBtn ? getComputedStyle(quickBtn).flexDirection : "",
       mobileAgendaHidden,
     };
   });
@@ -185,11 +176,8 @@ async function main() {
   if (!checks.bottomHidden) failures.push("bottom row should be hidden on light desktop");
   if (!checks.inboxVisible) failures.push("desktop inbox panel should be visible");
   if (!checks.alertsHidden) failures.push("alerts panel should be hidden on light desktop");
-  if (checks.quickBtnCount !== 4) failures.push("expected 4 quick actions");
-  if (checks.kpiCards !== 4) failures.push("expected 4 KPI cards");
-  if (checks.kpiAccents !== 4) failures.push("expected accent rail on each KPI card");
-  if (checks.quickBtnFlexDir !== "column")
-    failures.push("quick actions should stack icon above label");
+  if (checks.kpiCards !== 3) failures.push("expected 3 KPI cards");
+  if (checks.kpiAccents !== 3) failures.push("expected accent rail on each KPI card");
   if (checks.focusRows > 0 && checks.urgencyBars !== checks.focusRows)
     failures.push("each focus task should have a colored accent bar");
   if (!checks.mobileAgendaHidden)

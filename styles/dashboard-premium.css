@@ -126,9 +126,10 @@ html.dark .premium-coach-ui .coach-app-sidebar {
 }
 
 @media (min-width: 1024px) {
-  html.dark .premium-coach-ui .coach-app-sidebar:hover {
+  html.dark .premium-coach-ui .coach-app-sidebar--pinned,
+  html.dark .premium-coach-ui .coach-app-sidebar--pinned:hover {
     width: var(--dashboard-sidebar-expanded-width);
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.45);
+    box-shadow: none;
   }
 }
 

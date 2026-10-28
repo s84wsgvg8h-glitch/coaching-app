@@ -1,3 +1,5 @@
+import { withPreserveWeekParam } from "@/lib/programNavigation";
+
 export type ProgramSearchExercise = {
   id: string;
   name: string;
@@ -80,9 +82,11 @@ export function buildProgramSearchItems(
       title: `${context.block.title} · ${context.week.title}`,
       description: "Huidige week",
       kind: "week",
-      href: `/programs/${context.block.id}/weeks/${context.week.id}${
-        context.athleteId ? `?athlete=${context.athleteId}` : ""
-      }`,
+      href: withPreserveWeekParam(
+        `/programs/${context.block.id}/weeks/${context.week.id}${
+          context.athleteId ? `?athlete=${context.athleteId}` : ""
+        }`,
+      ),
     });
   }
 
@@ -94,9 +98,11 @@ export function buildProgramSearchItems(
       title: week.title,
       description: `Week ${week.weekNumber}`,
       kind: "week",
-      href: `/programs/${context.block!.id}/weeks/${week.id}${
-        context.athleteId ? `?athlete=${context.athleteId}` : ""
-      }`,
+      href: withPreserveWeekParam(
+        `/programs/${context.block!.id}/weeks/${week.id}${
+          context.athleteId ? `?athlete=${context.athleteId}` : ""
+        }`,
+      ),
     });
   });
 

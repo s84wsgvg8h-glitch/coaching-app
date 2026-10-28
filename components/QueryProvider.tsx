@@ -1,6 +1,10 @@
 "use client";
 
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import {
+  QueryClient,
+  QueryClientProvider,
+  keepPreviousData,
+} from "@tanstack/react-query";
 import { useState, type ReactNode } from "react";
 
 type QueryProviderProps = {
@@ -17,6 +21,7 @@ export function QueryProvider({ children }: QueryProviderProps) {
             gcTime: 15 * 60_000,
             refetchOnWindowFocus: false,
             retry: 1,
+            placeholderData: keepPreviousData,
           },
         },
       }),

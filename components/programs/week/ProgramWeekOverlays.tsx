@@ -18,6 +18,10 @@ import type { ProgramBlock, ProgramExercise, ProgramWeek } from "@/lib/programWe
 
 export type ProgramWeekOverlaysProps = {
   offlineQueueCount: number;
+  offlineSyncSyncing: boolean;
+  offlineSyncOnline: boolean;
+  onRetryOfflineSync: () => void | Promise<void>;
+  onDismissOfflineSync: () => void;
   templateApplyOpen: boolean;
   onCloseTemplateApply: () => void;
   userId: string;
@@ -60,6 +64,10 @@ export type ProgramWeekOverlaysProps = {
 
 export default function ProgramWeekOverlays({
   offlineQueueCount,
+  offlineSyncSyncing,
+  offlineSyncOnline,
+  onRetryOfflineSync,
+  onDismissOfflineSync,
   templateApplyOpen,
   onCloseTemplateApply,
   userId,
@@ -193,9 +201,37 @@ export default function ProgramWeekOverlays({
       ) : null}
 
       {offlineQueueCount > 0 ? (
-        <div className="fixed left-4 right-4 top-[max(1rem,env(safe-area-inset-top))] z-[899] rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-semibold text-amber-900 lg:left-auto lg:right-4 lg:max-w-sm">
-          {offlineQueueCount} set(s) wachten op sync — wordt automatisch opgeslagen zodra je
-          weer online bent.
+        <div className="fixed inset-x-3 bottom-[calc(4.75rem+env(safe-area-inset-bottom))] z-[899] mx-auto max-w-md rounded-2xl border border-amber-500/30 bg-amber-500/10 px-3 py-2.5 shadow-lg backdrop-blur-md lg:inset-x-auto lg:right-4 lg:bottom-6 lg:max-w-sm">
+          <p className="text-xs font-semibold leading-snug text-amber-100">
+            {offlineSyncSyncing
+              ? `${offlineQueueCount} offline wijziging(en) synchroniseren…`
+              : offlineSyncOnline
+                ? `${offlineQueueCount} offline wijziging(en) wachten op sync`
+                : `${offlineQueueCount} offline wijziging(en) — wordt opgeslagen zodra je weer online bent`}
+          </p>
+          {!offlineSyncSyncing && offlineSyncOnline ? (
+            <p className="mt-0.5 text-[11px] leading-snug text-amber-100/75">
+              Tik op opnieuw proberen of negeer als alles al is opgeslagen.
+            </p>
+          ) : null}
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => void onRetryOfflineSync()}
+              disabled={offlineSyncSyncing || !offlineSyncOnline}
+              className="min-h-[36px] flex-1 rounded-xl bg-amber-500/20 px-3 py-1.5 text-xs font-semibold text-amber-50 disabled:opacity-50"
+            >
+              {offlineSyncSyncing ? "Bezig…" : "Opnieuw proberen"}
+            </button>
+            <button
+              type="button"
+              onClick={onDismissOfflineSync}
+              disabled={offlineSyncSyncing}
+              className="min-h-[36px] rounded-xl border border-amber-500/25 px-3 py-1.5 text-xs font-semibold text-amber-100/90 disabled:opacity-50"
+            >
+              Negeer
+            </button>
+          </div>
         </div>
       ) : null}
 

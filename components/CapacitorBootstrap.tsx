@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import { navigateToAppUrl } from "@/lib/deepLinkNavigation";
+import { hideNativeSplashScreen } from "@/lib/nativeSplash";
 import { refreshNativeAppIfStale } from "@/lib/nativeAppRefresh";
 
 /**
@@ -126,8 +127,6 @@ export default function CapacitorBootstrap() {
           },
         ),
       );
-
-      await SplashScreen.hide();
     })();
 
     return () => {

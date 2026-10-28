@@ -39,6 +39,8 @@ export type ProgramExercise = {
   exercise_format?: string | null;
   superset_group?: string | null;
   rest_seconds?: number | null;
+  block_slot_key?: string | null;
+  variation_base_name?: string | null;
 };
 
 export type AthleteExerciseSet = {

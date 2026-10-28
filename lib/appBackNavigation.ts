@@ -30,6 +30,7 @@ function parentByPathSegments(pathname: string) {
 export function shouldShowBackButton(pathname: string) {
   const normalized = normalizePathname(pathname);
   if (ROOT_PATHS.has(normalized)) return false;
+  if (normalized === "/chat") return false;
   // Profile detail pages render their own back control in the page header.
   if (/^\/profile\/[^/]+$/.test(normalized)) return false;
   return true;

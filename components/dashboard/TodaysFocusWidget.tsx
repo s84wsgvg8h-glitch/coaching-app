@@ -7,20 +7,28 @@ import EmptyState from "@/components/ui/EmptyState";
 import { useCoachCalendarEvents } from "@/hooks/useCoachCalendarEvents";
 import { useCoachTodosQuery } from "@/hooks/useCoachTodosQuery";
 import {
-  filterTodayAppointments,
+  addAgendaDays,
+  filterTodayAndTomorrowAppointments,
+  formatAgendaDayLabel,
   formatAgendaTime,
   formatAgendaTimeRange,
+  groupAppointmentsByDate,
+  parseAgendaDate,
+  toAgendaDateString,
 } from "@/lib/coachAgendaDisplay";
+import { getTodayDateString } from "@/lib/competitions";
 import {
   toggleCoachTodo,
   type CoachTodo,
   type CoachTodoKanbanStatus,
 } from "@/lib/coachTodos";
 import { getTodoDueStyle } from "@/lib/todoDueStyle";
+import { isLowComplianceTodo } from "@/lib/coachTodoSync";
 import { resolveTodoHref } from "@/lib/todoNavigation";
 
 type TodaysFocusWidgetProps = {
   coachId: string;
+  role: string;
   athletes?: Array<{ id: string; full_name: string | null }>;
 };
 
@@ -67,7 +75,12 @@ function todoPriorityBadge(dueStyle: ReturnType<typeof getTodoDueStyle>) {
 
 function sortOpenTodos(items: CoachTodo[]) {
   return [...items]
-    .filter((todo) => !todo.completed && resolveKanbanStatus(todo) !== "done")
+    .filter(
+      (todo) =>
+        !todo.completed &&
+        resolveKanbanStatus(todo) !== "done" &&
+        !isLowComplianceTodo(todo),
+    )
     .sort((a, b) => {
       if (a.due_at && b.due_at) return a.due_at.localeCompare(b.due_at);
       if (a.due_at) return -1;
@@ -78,10 +91,11 @@ function sortOpenTodos(items: CoachTodo[]) {
 
 export default function TodaysFocusWidget({
   coachId,
+  role,
   athletes = [],
 }: TodaysFocusWidgetProps) {
   const router = useRouter();
-  const todosQuery = useCoachTodosQuery(coachId);
+  const todosQuery = useCoachTodosQuery(coachId, role);
   const calendarQuery = useCoachCalendarEvents(coachId);
   const [togglingId, setTogglingId] = useState<string | null>(null);
   const [navigatingId, setNavigatingId] = useState<string | null>(null);
@@ -100,8 +114,25 @@ export default function TodaysFocusWidget({
   );
 
   const todayAppointments = useMemo(
-    () => filterTodayAppointments(appointments),
+    () => filterTodayAndTomorrowAppointments(appointments),
     [appointments],
+  );
+
+  const appointmentDays = useMemo(() => {
+    const today = getTodayDateString();
+    const tomorrow = toAgendaDateString(addAgendaDays(parseAgendaDate(today), 1));
+    const grouped = groupAppointmentsByDate(todayAppointments);
+    return [today, tomorrow].filter((date) => (grouped[date]?.length ?? 0) > 0);
+  }, [todayAppointments]);
+
+  const appointmentsByDate = useMemo(
+    () => groupAppointmentsByDate(todayAppointments),
+    [todayAppointments],
+  );
+
+  const todayDate = getTodayDateString();
+  const tomorrowDate = toAgendaDateString(
+    addAgendaDays(parseAgendaDate(todayDate), 1),
   );
 
   const openTodos = useMemo(() => sortOpenTodos(todos).slice(0, 8), [todos]);
@@ -130,14 +161,11 @@ export default function TodaysFocusWidget({
   }
 
   return (
-    <section className="dashboard-focus-panel dashboard-focus-panel--wide premium-card glass-accent-card">
+    <section className="dashboard-focus-panel premium-card glass-accent-card">
       <div className="dashboard-focus-panel-header">
         <div className="min-w-0">
           <p className="text-[8px] font-medium uppercase tracking-wide text-app-subtle">
             Focus vandaag
-          </p>
-          <p className="mt-0.5 text-[11px] font-medium text-app-muted">
-            {todayAppointments.length} afspraken · {openTodos.length} taken
           </p>
         </div>
         <Link
@@ -164,37 +192,48 @@ export default function TodaysFocusWidget({
       ) : (
         <div className="dashboard-focus-panel-body">
           <div className="dashboard-focus-appointments">
-            <p className="dashboard-focus-section-label">Afspraken vandaag</p>
+            <p className="dashboard-focus-section-label">Afspraken</p>
             {todayAppointments.length === 0 ? (
-              <p className="text-[11px] text-app-muted">Geen afspraken vandaag.</p>
+              <p className="text-[11px] text-app-muted">
+                Geen afspraken vandaag of morgen.
+              </p>
             ) : (
-              <ul className="dashboard-focus-appointment-list">
-                {todayAppointments.map((appointment) => (
-                  <li key={appointment.id}>
-                    <Link
-                      href="/agenda"
-                      className="dashboard-focus-appointment-row app-focus-ring"
-                    >
-                      <span className="shrink-0 text-[10px] font-semibold tabular-nums text-app-accent">
-                        {appointment.all_day
-                          ? "Hele dag"
-                          : formatAgendaTime(appointment.start_at)}
-                      </span>
-                      <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-app-text">
-                        {appointment.title}
-                      </span>
-                      {!appointment.all_day ? (
-                        <span className="hidden shrink-0 text-[10px] text-app-muted sm:inline">
-                          {formatAgendaTimeRange(
-                            appointment.start_at,
-                            appointment.end_at,
-                          )}
-                        </span>
-                      ) : null}
-                    </Link>
-                  </li>
+              <div className="dashboard-focus-appointment-groups">
+                {appointmentDays.map((date) => (
+                  <div key={date} className="dashboard-focus-appointment-group">
+                    <p className="dashboard-focus-appointment-day-label">
+                      {formatAgendaDayLabel(date, todayDate, tomorrowDate)}
+                    </p>
+                    <ul className="dashboard-focus-appointment-list">
+                      {(appointmentsByDate[date] || []).map((appointment) => (
+                        <li key={appointment.id}>
+                          <Link
+                            href="/agenda"
+                            className="dashboard-focus-appointment-row app-focus-ring"
+                          >
+                            <span className="shrink-0 text-[10px] font-semibold tabular-nums text-app-accent">
+                              {appointment.all_day
+                                ? "Hele dag"
+                                : formatAgendaTime(appointment.start_at)}
+                            </span>
+                            <span className="min-w-0 flex-1 truncate text-[11px] font-medium text-app-text">
+                              {appointment.title}
+                            </span>
+                            {!appointment.all_day ? (
+                              <span className="hidden shrink-0 text-[10px] text-app-muted sm:inline">
+                                {formatAgendaTimeRange(
+                                  appointment.start_at,
+                                  appointment.end_at,
+                                )}
+                              </span>
+                            ) : null}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 ))}
-              </ul>
+              </div>
             )}
           </div>
 

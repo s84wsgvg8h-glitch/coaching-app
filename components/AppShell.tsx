@@ -9,7 +9,7 @@ import CoachAppSidebar from "@/components/coach/CoachAppSidebar";
 import AthleteAppSidebar from "@/components/athlete/AthleteAppSidebar";
 import CoachMobileBottomNav from "@/components/coach/CoachMobileBottomNav";
 import MobileBottomNav from "@/components/MobileBottomNav";
-import MobilePageShell from "@/components/MobilePageShell";
+import AppShellContentFrame from "@/components/AppShellContentFrame";
 import SystemBanner from "@/components/SystemBanner";
 import AppToastHost from "@/components/ui/AppToastHost";
 import NotificationPanel from "@/components/dashboard/NotificationPanel";
@@ -18,16 +18,18 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCommandPaletteHotkey } from "@/hooks/useCommandPaletteHotkey";
 import { usePrefetchAppRoutes } from "@/hooks/usePrefetchAppRoutes";
 import { usePrefetchAppData } from "@/hooks/usePrefetchAppData";
+import { useCoachAutoTodoSync } from "@/hooks/useCoachAutoTodoSync";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import {
   getAthleteProfileReturn,
-  isAthleteProfileOpen,
+  isProfileOpen,
   saveAthleteProfileReturn,
 } from "@/lib/athleteProfileNavigation";
 import { runUiMigrationIfNeeded } from "@/lib/uiMigration";
 import { isDemoMode } from "@/lib/demo/demoMode";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import { isActiveChatConversation } from "@/components/chat/chatAppRoute";
+import { shouldHideMobileTopBar } from "@/lib/mobileShellRoutes";
 
 const CommandPalette = dynamic(
   () => import("@/components/dashboard/CommandPalette"),
@@ -59,6 +61,10 @@ export default function AppShell({
   );
   const showAthleteNav = role === "atleet";
   const showCoachNav = isCoachLikeRole(role);
+  useCoachAutoTodoSync(
+    showCoachNav && userId ? userId : null,
+    role === "admin",
+  );
   const [commandOpen, setCommandOpen] = useState(false);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [demoMode, setDemoMode] = useState(false);
@@ -69,12 +75,17 @@ export default function AppShell({
     hideChrome || (pathname.startsWith("/chat") && isActiveChatConversation(pathname));
   const isChatRoute = pathname.startsWith("/chat");
   const hideFloatingChrome = hideChrome || isChatRoute;
-  const showCoachSidebar = showCoachNav && !hideChrome && !isChatRoute;
-  const showAthleteSidebar = showAthleteNav && !hideChrome && !isChatRoute;
+  const showCoachSidebar = showCoachNav && !hideChrome;
+  const showAthleteSidebar = showAthleteNav && !hideChrome;
   const isAthleteDashboard = pathname === "/dashboard" && showAthleteNav;
-  const isAthleteProfileMobile = showAthleteNav && isAthleteProfileOpen(pathname);
+  const isCoachDashboard = pathname === "/dashboard" && showCoachNav;
   const useMobilePageShell =
     (showAthleteNav || showCoachNav) && !hideChrome && !isChatRoute;
+  const isProfileMobileOpen = isProfileOpen(pathname);
+  const isProfileMobileRoute =
+    useMobilePageShell &&
+    (pathname === "/profile" || pathname.startsWith("/profile/"));
+  const hideMobileTopBar = shouldHideMobileTopBar(pathname, role);
 
   useCommandPaletteHotkey(() => {
     if (!showCoachNav && !showAthleteNav) return;
@@ -105,11 +116,11 @@ export default function AppShell({
       <ShellTopBar
         onSearchClick={() => setCommandOpen(true)}
         onNotificationsClick={() => setNotificationOpen((value) => !value)}
-        athleteProfileOpen={isAthleteProfileMobile}
-        onAthleteProfileToggle={
-          showAthleteNav
+        mobileProfileOpen={isProfileMobileOpen}
+        onProfileToggle={
+          showAthleteNav || showCoachNav
             ? () => {
-                if (isAthleteProfileMobile) {
+                if (isProfileMobileOpen) {
                   router.push(getAthleteProfileReturn());
                 } else {
                   saveAthleteProfileReturn(pathname);
@@ -148,36 +159,17 @@ export default function AppShell({
         {!isChatRoute ? <SystemBanner /> : null}
         {!isChatRoute ? <DemoModeBanner /> : null}
         {showAthleteNav && !isChatRoute ? (
-          <div
-            className={`athlete-app-layout min-w-0${
-              isAthleteProfileMobile ? "" : " flex-1"
-            }`}
-          >
+          <div className="athlete-app-layout min-w-0 flex-1">
             {children}
           </div>
+        ) : showCoachNav && isProfileMobileRoute && !isChatRoute ? (
+          <div className="athlete-app-layout min-w-0 flex-1">{children}</div>
         ) : (
           children
         )}
       </>
     );
 
-  const mobileShellContent = (
-    <MobilePageShell
-      header={topBar}
-      scrollBody
-      reserveBottomNav={!hideBottomNav}
-      bodyClassName={`min-w-0 ${contentClassName}${
-        isAthleteDashboard ? " app-page-content--athlete-dashboard-mobile" : ""
-      }`}
-    >
-      {pageContent}
-    </MobilePageShell>
-  );
-
-  // Desktop layout: topbar + scrollable section side by side with sidebar.
-  // On mobile this path is only reached for non-auth/non-chat fallback (no bottom nav).
-  // The topbar is rendered inline here (no mobile-page-shell__header wrapper needed
-  // because this path is never visible on mobile when a bottom nav is present).
   const coachDesktopContent = (
     <>
       {topBar}
@@ -195,7 +187,13 @@ export default function AppShell({
       id="main-content"
       className={`app-shell flex min-h-0 flex-1 flex-col ${className}${
         isAthleteDashboard ? " app-shell--athlete-dashboard-mobile" : ""
-      }${isAthleteProfileMobile ? " app-shell--athlete-profile-mobile" : ""} lg:relative lg:flex lg:h-[100dvh] lg:min-h-0 lg:flex-none lg:overflow-hidden`}
+      }${isCoachDashboard ? " app-shell--coach-dashboard-mobile" : ""}${
+        isProfileMobileOpen ? " app-shell--athlete-profile-mobile" : ""
+      }${isProfileMobileRoute ? " app-shell--profile-mobile" : ""}${
+        isChatRoute && (showCoachSidebar || showAthleteSidebar)
+          ? " app-shell--chat-with-sidebar"
+          : ""
+      } lg:relative lg:flex lg:h-[100dvh] lg:min-h-0 lg:flex-none lg:overflow-hidden`}
     >
       <div className="app-shell-glow pointer-events-none" aria-hidden="true" />
       <div
@@ -212,15 +210,16 @@ export default function AppShell({
 
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {useMobilePageShell ? (
-            <>
-              {notificationPanel}
-              <div className="flex min-h-0 min-w-0 flex-1 flex-col lg:hidden">
-                {mobileShellContent}
-              </div>
-              <div className="hidden min-h-0 min-w-0 flex-1 flex-col lg:flex">
-                {coachDesktopContent}
-              </div>
-            </>
+            <AppShellContentFrame
+              topBar={topBar}
+              notificationPanel={notificationPanel}
+              pageContent={pageContent}
+              contentClassName={contentClassName}
+              reserveBottomNav={!hideBottomNav}
+              isAthleteDashboard={isAthleteDashboard}
+              isProfileMobileRoute={isProfileMobileRoute}
+              hideMobileTopBar={hideMobileTopBar}
+            />
           ) : (
             coachDesktopContent
           )}

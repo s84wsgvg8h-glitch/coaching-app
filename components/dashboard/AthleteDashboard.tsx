@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect } from "react";
 import { trackEvent } from "@/lib/analytics";
@@ -8,21 +9,37 @@ import {
   BarChart3,
   BookOpen,
   CalendarDays,
-  ChevronRight,
+  LineChart,
   Shirt,
   Trophy,
   type LucideIcon,
 } from "lucide-react";
 import "@/styles/athlete-dashboard.css";
-import DashboardAgenda from "@/components/DashboardAgenda";
 import FillTodayCta from "@/components/dashboard/FillTodayCta";
-import GoalsProgressWidget from "@/components/dashboard/GoalsProgressWidget";
-import QuickBodyweightLog from "@/components/dashboard/QuickBodyweightLog";
 import AthleteWeeklyFillScoreCard from "@/components/dashboard/AthleteWeeklyFillScoreCard";
-import AthleteChatWidget from "@/components/dashboard/AthleteChatWidget";
 import AthleteTodosHabitsWidget from "@/components/dashboard/AthleteTodosHabitsWidget";
 import AthleteDashboardKpiRow from "@/components/dashboard/AthleteDashboardKpiRow";
-import AthleteInboxPanel from "@/components/dashboard/AthleteInboxPanel";
+
+const widgetFallback = () => (
+  <div className="min-h-[6rem] animate-pulse rounded-2xl bg-app-surface" />
+);
+
+const DashboardAgenda = dynamic(
+  () => import("@/components/DashboardAgenda"),
+  { loading: widgetFallback, ssr: false },
+);
+const GoalsProgressWidget = dynamic(
+  () => import("@/components/dashboard/GoalsProgressWidget"),
+  { loading: widgetFallback, ssr: false },
+);
+const QuickBodyweightLog = dynamic(
+  () => import("@/components/dashboard/QuickBodyweightLog"),
+  { loading: widgetFallback, ssr: false },
+);
+const AthleteInboxPanel = dynamic(
+  () => import("@/components/dashboard/AthleteInboxPanel"),
+  { loading: widgetFallback, ssr: false },
+);
 
 type MobileQuickNavItem = {
   href: string;
@@ -39,10 +56,10 @@ type DesktopQuickLink = {
 
 const MOBILE_QUICK_NAV: MobileQuickNavItem[] = [
   {
-    href: "/data",
-    icon: BarChart3,
-    title: "Data",
-    description: "Statistieken & inzichten",
+    href: "/statistics",
+    icon: LineChart,
+    title: "Statistieken",
+    description: "Grafieken & progressie",
   },
   {
     href: "/leaderboard",
@@ -101,42 +118,33 @@ export default function AthleteDashboard({
 
   return (
     <div className="athlete-dashboard athlete-dashboard--mobile-fit w-full">
-      <div className="flex min-h-0 flex-1 flex-col lg:hidden">
-        <div className="athlete-dashboard-bento">
-          <div className="athlete-dashboard-bento-metrics">
-            <AthleteWeeklyFillScoreCard
-              percentage={weeklyFillScore}
-              loading={fillScoreLoading}
-            />
-            <QuickBodyweightLog athleteId={userId} variant="athlete" />
+      <div className="athlete-dashboard-mobile-column lg:hidden">
+        <div className="athlete-dashboard-mobile-primary">
+          <div className="athlete-dashboard-bento">
+            <div className="athlete-dashboard-bento-metrics">
+              <AthleteWeeklyFillScoreCard
+                percentage={weeklyFillScore}
+                loading={fillScoreLoading}
+              />
+              <QuickBodyweightLog athleteId={userId} variant="athlete" surface="mobile" />
+            </div>
+
+            <div className="athlete-dashboard-bento-cta">
+              <FillTodayCta
+                athleteId={userId}
+                variant="athlete"
+                surface="mobile"
+                programHref={programHref}
+                programLoading={programLoading}
+                hasProgram={hasProgram}
+              />
+            </div>
           </div>
 
-          <div className="athlete-dashboard-bento-cta">
-            <FillTodayCta
-              athleteId={userId}
-              variant="athlete"
-              surface="mobile"
-              programHref={programHref}
-              programLoading={programLoading}
-              hasProgram={hasProgram}
-            />
-          </div>
-
-          <div className="athlete-dashboard-bento-chat">
-            <AthleteChatWidget athleteId={userId} />
-          </div>
-
-          <div className="athlete-dashboard-bento-agenda">
-            <DashboardAgenda role={role} userId={userId} variant="athlete" />
-          </div>
-        </div>
-
-        <div className="athlete-dashboard-bottom-dock max-lg:flex max-lg:flex-col max-lg:gap-3">
-          <div className="athlete-dashboard-bento-todos max-lg:flex max-lg:flex-col">
-            <AthleteTodosHabitsWidget athleteId={userId} />
-          </div>
-
-          <section className="athlete-dashboard-quicklinks athlete-dashboard-quicklinks--mobile max-lg:block">
+          <section
+            className="athlete-dashboard-quicklinks athlete-dashboard-quicklinks--mobile"
+            aria-label="Meer in de app"
+          >
             <div className="athlete-dashboard-quicklinks-scroll">
               {MOBILE_QUICK_NAV.map((item) => {
                 const Icon = item.icon;
@@ -144,15 +152,23 @@ export default function AthleteDashboard({
                   <Link
                     key={item.href}
                     href={item.href}
+                    aria-label={item.title}
                     className="athlete-dashboard-quicknav-card app-focus-ring"
                   >
                     <Icon className="athlete-dashboard-quicknav-icon" aria-hidden="true" />
-                    <span className="sr-only">{item.title}</span>
                   </Link>
                 );
               })}
             </div>
           </section>
+
+          <div className="athlete-dashboard-bento-todos">
+            <AthleteTodosHabitsWidget athleteId={userId} homePreview />
+          </div>
+
+          <div className="athlete-dashboard-bento-agenda">
+            <DashboardAgenda role={role} userId={userId} variant="athlete" />
+          </div>
         </div>
       </div>
 

@@ -13,7 +13,7 @@ import { usePathname, useRouter } from "next/navigation";
 import type { Session } from "@supabase/supabase-js";
 import { supabase, getRealSupabase } from "@/lib/supabaseClient";
 import MaintenanceScreen from "@/components/MaintenanceScreen";
-import { SkeletonCard } from "@/components/ui/Skeleton";
+import AuthLoadingShell from "@/components/loading/AuthLoadingShell";
 import { loadAppSettings } from "@/lib/adminSettings";
 import {
   isAdminRole,
@@ -23,6 +23,12 @@ import {
   pathRequiresCoachLikeRole,
 } from "@/lib/authRoles";
 import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import { hideNativeSplashScreen } from "@/lib/nativeSplash";
+import {
+  clearAuthSessionCache,
+  readCachedAuthBootState,
+  writeAuthSessionCache,
+} from "@/lib/authSessionCache";
 import {
   getDemoEmail,
   getDemoProfile,
@@ -63,7 +69,19 @@ const PUBLIC_PATHS = [
   "/privacy",
   "/voorwaarden",
   "/pending-approval",
+  "/reset-password",
 ];
+
+function isPublicPath(pathname: string) {
+  return PUBLIC_PATHS.some((path) => {
+    if (path === "/") return pathname === "/";
+    return (
+      pathname === path ||
+      pathname.startsWith(`${path}/`) ||
+      pathname.startsWith(`${path}?`)
+    );
+  });
+}
 
 function buildLoginRedirectPath(pathname: string) {
   const path = pathname.split("?")[0];
@@ -82,15 +100,18 @@ function buildLoginRedirectPath(pathname: string) {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const [userId, setUserId] = useState("");
-  const [email, setEmail] = useState("");
-  const [profile, setProfile] = useState<AuthProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const cachedBoot = readCachedAuthBootState();
+  const [userId, setUserId] = useState(cachedBoot.userId);
+  const [email, setEmail] = useState(cachedBoot.email);
+  const [profile, setProfile] = useState<AuthProfile | null>(cachedBoot.profile);
+  const [loading, setLoading] = useState(!cachedBoot.hasCache);
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [maintenanceMessage, setMaintenanceMessage] = useState<string | null>(
     null,
   );
   const initialSessionHandledRef = useRef(false);
+  const optimisticBootRef = useRef(cachedBoot.hasCache);
+  const cachedUserIdRef = useRef(cachedBoot.userId);
 
   const applyDemoSession = useCallback(() => {
     setUserId(getDemoUserId());
@@ -101,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const clearAuthState = useCallback(() => {
+    clearAuthSessionCache();
     setUserId("");
     setEmail("");
     setProfile(null);
@@ -124,25 +146,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setEmail(session.user.email || "");
 
       const profileData = await loadAuthenticatedProfile(session.user.id);
-      let resolvedProfile = profileData;
-
-      if (
-        profileData?.role === "atleet" &&
-        !profileData.intake_completed_at &&
-        profileData.intake_required == null
-      ) {
-        const { data: intakeRow } = await getRealSupabase()
-          .from("profiles")
-          .select("intake_required")
-          .eq("id", session.user.id)
-          .maybeSingle();
-        resolvedProfile = {
-          ...profileData,
-          intake_required: intakeRow?.intake_required ?? null,
-        };
-      }
+      const resolvedProfile = profileData;
 
       setProfile(resolvedProfile);
+
+      if (resolvedProfile) {
+        writeAuthSessionCache({
+          userId: session.user.id,
+          email: session.user.email || "",
+          profile: resolvedProfile,
+        });
+      }
 
       void loadAppSettings().then((settings) => {
         setMaintenanceMode(settings.maintenance_mode);
@@ -216,14 +230,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Give onAuthStateChange(INITIAL_SESSION) a tick to fire first.
-      await new Promise((resolve) => window.setTimeout(resolve, 0));
-
-      if (cancelled || initialSessionHandledRef.current) return;
-
       const {
         data: { session },
       } = await getRealSupabase().auth.getSession();
+
+      if (cancelled) return;
+
+      if (optimisticBootRef.current) {
+        optimisticBootRef.current = false;
+        if (session?.user?.id === cachedUserIdRef.current) {
+          finishBootstrap();
+          void applySession(session);
+          return;
+        }
+        clearAuthSessionCache();
+        clearAuthState();
+        setLoading(true);
+      }
+
+      // Give onAuthStateChange(INITIAL_SESSION) a tick to fire first.
+      await new Promise((resolve) => window.setTimeout(resolve, 0));
 
       if (cancelled || initialSessionHandledRef.current) return;
 
@@ -239,12 +265,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     if (loading) return;
+    void hideNativeSplashScreen();
+  }, [loading]);
 
-    const isPublic = PUBLIC_PATHS.some(
-      (path) => pathname === path || pathname.startsWith(`${path}?`),
-    );
+  useEffect(() => {
+    if (loading) return;
 
-    if (!userId && !isPublic && !pathname.startsWith("/signup")) {
+    if (!userId && !isPublicPath(pathname) && !pathname.startsWith("/signup")) {
       router.replace(buildLoginRedirectPath(pathname));
       return;
     }
@@ -293,18 +320,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [userId, email, profile, loading, refresh],
   );
 
-  const isPublicPath = PUBLIC_PATHS.some(
-    (path) => pathname === path || pathname.startsWith(`${path}?`),
-  );
+  const publicPath = isPublicPath(pathname);
 
-  if (loading && !isPublicPath) {
-    return (
-      <div className="flex min-h-0 flex-1 items-center justify-center bg-app-bg px-4">
-        <div className="w-full max-w-sm">
-          <SkeletonCard />
-        </div>
-      </div>
-    );
+  if (loading && !publicPath) {
+    return <AuthLoadingShell />;
   }
 
   const role = profile?.role || "";
@@ -312,7 +331,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     userId &&
     maintenanceMode &&
     !isAdminRole(role) &&
-    !isPublicPath &&
+    !publicPath &&
     !pathname.startsWith("/login");
 
   if (showMaintenance) {

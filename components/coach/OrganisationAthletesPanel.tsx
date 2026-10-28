@@ -10,6 +10,11 @@ import {
   type CoachOrganisationRow,
 } from "@/lib/coachOrganisationOverview";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
+import {
+  formatOptionalTextFieldInputValue,
+  isOptionalTextFieldComplete,
+  parseOptionalTextFieldInput,
+} from "@/lib/optionalFieldDash";
 
 type RowDraft = {
   fullName: string;
@@ -29,7 +34,7 @@ function toDraft(row: CoachOrganisationRow): RowDraft {
   return {
     fullName: row.fullName,
     geboortedatum: row.geboortedatum || "",
-    lidnummer: row.lidnummer || "",
+    lidnummer: formatOptionalTextFieldInputValue(row.lidnummer),
   };
 }
 
@@ -106,7 +111,9 @@ export default function OrganisationAthletesPanel({
   const stats = useMemo(() => {
     const clubMembers = rows.filter((row) => !row.isAppAthlete).length;
     const missingBirthDate = rows.filter((row) => !row.geboortedatum?.trim()).length;
-    const missingMembership = rows.filter((row) => !row.lidnummer?.trim()).length;
+    const missingMembership = rows.filter(
+      (row) => !isOptionalTextFieldComplete(row.lidnummer),
+    ).length;
     return {
       total: rows.length,
       clubMembers,
@@ -132,7 +139,7 @@ export default function OrganisationAthletesPanel({
       const { error } = await updateCoachOrganisationAthlete(row, {
         fullName: draft.fullName,
         geboortedatum: draft.geboortedatum || null,
-        lidnummer: draft.lidnummer || null,
+        lidnummer: parseOptionalTextFieldInput(draft.lidnummer),
       });
 
       if (error) {
@@ -147,7 +154,7 @@ export default function OrganisationAthletesPanel({
                 ...entry,
                 fullName: draft.fullName.trim() || "Naamloos",
                 geboortedatum: draft.geboortedatum || null,
-                lidnummer: draft.lidnummer.trim() || null,
+                lidnummer: parseOptionalTextFieldInput(draft.lidnummer),
               }
             : entry,
         ),
@@ -182,7 +189,7 @@ export default function OrganisationAthletesPanel({
     const { data, error } = await createOrganizationMember(coachId, {
       fullName: newMember.fullName,
       geboortedatum: newMember.geboortedatum || null,
-      lidnummer: newMember.lidnummer || null,
+      lidnummer: parseOptionalTextFieldInput(newMember.lidnummer),
     });
 
     setCreating(false);
@@ -424,8 +431,8 @@ export default function OrganisationAthletesPanel({
                           }
                           onBlur={() => handleBlur(row)}
                           className="organisatie-input organisatie-input--cell min-w-[120px]"
-                          placeholder="—"
-                          aria-label={`Lidnummer ${row.fullName}`}
+                  placeholder="-"
+                  aria-label={`Lidnummer ${row.fullName}`}
                         />
                       </td>
                       <td className="text-right">

@@ -218,7 +218,17 @@ After changing environment variables, always redeploy so functions pick up new v
 - [ ] App opens at https://limitlesscoaching.app
 - [ ] Login works (Supabase auth)
 - [ ] Avatar / chat image upload works (R2)
-- [ ] Large video upload works (presigned R2 + CORS on bucket)
+- [ ] Large video upload works (presigned R2 + CORS on bucket; iOS app falls back to multipart via API)
+
+R2 CORS (eenmalig, of na bucket-wijziging):
+
+```bash
+# Met R2 credentials in .env.local of shell env
+node scripts/configure-r2-cors.mjs
+```
+
+Allowed origins: `https://limitlesscoaching.app`, `http://localhost:3000`.  
+Op iOS faalt directe R2 PUT soms; de app valt dan terug op same-origin multipart upload.
 - [ ] Cron routes return **401** without secret:
   ```bash
   curl -s -o /dev/null -w "%{http_code}" https://limitlesscoaching.app/api/cron/reminders

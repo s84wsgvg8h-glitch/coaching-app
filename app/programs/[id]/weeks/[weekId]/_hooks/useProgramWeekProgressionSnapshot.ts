@@ -4,13 +4,20 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import {
   fetchBlockProgressionSnapshot,
+  patchProgressionSnapshotExercise,
   type BlockProgressionSnapshot,
 } from "@/lib/programWeek/progressionView";
-import type { ProgramDay, ProgramExercise, ProgramWeek } from "@/lib/programWeek/types";
+import type {
+  AthleteExerciseSet,
+  ProgramDay,
+  ProgramExercise,
+  ProgramWeek,
+} from "@/lib/programWeek/types";
 
 export function useProgramWeekProgressionSnapshot(
   enabled: boolean,
   weeks: ProgramWeek[],
+  athleteId: string | null | undefined,
 ) {
   const [result, setResult] = useState<{
     requestKey: string;
@@ -21,7 +28,8 @@ export function useProgramWeekProgressionSnapshot(
     () => weeks.map((week) => week.id).join("|"),
     [weeks],
   );
-  const requestKey = enabled && weeks.length > 0 ? weekKey : "";
+  const requestKey =
+    enabled && weeks.length > 0 ? `${athleteId ?? ""}:${weekKey}` : "";
 
   const fetchSnapshot = useCallback(async () => {
     if (!enabled || weeks.length === 0) {
@@ -54,11 +62,26 @@ export function useProgramWeekProgressionSnapshot(
           if (error) throw new Error(error.message);
           return (data ?? []) as ProgramExercise[];
         },
+        athleteId
+          ? async (exerciseIds) => {
+              if (exerciseIds.length === 0) return [];
+
+              const { data, error } = await supabase
+                .from("athlete_exercise_sets")
+                .select("*")
+                .eq("athlete_id", athleteId)
+                .in("program_exercise_id", exerciseIds)
+                .order("set_number", { ascending: true });
+
+              if (error) throw new Error(error.message);
+              return (data ?? []) as AthleteExerciseSet[];
+            }
+          : undefined,
       );
     } catch {
       return null;
     }
-  }, [enabled, weeks]);
+  }, [athleteId, enabled, weeks]);
 
   useEffect(() => {
     let cancelled = false;
@@ -74,12 +97,71 @@ export function useProgramWeekProgressionSnapshot(
     };
   }, [fetchSnapshot, requestKey]);
 
-  const refreshProgressionSnapshot = useCallback(async () => {
-    setRefreshing(true);
-    const snapshot = await fetchSnapshot();
-    setResult({ requestKey, snapshot });
-    setRefreshing(false);
-  }, [fetchSnapshot, requestKey]);
+  const refreshProgressionSnapshot = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!options?.silent) setRefreshing(true);
+      const snapshot = await fetchSnapshot();
+      setResult((current) => {
+        if (options?.silent && snapshot === null && current.snapshot) {
+          return current;
+        }
+        return { requestKey, snapshot };
+      });
+      if (!options?.silent) setRefreshing(false);
+    },
+    [fetchSnapshot, requestKey],
+  );
+
+  const patchProgressionExercise = useCallback(
+    (
+      exerciseId: string,
+      updates: Partial<Pick<ProgramExercise, "load" | "reps" | "rpe">>,
+    ) => {
+      let previous: Pick<ProgramExercise, "load" | "reps" | "rpe"> | null = null;
+
+      setResult((current) => {
+        if (!current.snapshot) return current;
+
+        for (const exercises of Object.values(current.snapshot.exercisesByDay)) {
+          const match = exercises.find((exercise) => exercise.id === exerciseId);
+          if (match) {
+            previous = {
+              load: match.load,
+              reps: match.reps,
+              rpe: match.rpe,
+            };
+            break;
+          }
+        }
+
+        return {
+          ...current,
+          snapshot: patchProgressionSnapshotExercise(
+            current.snapshot,
+            exerciseId,
+            updates,
+          ),
+        };
+      });
+
+      return () => {
+        if (!previous) return;
+        const revert = previous;
+        setResult((current) => {
+          if (!current.snapshot) return current;
+          return {
+            ...current,
+            snapshot: patchProgressionSnapshotExercise(
+              current.snapshot,
+              exerciseId,
+              revert,
+            ),
+          };
+        });
+      };
+    },
+    [],
+  );
 
   const hasActiveRequest = enabled && weeks.length > 0;
   const snapshot =
@@ -93,5 +175,6 @@ export function useProgramWeekProgressionSnapshot(
     snapshot,
     loading,
     refreshProgressionSnapshot,
+    patchProgressionExercise,
   };
 }

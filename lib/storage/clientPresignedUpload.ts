@@ -3,6 +3,7 @@ import {
   formatStorageFetchFailure,
   parseStorageApiResponse,
 } from "@/lib/storage/clientApiParse";
+import { putBlobToPresignedUrl, type PresignedPutResult } from "@/lib/storage/presignedPutClient";
 import type {
   StorageProvider,
   StorageUploadResult,
@@ -97,12 +98,12 @@ export async function uploadFilePresigned(params: {
     return failedPresignedUpload("Geen presigned upload URL ontvangen.");
   }
 
-  let putResponse: Response;
+  let putResponse: PresignedPutResult;
   try {
-    putResponse = await fetch(presignedUrl, {
-      method: "PUT",
-      headers: { "Content-Type": contentType },
+    putResponse = await putBlobToPresignedUrl({
+      url: presignedUrl,
       body: params.file,
+      contentType,
     });
   } catch (error) {
     return failedPresignedUpload(
@@ -115,9 +116,8 @@ export async function uploadFilePresigned(params: {
   }
 
   if (!putResponse.ok) {
-    const putText = await putResponse.text();
     return failedPresignedUpload(
-      `[r2-put] HTTP ${putResponse.status} ${putResponse.statusText}: ${putText.slice(0, 200) || "R2 upload mislukt"}`,
+      `[r2-put] HTTP ${putResponse.status} ${putResponse.statusText}: ${putResponse.bodyText.slice(0, 200) || "R2 upload mislukt"}`,
     );
   }
 

@@ -31,9 +31,13 @@ const redirectUrls = [
   `${appUrl}/login`,
   `${appUrl}/signup`,
   `${appUrl}/dashboard`,
+  `${appUrl}/reset-password`,
+  `${appUrl}/reset-password/update`,
   "http://localhost:3000/**",
   "http://localhost:3000/login",
   "http://localhost:3000/signup",
+  "http://localhost:3000/reset-password",
+  "http://localhost:3000/reset-password/update",
 ];
 
 const body = {

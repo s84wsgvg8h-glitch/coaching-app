@@ -24,6 +24,7 @@ import {
 
 type AthleteTodosHabitsWidgetProps = {
   athleteId: string;
+  homePreview?: boolean;
 };
 
 type AddMode = "todo" | "habit" | null;
@@ -150,6 +151,7 @@ function ItemRow({
 
 export default function AthleteTodosHabitsWidget({
   athleteId,
+  homePreview = false,
 }: AthleteTodosHabitsWidgetProps) {
   const queryClient = useQueryClient();
   const { data: items = [], isPending } = useAthleteDashboardItems(
@@ -183,6 +185,11 @@ export default function AthleteTodosHabitsWidget({
   }, [items]);
 
   const showSkeleton = isPending && items.length === 0;
+
+  const previewItems = useMemo(() => {
+    if (!homePreview) return sortedItems;
+    return sortedItems.filter((item) => !item.completed).slice(0, 2);
+  }, [homePreview, sortedItems]);
 
   async function refresh() {
     await invalidateAthleteDashboardItems(queryClient, athleteId);
@@ -285,42 +292,54 @@ export default function AthleteTodosHabitsWidget({
   const hasItems = items.length > 0;
 
   return (
-    <section className="athlete-dashboard-card athlete-dashboard-todos-widget max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:overflow-hidden">
-      <div className="flex shrink-0 items-start justify-between gap-3">
+    <section
+      className={`athlete-dashboard-card athlete-dashboard-todos-widget max-lg:flex max-lg:min-h-0 max-lg:flex-1 max-lg:flex-col max-lg:overflow-hidden${
+        homePreview ? " athlete-dashboard-todos-widget--home-preview" : ""
+      }`}
+    >
+      <div className="flex shrink-0 items-center justify-between gap-3">
         <div className="min-w-0">
-          <p className="athlete-dashboard-eyebrow">Taken & habits</p>
+          <p className={homePreview ? "athlete-dashboard-stat-title" : "athlete-dashboard-eyebrow"}>
+            {homePreview ? "Habits en todo vandaag" : "Taken & habits"}
+          </p>
         </div>
-        <div className="flex shrink-0 gap-1.5">
-          <button
-            type="button"
-            onClick={() => {
-              setAddMode((mode) => (mode === "todo" ? null : "todo"));
-              setDraft("");
-              setEditingHabitId(null);
-              setError(null);
-            }}
-            className="athlete-dashboard-todos-add-btn app-focus-ring"
-          >
-            <Plus className="h-3 w-3" />
-            Todo
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setAddMode((mode) => (mode === "habit" ? null : "habit"));
-              setDraft("");
-              setEditingHabitId(null);
-              setError(null);
-            }}
-            className="athlete-dashboard-todos-add-btn app-focus-ring"
-          >
-            <Plus className="h-3 w-3" />
-            Habit
-          </button>
-        </div>
+        {homePreview ? (
+          <Link href="/todo" className="athlete-dashboard-todos-view-all app-focus-ring">
+            Bekijk alles
+          </Link>
+        ) : (
+          <div className="flex shrink-0 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                setAddMode((mode) => (mode === "todo" ? null : "todo"));
+                setDraft("");
+                setEditingHabitId(null);
+                setError(null);
+              }}
+              className="athlete-dashboard-todos-add-btn app-focus-ring"
+            >
+              <Plus className="h-3 w-3" />
+              Todo
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setAddMode((mode) => (mode === "habit" ? null : "habit"));
+                setDraft("");
+                setEditingHabitId(null);
+                setError(null);
+              }}
+              className="athlete-dashboard-todos-add-btn app-focus-ring"
+            >
+              <Plus className="h-3 w-3" />
+              Habit
+            </button>
+          </div>
+        )}
       </div>
 
-      {addMode ? (
+      {!homePreview && addMode ? (
         <form
           className="mt-2 flex shrink-0 flex-col gap-2"
           onSubmit={(event) => {
@@ -375,27 +394,35 @@ export default function AthleteTodosHabitsWidget({
         </p>
       ) : null}
 
-      <div className="athlete-dashboard-todos-scroll mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain">
+      <div
+        className={`athlete-dashboard-todos-scroll mt-3 min-h-0 flex-1 overflow-y-auto overscroll-contain${
+          homePreview ? " athlete-dashboard-todos-scroll--home-preview" : ""
+        }`}
+      >
         {!hasItems ? (
           <p className="athlete-dashboard-todos-empty">
-            Nog geen taken. Voeg er zelf een toe, of wacht op taken van je coach.
+            {homePreview
+              ? "Geen open taken voor vandaag."
+              : "Nog geen taken. Voeg er zelf een toe, of wacht op taken van je coach."}
           </p>
+        ) : previewItems.length === 0 ? (
+          <p className="athlete-dashboard-todos-empty">Alles afgevinkt voor vandaag.</p>
         ) : (
           <ul className="athlete-dashboard-todos-list">
-            {sortedItems.map((item) => (
+            {previewItems.map((item) => (
               <ItemRow
                 key={item.id}
                 item={item}
                 onToggle={handleToggle}
                 onDelete={handleDelete}
-                onEditHabit={startEditHabit}
-                isEditing={editingHabitId === item.id}
+                onEditHabit={homePreview ? undefined : startEditHabit}
+                isEditing={!homePreview && editingHabitId === item.id}
                 editFrequency={editFrequency}
                 onEditFrequencyChange={setEditFrequency}
                 onSaveEdit={() => void saveEditHabit()}
                 onCancelEdit={cancelEditHabit}
                 savingEdit={savingEdit}
-                canDelete={item.created_by === "atleet"}
+                canDelete={!homePreview && item.created_by === "atleet"}
               />
             ))}
           </ul>

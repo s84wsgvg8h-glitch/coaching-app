@@ -41,8 +41,8 @@ export type AthleteCoachConnectContext = {
 };
 
 export function getApplicationFeePercent(): number {
-  const raw = Number(process.env.STRIPE_APPLICATION_FEE_PERCENT ?? 10);
-  if (!Number.isFinite(raw)) return 10;
+  const raw = Number(process.env.STRIPE_APPLICATION_FEE_PERCENT ?? 0);
+  if (!Number.isFinite(raw)) return 0;
   return Math.min(100, Math.max(0, Math.round(raw)));
 }
 

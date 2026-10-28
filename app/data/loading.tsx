@@ -3,7 +3,7 @@ import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSke
 
 export default function DataLoading() {
   return (
-    <AppShellRouteLoading>
+    <AppShellRouteLoading hideMobileTopBar>
       <AthleteGenericPageSkeleton rows={6} />
     </AppShellRouteLoading>
   );

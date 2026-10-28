@@ -4,6 +4,13 @@ import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import { CHAT_SIDE_PANEL_CLASS } from "@/lib/chatSidePanel";
+import {
+  appendProgramWeekQueryParams,
+  buildProgramWeekPath,
+  resolveProgramEntryForAthlete,
+  resolveProgramEntryFromBlockId,
+  withPreserveWeekParam,
+} from "@/lib/programNavigation";
 
 type ProgramBlock = {
   id: string;
@@ -21,12 +28,14 @@ type ProgramWeek = {
 type ChatProgramPanelProps = {
   athleteId: string;
   athleteName: string;
+  coachId: string;
   onClose: () => void;
 };
 
 export default function ChatProgramPanel({
   athleteId,
   athleteName,
+  coachId,
   onClose,
 }: ChatProgramPanelProps) {
   const [blocks, setBlocks] = useState<ProgramBlock[]>([]);
@@ -99,8 +108,14 @@ export default function ChatProgramPanel({
 
       setWeeksByBlock(grouped);
 
-      const initialBlockId = loadedBlocks[0].id;
-      const initialWeekId = grouped[initialBlockId]?.[0]?.id || "";
+      const { data: entry } = await resolveProgramEntryForAthlete(
+        athleteId,
+        coachId,
+      );
+
+      const initialBlockId = entry?.blockId || loadedBlocks[0]?.id || "";
+      const initialWeekId =
+        entry?.weekId || grouped[initialBlockId]?.[0]?.id || "";
 
       setSelectedBlockId(initialBlockId);
       setSelectedWeekId(initialWeekId);
@@ -112,7 +127,7 @@ export default function ChatProgramPanel({
     return () => {
       cancelled = true;
     };
-  }, [athleteId]);
+  }, [athleteId, coachId]);
 
   const weeksForSelectedBlock = useMemo(
     () => weeksByBlock[selectedBlockId] || [],
@@ -121,13 +136,42 @@ export default function ChatProgramPanel({
 
   const iframeSrc =
     selectedBlockId && selectedWeekId
-      ? `/programs/${selectedBlockId}/weeks/${selectedWeekId}?athlete=${athleteId}&embedded=chat`
+      ? appendProgramWeekQueryParams(
+          withPreserveWeekParam(
+            buildProgramWeekPath(
+              {
+                blockId: selectedBlockId,
+                weekId: selectedWeekId,
+                athleteId,
+              },
+              { coachViewingAthlete: true },
+            ),
+          ),
+          { embedded: "chat" },
+        )
       : "";
 
   function handleBlockChange(blockId: string) {
     setSelectedBlockId(blockId);
-    const weeks = weeksByBlock[blockId] || [];
-    setSelectedWeekId(weeks[0]?.id || "");
+
+    void (async () => {
+      const { data: entry } = await resolveProgramEntryFromBlockId(
+        blockId,
+        athleteId,
+      );
+
+      if (entry?.weekId) {
+        setSelectedWeekId(entry.weekId);
+        return;
+      }
+
+      const weeks = weeksByBlock[blockId] || [];
+      setSelectedWeekId(weeks[0]?.id || "");
+    })();
+  }
+
+  function handleWeekChange(weekId: string) {
+    setSelectedWeekId(weekId);
   }
 
   return (
@@ -172,7 +216,7 @@ export default function ChatProgramPanel({
           </label>
           <select
             value={selectedWeekId}
-            onChange={(event) => setSelectedWeekId(event.target.value)}
+            onChange={(event) => handleWeekChange(event.target.value)}
             disabled={loading || weeksForSelectedBlock.length === 0}
             className="w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm font-semibold text-app-text outline-none"
           >

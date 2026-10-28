@@ -135,7 +135,7 @@ async function main() {
     info("Vercel Production secrets bijwerken…");
     vercelEnvAdd("STRIPE_SECRET_KEY", secretKey, "production");
     vercelEnvAdd("STRIPE_COACHING_WEBHOOK_SECRET", webhookSecret, "production");
-    const feePercent = process.env.STRIPE_APPLICATION_FEE_PERCENT?.trim() || "10";
+    const feePercent = process.env.STRIPE_APPLICATION_FEE_PERCENT?.trim() || "0";
     vercelEnvAdd("STRIPE_APPLICATION_FEE_PERCENT", feePercent, "production");
     info("Vercel secrets bijgewerkt. Redeploy vereist.");
   } else {

@@ -211,6 +211,27 @@ export const storagePresignSchema = z.object({
     .optional(),
 });
 
+export const storageMultipartCompleteSchema = z.object({
+  uploadId: z.string().min(1).max(512),
+  objectKey: z.string().min(1).max(1024),
+  contentType: z.string().min(1).max(200),
+  size: z.number().int().min(0).max(500 * 1024 * 1024),
+  parts: z
+    .array(
+      z.object({
+        partNumber: z.number().int().min(1).max(10_000),
+        etag: z.string().min(1).max(256),
+      }),
+    )
+    .min(1)
+    .max(10_000),
+});
+
+export const storageMultipartAbortSchema = z.object({
+  uploadId: z.string().min(1).max(512),
+  objectKey: z.string().min(1).max(1024),
+});
+
 export const openipfLeaderboardSchema = z.object({
   names: z.array(z.string().min(1).max(200)).max(12).optional(),
 });

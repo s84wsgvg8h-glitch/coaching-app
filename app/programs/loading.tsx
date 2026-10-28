@@ -1,10 +1,10 @@
 import AppShellRouteLoading from "@/components/loading/AppShellRouteLoading";
-import { PageLoading } from "@/components/ui/Skeleton";
+import { AthleteProgramsSkeleton } from "@/components/mobile/AthleteMobileSkeletons";
 
 export default function ProgramsLoading() {
   return (
-    <AppShellRouteLoading>
-      <PageLoading label="Programma openen…" />
+    <AppShellRouteLoading hideMobileTopBar>
+      <AthleteProgramsSkeleton />
     </AppShellRouteLoading>
   );
 }

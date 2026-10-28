@@ -5,15 +5,17 @@ import { loadCoachTodosFast, type CoachTodo } from "@/lib/coachTodos";
 import { athleteQueryDefaults } from "@/lib/queryOptions";
 import { queryKeys } from "@/lib/queryKeys";
 
-export function useCoachTodosQuery(coachId: string, enabled = true) {
+export function useCoachTodosQuery(coachId: string, role: string, enabled = true) {
+  const isAdmin = role === "admin";
+
   return useQuery({
-    queryKey: queryKeys.coachTodos(coachId),
+    queryKey: queryKeys.coachTodos(coachId, role),
     queryFn: async () => {
-      const { data, error } = await loadCoachTodosFast(coachId);
+      const { data, error } = await loadCoachTodosFast(coachId, { isAdmin });
       if (error) throw error;
       return data;
     },
-    enabled: enabled && Boolean(coachId),
+    enabled: enabled && Boolean(coachId && role),
     ...athleteQueryDefaults,
   });
 }
@@ -21,11 +23,14 @@ export function useCoachTodosQuery(coachId: string, enabled = true) {
 export function prefetchCoachTodos(
   queryClient: ReturnType<typeof useQueryClient>,
   coachId: string,
+  role: string,
 ) {
+  const isAdmin = role === "admin";
+
   return queryClient.prefetchQuery({
-    queryKey: queryKeys.coachTodos(coachId),
+    queryKey: queryKeys.coachTodos(coachId, role),
     queryFn: async () => {
-      const { data, error } = await loadCoachTodosFast(coachId);
+      const { data, error } = await loadCoachTodosFast(coachId, { isAdmin });
       if (error) throw error;
       return data;
     },

@@ -26,8 +26,12 @@ export function getAuthRedirectUrls(): string[] {
     `${base}/login`,
     `${base}/signup`,
     `${base}/dashboard`,
+    `${base}/reset-password`,
+    `${base}/reset-password/update`,
     "http://localhost:3000/**",
     "http://localhost:3000/login",
     "http://localhost:3000/signup",
+    "http://localhost:3000/reset-password",
+    "http://localhost:3000/reset-password/update",
   ];
 }

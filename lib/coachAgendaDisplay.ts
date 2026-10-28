@@ -50,6 +50,20 @@ export function filterTodayAppointments(appointments: CoachCalendarEvent[]) {
     .sort((a, b) => a.start_at.localeCompare(b.start_at));
 }
 
+export function filterTodayAndTomorrowAppointments(
+  appointments: CoachCalendarEvent[],
+) {
+  const today = getTodayDateString();
+  const tomorrow = toAgendaDateString(addAgendaDays(parseAgendaDate(today), 1));
+
+  return appointments
+    .filter((row) => {
+      const date = row.start_at.slice(0, 10);
+      return date === today || date === tomorrow;
+    })
+    .sort((a, b) => a.start_at.localeCompare(b.start_at));
+}
+
 export function filterUpcomingAppointments(
   appointments: CoachCalendarEvent[],
   weeks = 8,

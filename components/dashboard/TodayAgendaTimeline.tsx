@@ -145,16 +145,22 @@ export default function TodayAgendaTimeline({
 
   return (
     <section
-      className={`today-agenda-timeline glass-accent-card ${
-        isRail ? "today-agenda-timeline--rail" : ""
+      className={`today-agenda-timeline ${
+        isRail ? "today-agenda-timeline--rail today-agenda-timeline--cockpit" : "glass-accent-card"
       }`}
     >
       <div className="today-agenda-timeline-header">
         <div className="min-w-0">
-          <p className="text-[8px] font-medium uppercase tracking-wide text-app-subtle">
-            Snelle agenda
-          </p>
-          <h2 className="mt-0.5 text-[18px] font-semibold capitalize tracking-tight text-app-text">
+          {!isRail ? (
+            <p className="text-[8px] font-medium uppercase tracking-wide text-app-subtle">
+              Snelle agenda
+            </p>
+          ) : null}
+          <h2
+            className={`font-semibold capitalize tracking-tight text-app-text ${
+              isRail ? "text-[15px]" : "mt-0.5 text-[18px]"
+            }`}
+          >
             {formatAgendaDayHeading(now)}
           </h2>
         </div>

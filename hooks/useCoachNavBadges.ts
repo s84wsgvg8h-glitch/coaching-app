@@ -1,12 +1,24 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { CHAT_UNREAD_CHANGED_EVENT } from "@/lib/chatUnread";
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isAdminRole } from "@/lib/authRoles";
+import { countCoachTodosDueToday } from "@/lib/todoDueToday";
+import { COACH_TODOS_CHANGED_EVENT, loadCoachTodosFast } from "@/lib/coachTodos";
 import {
-  loadCoachNavBadges,
-  type CoachNavBadges,
-} from "@/lib/coachNavBadges";
-import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
+  CHAT_UNREAD_CHANGED_EVENT,
+  getUnreadMessageCount,
+} from "@/lib/chatUnread";
+import { supabase } from "@/lib/supabaseClient";
+import { queryKeys } from "@/lib/queryKeys";
+import { athleteQueryDefaults, ATHLETE_QUERY_STALE_MS } from "@/lib/queryOptions";
+
+export type CoachNavBadges = {
+  chat: number;
+  todo: number;
+  videoReview: number;
+  pendingAthletes: number;
+};
 
 const EMPTY_BADGES: CoachNavBadges = {
   chat: 0,
@@ -15,35 +27,87 @@ const EMPTY_BADGES: CoachNavBadges = {
   pendingAthletes: 0,
 };
 
+async function loadCoachNavBadgesFromCache(
+  queryClient: ReturnType<typeof useQueryClient>,
+  userId: string,
+  role: string,
+): Promise<CoachNavBadges> {
+  const isAdmin = isAdminRole(role);
+
+  const [todos, chat, pendingResult, videoResult] = await Promise.all([
+    queryClient.fetchQuery({
+      queryKey: queryKeys.coachTodos(userId, role),
+      queryFn: async () => {
+        const { data, error } = await loadCoachTodosFast(userId, { isAdmin });
+        if (error) throw error;
+        return data;
+      },
+      staleTime: ATHLETE_QUERY_STALE_MS,
+    }),
+    queryClient.fetchQuery({
+      queryKey: queryKeys.notificationCount(userId, role),
+      queryFn: () => getUnreadMessageCount(userId),
+      staleTime: ATHLETE_QUERY_STALE_MS,
+    }),
+    isAdmin
+      ? supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("role", "pending")
+      : supabase
+          .from("profiles")
+          .select("*", { count: "exact", head: true })
+          .eq("role", "pending")
+          .eq("coach_id", userId),
+    supabase
+      .from("video_reviews")
+      .select("*", { count: "exact", head: true })
+      .eq("coach_id", userId)
+      .eq("status", "pending"),
+  ]);
+
+  return {
+    chat,
+    todo: countCoachTodosDueToday(todos),
+    videoReview: videoResult.count || 0,
+    pendingAthletes: pendingResult.count || 0,
+  };
+}
+
 export function useCoachNavBadges(userId: string | null, role: string) {
-  const [badges, setBadges] = useState<CoachNavBadges>(EMPTY_BADGES);
+  const queryClient = useQueryClient();
+
+  const query = useQuery({
+    queryKey: queryKeys.coachNavBadges(userId || "", role),
+    queryFn: () => loadCoachNavBadgesFromCache(queryClient, userId!, role),
+    enabled: Boolean(userId && role),
+    ...athleteQueryDefaults,
+  });
 
   useEffect(() => {
-    if (!userId) {
-      deferEffectUpdate(() => {
-        setBadges(EMPTY_BADGES);
+    if (!userId || !role) return;
+    const coachId = userId;
+
+    function invalidate() {
+      void queryClient.invalidateQueries({
+        queryKey: queryKeys.coachNavBadges(coachId, role),
       });
-      return;
     }
 
-    let cancelled = false;
-
-    async function refresh() {
-      if (!userId) return;
-      const next = await loadCoachNavBadges(userId, role);
-      if (!cancelled) setBadges(next);
-    }
-
-    void refresh();
-    window.addEventListener(CHAT_UNREAD_CHANGED_EVENT, refresh);
-    window.addEventListener("focus", refresh);
+    window.addEventListener(CHAT_UNREAD_CHANGED_EVENT, invalidate);
+    window.addEventListener(COACH_TODOS_CHANGED_EVENT, invalidate);
+    window.addEventListener("focus", invalidate);
 
     return () => {
-      cancelled = true;
-      window.removeEventListener(CHAT_UNREAD_CHANGED_EVENT, refresh);
-      window.removeEventListener("focus", refresh);
+      window.removeEventListener(CHAT_UNREAD_CHANGED_EVENT, invalidate);
+      window.removeEventListener(COACH_TODOS_CHANGED_EVENT, invalidate);
+      window.removeEventListener("focus", invalidate);
     };
-  }, [role, userId]);
+  }, [queryClient, role, userId]);
 
-  return badges;
+  if (!userId || !role) {
+    return EMPTY_BADGES;
+  }
+
+  return query.data ?? EMPTY_BADGES;
 }

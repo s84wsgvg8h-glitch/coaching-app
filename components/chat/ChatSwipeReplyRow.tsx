@@ -84,7 +84,7 @@ export default function ChatSwipeReplyRow({
 
   return (
     <div
-      className={`chat-swipe-reply-row relative w-fit max-w-full shrink-0 overflow-hidden ${className}`}
+      className={`chat-swipe-reply-row relative max-w-full shrink-0 overflow-hidden ${className}`}
     >
       <div
         className="pointer-events-none absolute inset-y-0 left-0 flex w-10 items-center justify-center"
@@ -97,7 +97,7 @@ export default function ChatSwipeReplyRow({
         />
       </div>
       <div
-        className={`w-fit max-w-full ${animating ? "transition-transform duration-200 ease-out" : ""}`}
+        className={`w-full max-w-full ${animating ? "transition-transform duration-200 ease-out" : ""}`}
         style={{ transform: offset > 0 ? `translateX(${offset}px)` : undefined }}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}

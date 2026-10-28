@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Scale } from "lucide-react";
 import { logQuickBodyweight } from "@/lib/athleteBwLog";
 import { trackEvent } from "@/lib/analytics";
@@ -9,41 +9,113 @@ type QuickBodyweightLogProps = {
   athleteId: string;
   compact?: boolean;
   variant?: "default" | "athlete";
+  surface?: "mobile" | "desktop";
 };
+
+function parseBodyweight(value: string) {
+  const parsed = Number.parseFloat(value.replace(",", "."));
+  if (!Number.isFinite(parsed) || parsed <= 0) return null;
+  return parsed;
+}
 
 export default function QuickBodyweightLog({
   athleteId,
   compact = false,
   variant = "default",
+  surface = "desktop",
 }: QuickBodyweightLogProps) {
   const [bw, setBw] = useState("");
   const [saving, setSaving] = useState(false);
   const [lastLogged, setLastLogged] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const lastSavedRef = useRef<number | null>(null);
+  const saveInFlightRef = useRef(false);
 
   function handleBwChange(value: string) {
-    // Only allow digits, dots and commas — prevents accidental "82k,5" input.
     const filtered = value.replace(/[^0-9.,]/g, "");
     setBw(filtered);
+    setError(null);
   }
 
-  async function handleSave() {
-    const parsed = Number.parseFloat(bw.replace(",", "."));
-    if (!Number.isFinite(parsed) || parsed <= 0) return;
+  const saveBodyweight = useCallback(
+    async (rawValue?: string) => {
+      const parsed = parseBodyweight(rawValue ?? bw);
+      if (parsed == null) return;
+      if (lastSavedRef.current === parsed || saveInFlightRef.current) return;
 
-    setSaving(true);
-    setError(null);
-    const { ok, error: saveError } = await logQuickBodyweight(athleteId, parsed);
-    setSaving(false);
+      saveInFlightRef.current = true;
+      setSaving(true);
+      setError(null);
 
-    if (!ok || saveError) {
-      setError(saveError || "Bodyweight kon niet worden opgeslagen.");
-      return;
-    }
+      const { ok, error: saveError } = await logQuickBodyweight(athleteId, parsed);
 
-    setLastLogged(`${parsed} kg`);
-    setBw("");
-    trackEvent("bodyweight_logged", { valueKg: parsed });
+      saveInFlightRef.current = false;
+      setSaving(false);
+
+      if (!ok || saveError) {
+        setError(saveError || "Bodyweight kon niet worden opgeslagen.");
+        return;
+      }
+
+      lastSavedRef.current = parsed;
+      setLastLogged(`${parsed} kg`);
+      setBw(String(parsed).replace(".", ","));
+      trackEvent("bodyweight_logged", { valueKg: parsed });
+    },
+    [athleteId, bw],
+  );
+
+  useEffect(() => {
+    if (surface !== "mobile" || variant !== "athlete") return;
+    if (!bw.trim()) return;
+
+    const parsed = parseBodyweight(bw);
+    if (parsed == null || lastSavedRef.current === parsed) return;
+
+    const timer = window.setTimeout(() => {
+      void saveBodyweight(bw);
+    }, 700);
+
+    return () => window.clearTimeout(timer);
+  }, [bw, saveBodyweight, surface, variant]);
+
+  if (variant === "athlete" && surface === "mobile") {
+    return (
+      <div className="athlete-dashboard-card athlete-dashboard-card--bw athlete-dashboard-stat-card athlete-dashboard-stat-card--bw-centered">
+        <p className="athlete-dashboard-fill-card-title">Snelle BW-log</p>
+        <div className="athlete-dashboard-bw-row">
+          <div className="athlete-dashboard-bw-input-shell athlete-dashboard-bw-input-shell--mobile-narrow min-w-0">
+            <input
+              value={bw}
+              onChange={(event) => handleBwChange(event.target.value)}
+              onBlur={() => void saveBodyweight()}
+              placeholder="-"
+              inputMode="decimal"
+              aria-label="Bodyweight in kg"
+              className="athlete-dashboard-bw-value-input min-w-0 flex-1"
+            />
+            <span className="athlete-dashboard-bw-unit shrink-0" aria-hidden="true">
+              kg
+            </span>
+          </div>
+        </div>
+        {saving ? (
+          <p className="mt-1.5 text-[11px] font-medium text-app-muted" aria-live="polite">
+            Opslaan…
+          </p>
+        ) : null}
+        {lastLogged ? (
+          <p className="sr-only" aria-live="polite">
+            Opgeslagen: {lastLogged}
+          </p>
+        ) : null}
+        {error ? (
+          <p className="athlete-inline-toast athlete-inline-toast--error mt-2" role="alert">
+            {error}
+          </p>
+        ) : null}
+      </div>
+    );
   }
 
   if (variant === "athlete") {
@@ -73,7 +145,7 @@ export default function QuickBodyweightLog({
           <button
             type="button"
             disabled={saving || !bw.trim()}
-            onClick={() => void handleSave()}
+            onClick={() => void saveBodyweight()}
             className="athlete-dashboard-log-btn athlete-dashboard-log-btn--compact shrink-0 disabled:opacity-45"
           >
             {saving ? "…" : "Log"}
@@ -116,7 +188,7 @@ export default function QuickBodyweightLog({
         <button
           type="button"
           disabled={saving || !bw.trim()}
-          onClick={() => void handleSave()}
+          onClick={() => void saveBodyweight()}
           className="app-btn-primary shrink-0 disabled:opacity-50"
         >
           {saving ? "…" : "Log"}

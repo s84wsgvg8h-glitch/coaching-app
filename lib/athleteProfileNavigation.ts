@@ -10,6 +10,16 @@ export function getAthleteProfileReturn() {
   return sessionStorage.getItem(RETURN_KEY) || "/dashboard";
 }
 
-export function isAthleteProfileOpen(pathname: string) {
+export function isProfileOpen(pathname: string) {
   return pathname === "/profile" || pathname.startsWith("/profile?");
 }
+
+export function isAthleteProfileOpen(pathname: string) {
+  return isProfileOpen(pathname);
+}
+
+export const saveProfileReturn = saveAthleteProfileReturn;
+export const getProfileReturn = getAthleteProfileReturn;
+
+
+

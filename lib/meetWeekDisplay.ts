@@ -27,6 +27,23 @@ export function formatWeeksOutLabel(weeksOut: number) {
   return `${weeksOut} weken uit`;
 }
 
+export function formatWeeksAndDaysUntilMeetLabel(dateStr: string) {
+  const daysUntil = daysUntilMeet(dateStr);
+  if (daysUntil <= 0) return "Wedstrijdweek";
+
+  const weeks = Math.floor(daysUntil / 7);
+  const days = daysUntil % 7;
+
+  const weekPart =
+    weeks === 1 ? "1 week" : weeks > 0 ? `${weeks} weken` : null;
+  const dayPart = days === 1 ? "1 dag" : days > 0 ? `${days} dagen` : null;
+
+  if (weekPart && dayPart) return `${weekPart} en ${dayPart}`;
+  if (weekPart) return weekPart;
+  if (dayPart) return dayPart;
+  return "Vandaag";
+}
+
 export function buildMeetWeekSummaries(
   meets: Array<{ id: string; naam: string; start_date: string }>,
 ): MeetWeekSummary[] {

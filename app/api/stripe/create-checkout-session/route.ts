@@ -159,7 +159,9 @@ export async function POST(request: NextRequest) {
 
   const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
     metadata: subscriptionMetadata,
-    application_fee_percent: applicationFeePercent,
+    ...(applicationFeePercent > 0
+      ? { application_fee_percent: applicationFeePercent }
+      : {}),
     ...buildCheckoutSubscriptionBillingData(billingParams),
   };
 

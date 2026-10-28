@@ -3,7 +3,7 @@ import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSke
 
 export default function MeetWeekLoading() {
   return (
-    <AppShellRouteLoading>
+    <AppShellRouteLoading hideMobileTopBar>
       <AthleteGenericPageSkeleton rows={5} />
     </AppShellRouteLoading>
   );

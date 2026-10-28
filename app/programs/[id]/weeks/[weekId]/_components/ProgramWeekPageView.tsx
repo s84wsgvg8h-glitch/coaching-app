@@ -1,20 +1,26 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import dynamic from "next/dynamic";
 import type { RawProgramEditorHandle } from "@/components/programs/coach/RawProgramEditor";
+import type { CoachProgramProgressionPanelHandle } from "@/components/programs/coach/CoachProgramProgressionPanel";
 import AthleteProgramWeekContent from "@/components/programs/athlete/AthleteProgramWeekContent";
+import AthleteExerciseFillPanel from "@/components/programs/athlete/AthleteExerciseFillPanel";
 import AppSidebar from "@/components/AppSidebar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import CoachMobileBottomNav from "@/components/coach/CoachMobileBottomNav";
 import DemoModeBanner from "@/components/DemoModeBanner";
+import MobilePullToRefreshInner from "@/components/mobile/MobilePullToRefreshInner";
 import ProgramWeekSkeleton from "@/components/programs/ProgramWeekSkeleton";
 import ProgramAthleteVideoRecorder from "@/components/programs/week/ProgramAthleteVideoRecorder";
 import ProgramWeekOverlays from "@/components/programs/week/ProgramWeekOverlays";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { isDayPast, hasIncompleteSetField } from "@/lib/programDayValidation";
+import { isAthleteExtraExercise } from "@/lib/athleteExtraExercise";
+import { isAthleteChoiceExercise } from "@/lib/athleteExerciseVariation";
 import { normalizeExerciseName } from "@/lib/programWeek/exerciseUtils";
+import { useMobilePullToRefresh } from "@/hooks/useMobilePullToRefresh";
 import type { ProgramWeekPageViewProps } from "./programWeekPageViewProps";
 
 const AthleteProgramSidebar = dynamic(
@@ -29,6 +35,14 @@ const CoachProgramWeekContent = dynamic(
 
 const CoachProgramWeekHeader = dynamic(
   () => import("@/components/programs/coach/CoachProgramWeekHeader"),
+  { loading: () => null },
+);
+
+const CoachProgramWeekStatsFooter = dynamic(
+  () =>
+    import("@/components/programs/coach/CoachProgramWeekHeader").then(
+      (mod) => mod.CoachProgramWeekStatsFooter,
+    ),
   { loading: () => null },
 );
 
@@ -47,17 +61,14 @@ const CoachProgramRawWeekTabs = dynamic(
   { ssr: false },
 );
 
-const AthleteExerciseFillPanel = dynamic(
-  () => import("@/components/programs/athlete/AthleteExerciseFillPanel"),
-  { ssr: false },
-);
-
 export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
   const {
     embeddedInChat,
     isAthleteView,
     isCoachView,
     athleteSidebarBlocks,
+    sidebarCompetitions,
+    sidebarAthleteId,
     setOpenBlockIds,
     goToProgram,
     blocksSidebar,
@@ -90,9 +101,19 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
     getExercisePriorityLabel,
     openAthleteExercisePanel,
     setPreviewLibraryItem,
+    onAddExtraExercise,
+    onDeleteExtraExercise,
+    onRenameExtraExercise,
+    onChooseExerciseVariation,
+    onToggleAthleteVariationMode,
+    addingExtraExercise,
+    deletingExtraExerciseId,
+    renamingExtraExerciseId,
+    choosingVariationExerciseId,
     blockWeekNav,
     editorView,
     setEditorView,
+    registerProgramEditFlush,
     setPlanningSplitOpen,
     athleteId,
     programSearchContext,
@@ -141,6 +162,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
     handleExerciseDragStart,
     handleExerciseDragOver,
     handleExerciseDragOverDay,
+    handleExerciseDragOverDayTail,
     saveExerciseOrder,
     updateExerciseLocal,
     saveExerciseField,
@@ -190,6 +212,10 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
     getAverageFromRows,
     videoRecorder,
     offlineQueueCount,
+    offlineSyncSyncing,
+    offlineSyncOnline,
+    onRetryOfflineSync,
+    onDismissOfflineSync,
     templateApplyOpen,
     setTemplateApplyOpen,
     planningAthleteId,
@@ -218,22 +244,54 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
     athleteDisplayName,
     progressionSnapshot,
     progressionLoading,
+    progressionBlocks,
+    progressionWeeksByBlock,
     onProgressionSaveCell,
+    onPullToRefresh,
+    coachAthleteOptions,
+    currentCoachAthleteId,
+    onCoachAthleteChange,
+    coachAthleteSwitching,
   } = props;
+
+  const coachHeaderAthleteProps = isCoachView
+    ? {
+        athleteOptions: coachAthleteOptions,
+        currentAthleteId: currentCoachAthleteId,
+        onAthleteChange: onCoachAthleteChange,
+        athleteSwitching: coachAthleteSwitching,
+      }
+    : {};
+
+  const coachCompareProps = isCoachView
+    ? {
+        compareNavBlocks: progressionBlocks,
+        compareWeeksByBlock: progressionWeeksByBlock,
+        compareBlockId: blockId,
+        compareWeekId: weekId,
+        compareCurrentBlock: currentBlock,
+        compareCurrentWeek: week,
+        onCompareOpenWeek: (targetBlockId: string, targetWeekId: string) => {
+          void goToProgram(targetBlockId, targetWeekId);
+        },
+      }
+    : {};
 
   const coachAlternateHeader = !embeddedInChat ? (
     <CoachProgramWeekHeader
       blockTitle={currentBlock?.title || "Block"}
       weekTitle={week?.title || "Week"}
-      programSearchContext={programSearchContext}
-      planningSplitOpen={planningSplitOpen}
-      onTogglePlanning={() => setPlanningSplitOpen((value) => !value)}
       backHref={athleteId ? `/athletes/${athleteId}` : "/athletes"}
-      sbdWeekSummary={getShortSbdWeekSummary()}
-      weekStatsReport={weekStatsReport}
       editorView={editorView}
       onEditorViewChange={setEditorView}
       showEditorViewToggle={isCoachLikeRole(role)}
+      showCompareView={isCoachView}
+      userId={userId}
+      role={role}
+      compareCurrentDays={days}
+      compareCurrentExercisesByDay={exercisesByDay}
+      {...coachHeaderAthleteProps}
+      {...coachCompareProps}
     />
   ) : null;
 
@@ -268,13 +326,58 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
   };
 
   const rawEditorRef = useRef<RawProgramEditorHandle>(null);
+  const progressionRef = useRef<CoachProgramProgressionPanelHandle>(null);
+
+  useEffect(() => {
+    if (!isCoachView) {
+      registerProgramEditFlush(null);
+      return;
+    }
+
+    if (editorView === "raw") {
+      registerProgramEditFlush(async () => {
+        await rawEditorRef.current?.flushPendingEdits();
+      });
+      return;
+    }
+
+    if (editorView === "progression") {
+      registerProgramEditFlush(async () => {
+        await progressionRef.current?.flushPendingEdits();
+      });
+      return;
+    }
+
+    registerProgramEditFlush(null);
+
+    return () => {
+      registerProgramEditFlush(null);
+    };
+  }, [editorView, isCoachView, registerProgramEditFlush]);
+  const mainScrollRef = useRef<HTMLElement>(null);
   const isCoachRawView =
     isCoachView && editorView === "raw" && !embeddedInChat;
 
-  const navigateToWeek = async (targetWeekId: string) => {
-    await rawEditorRef.current?.flushPendingEdits();
-    goToProgram(blockId, targetWeekId);
+  const ptrEnabled =
+    !embeddedInChat &&
+    !isCoachRawView &&
+    isAthleteView &&
+    !athleteExercisePanelOpen;
+
+  const { pullDistance, isRefreshing, contentStyle, threshold } =
+    useMobilePullToRefresh({
+      scrollRef: mainScrollRef,
+      enabled: ptrEnabled,
+      onRefresh: onPullToRefresh,
+    });
+
+  const navigateToWeek = (targetWeekId: string) => {
+    void goToProgram(blockId, targetWeekId);
   };
+
+  const showAthleteExerciseFillPanel =
+    athleteExercisePanelOpen &&
+    (isAthleteView || (isCoachView && editorView === "athlete"));
 
   return (
     <div
@@ -282,11 +385,17 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
         embeddedInChat
           ? "h-full min-h-0 bg-gray-100"
             : isAthleteView
-              ? "athlete-program-shell relative flex min-h-[100dvh] flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)]"
+              ? `athlete-program-shell relative flex h-full min-h-0 flex-col lg:h-[100dvh] lg:min-h-0 lg:flex-row lg:overflow-hidden lg:pt-[env(safe-area-inset-top)]${
+                  athleteExercisePanelOpen ? " athlete-program-shell--fill-open" : ""
+                }`
               : isCoachView
-                ? `coach-program-shell relative min-h-[100dvh] lg:flex lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)]${
-                    isCoachRawView ? " coach-program-shell--raw-view" : ""
-                  }`
+                ? isCoachRawView
+                  ? "coach-program-shell coach-program-shell--raw-view relative flex h-[100dvh] min-h-0 flex-col overflow-hidden supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex-row"
+                  : `coach-program-shell relative flex h-full min-h-0 flex-col overflow-hidden lg:h-[100dvh] lg:min-h-0 lg:flex-row${
+                      editorView === "athlete" && athleteExercisePanelOpen
+                        ? " athlete-program-shell--fill-open"
+                        : ""
+                    }`
                 : "relative min-h-[100dvh] bg-gray-100 program-week-shell supports-[padding:env(safe-area-inset-top)]:pt-[env(safe-area-inset-top)] lg:flex lg:h-[100dvh] lg:min-h-0 lg:overflow-hidden"
       }
     >
@@ -312,16 +421,32 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       {!embeddedInChat && isCoachView ? <CoachMobileBottomNav /> : null}
 
       <main
+        ref={mainScrollRef}
         className={
           embeddedInChat
             ? "h-full min-h-0 min-w-0 overflow-y-auto"
             : isCoachRawView
               ? "relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
               : `relative min-h-0 min-w-0 flex-1 mobile-scroll ${
+                  isAthleteView ? "athlete-program-main-scroll " : ""
+                }${
+                  isCoachView && !isCoachRawView ? "coach-program-main-scroll " : ""
+                }${
                 planningSplitOpen && isCoachLikeRole(role)
                   ? "lg:flex lg:h-[100dvh] lg:flex-col lg:overflow-hidden"
                   : "overflow-y-auto"
               }`
+        }
+      >
+      <MobilePullToRefreshInner
+        pullDistance={pullDistance}
+        isRefreshing={isRefreshing}
+        contentStyle={contentStyle}
+        threshold={threshold}
+        className={
+          isCoachRawView
+            ? "flex min-h-0 flex-1 flex-col overflow-hidden"
+            : undefined
         }
       >
       {!embeddedInChat ? <DemoModeBanner /> : null}
@@ -335,7 +460,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
         }
       >
       {(isPending || navigatingUrl) && (
-        <div className="fixed top-0 left-0 right-0 z-50 h-1 bg-gray-200 overflow-hidden">
+        <div className="fixed left-0 right-0 top-[env(safe-area-inset-top,0px)] z-50 h-1 overflow-hidden bg-gray-200">
           <div className="h-full w-1/3 bg-black animate-[loadingbar_0.9s_ease-in-out_infinite]" />
         </div>
       )}
@@ -383,6 +508,10 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               capitalizeExerciseName={normalizeExerciseName}
               openAthleteExercisePanel={openAthleteExercisePanel}
               setPreviewLibraryItem={setPreviewLibraryItem}
+              onAddExtraExercise={onAddExtraExercise}
+              onDeleteExtraExercise={onDeleteExtraExercise}
+              addingExtraExercise={addingExtraExercise}
+              deletingExtraExerciseId={deletingExtraExerciseId}
             />
           ) : editorView === "card" ? (
             <CoachProgramWeekContent
@@ -398,6 +527,8 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               editorView={editorView}
               onEditorViewChange={setEditorView}
               showEditorViewToggle={isCoachLikeRole(role)}
+              {...coachHeaderAthleteProps}
+              {...coachCompareProps}
               days={days}
               exercisesByDay={exercisesByDay}
               creatingExerciseDayId={creatingExerciseDayId}
@@ -450,6 +581,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               handleExerciseDragStart={handleExerciseDragStart}
               handleExerciseDragOver={handleExerciseDragOver}
               handleExerciseDragOverDay={handleExerciseDragOverDay}
+              handleExerciseDragOverDayTail={handleExerciseDragOverDayTail}
               saveExerciseOrder={saveExerciseOrder}
               updateExerciseLocal={updateExerciseLocal}
               saveExerciseField={saveExerciseField}
@@ -466,6 +598,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               onLinkExerciseForLibrary={setLinkingExercise}
               sbdWeekSummary={getShortSbdWeekSummary()}
               weekStatsReport={weekStatsReport}
+              onToggleAthleteVariationMode={onToggleAthleteVariationMode}
             />
           ) : (
             <div
@@ -473,17 +606,14 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
                 editorView === "raw" ? " coach-program-main--raw" : ""
               }`}
             >
+              {!embeddedInChat && editorView !== "raw" ? blockWeekNav : null}
               {coachAlternateHeader}
-              {!embeddedInChat ? (
-                editorView === "raw" ? (
-                  <CoachProgramRawWeekTabs
-                    weeks={weeksByBlock[blockId] || []}
-                    currentWeekId={weekId}
-                    onSelectWeek={navigateToWeek}
-                  />
-                ) : (
-                  blockWeekNav
-                )
+              {!embeddedInChat && editorView === "raw" ? (
+                <CoachProgramRawWeekTabs
+                  weeks={weeksByBlock[blockId] || []}
+                  currentWeekId={weekId}
+                  onSelectWeek={navigateToWeek}
+                />
               ) : null}
 
               {editorView === "raw" ? (
@@ -504,15 +634,20 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
                   insertExerciseFromRaw={insertExerciseFromRaw}
                   applyRawClipboardPaste={applyRawClipboardPaste}
                   duplicateExerciseRow={duplicateExerciseRow}
+                  onToggleAthleteVariationMode={onToggleAthleteVariationMode}
                 />
               ) : null}
 
               {editorView === "progression" ? (
                 <CoachProgramProgressionView
+                  ref={progressionRef}
                   block={currentBlock}
                   athleteName={athleteDisplayName}
+                  athleteId={planningAthleteId}
                   snapshot={progressionSnapshot}
                   loading={progressionLoading}
+                  availableBlocks={progressionBlocks}
+                  weeksByBlock={progressionWeeksByBlock}
                   onSaveCell={onProgressionSaveCell}
                 />
               ) : null}
@@ -520,12 +655,19 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               {editorView === "athlete" ? (
                 <AthleteProgramWeekContent {...athleteWeekPreviewProps} />
               ) : null}
+
+              {!embeddedInChat ? (
+                <CoachProgramWeekStatsFooter
+                  weekTitle={week?.title || "Week"}
+                  sbdWeekSummary={getShortSbdWeekSummary()}
+                  weekStatsReport={weekStatsReport}
+                />
+              ) : null}
             </div>
           )}
       </section>
 
-      {role === "atleet" &&
-        athleteExercisePanelOpen &&
+      {showAthleteExerciseFillPanel &&
         (() => {
           const selected = getSelectedAthleteExercise();
           if (!selected) return null;
@@ -597,6 +739,25 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               }
               getE1rmLabel={(row) => getInlineE1rmLabel(exercise, row)}
               getAverageFromRows={getAverageFromRows}
+              readOnly={false}
+              canRenameExercise={
+                isAthleteView && isAthleteExtraExercise(exercise)
+              }
+              renamingExercise={renamingExtraExerciseId === exercise.id}
+              onRenameExercise={
+                isAthleteView && onRenameExtraExercise
+                  ? (name) => onRenameExtraExercise(exercise.id, name)
+                  : undefined
+              }
+              canChooseVariation={
+                isAthleteView && isAthleteChoiceExercise(exercise)
+              }
+              choosingVariation={choosingVariationExerciseId === exercise.id}
+              onChooseVariation={
+                isAthleteView && onChooseExerciseVariation
+                  ? (name) => onChooseExerciseVariation(exercise.id, name)
+                  : undefined
+              }
             />
           );
         })()}
@@ -645,6 +806,10 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
 
       <ProgramWeekOverlays
         offlineQueueCount={offlineQueueCount}
+        offlineSyncSyncing={offlineSyncSyncing}
+        offlineSyncOnline={offlineSyncOnline}
+        onRetryOfflineSync={onRetryOfflineSync}
+        onDismissOfflineSync={onDismissOfflineSync}
         templateApplyOpen={templateApplyOpen}
         onCloseTemplateApply={() => setTemplateApplyOpen(false)}
         userId={userId}
@@ -704,6 +869,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
         athleteDisplayName={athleteDisplayName}
       />
 
+      </MobilePullToRefreshInner>
     </main>
     </div>
   );

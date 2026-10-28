@@ -2,7 +2,7 @@
 
 import {
   formatFillScorePercentage,
-  getFillScoreColorClass,
+  getAthleteDashboardFillScoreColorClass,
 } from "@/lib/athleteFillScore";
 
 type AthleteWeeklyFillScoreCardProps = {
@@ -59,7 +59,9 @@ export default function AthleteWeeklyFillScoreCard({
 }: AthleteWeeklyFillScoreCardProps) {
   const hasScore = percentage !== null;
   const value = percentage ?? 0;
-  const colorClass = hasScore ? getFillScoreColorClass(value) : "text-app-muted";
+  const colorClass = hasScore
+    ? getAthleteDashboardFillScoreColorClass(value)
+    : "text-app-muted";
 
   if (loading) {
     return (
@@ -74,7 +76,7 @@ export default function AthleteWeeklyFillScoreCard({
 
   return (
     <div className="athlete-dashboard-card athlete-dashboard-card--fill">
-      <p className="athlete-dashboard-eyebrow">Invulscore</p>
+      <p className="athlete-dashboard-fill-card-title">Invulscore</p>
       <p className="athlete-dashboard-card-desc mt-1 hidden text-[13px] text-app-muted lg:block">
         Invulscore afgelopen 7 dagen
       </p>

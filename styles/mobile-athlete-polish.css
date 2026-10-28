@@ -13,9 +13,46 @@
     -webkit-tap-highlight-color: rgba(59, 130, 246, 0.12);
   }
 
-  .athlete-mobile-tab-bar__item:active {
-    opacity: 0.82;
-    transform: scale(0.97);
+  .shell-topbar-notifications-btn {
+    display: none !important;
+  }
+
+  .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 0 !important;
+    gap: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(var(--app-accent-rgb), 0.45);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--app-accent-rgb), 0.72),
+      rgba(var(--app-accent-rgb), 0.38)
+    ) !important;
+    color: #ffffff;
+  }
+
+  .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar .shell-topbar-action-avatar {
+    width: 100% !important;
+    height: 100% !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: #ffffff;
+  }
+
+  .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar.shell-topbar-action-chip--active {
+    border-color: rgba(var(--app-accent-rgb), 0.65);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--app-accent-rgb), 0.82),
+      rgba(var(--app-accent-rgb), 0.48)
+    ) !important;
   }
 
   .athlete-dashboard-quicknav-card:active {
@@ -111,7 +148,7 @@
   }
 
   .athlete-dashboard-cta-btn {
-    min-height: 52px;
+    min-height: 76px;
   }
 
   /* ── Light mode: dashboard ── */
@@ -205,8 +242,12 @@
 
   html:not(.dark) .chat-input-bar {
     background: var(--app-surface);
-    border-color: var(--app-border-strong);
-    box-shadow: 0 2px 12px rgba(15, 23, 42, 0.06);
+    border-color: rgba(15, 23, 42, 0.08);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  }
+
+  html:not(.dark) .chat-shell .chat-compose-stack {
+    border-top-color: rgba(15, 23, 42, 0.06);
   }
 
   html:not(.dark) .chat-message-input::placeholder {
@@ -303,7 +344,6 @@
       animation: none;
     }
 
-    .athlete-mobile-tab-bar__item:active,
     .athlete-dashboard-quicklink-chip:active {
       transform: none;
     }
@@ -329,7 +369,8 @@
     color: #f87171;
   }
 
-  .app-shell--athlete-profile-mobile .mobile-page-shell__body--scroll {
+  .app-shell--athlete-profile-mobile .mobile-page-shell__body--scroll,
+  .app-shell--profile-mobile .mobile-page-shell__body--scroll {
     overflow-x: hidden;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
@@ -337,21 +378,50 @@
     touch-action: pan-y;
   }
 
-  .app-shell--athlete-profile-mobile
-    .mobile-page-shell--reserve-bottom-nav
-    .mobile-page-shell__body {
+  .app-shell--athlete-profile-mobile .athlete-app-layout,
+  .app-shell--profile-mobile .athlete-app-layout {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    min-height: min-content;
+  }
+
+  .app-shell--athlete-profile-mobile .profile-settings-root,
+  .app-shell--profile-mobile .profile-settings-root {
+    flex: none;
+    min-height: min-content;
+    /* Content padding — iOS scrollHeight includes this reliably (scroll-body padding does not). */
     padding-bottom: calc(var(--mobile-nav-total-height) + 1.5rem);
   }
 
-  .app-shell--athlete-profile-mobile .athlete-app-layout {
-    flex: none;
-    min-height: min-content;
-    width: 100%;
+  .app-shell--athlete-profile-mobile
+    .mobile-page-shell.mobile-page-shell--reserve-bottom-nav
+    .mobile-page-shell__body--scroll,
+  .app-shell--profile-mobile
+    .mobile-page-shell.mobile-page-shell--reserve-bottom-nav
+    .mobile-page-shell__body--scroll {
+    padding-bottom: 0 !important;
+    scroll-padding-bottom: var(--mobile-nav-total-height);
   }
 
-  .app-shell--athlete-profile-mobile .profile-settings-root {
-    flex: none;
+  .app-shell--athlete-profile-mobile .mobile-ptr-content,
+  .app-shell--profile-mobile .mobile-ptr-content {
     min-height: min-content;
+  }
+
+  .app-shell--athlete-profile-mobile .app-page-content--profile-mobile,
+  .app-shell--profile-mobile .app-page-content--profile-mobile {
+    padding-bottom: 0;
+  }
+
+  .app-shell--athlete-profile-mobile .profile-settings-main,
+  .app-shell--profile-mobile .profile-settings-main {
+    margin-bottom: 0;
+  }
+
+  .profile-settings-mobile-footer {
+    width: 100%;
+    padding-top: 0.5rem;
   }
 
   .shell-topbar-action-chip--active {
@@ -386,8 +456,8 @@
     border-top-color: var(--app-border);
   }
 
-  html:not(.dark) .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
-    background: var(--app-accent-muted);
+  html:not(.dark) .athlete-mobile-tab-bar__item.is-active {
+    color: var(--app-accent);
   }
 
   /* ── Skeleton pulse theme-aware ── */

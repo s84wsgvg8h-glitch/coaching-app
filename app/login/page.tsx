@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense, useEffect, useRef, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { disableDemoMode } from "@/lib/demo/demoMode";
 import { getRealSupabase } from "@/lib/supabaseClient";
 import { getHomePathForRole, needsPendingApproval } from "@/lib/authRoles";
@@ -12,9 +12,40 @@ import { needsIntakeCompletion } from "@/lib/intakeForm";
 import { loadAuthenticatedProfile } from "@/lib/profileAuth";
 import AuthShell, { AuthField, AuthInput } from "@/components/auth/AuthShell";
 import AuthLegalLinks from "@/components/legal/AuthLegalLinks";
-import { SkeletonCard } from "@/components/ui/Skeleton";
+import { useAuthOptional } from "@/components/AuthProvider";
 
-async function prepareLoginPage(): Promise<"ready" | "redirecting"> {
+type LoginBootstrapResult =
+  | { status: "ready" }
+  | { status: "redirect"; path: string };
+
+async function loadProfileWithRetry(userId: string) {
+  for (let i = 0; i < 5; i += 1) {
+    const profile = await loadAuthenticatedProfile(userId);
+    if (profile?.role) return profile;
+    await new Promise((resolve) => window.setTimeout(resolve, 120));
+  }
+
+  return loadAuthenticatedProfile(userId);
+}
+
+async function resolvePostAuthPath(userId: string): Promise<string> {
+  const profile = await loadProfileWithRetry(userId);
+
+  if (needsPendingApproval(profile)) {
+    return "/pending-approval";
+  }
+
+  if (profile?.role === "atleet") {
+    const needsIntake = await needsIntakeCompletion(userId);
+    if (needsIntake) {
+      return "/intake";
+    }
+  }
+
+  return getHomePathForRole(profile?.role);
+}
+
+async function prepareLoginPage(): Promise<LoginBootstrapResult> {
   disableDemoMode();
 
   const {
@@ -22,31 +53,16 @@ async function prepareLoginPage(): Promise<"ready" | "redirecting"> {
   } = await getRealSupabase().auth.getSession();
 
   if (!session?.user?.id) {
-    return "ready";
+    return { status: "ready" };
   }
 
-  const profile = await loadProfileWithRetry(session.user.id);
-
-  if (needsPendingApproval(profile)) {
-    window.location.assign("/pending-approval");
-    return "redirecting";
-  }
-
-  if (profile?.role === "atleet") {
-    const needsIntake = await needsIntakeCompletion(session.user.id);
-    if (needsIntake) {
-      window.location.assign("/intake");
-      return "redirecting";
-    }
-  }
-
-  window.location.assign(getHomePathForRole(profile?.role));
-  return "redirecting";
+  return {
+    status: "redirect",
+    path: await resolvePostAuthPath(session.user.id),
+  };
 }
 
 async function waitForSession(userId: string, attempts = 5) {
-  const client = getRealSupabase();
-
   for (let i = 0; i < attempts; i += 1) {
     const session = await getPersistedAuthSession();
 
@@ -60,43 +76,9 @@ async function waitForSession(userId: string, attempts = 5) {
   return null;
 }
 
-async function loadProfileWithRetry(userId: string) {
-  for (let i = 0; i < 5; i += 1) {
-    const profile = await loadAuthenticatedProfile(userId);
-    if (profile?.role) return profile;
-    await new Promise((resolve) => window.setTimeout(resolve, 120));
-  }
-
-  return loadAuthenticatedProfile(userId);
-}
-
-async function redirectAfterAuth(userId: string) {
-  const session = await waitForSession(userId);
-  if (!session) {
-    throw new Error(
-      "Sessie kon niet worden gestart. Probeer opnieuw in te loggen.",
-    );
-  }
-
-  const profile = await loadProfileWithRetry(userId);
-
-  if (needsPendingApproval(profile)) {
-    window.location.assign("/pending-approval");
-    return;
-  }
-
-  if (profile?.role === "atleet") {
-    const needsIntake = await needsIntakeCompletion(userId);
-    if (needsIntake) {
-      window.location.assign("/intake");
-      return;
-    }
-  }
-
-  window.location.assign(getHomePathForRole(profile?.role));
-}
-
 function LoginForm() {
+  const router = useRouter();
+  const auth = useAuthOptional();
   const searchParams = useSearchParams();
   const accountDeleted = searchParams.get("deleted") === "1";
   const [email, setEmail] = useState("");
@@ -111,11 +93,16 @@ function LoginForm() {
 
     void (async () => {
       const result = await prepareLoginPage();
-      if (!submittingRef.current && result === "ready") {
-        setPageReady(true);
+      if (submittingRef.current) return;
+
+      if (result.status === "redirect") {
+        router.replace(result.path);
+        return;
       }
+
+      setPageReady(true);
     })();
-  }, []);
+  }, [router]);
 
   async function login() {
     submittingRef.current = true;
@@ -144,8 +131,15 @@ function LoginForm() {
         return;
       }
 
+      const session = await waitForSession(user.id);
+      if (!session) {
+        throw new Error(
+          "Sessie kon niet worden gestart. Probeer opnieuw in te loggen.",
+        );
+      }
+
       trackEvent("login_success", { role: "unknown" });
-      await redirectAfterAuth(user.id);
+      router.replace(await resolvePostAuthPath(user.id));
     } catch (nextError) {
       setError(
         nextError instanceof Error
@@ -158,14 +152,8 @@ function LoginForm() {
     }
   }
 
-  if (!pageReady) {
-    return (
-      <main className="auth-shell flex h-full min-h-0 w-full flex-col items-center justify-center px-4 py-6 sm:min-h-[100dvh] sm:p-6">
-        <div className="w-full max-w-md">
-          <SkeletonCard />
-        </div>
-      </main>
-    );
+  if (auth?.loading || !pageReady) {
+    return null;
   }
 
   return (
@@ -238,15 +226,7 @@ function LoginForm() {
 
 export default function LoginPage() {
   return (
-    <Suspense
-      fallback={
-        <main className="auth-shell flex h-full min-h-0 w-full flex-col items-center justify-center px-4 py-6 sm:min-h-[100dvh] sm:p-6">
-          <div className="w-full max-w-md">
-            <SkeletonCard />
-          </div>
-        </main>
-      }
-    >
+    <Suspense fallback={null}>
       <LoginForm />
     </Suspense>
   );

@@ -3,37 +3,42 @@ import { Skeleton } from "@/components/ui/Skeleton";
 export function AthleteDashboardSkeleton() {
   return (
     <div className="athlete-dashboard athlete-dashboard--mobile-fit w-full">
-      <div className="athlete-dashboard-bento">
-        <div className="athlete-dashboard-bento-metrics grid grid-cols-2 gap-1.5">
-          <div className="athlete-dashboard-card space-y-2">
-            <Skeleton className="h-3 w-20" />
-            <Skeleton className="h-10 w-16" />
-          </div>
-          <div className="athlete-dashboard-card space-y-2">
-            <Skeleton className="h-3 w-24" />
-            <Skeleton className="h-10 w-full" />
-          </div>
-        </div>
-        <div className="athlete-dashboard-bento-cta">
-          <Skeleton className="h-11 w-full rounded-xl" />
-        </div>
-        <div className="athlete-dashboard-bento-chat">
-          <div className="athlete-dashboard-card flex gap-3">
-            <Skeleton className="h-11 w-11 shrink-0 rounded-full" />
-            <div className="min-w-0 flex-1 space-y-2">
-              <Skeleton className="h-3 w-12" />
-              <Skeleton className="h-4 w-28" />
-              <Skeleton className="h-3 w-full" />
+      <div className="athlete-dashboard-mobile-column lg:hidden">
+        <div className="athlete-dashboard-mobile-primary">
+          <div className="athlete-dashboard-bento">
+            <div className="athlete-dashboard-bento-metrics grid grid-cols-2 gap-1.5">
+              <div className="athlete-dashboard-card space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-10 w-16" />
+              </div>
+              <div className="athlete-dashboard-card space-y-2">
+                <Skeleton className="h-3 w-24" />
+                <Skeleton className="h-10 w-full" />
+              </div>
+            </div>
+            <div className="athlete-dashboard-bento-cta">
+              <Skeleton className="h-11 w-full rounded-xl" />
             </div>
           </div>
-        </div>
-      </div>
-      <div className="athlete-dashboard-mobile-spacer max-lg:block lg:hidden" aria-hidden="true" />
-      <div className="athlete-dashboard-quicklinks athlete-dashboard-quicklinks--mobile max-lg:block lg:hidden">
-        <div className="athlete-dashboard-quicklinks-scroll">
-          {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className="athlete-dashboard-quicknav-skeleton h-[72px] w-[132px] shrink-0 rounded-[14px]" />
-          ))}
+
+          <div className="athlete-dashboard-quicklinks athlete-dashboard-quicklinks--mobile">
+            <div className="athlete-dashboard-quicklinks-scroll">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <Skeleton
+                  key={index}
+                  className="athlete-dashboard-quicknav-skeleton h-9 w-full shrink-0 rounded-xl"
+                />
+              ))}
+            </div>
+          </div>
+
+          <div className="athlete-dashboard-bento-todos">
+            <div className="athlete-dashboard-card athlete-dashboard-todos-widget space-y-2">
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </div>
+          </div>
         </div>
       </div>
     </div>

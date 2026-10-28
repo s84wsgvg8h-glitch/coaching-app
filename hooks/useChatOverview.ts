@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { loadChatOverview } from "@/lib/chatOverviewLoader";
+import { loadChatOverview, type ChatOverviewData } from "@/lib/chatOverviewLoader";
 import { CHAT_UNREAD_CHANGED_EVENT } from "@/lib/chatUnread";
 import { queryKeys } from "@/lib/queryKeys";
 import { athleteQueryDefaults } from "@/lib/queryOptions";
@@ -14,6 +14,12 @@ export function useChatOverview(userId: string, role: string, enabled = true) {
     queryKey: queryKeys.chatOverview(userId, role),
     queryFn: () => loadChatOverview(userId, role, { skipUnreadCounts: true }),
     enabled: enabled && Boolean(userId && role),
+    initialData: () =>
+      userId && role
+        ? queryClient.getQueryData<ChatOverviewData>(
+            queryKeys.chatOverview(userId, role),
+          )
+        : undefined,
     ...athleteQueryDefaults,
   });
 

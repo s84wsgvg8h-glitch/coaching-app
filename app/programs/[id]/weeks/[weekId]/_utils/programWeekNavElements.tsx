@@ -1,8 +1,16 @@
 import type { Dispatch, SetStateAction } from "react";
 import ProgramWeekBlockWeekNav from "../_components/ProgramWeekBlockWeekNav";
 import ProgramWeekBlocksSidebar from "../_components/ProgramWeekBlocksSidebar";
-import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
+import type { EditorView } from "@/components/programs/coach/CoachProgramWeekHeader";
+import type {
+  ProgramBlock,
+  ProgramDay,
+  ProgramExercise,
+  ProgramWeek,
+} from "@/lib/programWeek/types";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
+import type { ProgramSidebarCompetitionEntry } from "@/lib/programWeek/competitionSidebar";
+import type { WeekDropIndicator } from "@/lib/programWeekMove";
 
 export type ProgramWeekAddMenuProps = {
   programAddMenuOpen: boolean;
@@ -64,12 +72,39 @@ export type ProgramWeekNavElementsInput = {
   createWeek: (targetBlockId: string) => Promise<void>;
   duplicateBlock: (block: ProgramBlock) => Promise<void>;
   deleteBlock: (block: ProgramBlock) => Promise<void>;
+  pendingBlockAction: { blockId: string; type: "duplicate" | "delete" } | null;
   duplicateWeek: (weekItem: ProgramWeek) => Promise<void>;
   deleteWeek: (weekItem: ProgramWeek) => Promise<void>;
   programAddMenuOpen: boolean;
   setProgramAddMenuOpen: Dispatch<SetStateAction<boolean>>;
   startProgramAdd: (type: "macrocycle" | "block" | "week") => void;
   onOpenTemplateApply: () => void;
+  editorView?: EditorView;
+  onEditorViewChange?: (view: EditorView) => void;
+  showEditorViewToggle?: boolean;
+  draggedWeekId?: string;
+  weekDropIndicator?: WeekDropIndicator | null;
+  movingWeek?: boolean;
+  onWeekDragStart?: (
+    event: React.DragEvent<HTMLDivElement>,
+    week: ProgramWeek,
+  ) => void;
+  onWeekDragEnd?: () => void;
+  onWeekDragOver?: (
+    event: React.DragEvent<HTMLElement>,
+    blockId: string,
+    targetWeekId: string | null,
+    position: WeekDropIndicator["position"],
+  ) => void;
+  onWeekListDragOver?: (
+    event: React.DragEvent<HTMLElement>,
+    blockId: string,
+  ) => void;
+  athleteId?: string;
+  sidebarCompetitions?: ProgramSidebarCompetitionEntry[];
+  showCompareView?: boolean;
+  compareCurrentDays?: ProgramDay[];
+  compareCurrentExercisesByDay?: Record<string, ProgramExercise[]>;
 };
 
 export function buildProgramWeekAddMenuProps(
@@ -100,6 +135,7 @@ export function createProgramWeekNavElements(input: ProgramWeekNavElementsInput)
   const blockWeekNav = (
     <ProgramWeekBlockWeekNav
       role={input.role}
+      userId={input.userId}
       blockId={input.blockId}
       weekId={input.weekId}
       navBlocks={input.navBlocks}
@@ -136,6 +172,23 @@ export function createProgramWeekNavElements(input: ProgramWeekNavElementsInput)
       createMacrocycle={input.createMacrocycle}
       createBlock={input.createBlock}
       createWeek={input.createWeek}
+      duplicateBlock={input.duplicateBlock}
+      deleteBlock={input.deleteBlock}
+      pendingBlockAction={input.pendingBlockAction}
+      duplicateWeek={input.duplicateWeek}
+      deleteWeek={input.deleteWeek}
+      setEditingBlockId={input.setEditingBlockId}
+      setEditingBlockTitle={input.setEditingBlockTitle}
+      setEditingBlockStartDate={input.setEditingBlockStartDate}
+      setEditingBlockMacrocycleId={input.setEditingBlockMacrocycleId}
+      setEditingWeekId={input.setEditingWeekId}
+      setEditingWeekTitle={input.setEditingWeekTitle}
+      editorView={input.editorView}
+      onEditorViewChange={input.onEditorViewChange}
+      showEditorViewToggle={input.showEditorViewToggle}
+      showCompareView={input.showCompareView}
+      compareCurrentDays={input.compareCurrentDays}
+      compareCurrentExercisesByDay={input.compareCurrentExercisesByDay}
       {...programWeekAddMenuProps}
     />
   );
@@ -183,8 +236,16 @@ export function createProgramWeekNavElements(input: ProgramWeekNavElementsInput)
       createWeek={input.createWeek}
       duplicateBlock={input.duplicateBlock}
       deleteBlock={input.deleteBlock}
+      pendingBlockAction={input.pendingBlockAction}
       duplicateWeek={input.duplicateWeek}
       deleteWeek={input.deleteWeek}
+      draggedWeekId={input.draggedWeekId}
+      weekDropIndicator={input.weekDropIndicator}
+      movingWeek={input.movingWeek}
+      onWeekDragStart={input.onWeekDragStart}
+      onWeekDragEnd={input.onWeekDragEnd}
+      onWeekDragOver={input.onWeekDragOver}
+      onWeekListDragOver={input.onWeekListDragOver}
       {...programWeekAddMenuProps}
     />
   );

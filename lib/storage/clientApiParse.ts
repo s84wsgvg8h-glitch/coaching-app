@@ -36,10 +36,16 @@ export function formatStorageFetchFailure(params: {
   const message =
     params.error instanceof Error ? params.error.message : String(params.error);
 
-  if (message === "Failed to fetch" && params.stage === "r2-put") {
+  if (
+    params.stage === "r2-put" &&
+    (message === "Failed to fetch" ||
+      message === "Load failed" ||
+      message.includes("NetworkError"))
+  ) {
     return (
-      "Directe R2 upload geblokkeerd. Stel CORS in op je R2 bucket " +
-      "(PUT toegestaan vanaf https://limitlesscoaching.app) en herlaad de pagina."
+      "Directe R2 upload geblokkeerd (meestal CORS of iOS WebView). " +
+      "De app probeert automatisch een alternatieve upload. " +
+      "Werkt het nog niet, herstart de app en probeer opnieuw."
     );
   }
 

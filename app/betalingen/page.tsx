@@ -299,7 +299,7 @@ function BetalingenPageContent() {
               <h2 className="text-[15px] font-semibold text-app-text">Stripe</h2>
               <p className="mt-2 text-[13px] leading-6 text-app-muted">
                 Koppel je Stripe-account zodat atleten rechtstreeks bij jou
-                betalen. Limitless Coaching ontvangt automatisch een platformfee.
+                betalen. Limitless Coaching rekent geen platformfee.
               </p>
 
               <div className="mt-4 space-y-2">

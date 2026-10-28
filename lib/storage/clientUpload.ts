@@ -3,9 +3,12 @@ import {
   formatStorageFetchFailure,
   parseStorageApiResponse,
 } from "@/lib/storage/clientApiParse";
+import { uploadFileMultipartViaApi } from "@/lib/storage/clientMultipartUpload";
 import { uploadFilePresigned } from "@/lib/storage/clientPresignedUpload";
+import { isMobileUploadClient } from "@/lib/nativeKeyboard";
 import {
   canUseDirectApiUpload,
+  DIRECT_API_UPLOAD_MAX_BYTES,
   shouldUsePresignedUpload,
 } from "@/lib/storage/uploadStrategy";
 import type {
@@ -42,6 +45,17 @@ function isPresignUnavailableError(message: string) {
   return (
     message.includes("STORAGE_PROVIDER=r2") ||
     message.includes("Presigned upload is alleen beschikbaar")
+  );
+}
+
+function isPresignPutNetworkError(message: string) {
+  return (
+    message.includes("r2-put") ||
+    message.includes("Directe R2 upload geblokkeerd") ||
+    message.includes("Load failed") ||
+    message.includes("Failed to fetch") ||
+    message.includes("NetworkError") ||
+    message.includes("Upload timeout")
   );
 }
 
@@ -112,13 +126,40 @@ export async function uploadFileViaApi(params: {
     const fileSize = getFileSize(params.file);
 
     if (shouldUsePresignedUpload(params.uploadType, fileSize)) {
+      if (
+        isMobileUploadClient() &&
+        fileSize > DIRECT_API_UPLOAD_MAX_BYTES
+      ) {
+        return uploadFileMultipartViaApi(params);
+      }
+
       const presignedResult = await uploadFilePresigned(params);
       if (!presignedResult.error) {
         return presignedResult;
       }
 
+      const presignErrorMessage = presignedResult.error.message;
+
       if (
-        isPresignUnavailableError(presignedResult.error.message) &&
+        isPresignPutNetworkError(presignErrorMessage) &&
+        isMobileUploadClient() &&
+        fileSize > DIRECT_API_UPLOAD_MAX_BYTES
+      ) {
+        const multipartResult = await uploadFileMultipartViaApi(params);
+        if (!multipartResult.error) {
+          return multipartResult;
+        }
+      }
+
+      if (
+        isPresignUnavailableError(presignErrorMessage) &&
+        canUseDirectApiUpload(fileSize)
+      ) {
+        return uploadFileDirect(params);
+      }
+
+      if (
+        isPresignPutNetworkError(presignErrorMessage) &&
         canUseDirectApiUpload(fileSize)
       ) {
         return uploadFileDirect(params);

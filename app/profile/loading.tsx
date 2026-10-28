@@ -3,7 +3,7 @@ import { AthleteProfileSkeleton } from "@/components/mobile/AthleteMobileSkeleto
 
 export default function ProfileLoading() {
   return (
-    <AppShellRouteLoading contentClassName="flex-1 px-2 pb-4 pt-0 md:p-6 lg:px-8">
+    <AppShellRouteLoading>
       <AthleteProfileSkeleton />
     </AppShellRouteLoading>
   );

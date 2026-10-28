@@ -1,8 +1,7 @@
-import {
-  formatLastActivityLabel,
-  loadAthleteLastActivities,
-} from "@/lib/athleteLastActivity";
+import { loadAthleteLastActivities } from "@/lib/athleteLastActivity";
+import { isOptionalTextFieldComplete } from "@/lib/optionalFieldDash";
 import { supabase } from "@/lib/supabaseClient";
+import { isLowComplianceTodo, purgeLowComplianceTodos } from "@/lib/coachTodoSync";
 import {
   loadAthletesNeedingNewProgram,
   programAlertAutoKey,
@@ -28,6 +27,15 @@ export type CoachTodo = {
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 const DONE_RETENTION_MS = 7 * ONE_DAY_MS;
 
+export const COACH_TODOS_CHANGED_EVENT = "coach-todos-changed";
+
+export async function refreshCoachAutoTodos(coachId: string, isAdmin = false) {
+  await syncCoachTodosInBackground(coachId, isAdmin);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(COACH_TODOS_CHANGED_EVENT));
+  }
+}
+
 export function isRecentCompletedTodo(todo: CoachTodo) {
   if (!todo.completed) return true;
   if (!todo.completed_at) return true;
@@ -46,11 +54,47 @@ export async function purgeOldCompletedCoachTodos(coachId: string) {
     .lt("completed_at", cutoff);
 }
 
+function isAthleteInactiveForWeek(daysAgo: number | null) {
+  return daysAgo === null || daysAgo >= 7;
+}
+
+async function loadInactiveAthleteIds(coachId: string, isAdmin = false) {
+  let query = supabase.from("profiles").select("id").eq("role", "atleet");
+  if (!isAdmin) {
+    query = query.eq("coach_id", coachId);
+  }
+
+  const { data: athletes } = await query;
+  const athleteIds = (athletes || []).map((athlete) => athlete.id as string);
+  if (athleteIds.length === 0) return new Set<string>();
+
+  const activityMap = await loadAthleteLastActivities(athleteIds);
+  const inactiveIds = new Set<string>();
+  for (const athleteId of athleteIds) {
+    const daysAgo = activityMap.get(athleteId)?.daysAgo ?? null;
+    if (isAthleteInactiveForWeek(daysAgo)) {
+      inactiveIds.add(athleteId);
+    }
+  }
+  return inactiveIds;
+}
+
+function isTodoLinkedToInactiveAthlete(
+  todo: CoachTodo,
+  inactiveAthleteIds: Set<string>,
+) {
+  return Boolean(todo.athlete_id && inactiveAthleteIds.has(todo.athlete_id));
+}
+
 export async function syncProgramAlertTodos(coachId: string, isAdmin = false) {
+  const inactiveIds = await loadInactiveAthleteIds(coachId, isAdmin);
   const alerts = await loadAthletesNeedingNewProgram(coachId, isAdmin);
+  const activeKeys = new Set<string>();
 
   for (const alert of alerts) {
+    if (inactiveIds.has(alert.athleteId)) continue;
     const autoKey = programAlertAutoKey(alert.athleteId, alert.blockId);
+    activeKeys.add(autoKey);
     const title = `Nieuw programma nodig voor ${alert.athleteName}`;
 
     const { data: existing } = await supabase
@@ -75,6 +119,17 @@ export async function syncProgramAlertTodos(coachId: string, isAdmin = false) {
       });
     }
   }
+
+  const { data: programTodos } = await supabase
+    .from("coach_todos")
+    .select("id, auto_key")
+    .eq("coach_id", coachId)
+    .eq("kind", "program_needed");
+
+  for (const todo of programTodos || []) {
+    if (!todo.auto_key || activeKeys.has(todo.auto_key)) continue;
+    await supabase.from("coach_todos").delete().eq("id", todo.id);
+  }
 }
 
 export async function syncCoachTodosInBackground(
@@ -85,6 +140,15 @@ export async function syncCoachTodosInBackground(
   await syncPaymentMissingTodos(coachId, isAdmin);
   await syncAthleteProfileTodos(coachId, isAdmin);
   await syncInactiveAthleteTodos(coachId, isAdmin);
+
+  try {
+    const { syncIntakeCompletedTodosCleanup } = await import("@/lib/coachTodoSync");
+    await syncIntakeCompletedTodosCleanup(coachId, isAdmin);
+    await purgeLowComplianceTodos(coachId);
+  } catch {
+    // Intake / legacy low-compliance cleanup is best-effort.
+  }
+
   await purgeOldCompletedCoachTodos(coachId);
 }
 
@@ -100,8 +164,13 @@ function normalizeCoachTodo(row: CoachTodo): CoachTodo {
 
 export async function loadCoachTodosFast(
   coachId: string,
-  options?: { includeOldCompleted?: boolean },
+  options?: { includeOldCompleted?: boolean; isAdmin?: boolean },
 ) {
+  const inactiveAthleteIds = await loadInactiveAthleteIds(
+    coachId,
+    options?.isAdmin ?? false,
+  );
+
   const { data, error } = await supabase
     .from("coach_todos")
     .select("*")
@@ -113,7 +182,11 @@ export async function loadCoachTodosFast(
     .map(normalizeCoachTodo)
     .filter((todo) =>
       options?.includeOldCompleted ? true : isRecentCompletedTodo(todo),
-    );
+    )
+    .filter(
+      (todo) => !isTodoLinkedToInactiveAthlete(todo, inactiveAthleteIds),
+    )
+    .filter((todo) => !isLowComplianceTodo(todo));
 
   return {
     data: rows,
@@ -127,7 +200,7 @@ export async function loadCoachTodos(
   options?: { includeOldCompleted?: boolean },
 ) {
   await syncCoachTodosInBackground(coachId, isAdmin);
-  return loadCoachTodosFast(coachId, options);
+  return loadCoachTodosFast(coachId, { ...options, isAdmin });
 }
 
 export function paymentTodoAutoKey(athleteId: string) {
@@ -135,9 +208,11 @@ export function paymentTodoAutoKey(athleteId: string) {
 }
 
 export async function syncPaymentMissingTodos(coachId: string, isAdmin = false) {
+  const inactiveIds = await loadInactiveAthleteIds(coachId, isAdmin);
+
   let query = supabase
     .from("profiles")
-    .select("id, full_name, betaling_prijs")
+    .select("id, full_name, betaling_prijs, betaling_dag")
     .eq("role", "atleet");
 
   if (!isAdmin) {
@@ -147,16 +222,24 @@ export async function syncPaymentMissingTodos(coachId: string, isAdmin = false) 
   const { data: athletes } = await query;
 
   for (const athlete of athletes || []) {
-    const missing =
-      athlete.betaling_prijs === null || athlete.betaling_prijs === undefined;
-    const autoKey = paymentTodoAutoKey(athlete.id as string);
+    const athleteId = athlete.id as string;
+    if (inactiveIds.has(athleteId)) continue;
 
-    if (!missing) {
-      await supabase
-        .from("coach_todos")
-        .delete()
-        .eq("coach_id", coachId)
-        .eq("auto_key", autoKey);
+    const price =
+      athlete.betaling_prijs !== null && athlete.betaling_prijs !== undefined
+        ? Number(athlete.betaling_prijs)
+        : null;
+    const day =
+      athlete.betaling_dag !== null && athlete.betaling_dag !== undefined
+        ? Number(athlete.betaling_dag)
+        : null;
+    const autoKey = paymentTodoAutoKey(athleteId);
+    const hasPrice = price !== null && !Number.isNaN(price);
+    const paymentNotApplicable =
+      !hasPrice && (day === null || Number.isNaN(day));
+
+    if (hasPrice || paymentNotApplicable) {
+      await clearAutoTodo(coachId, autoKey);
       continue;
     }
 
@@ -190,6 +273,7 @@ type AthleteProfileRow = {
   full_name: string | null;
   geboortedatum: string | null;
   lidnummer: string | null;
+  betaling_prijs: number | null;
   betaling_dag: number | null;
   coaching_start_date: string | null;
   starting_pr_squat: number | null;
@@ -253,50 +337,70 @@ export function startingPrsTodoAutoKey(athleteId: string) {
   return `starting-prs-missing:${athleteId}`;
 }
 
-export function inactiveAthleteTodoAutoKey(athleteId: string) {
-  return `inactive-athlete:${athleteId}`;
+export async function dismissAthleteAdminTodosAfterSave(
+  coachId: string | undefined,
+  athleteId: string,
+  snapshot: {
+    geboortedatum: string | null;
+    lidnummer: string | null;
+    betalingPrijs: number | null;
+    betalingDag: number | null;
+    paymentMarkedNa?: boolean;
+    lidnummerMarkedNa?: boolean;
+  },
+) {
+  if (!coachId) return;
+
+  const profileComplete =
+    Boolean(snapshot.geboortedatum?.trim()) &&
+    (isOptionalTextFieldComplete(snapshot.lidnummer) ||
+      Boolean(snapshot.lidnummerMarkedNa));
+
+  if (profileComplete) {
+    await clearAutoTodo(coachId, profileFieldsTodoAutoKey(athleteId));
+  }
+
+  const hasPaymentPrice =
+    snapshot.betalingPrijs !== null && !Number.isNaN(snapshot.betalingPrijs);
+  const hasPaymentDay =
+    snapshot.betalingDag !== null && !Number.isNaN(snapshot.betalingDag);
+
+  if (snapshot.paymentMarkedNa) {
+    await clearAutoTodo(coachId, paymentTodoAutoKey(athleteId));
+    await clearAutoTodo(coachId, paymentDayTodoAutoKey(athleteId));
+    return;
+  }
+
+  if (hasPaymentPrice) {
+    await clearAutoTodo(coachId, paymentTodoAutoKey(athleteId));
+  }
+
+  if (hasPaymentPrice && hasPaymentDay) {
+    await clearAutoTodo(coachId, paymentDayTodoAutoKey(athleteId));
+  }
 }
 
-function isAthleteInactiveForWeek(daysAgo: number | null) {
-  return daysAgo === null || daysAgo >= 7;
+export function inactiveAthleteTodoAutoKey(athleteId: string) {
+  return `inactive-athlete:${athleteId}`;
 }
 
 export async function syncInactiveAthleteTodos(
   coachId: string,
   isAdmin = false,
 ) {
-  let query = supabase
-    .from("profiles")
-    .select("id, full_name")
-    .eq("role", "atleet");
+  const inactiveIds = await loadInactiveAthleteIds(coachId, isAdmin);
+  if (inactiveIds.size === 0) return;
 
-  if (!isAdmin) {
-    query = query.eq("coach_id", coachId);
+  for (const athleteId of inactiveIds) {
+    await clearAutoTodo(coachId, inactiveAthleteTodoAutoKey(athleteId));
   }
 
-  const { data: athletes } = await query;
-  const athleteIds = (athletes || []).map((athlete) => athlete.id as string);
-  const activityMap = await loadAthleteLastActivities(athleteIds);
-
-  for (const athlete of athletes || []) {
-    const athleteId = athlete.id as string;
-    const autoKey = inactiveAthleteTodoAutoKey(athleteId);
-    const daysAgo = activityMap.get(athleteId)?.daysAgo ?? null;
-
-    if (!isAthleteInactiveForWeek(daysAgo)) {
-      await clearAutoTodo(coachId, autoKey);
-      continue;
-    }
-
-    const inactivityLabel = formatLastActivityLabel(daysAgo);
-    await upsertAutoTodo(
-      coachId,
-      autoKey,
-      `Inchecken met inactieve atleet: ${athlete.full_name || "atleet"} (${inactivityLabel})`,
-      athleteId,
-      "inactive_athlete",
-    );
-  }
+  await supabase
+    .from("coach_todos")
+    .delete()
+    .eq("coach_id", coachId)
+    .in("athlete_id", Array.from(inactiveIds))
+    .not("auto_key", "is", null);
 }
 
 function isStartingPrsMissing(athlete: AthleteProfileRow) {
@@ -309,10 +413,12 @@ function isStartingPrsMissing(athlete: AthleteProfileRow) {
 }
 
 export async function syncAthleteProfileTodos(coachId: string, isAdmin = false) {
+  const inactiveIds = await loadInactiveAthleteIds(coachId, isAdmin);
+
   let query = supabase
     .from("profiles")
     .select(
-      "id, full_name, geboortedatum, lidnummer, betaling_dag, coaching_start_date, starting_pr_squat, starting_pr_bench, starting_pr_deadlift",
+      "id, full_name, geboortedatum, lidnummer, betaling_prijs, betaling_dag, coaching_start_date, starting_pr_squat, starting_pr_bench, starting_pr_deadlift",
     )
     .eq("role", "atleet");
 
@@ -326,9 +432,15 @@ export async function syncAthleteProfileTodos(coachId: string, isAdmin = false) 
   for (const row of athletes || []) {
     const athlete = row as AthleteProfileRow;
     const athleteId = athlete.id;
+    if (inactiveIds.has(athleteId)) continue;
 
     const paymentDayKey = paymentDayTodoAutoKey(athleteId);
-    if (athlete.betaling_dag === null || athlete.betaling_dag === undefined) {
+    const hasPaymentPrice =
+      athlete.betaling_prijs !== null && athlete.betaling_prijs !== undefined;
+    if (
+      hasPaymentPrice &&
+      (athlete.betaling_dag === null || athlete.betaling_dag === undefined)
+    ) {
       await upsertAutoTodo(
         coachId,
         paymentDayKey,
@@ -342,7 +454,8 @@ export async function syncAthleteProfileTodos(coachId: string, isAdmin = false) 
 
     const profileKey = profileFieldsTodoAutoKey(athleteId);
     const missingProfile =
-      !athlete.geboortedatum?.trim() || !athlete.lidnummer?.trim();
+      !athlete.geboortedatum?.trim() ||
+      !isOptionalTextFieldComplete(athlete.lidnummer);
     if (missingProfile) {
       await upsertAutoTodo(
         coachId,

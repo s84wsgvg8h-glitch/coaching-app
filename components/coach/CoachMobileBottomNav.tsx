@@ -12,6 +12,7 @@ import {
   Video,
 } from "lucide-react";
 import { useAuth } from "@/components/AuthProvider";
+import { useLocale } from "@/components/LocaleProvider";
 import { useCoachNavBadges } from "@/hooks/useCoachNavBadges";
 import { isActiveNavPath } from "@/lib/navigation";
 
@@ -25,6 +26,7 @@ type NavItem = {
 export default function CoachMobileBottomNav() {
   const pathname = usePathname();
   const { userId, role } = useAuth();
+  const { t, locale } = useLocale();
   const badges = useCoachNavBadges(userId, role || "");
 
   const links = useMemo<NavItem[]>(() => {
@@ -33,38 +35,38 @@ export default function CoachMobileBottomNav() {
         ? {
             href: "/video-review",
             icon: Video,
-            title: "Video",
+            title: t("nav.video"),
             badge: badges.videoReview,
           }
         : {
             href: "/programs",
             icon: Dumbbell,
-            title: "Programma",
+            title: t("nav.program"),
           };
 
     return [
-      { href: "/dashboard", icon: Home, title: "Home" },
-      { href: "/athletes", icon: Users, title: "Atleten" },
+      { href: "/dashboard", icon: Home, title: t("nav.home") },
+      { href: "/athletes", icon: Users, title: t("nav.athletes") },
       {
         href: "/chat",
         icon: MessageCircle,
-        title: "Chat",
+        title: t("nav.chat"),
         badge: badges.chat > 0 ? badges.chat : undefined,
       },
       {
         href: "/todo",
         icon: ListChecks,
-        title: "Todo",
+        title: t("nav.todo"),
         badge: badges.todo > 0 ? badges.todo : undefined,
       },
       programSlot,
     ];
-  }, [badges.chat, badges.todo, badges.videoReview]);
+  }, [badges.chat, badges.todo, badges.videoReview, locale, t]);
 
   return (
     <nav
       className="athlete-mobile-tab-bar fixed inset-x-0 bottom-0 z-40 lg:hidden"
-      aria-label="Coach mobiele navigatie"
+      aria-label={t("nav.mobileCoach")}
     >
       <div className="grid grid-cols-5">
         {links.map((item) => {
@@ -77,7 +79,7 @@ export default function CoachMobileBottomNav() {
               href={item.href}
               prefetch
               aria-current={active ? "page" : undefined}
-              className={`app-focus-ring athlete-mobile-tab-bar__item ${
+              className={`athlete-mobile-tab-bar__item ${
                 active ? "is-active" : ""
               }`}
             >

@@ -14,6 +14,7 @@ import {
   formatDutchDateWithFullMonth,
   getBlockEndDateObject as getBlockEndDateObjectValue,
   getBlockStartDateObject as getBlockStartDateObjectValue,
+  buildProgramWeekDayDates,
   getDayDateLabel,
   getDayDateLabelForProgramDay,
   getDayDateInputValue as getProgramDayDateInputValue,
@@ -22,7 +23,7 @@ import {
   getWeekEndDateObject as getWeekEndDateObjectValue,
   getWeekStartDateObject as getWeekStartDateObjectValue,
 } from "@/lib/programWeek/dateFormatting";
-import { parseWeekdayFromDayTitle } from "@/lib/programWeek/weekdayFromTitle";
+import { parseWeekdayFromDayTitle, formatProgramDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 import {
   getCoachExerciseColorClass as getCoachExerciseColorClassValue,
   getDisplayIntensity as getDisplayIntensityValue,
@@ -45,9 +46,25 @@ import type {
   ProgramWeek,
 } from "@/lib/programWeek/types";
 import { insertProgramExerciseForDay } from "@/lib/programExerciseCreate";
+import {
+  offlineBatchUpdateProgramDays,
+  offlineBatchUpdateProgramExercises,
+  offlineDeleteProgramDay,
+  offlineDeleteProgramExercise,
+  offlineInsertProgramDay,
+  offlineUpdateProgramDay,
+  offlineUpdateProgramExercise,
+} from "@/lib/offlineProgramMutation";
 import { supabase } from "@/lib/supabaseClient";
+import { showAppToast } from "@/lib/appToast";
+import {
+  applyExerciseMovePreview,
+  EXERCISE_DROP_EMPTY_DAY,
+  type ExerciseDropIndicator,
+} from "../_utils/programWeekExerciseDrag";
 
 export type UseProgramWeekCoachMutationsOptions = {
+  blockId: string;
   weekId: string;
   days: ProgramDay[];
   setDays: Dispatch<SetStateAction<ProgramDay[]>>;
@@ -55,6 +72,7 @@ export type UseProgramWeekCoachMutationsOptions = {
   setExercisesByDay: Dispatch<SetStateAction<Record<string, ProgramExercise[]>>>;
   currentBlock: ProgramBlock | null;
   week: ProgramWeek | null;
+  blockWeeks: ProgramWeek[];
   athleteCurrentMaxes: import("@/lib/athleteCurrentMaxes").AthleteCurrentMaxes | null;
   showE1rmInline: boolean;
   athleteSetInputs: Record<string, AthleteExerciseSet[]>;
@@ -63,6 +81,7 @@ export type UseProgramWeekCoachMutationsOptions = {
 };
 
 export function useProgramWeekCoachMutations({
+  blockId,
   weekId,
   days,
   setDays,
@@ -70,6 +89,7 @@ export function useProgramWeekCoachMutations({
   setExercisesByDay,
   currentBlock,
   week,
+  blockWeeks,
   athleteCurrentMaxes,
   showE1rmInline,
   athleteSetInputs,
@@ -97,17 +117,15 @@ export function useProgramWeekCoachMutations({
     dayId: string;
     exerciseId: string;
   } | null>(null);
-  const [exerciseDropIndicator, setExerciseDropIndicator] = useState<{
-    dayId: string;
-    targetId: string;
-    position: "before" | "after";
-  } | null>(null);
+  const [exerciseDropIndicator, setExerciseDropIndicator] =
+    useState<ExerciseDropIndicator | null>(null);
   const originalExerciseOrderRef = useRef<string[]>([]);
-  const exerciseDropIndicatorRef = useRef<{
-    dayId: string;
-    targetId: string;
-    position: "before" | "after";
-  } | null>(null);
+  const exerciseDropIndicatorRef = useRef<ExerciseDropIndicator | null>(null);
+  const dragExerciseSnapshotRef = useRef<Record<
+    string,
+    ProgramExercise[]
+  > | null>(null);
+  const draggedExerciseDataRef = useRef<ProgramExercise | null>(null);
 
   const [draggedDayId, setDraggedDayId] = useState("");
   const [dayDropIndicator, setDayDropIndicator] = useState<{
@@ -121,6 +139,7 @@ export function useProgramWeekCoachMutations({
   } | null>(null);
 
   const [uitlegMode, setUitlegMode] = useState(false);
+  const offlineCtx = { blockId, weekId };
 
   async function createDay(dayNumber: number) {
     if (!newDayTitle.trim()) {
@@ -128,13 +147,22 @@ export function useProgramWeekCoachMutations({
       return;
     }
 
-    const { error } = await supabase.from("program_days").insert({
-      title: newDayTitle.trim(),
+    const row = {
+      title: formatProgramDayTitle(newDayTitle.trim()),
       day_number: dayNumber,
       program_week_id: weekId,
       notes: "",
       warmup: "",
-    });
+    };
+
+    const queued = await offlineInsertProgramDay(offlineCtx, row);
+    if (queued) {
+      setNewDayTitle("");
+      setIsCreatingDay(false);
+      return;
+    }
+
+    const { error } = await supabase.from("program_days").insert(row);
 
     if (error) {
       alert(error.message);
@@ -172,13 +200,19 @@ export function useProgramWeekCoachMutations({
     let finalUpdates = { ...updates };
 
     if (updates.title !== undefined) {
+      const formattedTitle = formatProgramDayTitle(updates.title);
+      finalUpdates = { ...finalUpdates, title: formattedTitle };
+      updateDayLocal(dayId, "title", formattedTitle);
+
       const day = days.find((entry) => entry.id === dayId);
-      if (day && parseWeekdayFromDayTitle(updates.title) !== null) {
-        const mergedDay = { ...day, title: updates.title };
+      if (day && parseWeekdayFromDayTitle(formattedTitle) !== null) {
+        const mergedDay = { ...day, title: formattedTitle };
         const scheduledDate = getProgramDayDateInputValue(
           currentBlock,
           week,
           mergedDay,
+          undefined,
+          blockWeeks,
         );
         if (scheduledDate) {
           finalUpdates = { ...finalUpdates, scheduled_date: scheduledDate };
@@ -188,12 +222,7 @@ export function useProgramWeekCoachMutations({
     }
 
     await runSave(async () => {
-      const { error } = await supabase
-        .from("program_days")
-        .update(finalUpdates)
-        .eq("id", dayId);
-
-      if (error) throw error;
+      await offlineUpdateProgramDay(offlineCtx, dayId, finalUpdates);
     });
   }
 
@@ -204,14 +233,7 @@ export function useProgramWeekCoachMutations({
     value: string,
   ) {
     await runSave(async () => {
-      const { error } = await supabase
-        .from("program_days")
-        .update({
-          [field]: value,
-        })
-        .eq("id", dayId);
-
-      if (error) throw error;
+      await offlineUpdateProgramDay(offlineCtx, dayId, { [field]: value });
     });
 
     setOpenDayNoteId("");
@@ -225,14 +247,7 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_days")
-          .update({
-            [field]: "",
-          })
-          .eq("id", dayId);
-
-        if (error) throw error;
+        await offlineUpdateProgramDay(offlineCtx, dayId, { [field]: "" });
       });
     } catch {
       if (previousDay) updateDayLocal(dayId, field, previousDay[field] || "");
@@ -513,14 +528,9 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_exercises")
-          .update({
-            [field]: cleanValue,
-          })
-          .eq("id", exerciseId);
-
-        if (error) throw error;
+        await offlineUpdateProgramExercise(offlineCtx, exerciseId, {
+          [field]: cleanValue,
+        });
       });
     } catch {
       setExercisesByDay(previousExercisesByDay);
@@ -539,7 +549,8 @@ export function useProgramWeekCoachMutations({
     updates: Partial<
       Pick<ProgramExercise, "name" | "sets" | "reps" | "load" | "rpe" | "notes">
     >,
-  ) {
+    options?: { reloadOnError?: boolean },
+  ): Promise<boolean> {
     const cleanUpdates = Object.fromEntries(
       Object.entries(updates).map(([key, value]) => [
         key,
@@ -571,16 +582,15 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_exercises")
-          .update(cleanUpdates)
-          .eq("id", exerciseId);
-
-        if (error) throw error;
+        await offlineUpdateProgramExercise(offlineCtx, exerciseId, cleanUpdates);
       });
+      return true;
     } catch {
       setExercisesByDay(previousExercisesByDay);
-      await loadDays();
+      if (options?.reloadOnError !== false) {
+        await loadDays();
+      }
+      return false;
     }
   }
 
@@ -607,12 +617,7 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_exercises")
-          .update({ priority })
-          .eq("id", exerciseId);
-
-        if (error) throw error;
+        await offlineUpdateProgramExercise(offlineCtx, exerciseId, { priority });
       });
     } catch {
       setExercisesByDay(previousExercisesByDay);
@@ -641,14 +646,7 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_exercises")
-          .update({
-            notes: "",
-          })
-          .eq("id", exerciseId);
-
-        if (error) throw error;
+        await offlineUpdateProgramExercise(offlineCtx, exerciseId, { notes: "" });
       });
     } catch {
       setExercisesByDay(previousExercisesByDay);
@@ -692,15 +690,10 @@ export function useProgramWeekCoachMutations({
 
     try {
       await runSave(async () => {
-        const { error } = await supabase
-          .from("program_exercises")
-          .update({
-            load: newLoad,
-            rpe: newRpe,
-          })
-          .eq("id", exercise.id);
-
-        if (error) throw error;
+        await offlineUpdateProgramExercise(offlineCtx, exercise.id, {
+          load: newLoad,
+          rpe: newRpe,
+        });
       });
     } catch {
       setExercisesByDay(previousExercisesByDay);
@@ -710,13 +703,11 @@ export function useProgramWeekCoachMutations({
 
 
   async function deleteExercise(exerciseId: string) {
-    const { error } = await supabase
-      .from("program_exercises")
-      .delete()
-      .eq("id", exerciseId);
-
-    if (error) {
-      alert(error.message);
+    try {
+      await runSave(async () => {
+        await offlineDeleteProgramExercise(offlineCtx, exerciseId);
+      });
+    } catch {
       return;
     }
 
@@ -725,23 +716,15 @@ export function useProgramWeekCoachMutations({
 
 
   async function deleteDay(dayId: string) {
-    const { error: exerciseError } = await supabase
-      .from("program_exercises")
-      .delete()
-      .eq("program_day_id", dayId);
-
-    if (exerciseError) {
-      alert(exerciseError.message);
-      return;
-    }
-
-    const { error } = await supabase
-      .from("program_days")
-      .delete()
-      .eq("id", dayId);
-
-    if (error) {
-      alert(error.message);
+    try {
+      await runSave(async () => {
+        const dayExerciseIds = (exercisesByDay[dayId] || []).map((item) => item.id);
+        for (const exerciseId of dayExerciseIds) {
+          await offlineDeleteProgramExercise(offlineCtx, exerciseId);
+        }
+        await offlineDeleteProgramDay(offlineCtx, dayId);
+      });
+    } catch {
       return;
     }
 
@@ -896,26 +879,81 @@ export function useProgramWeekCoachMutations({
 
     if (!orderChanged) return;
 
-    const updates = nextDays.map((day, index) =>
-      supabase
-        .from("program_days")
-        .update({
-          day_number: index + 1,
-        })
-        .eq("id", day.id),
+    const dayDates = buildProgramWeekDayDates(
+      currentBlock,
+      week,
+      nextDays,
+      blockWeeks,
     );
+    const nextDaysWithMeta = nextDays.map((day, index) => {
+      const computedDate = dayDates.get(day.id);
+      let scheduled_date = day.scheduled_date ?? null;
 
-    const results = await Promise.all(updates);
-    const failed = results.find((result) => result.error);
+      if (computedDate) {
+        const year = computedDate.getFullYear();
+        const month = String(computedDate.getMonth() + 1).padStart(2, "0");
+        const dayOfMonth = String(computedDate.getDate()).padStart(2, "0");
+        scheduled_date = `${year}-${month}-${dayOfMonth}`;
+      }
 
-    if (failed?.error) {
-      alert(failed.error.message);
+      return {
+        ...day,
+        day_number: index + 1,
+        scheduled_date,
+      };
+    });
+
+    setDays(nextDaysWithMeta);
+
+    try {
+      await runSave(async () => {
+        await offlineBatchUpdateProgramDays(
+          offlineCtx,
+          nextDaysWithMeta.map((day) => ({
+            id: day.id,
+            patch: {
+              day_number: day.day_number,
+              scheduled_date: day.scheduled_date,
+            },
+          })),
+        );
+      });
+    } catch {
       await loadDays();
     }
   }
 
 
+  function clearExerciseDragState() {
+    setDraggedExercise(null);
+    setExerciseDropIndicator(null);
+    exerciseDropIndicatorRef.current = null;
+    draggedExerciseDataRef.current = null;
+    dragExerciseSnapshotRef.current = null;
+  }
+
+  function setExerciseDropIndicatorState(indicator: ExerciseDropIndicator) {
+    const previous = exerciseDropIndicatorRef.current;
+    const indicatorChanged =
+      !previous ||
+      previous.dayId !== indicator.dayId ||
+      previous.targetId !== indicator.targetId ||
+      previous.position !== indicator.position;
+
+    if (!indicatorChanged) return;
+
+    exerciseDropIndicatorRef.current = indicator;
+    setExerciseDropIndicator(indicator);
+  }
+
   function handleExerciseDragStart(dayId: string, exerciseId: string) {
+    const exercise = (exercisesByDay[dayId] || []).find(
+      (item) => item.id === exerciseId,
+    );
+    draggedExerciseDataRef.current = exercise ?? null;
+    dragExerciseSnapshotRef.current = Object.fromEntries(
+      Object.entries(exercisesByDay).map(([id, items]) => [id, [...items]]),
+    );
     setDraggedExercise({ dayId, exerciseId });
     setExerciseDropIndicator(null);
     exerciseDropIndicatorRef.current = null;
@@ -923,7 +961,6 @@ export function useProgramWeekCoachMutations({
       (exercise) => exercise.id,
     );
   }
-
 
   function handleExerciseDragOver(
     e: React.DragEvent<HTMLDivElement>,
@@ -933,27 +970,20 @@ export function useProgramWeekCoachMutations({
     e.preventDefault();
     e.stopPropagation();
 
-    if (
-      !draggedExercise ||
-      draggedExercise.dayId !== dayId ||
-      draggedExercise.exerciseId === targetExerciseId
-    ) {
+    if (!draggedExercise || draggedExercise.exerciseId === targetExerciseId) {
       return;
     }
 
     const rect = e.currentTarget.getBoundingClientRect();
     const position =
       e.clientY < rect.top + rect.height / 2 ? ("before" as const) : ("after" as const);
-    const indicator = {
+
+    setExerciseDropIndicatorState({
       dayId,
       targetId: targetExerciseId,
       position,
-    };
-
-    exerciseDropIndicatorRef.current = indicator;
-    setExerciseDropIndicator(indicator);
+    });
   }
-
 
   function handleExerciseDragOverDay(
     e: React.DragEvent<HTMLDivElement>,
@@ -961,90 +991,135 @@ export function useProgramWeekCoachMutations({
   ) {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!draggedExercise) return;
+
+    const targetExercises = exercisesByDay[dayId] || [];
+    if (targetExercises.length > 0) return;
+
+    setExerciseDropIndicatorState({
+      dayId,
+      targetId: EXERCISE_DROP_EMPTY_DAY,
+      position: "after",
+    });
   }
 
-
-  function reorderExercisesList(
-    sourceExercises: ProgramExercise[],
-    draggedId: string,
-    indicator: { targetId: string; position: "before" | "after" },
+  function handleExerciseDragOverDayTail(
+    e: React.DragEvent<HTMLDivElement>,
+    dayId: string,
   ) {
-    const draggedIndex = sourceExercises.findIndex(
-      (exercise) => exercise.id === draggedId,
-    );
-    let targetIndex = sourceExercises.findIndex(
-      (exercise) => exercise.id === indicator.targetId,
-    );
+    e.preventDefault();
+    e.stopPropagation();
 
-    if (draggedIndex === -1 || targetIndex === -1) return sourceExercises;
+    if (!draggedExercise) return;
 
-    const reorderedExercises = [...sourceExercises];
-    const [movedExercise] = reorderedExercises.splice(draggedIndex, 1);
-
-    if (draggedIndex < targetIndex) {
-      targetIndex -= 1;
-    }
-
-    const insertIndex =
-      indicator.position === "after" ? targetIndex + 1 : targetIndex;
-
-    reorderedExercises.splice(insertIndex, 0, movedExercise);
-
-    return reorderedExercises.map((exercise, index) => ({
-      ...exercise,
-      exercise_number: index + 1,
-    }));
+    setExerciseDropIndicatorState({
+      dayId,
+      targetId: EXERCISE_DROP_EMPTY_DAY,
+      position: "after",
+    });
   }
 
+  async function saveExerciseOrder(_sourceDayId?: string) {
+    if (!draggedExercise) return;
 
-  async function saveExerciseOrder(dayId: string) {
-    if (!draggedExercise || draggedExercise.dayId !== dayId) return;
+    const dragged = draggedExercise;
+    const indicator = exerciseDropIndicatorRef.current;
+    const snapshot = dragExerciseSnapshotRef.current;
+    const originalSourceOrder = [...originalExerciseOrderRef.current];
+    const draggedExerciseObj = draggedExerciseDataRef.current;
 
-    const originalOrder = originalExerciseOrderRef.current;
-    const indicator =
-      exerciseDropIndicatorRef.current?.dayId === dayId
-        ? exerciseDropIndicatorRef.current
-        : null;
-    const currentExercises = exercisesByDay[dayId] || [];
-    let nextExercises = currentExercises;
+    clearExerciseDragState();
 
-    if (indicator) {
-      nextExercises = reorderExercisesList(
-        currentExercises,
-        draggedExercise.exerciseId,
-        indicator,
-      );
-      setExercisesByDay((current) => ({
-        ...current,
-        [dayId]: nextExercises,
-      }));
+    if (!indicator || !draggedExerciseObj) {
+      if (snapshot) {
+        setExercisesByDay(snapshot);
+      }
+      return;
     }
 
-    setDraggedExercise(null);
-    setExerciseDropIndicator(null);
-    exerciseDropIndicatorRef.current = null;
-
-    const currentOrder = nextExercises.map((exercise) => exercise.id);
-    const orderChanged =
-      currentOrder.length !== originalOrder.length ||
-      currentOrder.some((id, index) => id !== originalOrder[index]);
-
-    if (!orderChanged) return;
-
-    const updates = nextExercises.map((exercise, index) =>
-      supabase
-        .from("program_exercises")
-        .update({
-          exercise_number: index + 1,
-        })
-        .eq("id", exercise.id),
+    const sourceDayId = dragged.dayId;
+    const targetDayId = indicator.dayId;
+    const isCrossDay = sourceDayId !== targetDayId;
+    const baseState = snapshot ?? exercisesByDay;
+    const nextExercisesByDay = applyExerciseMovePreview(
+      baseState,
+      dragged,
+      indicator,
+      draggedExerciseObj,
     );
 
-    const results = await Promise.all(updates);
-    const failed = results.find((result) => result.error);
+    setExercisesByDay(nextExercisesByDay);
 
-    if (failed?.error) {
-      alert(failed.error.message);
+    const sourceExercises = nextExercisesByDay[sourceDayId] || [];
+    const targetExercises = nextExercisesByDay[targetDayId] || [];
+    const sourceOrder = sourceExercises.map((exercise) => exercise.id);
+    const sourceOrderChanged =
+      sourceOrder.length !== originalSourceOrder.length ||
+      sourceOrder.some((id, index) => id !== originalSourceOrder[index]);
+
+    if (!isCrossDay && !sourceOrderChanged) {
+      return;
+    }
+
+    const batchUpdates: Array<{ id: string; patch: Record<string, unknown> }> =
+      [];
+
+    if (isCrossDay) {
+      const movedIndex = targetExercises.findIndex(
+        (exercise) => exercise.id === dragged.exerciseId,
+      );
+
+      if (movedIndex === -1) {
+        if (snapshot) {
+          setExercisesByDay(snapshot);
+        }
+        return;
+      }
+
+      batchUpdates.push({
+        id: dragged.exerciseId,
+        patch: {
+          program_day_id: targetDayId,
+          exercise_number: movedIndex + 1,
+        },
+      });
+
+      sourceExercises.forEach((exercise, index) => {
+        batchUpdates.push({
+          id: exercise.id,
+          patch: { exercise_number: index + 1 },
+        });
+      });
+
+      targetExercises.forEach((exercise, index) => {
+        if (exercise.id === dragged.exerciseId) return;
+        batchUpdates.push({
+          id: exercise.id,
+          patch: { exercise_number: index + 1 },
+        });
+      });
+    } else {
+      targetExercises.forEach((exercise, index) => {
+        batchUpdates.push({
+          id: exercise.id,
+          patch: { exercise_number: index + 1 },
+        });
+      });
+    }
+
+    try {
+      await runSave(async () => {
+        await offlineBatchUpdateProgramExercises(offlineCtx, batchUpdates);
+      });
+
+      if (isCrossDay) {
+        showAppToast("Oefening verplaatst naar andere dag");
+      }
+    } catch {
+      if (snapshot) {
+        setExercisesByDay(snapshot);
+      }
       await loadDays();
     }
   }
@@ -1114,26 +1189,49 @@ export function useProgramWeekCoachMutations({
   }
 
 
+  function getOrderedWeekDays() {
+    return [...days].sort((a, b) => a.day_number - b.day_number);
+  }
+
+
   function getDayDateObject(day: ProgramDay | number) {
     if (typeof day === "number") {
-      return getProgramDayDateObject(currentBlock, week, day);
+      return getProgramDayDateObject(currentBlock, week, day, blockWeeks);
     }
 
-    return getDayDateForProgramDay(currentBlock, week, day);
+    return getDayDateForProgramDay(
+      currentBlock,
+      week,
+      day,
+      getOrderedWeekDays(),
+      blockWeeks,
+    );
   }
 
 
   function getDayDate(day: ProgramDay | number) {
     if (typeof day === "number") {
-      return getDayDateLabel(currentBlock, week, day);
+      return getDayDateLabel(currentBlock, week, day, blockWeeks);
     }
 
-    return getDayDateLabelForProgramDay(currentBlock, week, day);
+    return getDayDateLabelForProgramDay(
+      currentBlock,
+      week,
+      day,
+      getOrderedWeekDays(),
+      blockWeeks,
+    );
   }
 
 
   function getDayDateInputValue(day: ProgramDay) {
-    return getProgramDayDateInputValue(currentBlock, week, day);
+    return getProgramDayDateInputValue(
+      currentBlock,
+      week,
+      day,
+      getOrderedWeekDays(),
+      blockWeeks,
+    );
   }
 
 
@@ -1144,61 +1242,15 @@ export function useProgramWeekCoachMutations({
   }
 
 
-  function formatShortDutchDate(date: Date) {
-    const day = String(date.getDate()).padStart(2, "0");
-    const month = String(date.getMonth() + 1).padStart(2, "0");
-    return `${day}-${month}`;
-  }
-
-
-  function getBlockStartDateObject(block: ProgramBlock) {
-    if (!block.start_date) return null;
-
-    const date = new Date(block.start_date);
-    date.setHours(0, 0, 0, 0);
-    return date;
-  }
-
-
-  function getBlockEndDateObject(block: ProgramBlock, blockWeeks: ProgramWeek[]) {
-    const start = getBlockStartDateObject(block);
-    if (!start) return null;
-
-    const weekCount = Math.max(blockWeeks.length, 1);
-    const end = new Date(start);
-    end.setDate(end.getDate() + weekCount * 7 - 1);
-    return end;
-  }
-
-
+  const getBlockStartDateObject = getBlockStartDateObjectValue;
+  const getBlockEndDateObject = getBlockEndDateObjectValue;
   function getWeekStartDateObject(block: ProgramBlock, programWeek: ProgramWeek) {
-    const start = getBlockStartDateObject(block);
-    if (!start) return null;
-
-    const weekStart = new Date(start);
-    weekStart.setDate(weekStart.getDate() + (programWeek.week_number - 1) * 7);
-    return weekStart;
+    return getWeekStartDateObjectValue(block, programWeek, blockWeeks);
   }
-
-
   function getWeekEndDateObject(block: ProgramBlock, programWeek: ProgramWeek) {
-    const weekStart = getWeekStartDateObject(block, programWeek);
-    if (!weekStart) return null;
-
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    return weekEnd;
+    return getWeekEndDateObjectValue(block, programWeek, blockWeeks);
   }
-
-
-  function formatDateRangeLabel(
-    start: Date | null,
-    end: Date | null,
-    fallback = "Geen datum",
-  ) {
-    if (!start || !end) return fallback;
-    return `${formatShortDutchDate(start)} - ${formatShortDutchDate(end)}`;
-  }
+  const formatDateRangeLabel = formatDateRangeLabelValue;
 
 
   function hasExercises(dayId: string) {
@@ -1514,6 +1566,7 @@ export function useProgramWeekCoachMutations({
     handleExerciseDragStart,
     handleExerciseDragOver,
     handleExerciseDragOverDay,
+    handleExerciseDragOverDayTail,
     saveExerciseOrder,
     handleNewExerciseFormKeyDown,
     getDayDate,

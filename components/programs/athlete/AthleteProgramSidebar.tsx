@@ -1,7 +1,8 @@
 "use client";
 
-import { Calendar, ChevronDown, ChevronRight, StickyNote } from "lucide-react";
+import { Calendar, ChevronDown, ChevronRight, Plus, StickyNote } from "lucide-react";
 import ProgramNavSidebarRail from "@/components/programs/ProgramNavSidebarRail";
+import { formatProgramDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 
 export type AthleteProgramSidebarBlock = {
   id: string;
@@ -50,10 +51,7 @@ export default function AthleteProgramSidebar({
 
       <div className="program-nav-sidebar-flyout athlete-program-sidebar-flyout">
         <div className="athlete-program-sidebar-header">
-          <h2 className="text-[17px] font-semibold text-app-text">Programma</h2>
-          <p className="mt-0.5 text-[12px] text-app-muted">
-            Macrocycles, blocks en weken
-          </p>
+          <h2 className="text-[17px] font-semibold text-app-text">Planning</h2>
         </div>
 
         <div className="athlete-program-sidebar-tree">
@@ -121,38 +119,57 @@ export function AthleteProgramDayHeader({
   hasNote = false,
   notesOpen = false,
   onToggleNotes,
+  onAddExercise,
+  showAddExercise = false,
 }: {
   title: string;
   dateLabel: string;
   hasNote?: boolean;
   notesOpen?: boolean;
   onToggleNotes?: () => void;
+  onAddExercise?: () => void;
+  showAddExercise?: boolean;
 }) {
   return (
     <div className="athlete-program-day-header">
       <div className="min-w-0">
-        <h2 className="text-[15px] font-semibold text-app-text">{title}</h2>
+        <h2 className="text-[15px] font-semibold text-app-text">
+          {formatProgramDayTitle(title)}
+        </h2>
         <p className="text-[12px] text-app-muted">{dateLabel}</p>
       </div>
-      {onToggleNotes ? (
-        <button
-          type="button"
-          onClick={onToggleNotes}
-          aria-pressed={notesOpen}
-          aria-label="Notitie voor deze dag"
-          title="Notitie"
-          className={`athlete-program-note-icon ${hasNote ? "has-note" : ""} ${
-            notesOpen ? "is-open" : ""
-          }`}
-        >
-          <StickyNote className="h-3.5 w-3.5" aria-hidden="true" />
-        </button>
-      ) : (
-        <Calendar
-          className="h-4 w-4 shrink-0 text-app-muted"
-          aria-hidden="true"
-        />
-      )}
+      <div className="athlete-program-day-header-actions">
+        {showAddExercise && onAddExercise ? (
+          <button
+            type="button"
+            onClick={onAddExercise}
+            aria-label="Extra oefening toevoegen"
+            title="Extra oefening"
+            className="athlete-program-note-icon athlete-program-add-icon"
+          >
+            <Plus className="h-4 w-4" aria-hidden="true" />
+          </button>
+        ) : null}
+        {onToggleNotes ? (
+          <button
+            type="button"
+            onClick={onToggleNotes}
+            aria-pressed={notesOpen}
+            aria-label="Notitie voor deze dag"
+            title="Notitie"
+            className={`athlete-program-note-icon ${hasNote ? "has-note" : ""} ${
+              notesOpen ? "is-open" : ""
+            }`}
+          >
+            <StickyNote className="h-3.5 w-3.5" aria-hidden="true" />
+          </button>
+        ) : (
+          <Calendar
+            className="h-4 w-4 shrink-0 text-app-muted"
+            aria-hidden="true"
+          />
+        )}
+      </div>
     </div>
   );
 }

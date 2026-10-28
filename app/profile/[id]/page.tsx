@@ -14,7 +14,7 @@ import {
   SlidersHorizontal,
 } from "lucide-react";
 import { getRealSupabase } from "@/lib/supabaseClient";
-import { loadAuthenticatedProfile } from "@/lib/profileAuth";
+import { useAuth } from "@/components/AuthProvider";
 import AppShell from "@/components/AppShell";
 import AthleteProfileSection from "@/components/AthleteProfileSection";
 import BodyAreaDiagram from "@/components/BodyAreaDiagram";
@@ -70,29 +70,43 @@ function UserProfilePageContent() {
   const [blockIntakeWizard, setBlockIntakeWizard] =
     useState<BlockIntakeWizard | null>(null);
 
-  async function loadProfile() {
-    setLoading(true);
+  const { userId: authUserId, role: authRole, loading: authLoading } = useAuth();
 
-    const client = getRealSupabase();
-    const {
-      data: { user },
-    } = await client.auth.getUser();
+  useEffect(() => {
+    if (authLoading) return;
 
-    if (!user) {
+    if (!authUserId) {
       window.location.href = "/login";
       return;
     }
 
-    const viewerProfile = await loadAuthenticatedProfile(user.id);
+    setViewerId(authUserId);
+    setViewerRole(authRole || "");
+  }, [authLoading, authUserId, authRole]);
 
-    setViewerId(user.id);
-    setViewerRole(viewerProfile?.role || "");
+  async function loadProfile() {
+    if (authLoading || !authUserId) return;
 
-    const { data, error } = await client
-      .from("profiles")
-      .select("id, full_name, role, lidnummer, geboortedatum, goals_text")
-      .eq("id", profileId)
-      .maybeSingle();
+    setLoading(true);
+    setViewerId(authUserId);
+    setViewerRole(authRole || "");
+
+    const client = getRealSupabase();
+
+    const [{ data, error }, { data: wizard }] = await Promise.all([
+      client
+        .from("profiles")
+        .select("id, full_name, role, lidnummer, geboortedatum, goals_text")
+        .eq("id", profileId)
+        .maybeSingle(),
+      client
+        .from("block_intake_wizard")
+        .select("*")
+        .eq("athlete_id", profileId)
+        .order("created_at", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
 
     if (error || !data) {
       setProfile(null);
@@ -101,15 +115,6 @@ function UserProfilePageContent() {
     }
 
     setProfile(data);
-
-    const { data: wizard } = await client
-      .from("block_intake_wizard")
-      .select("*")
-      .eq("athlete_id", profileId)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle();
-
     setBlockIntakeWizard((wizard as BlockIntakeWizard) || null);
     setLoading(false);
   }
@@ -118,7 +123,7 @@ function UserProfilePageContent() {
     deferEffectUpdate(() => {
       void loadProfile();
     });
-  }, [profileId]);
+  }, [profileId, authUserId, authRole, authLoading]);
 
   const roleLabel =
     profile?.role === "coach"
@@ -187,7 +192,7 @@ function UserProfilePageContent() {
 
   if (loading) {
     return (
-      <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+      <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
         <div className="mx-auto max-w-6xl">
           <SkeletonCard />
         </div>
@@ -197,7 +202,7 @@ function UserProfilePageContent() {
 
   if (!profile) {
     return (
-      <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+      <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
         <div className="profile-section-card mx-auto max-w-lg text-center">
           <p className="text-sm text-app-muted">Profiel niet gevonden.</p>
         </div>
@@ -206,7 +211,7 @@ function UserProfilePageContent() {
   }
 
   return (
-    <AppShell contentClassName="flex-1 p-4 pb-16 md:p-6 lg:px-8">
+    <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
       <ProfileSettingsLayout
         fullWidth
         title={pageTitle}
@@ -230,6 +235,7 @@ function UserProfilePageContent() {
         {activeSection === "athlete" && profile.role === "atleet" && (
           <AthleteProfileSection
             athleteId={profile.id}
+            coachId={viewerId}
             canEdit={canEdit}
             canEditStartingPrs={canEditAthleteAdminFields}
             canEditCompetitions={canEditAthleteAdminFields}
@@ -266,7 +272,7 @@ function UserProfilePageContent() {
         )}
 
         {activeSection === "intake" && profile.role === "atleet" && (
-          <IntakeAnswersSection athleteId={profile.id} collapsible />
+          <IntakeAnswersSection athleteId={profile.id} coachId={viewerId} collapsible />
         )}
 
         {activeSection === "coach-notes" &&

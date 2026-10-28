@@ -443,6 +443,7 @@ html.dark .program-week-shell select {
 .program-mobile-week-nav--athlete-compact {
   border-bottom: 1px solid var(--app-surface-hover);
   background: rgba(8, 8, 10, 0.94);
+  padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
 }
 
 .program-mobile-week-nav-back {
@@ -482,6 +483,19 @@ html.dark .program-week-shell select {
 @media (max-width: 1023px) {
   .athlete-program-shell {
     min-height: 100dvh;
+  }
+
+  /* Standalone program week (no AppShell header): nav is the safe-area anchor. */
+  .athlete-program-shell:not(.mobile-page-shell) .program-mobile-week-nav {
+    position: sticky;
+    top: 0;
+    z-index: 25;
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
+    background: rgba(8, 8, 10, 0.96);
+  }
+
+  html.capacitor-native .athlete-program-shell:not(.mobile-page-shell) .program-mobile-week-nav {
+    padding-top: max(0.375rem, env(safe-area-inset-top, 0px));
   }
 
   .athlete-program-shell > main {
@@ -620,10 +634,13 @@ html.dark .program-week-shell select {
 @media (max-width: 1023px) {
   .athlete-program-shell {
     padding-top: 0 !important;
-    min-height: 100dvh;
+    min-height: 0 !important;
+    height: 100%;
+    flex: 1 1 auto;
   }
 
-  .athlete-program-shell > .athlete-program-main-scroll {
+  .athlete-program-shell > .athlete-program-main-scroll,
+  .athlete-program-shell > main.athlete-program-main-scroll {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
@@ -681,6 +698,15 @@ html.dark .program-week-shell select {
     visibility: hidden;
     pointer-events: none;
   }
+
+  .athlete-program-shell--fill-open .mobile-page-shell__body--scroll,
+  .athlete-program-shell--fill-open .athlete-program-main-scroll,
+  .athlete-program-shell--fill-open > main.athlete-program-main-scroll,
+  .athlete-program-shell--fill-open .athlete-program-days-grid {
+    overflow: hidden !important;
+    overscroll-behavior: none;
+    touch-action: none;
+  }
 }
 
 .program-mobile-week-nav-menu {
@@ -690,9 +716,102 @@ html.dark .program-week-shell select {
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
 }
 
+.program-mobile-week-nav-menu--wide {
+  max-height: min(24rem, 62dvh) !important;
+}
+
 .program-mobile-week-nav-menu-item {
   color: var(--app-text);
   min-height: 44px;
+}
+
+.program-mobile-week-nav-menu-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.45rem 0.2rem 0.2rem;
+  min-height: 44px;
+}
+
+.program-mobile-week-nav-menu-row.is-active {
+  background: rgba(59, 130, 246, 0.14);
+}
+
+.program-mobile-week-nav-menu-row-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.05rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  padding: 0.45rem 0.55rem;
+  border-radius: 0.75rem;
+  min-height: 44px;
+}
+
+.program-mobile-week-nav-menu-row-main:active {
+  background: var(--app-surface-hover);
+}
+
+.program-mobile-week-nav-menu-row-actions {
+  display: flex;
+  shrink: 0;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.program-mobile-week-nav-menu-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
+  color: var(--app-text);
+  font-size: 0.75rem;
+  line-height: 1;
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.program-mobile-week-nav-menu-action:active {
+  background: var(--app-surface-hover);
+}
+
+.program-mobile-week-nav-menu-action--delete {
+  width: 2rem;
+  height: 2rem;
+}
+
+.program-mobile-week-nav-menu-row-actions .h-7.w-7 {
+  width: 2.75rem;
+  height: 2.75rem;
+  font-size: 0.6875rem;
+}
+
+.program-mobile-week-nav-menu-add-week {
+  display: flex;
+  width: calc(100% - 0.75rem);
+  margin: 0.35rem 0.375rem 0.45rem;
+  min-height: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.85rem;
+  border: 2px dashed var(--app-border-strong);
+  background: transparent;
+  color: var(--app-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.program-mobile-week-nav-menu-add-week:active {
+  border-color: rgba(59, 130, 246, 0.45);
+  color: var(--app-text);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .program-mobile-week-nav-menu-item:hover,
@@ -802,6 +921,31 @@ html.dark .program-week-shell select {
   justify-content: space-between;
   gap: 8px;
   padding: 2px 2px 4px;
+}
+
+.athlete-program-day-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.athlete-program-day-header-actions .athlete-program-note-icon {
+  height: 44px;
+  width: 44px;
+  border-radius: 12px;
+}
+
+.athlete-program-add-icon {
+  border-color: rgba(59, 130, 246, 0.28);
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+}
+
+.athlete-program-add-icon:hover {
+  background: rgba(59, 130, 246, 0.2);
+  border-color: rgba(59, 130, 246, 0.4);
+  color: #bfdbfe;
 }
 
 .athlete-program-checkin {
@@ -955,6 +1099,12 @@ html.dark .program-week-shell select {
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.12);
 }
 
+.athlete-program-exercise.is-extra {
+  border-style: dashed;
+  border-color: rgba(147, 197, 253, 0.35);
+  background: rgba(59, 130, 246, 0.06);
+}
+
 .athlete-program-exercise-play {
   display: flex;
   height: 40px;
@@ -978,6 +1128,74 @@ html.dark .program-week-shell select {
   text-align: left;
 }
 
+.athlete-program-exercise-delete {
+  display: flex;
+  height: 22px;
+  width: 22px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  border-radius: 6px;
+  border: 1px solid rgba(248, 113, 113, 0.28);
+  background: rgba(248, 113, 113, 0.08);
+  color: #fca5a5;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.athlete-program-exercise-delete:hover {
+  border-color: rgba(248, 113, 113, 0.45);
+  background: rgba(248, 113, 113, 0.14);
+}
+
+.athlete-program-exercise-delete:disabled {
+  opacity: 0.55;
+}
+
+@media (max-width: 1023px) {
+  .athlete-extra-exercise-modal-root {
+    overscroll-behavior: none;
+    align-items: flex-end;
+    transition: padding-bottom var(--keyboard-transition-duration, 0.25s)
+      var(--keyboard-transition-easing, cubic-bezier(0.17, 0.59, 0.4, 0.99));
+  }
+
+  html[data-keyboard-open="true"] .athlete-extra-exercise-modal-root {
+    padding-bottom: var(--keyboard-inset, 0px);
+  }
+
+  .athlete-extra-exercise-modal {
+    max-height: min(
+      88dvh,
+      calc(100dvh - env(safe-area-inset-top, 0px) - 0.5rem)
+    );
+  }
+
+  html[data-keyboard-open="true"] .athlete-extra-exercise-modal {
+    max-height: min(
+      88dvh,
+      calc(
+        100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) - 0.5rem
+      )
+    );
+  }
+
+  .athlete-extra-exercise-modal-body {
+    touch-action: pan-y;
+    scroll-padding-bottom: calc(var(--keyboard-inset, 0px) + 1.5rem);
+  }
+}
+
+.athlete-program-exercise-name {
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
 .athlete-program-badge {
   display: inline-flex;
   align-items: center;
@@ -992,6 +1210,35 @@ html.dark .program-week-shell select {
 .athlete-program-badge--uitleg {
   background: var(--app-surface-hover);
   color: var(--app-text-muted);
+}
+
+.athlete-program-badge--extra {
+  background: rgba(59, 130, 246, 0.18);
+  color: #93c5fd;
+}
+
+.athlete-program-badge--variation,
+.coach-program-exercise-variation-badge {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  background: rgba(139, 92, 246, 0.18);
+  color: #c4b5fd;
+  white-space: nowrap;
+}
+
+.coach-program-exercise-variation-badge {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.coach-program-exercise-title-row {
+  flex-wrap: wrap;
 }
 
 .athlete-program-badge--priority.priority-tertiary {
@@ -1245,8 +1492,19 @@ html.dark .program-week-shell select {
 }
 
 .coach-program-sidebar-add-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #3b82f6, #2563eb);
   box-shadow: 0 4px 14px rgba(59, 130, 246, 0.25);
+  width: 2.25rem;
+  height: 2.25rem;
+  min-width: 2.25rem;
+  max-width: 2.25rem;
+  padding: 0;
+  border-radius: 9999px;
+  flex-shrink: 0;
+  line-height: 0;
 }
 
 .coach-program-sidebar-flyout .absolute.right-0.top-full {
@@ -1302,7 +1560,7 @@ html.dark .program-week-shell select {
 }
 
 .coach-program-sidebar-week {
-  border: 1px solid transparent;
+  border: 1px solid rgba(255, 255, 255, 0.16) !important;
   background: transparent !important;
   color: var(--app-text-muted) !important;
   transition:
@@ -1313,6 +1571,7 @@ html.dark .program-week-shell select {
 }
 
 .coach-program-sidebar-week:hover {
+  border-color: rgba(255, 255, 255, 0.24) !important;
   background: var(--app-surface-muted) !important;
   color: var(--app-text) !important;
 }
@@ -1332,6 +1591,30 @@ html.dark .program-week-shell select {
 .coach-program-sidebar-week.is-active .bg-white {
   background: rgba(255, 255, 255, 0.12) !important;
   color: white !important;
+}
+
+.coach-program-sidebar-week[draggable="true"] {
+  cursor: grab;
+  touch-action: none;
+}
+
+.coach-program-sidebar-week[draggable="true"]:active {
+  cursor: grabbing;
+}
+
+.coach-program-sidebar-week--dragging {
+  opacity: 0.45;
+}
+
+.coach-program-sidebar-week-drop-line {
+  height: 3px;
+  margin: 2px 0;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  box-shadow:
+    0 0 0 1px rgba(59, 130, 246, 0.35),
+    0 4px 14px rgba(59, 130, 246, 0.45);
+  pointer-events: none;
 }
 
 .coach-program-sidebar-add-week {
@@ -1357,10 +1640,331 @@ html.dark .program-week-shell select {
   background: var(--app-bg);
 }
 
+@media (max-width: 1023px) {
+  .coach-program-shell:not(.coach-program-shell--raw-view) {
+    min-height: 0 !important;
+    height: 100%;
+    flex: 1 1 auto;
+  }
+
+  .coach-program-shell:not(.coach-program-shell--raw-view) > .coach-program-main-scroll,
+  .coach-program-shell:not(.coach-program-shell--raw-view) > main.coach-program-main-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+    padding-bottom: var(--mobile-content-bottom-reserve);
+  }
+
+  .coach-program-content {
+    overflow: visible;
+    flex: none;
+  }
+
+  .coach-program-main {
+    overflow: visible;
+    container-type: inline-size;
+    container-name: coach-program-main;
+  }
+
+  .coach-program-days-grid {
+    --coach-day-card-width: calc((100cqw - 8px) / 2.15);
+    margin-inline: 0;
+    gap: 4px;
+    align-items: start;
+    overflow-x: auto;
+    overflow-y: visible;
+    padding-bottom: 4px;
+    padding-inline: 4px;
+    scroll-padding-inline: 4px;
+    scroll-snap-type: x mandatory;
+    overscroll-behavior-x: contain;
+  }
+
+  .coach-program-day-column {
+    gap: 2px;
+    overflow: visible;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
+  }
+
+  .coach-program-days-grid:has(.coach-program-day-column:only-child) {
+    --coach-day-card-width: min(280px, calc(100cqw - 2rem));
+    padding-inline: calc((100cqw - var(--coach-day-card-width)) / 2);
+    scroll-padding-inline: calc((100cqw - var(--coach-day-card-width)) / 2);
+  }
+
+  .coach-program-days-grid:has(.coach-program-day-column:only-child)
+    .coach-program-day-column {
+    scroll-snap-align: center;
+  }
+
+  .coach-program-day-card {
+    padding: 3px;
+    min-height: 0 !important;
+  }
+
+  .coach-program-day-header {
+    padding-bottom: 0;
+  }
+
+  .coach-program-day-header-row-inner {
+    align-items: stretch;
+    gap: 4px;
+  }
+
+  .coach-program-day-pill-title,
+  .coach-program-day-pill-date {
+    display: flex;
+    align-items: center;
+    height: 20px;
+    min-height: 20px;
+    max-height: 20px;
+    padding: 0 3px;
+    line-height: 1;
+    box-sizing: border-box;
+  }
+
+  .coach-program-day-chips {
+    margin-bottom: 3px;
+    gap: 2px;
+  }
+
+  .coach-program-shell .coach-exercise-block {
+    padding: 1px 1px 1px 3px;
+  }
+
+  .coach-program-exercise-name {
+    min-height: 10px;
+    font-size: 7px;
+    line-height: 1;
+  }
+
+  .coach-program-exercise-name-wrap {
+    min-height: 10px;
+  }
+
+  .coach-program-field {
+    height: 13px;
+    font-size: 6px;
+    border-radius: 4px;
+  }
+
+  .coach-program-exercise-head {
+    margin-bottom: 0;
+    padding-right: 0.375rem;
+    padding-left: 0;
+  }
+
+  .coach-program-exercise-fields {
+    gap: 1px;
+    margin-top: 0;
+  }
+
+  .coach-program-field-label {
+    font-size: 4.5px;
+    margin-bottom: 0;
+    letter-spacing: 0.01em;
+    line-height: 1;
+  }
+
+  .coach-program-day-pill-title {
+    font-size: 8px;
+  }
+
+  .coach-program-day-pill-date {
+    flex-basis: 2.35rem;
+    width: 2.35rem;
+    min-width: 2.35rem;
+    max-width: 2.35rem;
+    font-size: 8px;
+    padding-inline: 2px;
+  }
+
+  .coach-program-shell .program-day-chip {
+    min-height: 11px;
+    padding: 0 2px;
+    font-size: 0.3125rem;
+  }
+
+  .coach-program-exercise-title-row .program-day-chip {
+    min-height: 9px;
+    font-size: 0.25rem;
+  }
+
+  .coach-program-add-exercise-btn {
+    padding: 2px 0;
+    font-size: 0.75rem;
+  }
+
+  .coach-program-day-header-row {
+    gap: 2px;
+  }
+
+  .coach-program-day-header-row .coach-program-drag-handle {
+    margin-top: 2px;
+    transform: scale(0.75);
+    transform-origin: top left;
+  }
+
+  .coach-program-card-dismiss,
+  .coach-program-exercise-dup-btn {
+    transform: scale(0.72);
+  }
+
+  .coach-program-exercise-row {
+    gap: 1px;
+  }
+
+  .coach-program-icon-btn {
+    height: 22px;
+    width: 22px;
+    font-size: 10px;
+  }
+
+  .coach-program-priority-select,
+  .coach-program-exercise-priority-sub {
+    display: none;
+  }
+
+  .coach-program-exercise-title-row {
+    gap: 2px;
+  }
+
+  .program-mobile-week-nav--coach-compact {
+    margin-bottom: 0.5rem;
+    flex-shrink: 0;
+    overflow: visible;
+  }
+
+  .program-mobile-week-nav-toolbar {
+    overflow: visible;
+  }
+
+  .program-mobile-week-nav-add-btn {
+    display: inline-flex;
+    height: 34px;
+    width: 34px;
+    min-height: 34px;
+    min-width: 34px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 999px;
+    border: 1px dashed rgba(255, 255, 255, 0.18);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 1.125rem;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--app-text-muted);
+    transition: transform 0.15s ease, background 0.15s ease;
+  }
+
+  .program-mobile-week-nav-add-btn:active {
+    transform: scale(0.95);
+  }
+
+  .program-mobile-week-nav-view-select {
+    width: auto;
+    min-width: 4.5rem;
+    max-width: 5.25rem;
+    height: 34px;
+    min-height: 34px;
+    flex-shrink: 0;
+  }
+
+  .program-mobile-week-nav-view-select .coach-program-editor-view-select-input {
+    font-size: 0.75rem;
+    padding: 0 1.2rem 0 0.45rem;
+  }
+
+  .program-mobile-week-nav--dark .program-week-add-menu-dropdown {
+    border-color: rgba(255, 255, 255, 0.12);
+    background: var(--app-surface);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+  }
+
+  .program-mobile-week-nav--dark .program-week-add-menu-dropdown button {
+    color: var(--app-text) !important;
+  }
+
+  .program-mobile-week-nav--dark .program-week-add-menu-dropdown button:hover {
+    background: var(--app-surface-hover) !important;
+  }
+
+  .coach-program-editor-view-toggle {
+    display: none !important;
+  }
+
+  .coach-program-week-header-wrap {
+    margin-bottom: 0.75rem;
+  }
+
+  .coach-program-week-header-bar {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .coach-program-week-header-trailing {
+    width: auto;
+    flex: 1 1 auto;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+
+  .coach-program-week-header-center {
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: visible;
+  }
+
+  .coach-program-week-header-tools {
+    width: auto;
+    flex: 0 0 auto;
+    flex-wrap: nowrap;
+    margin-left: 0;
+  }
+
+  .coach-program-week-stats-footer {
+    flex-shrink: 0;
+    margin-top: 0.75rem;
+    padding-top: 0.625rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .coach-program-week-stats-footer .coach-program-sbd-summary {
+    width: 100%;
+    max-width: none;
+    height: auto;
+    min-height: 36px;
+    padding: 8px 10px;
+  }
+
+  .coach-program-week-stats-footer .coach-program-sbd-summary-inline {
+    width: 100%;
+    text-align: center;
+    white-space: normal;
+    font-size: 10px;
+    line-height: 1.35;
+  }
+}
+
 .coach-program-shell--raw-view,
 .coach-program-shell--raw-view .coach-program-main--raw {
   min-height: 0;
   background: #06080d;
+}
+
+.coach-program-shell--raw-view .mobile-ptr-content {
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .coach-program-shell--raw-view .coach-program-content--raw-view {
@@ -1775,6 +2379,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-days-grid {
+  --coach-day-card-width: min(280px, calc(100vw - 5rem));
   display: flex;
   flex-wrap: nowrap;
   gap: 12px;
@@ -1797,9 +2402,9 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-day-column {
   display: flex;
-  flex: 0 0 min(280px, calc(100vw - 5rem));
-  min-width: 240px;
-  max-width: 300px;
+  flex: 0 0 var(--coach-day-card-width);
+  min-width: var(--coach-day-card-width);
+  max-width: var(--coach-day-card-width);
   flex-direction: column;
   gap: 8px;
   scroll-snap-align: start;
@@ -1808,6 +2413,32 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
     transform 0.45s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.35s ease,
     filter 0.35s ease;
+}
+
+.coach-program-add-day-column {
+  display: flex;
+  flex: 0 0 var(--coach-day-card-width);
+  min-width: var(--coach-day-card-width);
+  max-width: var(--coach-day-card-width);
+  flex-direction: column;
+  gap: 8px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
+}
+
+.coach-program-add-day-header-spacer {
+  flex-shrink: 0;
+  pointer-events: none;
+  user-select: none;
+}
+
+.coach-program-add-day-column .coach-program-add-day,
+.coach-program-add-day-column .coach-program-add-day-form {
+  flex: 0 0 auto;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  align-self: stretch;
 }
 
 .coach-program-drop-line {
@@ -1859,12 +2490,9 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 @media (min-width: 1024px) {
   .coach-program-days-grid {
+    --coach-day-card-width: 260px;
     margin-inline: 0;
     padding-inline: 0;
-  }
-
-  .coach-program-day-column {
-    flex-basis: 260px;
   }
 }
 
@@ -2060,7 +2688,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 .coach-program-inline-form-actions {
   display: flex;
   gap: 8px;
-  margin-top: 10px;
+  margin-top: 0;
 }
 
 .coach-program-exercise-row {
@@ -2108,12 +2736,20 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-day-header {
-  padding: 0 0 8px;
+  padding: 0;
+}
+
+.coach-program-day-header-row {
+  align-items: flex-start;
+}
+
+.coach-program-day-header-row .coach-program-drag-handle {
+  margin-top: 5px;
 }
 
 .coach-program-day-header-row-inner {
   display: flex;
-  align-items: center;
+  align-items: stretch;
   justify-content: space-between;
   gap: 8px;
   min-width: 0;
@@ -2135,8 +2771,9 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-day-date {
   flex-shrink: 0;
-  font-size: 11px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.25;
   color: var(--app-text-muted);
 }
 
@@ -2164,17 +2801,22 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   font-size: 14px;
   font-weight: 700;
   line-height: 1.25;
+  box-sizing: border-box;
 }
 
 .coach-program-day-pill-date {
-  flex-shrink: 0;
-  width: auto;
-  min-width: 7.5rem;
-  padding: 6px 8px;
-  font-size: 11px;
+  flex: 0 0 4.35rem;
+  width: 4.35rem;
+  min-width: 4.35rem;
+  max-width: 4.35rem;
+  padding: 6px 4px;
+  font-size: 14px;
   font-weight: 500;
+  line-height: 1.25;
   color: var(--app-text-muted);
   color-scheme: dark;
+  box-sizing: border-box;
+  text-align: center;
 }
 
 .coach-program-card-dismiss {
@@ -2227,7 +2869,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   min-height: 24px;
   border: none;
   background: transparent;
-  padding: 0 0 0 4px;
+  padding: 0 8px 0 10px;
   font-size: 12px;
   font-weight: 700;
   color: var(--app-text);
@@ -2513,6 +3155,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   min-width: 240px;
   max-width: 300px;
   min-height: 420px;
+  align-self: flex-start;
   flex-direction: column;
   align-items: center;
   justify-content: center;
@@ -2608,7 +3251,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   flex: 0 0 min(280px, calc(100vw - 5rem));
   min-width: 240px;
   max-width: 300px;
-  min-height: 230px;
+  align-self: flex-start;
   scroll-snap-align: start;
   border-radius: var(--coach-program-radius);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -2616,8 +3259,8 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   padding: 16px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
-  gap: 16px;
+  justify-content: flex-start;
+  gap: 12px;
 }
 
 .coach-program-scope-notes {
@@ -2739,7 +3382,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   font-size: 1.25rem;
   font-weight: 700;
   color: var(--app-text);
-  margin-bottom: 0.75rem;
+  margin: 0 0 0.5rem;
 }
 
 .coach-program-week-header-wrap .coach-program-sbd-summary {
@@ -2748,23 +3391,24 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 @media (max-width: 767px) {
-  .coach-program-day-pill {
-    min-height: 44px;
-    padding-block: 10px;
+  .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-day-pill {
+    min-height: 20px;
+    height: 20px;
+    padding-block: 0;
   }
 
-  .coach-program-shell .program-day-chip {
-    min-height: 32px;
-    padding-block: 6px;
+  .coach-program-shell:not(.coach-program-shell--raw-view) .program-day-chip {
+    min-height: 11px;
+    padding-block: 0;
   }
 
-  .coach-program-field {
-    height: 36px;
+  .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-field {
+    height: 13px;
   }
 
-  .coach-program-icon-btn {
-    height: 32px;
-    width: 32px;
+  .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-icon-btn {
+    height: 22px;
+    width: 22px;
   }
 }
 
@@ -2821,9 +3465,10 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 /* ─── Athlete exercise fill-in panel ─── */
 .athlete-exercise-panel-root {
-  overflow-x: hidden;
-  overscroll-behavior: contain;
+  overflow: hidden;
+  overscroll-behavior: none;
   z-index: 50;
+  touch-action: none;
 }
 
 .athlete-exercise-panel-dismiss-handle {
@@ -2847,6 +3492,28 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   background: var(--app-surface);
   color: var(--app-text);
   box-shadow: 0 -12px 48px rgba(0, 0, 0, 0.55);
+  touch-action: pan-y;
+}
+
+@media (max-width: 1023px) {
+  .athlete-exercise-panel {
+    height: min(78dvh, calc(100dvh - env(safe-area-inset-bottom) - 0.5rem));
+    transition:
+      bottom var(--keyboard-transition-duration, 0.25s)
+        var(--keyboard-transition-easing, cubic-bezier(0.17, 0.59, 0.4, 0.99)),
+      height var(--keyboard-transition-duration, 0.25s)
+        var(--keyboard-transition-easing, cubic-bezier(0.17, 0.59, 0.4, 0.99));
+  }
+
+  html[data-keyboard-open="true"] .athlete-exercise-panel {
+    bottom: var(--keyboard-inset, 0px);
+    height: min(
+      78dvh,
+      calc(
+        100dvh - var(--keyboard-inset, 0px) - env(safe-area-inset-top, 0px) - 0.5rem
+      )
+    );
+  }
 }
 
 @media (min-width: 1024px) {
@@ -2869,6 +3536,10 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .athlete-exercise-panel-body {
   padding: 0 16px max(1rem, env(safe-area-inset-bottom));
+  touch-action: pan-y;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  scroll-padding-bottom: calc(var(--keyboard-inset, 0px) + 1.5rem);
 }
 
 @media (min-width: 768px) {
@@ -2975,6 +3646,33 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   font-weight: 700;
   color: var(--app-text);
   transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+.athlete-exercise-panel-rename {
+  display: flex;
+  height: 44px;
+  width: 44px;
+  min-width: 44px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--app-surface-muted);
+  color: var(--app-text-muted);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.athlete-exercise-panel-rename:hover {
+  background: var(--app-surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--app-text);
+}
+
+.athlete-exercise-panel-rename:disabled {
+  opacity: 0.55;
 }
 
 .athlete-exercise-panel-close:hover {
@@ -3456,6 +4154,10 @@ html:not(.dark) .coach-program-day-card {
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
 }
 
+html:not(.dark) .coach-program-sidebar-week:not(.is-active) {
+  border-color: rgba(148, 163, 184, 0.55) !important;
+}
+
 html:not(.dark) .coach-program-sidebar-week.is-active {
   border-color: rgba(59, 130, 246, 0.45) !important;
   background: linear-gradient(
@@ -3547,14 +4249,13 @@ html:not(.dark) .coach-program-sidebar-flyout .absolute.right-0.top-full {
   }
 
   .coach-program-week-header-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 12px;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
   }
 
   .coach-program-week-header-leading {
-    width: 100%;
-    flex-wrap: wrap;
+    display: none;
   }
 
   .coach-program-athlete-switcher {
@@ -3563,22 +4264,26 @@ html:not(.dark) .coach-program-sidebar-flyout .absolute.right-0.top-full {
   }
 
   .coach-program-week-header-trailing {
-    width: 100%;
+    width: auto;
+    flex: 1 1 auto;
     margin-left: 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .coach-program-week-header-center {
-    width: 100%;
+    width: auto;
+    flex: 1 1 auto;
+    min-width: 0;
     justify-content: flex-start;
-    flex-wrap: wrap;
-    overflow-x: auto;
+    flex-wrap: nowrap;
+    overflow: visible;
   }
 
   .coach-program-week-header-tools {
-    width: 100%;
+    width: auto;
+    flex: 0 0 auto;
     margin-left: 0;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
   }
 
   .coach-program-sbd-summary {
@@ -3945,7 +4650,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  min-height: 0;
+  min-height: 12rem;
   overflow-x: scroll;
   overflow-y: auto;
   max-height: none;
@@ -3958,6 +4663,30 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   touch-action: pan-x pan-y;
   scrollbar-width: thin;
   scrollbar-color: rgba(59, 130, 246, 0.45) transparent;
+}
+
+.coach-program-raw-empty {
+  display: flex;
+  min-height: 12rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 2rem 1rem;
+  text-align: center;
+}
+
+.coach-program-raw-empty-title {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--app-text);
+}
+
+.coach-program-raw-empty-desc {
+  max-width: 22rem;
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--app-text-muted);
 }
 
 .coach-program-raw-scroll::-webkit-scrollbar {
@@ -4509,6 +5238,12 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   display: none;
 }
 
+@media (min-width: 1024px) {
+  .coach-program-editor-view-toggle {
+    display: inline-flex !important;
+  }
+}
+
 .coach-program-editor-view-toggle button {
   display: inline-flex;
   align-items: center;
@@ -4534,6 +5269,46 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   background: var(--raw-toggle-active-bg);
   color: var(--raw-toggle-active-text);
   box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+}
+
+.coach-program-editor-view-select {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  min-width: 8.5rem;
+  height: var(--coach-program-header-control-height);
+}
+
+.coach-program-editor-view-select-input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  appearance: none;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0 1.75rem 0 0.75rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--app-text);
+  cursor: pointer;
+}
+
+.coach-program-editor-view-select-chevron {
+  position: absolute;
+  right: 0.65rem;
+  top: 50%;
+  width: 1rem;
+  height: 1rem;
+  pointer-events: none;
+  color: var(--app-text-muted);
+  transform: translateY(-50%);
+}
+
+html:not(.dark) .coach-program-editor-view-select-input {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface);
+  color: var(--app-text);
 }
 
 /* Light mode — raw editor */
@@ -4650,12 +5425,132 @@ html:not(.dark) .coach-program-editor-view-toggle {
     padding-inline: 0.5rem;
     font-size: 0.6875rem;
   }
+
+  .coach-program-editor-view-select {
+    min-height: 34px;
+    height: 34px;
+    max-width: 6.5rem;
+  }
+
+  .coach-program-editor-view-select-input {
+    font-size: 0.75rem;
+  }
 }
 
 /* ── Coach block progression view ── */
 
 .coach-program-progression-shell {
   min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-height: 0;
+}
+
+.coach-program-progression-compare-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.coach-program-progression-compare-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.coach-program-progression-compare-select {
+  min-height: 2.75rem;
+  min-width: min(100%, 12rem);
+  padding: 0.45rem 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--coach-program-radius);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 1rem;
+  color: var(--app-text);
+}
+
+.coach-program-progression-split {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 0;
+  min-height: 0;
+}
+
+.coach-program-progression-split.is-compare {
+  flex-direction: column;
+}
+
+@media (min-width: 1024px) {
+  .coach-program-progression-split.is-compare {
+    flex-direction: row;
+    align-items: stretch;
+  }
+
+  .coach-program-progression-split.is-compare .coach-program-progression-panel {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: 50%;
+  }
+}
+
+.coach-program-progression-panel {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+.coach-program-progression-panel.is-active-panel {
+  outline: 1px solid rgba(111, 168, 220, 0.22);
+  outline-offset: 2px;
+  border-radius: 16px;
+}
+
+.coach-program-progression-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.coach-program-progression-header-actions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.coach-program-progression-close-compare {
+  min-height: 2.75rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--coach-program-radius);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+  cursor: pointer;
+}
+
+.coach-program-progression-close-compare:hover {
+  color: var(--app-text);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.coach-program-progression-toggle-divider {
+  width: 1px;
+  height: 1.5rem;
+  margin-inline: 0.15rem;
+  background: rgba(255, 255, 255, 0.14);
+  flex-shrink: 0;
 }
 
 .coach-program-progression-header {
@@ -4734,6 +5629,29 @@ html:not(.dark) .coach-program-editor-view-toggle {
   background: rgba(252, 211, 77, 0.1);
 }
 
+.coach-program-progression-toggle.is-active.is-squat {
+  border-color: rgba(111, 168, 220, 0.45);
+  background: rgba(111, 168, 220, 0.14);
+  color: #dbeafe;
+}
+
+.coach-program-progression-toggle.is-active.is-bench {
+  border-color: rgba(159, 197, 232, 0.45);
+  background: rgba(159, 197, 232, 0.12);
+  color: #e0f2fe;
+}
+
+.coach-program-progression-toggle.is-active.is-deadlift {
+  border-color: rgba(207, 226, 243, 0.4);
+  background: rgba(207, 226, 243, 0.1);
+  color: #ecfeff;
+}
+
+.coach-program-progression-toggle.is-active.is-overig {
+  border-color: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.07);
+}
+
 .coach-program-progression-toggle-box {
   display: inline-flex;
   width: 1rem;
@@ -4754,9 +5672,21 @@ html:not(.dark) .coach-program-editor-view-toggle {
 .coach-program-progression-table-wrap {
   overflow: auto;
   max-height: calc(100dvh - 14rem);
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 16px;
   background: rgba(255, 255, 255, 0.02);
+}
+
+.coach-program-progression-shell.is-compare-open .coach-program-progression-table-wrap {
+  max-height: min(70dvh, calc(100dvh - 16rem));
+}
+
+@media (min-width: 1024px) {
+  .coach-program-progression-shell.is-compare-open .coach-program-progression-table-wrap {
+    max-height: calc(100dvh - 15rem);
+  }
 }
 
 .coach-program-progression-grid {
@@ -4934,4 +5864,353 @@ html:not(.dark) .coach-program-editor-view-toggle {
   padding: 0.55rem;
   font-size: 0.75rem;
   color: var(--app-text-muted);
+}
+
+.coach-program-progression-cell-readonly {
+  display: block;
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.75rem;
+  line-height: 1.35;
+  white-space: pre-wrap;
+  color: var(--app-text);
+}
+
+.coach-program-progression-load-coach.is-not-done {
+  text-decoration: line-through;
+  text-decoration-thickness: 1px;
+  opacity: 0.58;
+}
+
+.coach-program-progression-load-sep {
+  opacity: 0.45;
+  padding: 0 0.12rem;
+}
+
+.coach-program-progression-load-athlete {
+  font-weight: 650;
+  color: rgb(96 165 250);
+}
+
+html:not(.dark) .coach-program-progression-load-athlete {
+  color: rgb(37 99 235);
+}
+
+.coach-program-progression-cell.is-readonly.is-selected {
+  box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+/* Compare view — mini week preview */
+.coach-program-compare-root {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.coach-program-compare-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  box-sizing: border-box;
+  min-width: var(--coach-program-header-control-height);
+  min-height: var(--coach-program-header-control-height);
+  height: var(--coach-program-header-control-height);
+  padding: 0 0.75rem;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--app-text-muted);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.coach-program-compare-trigger:hover,
+.coach-program-compare-trigger.is-active {
+  border-color: rgba(59, 130, 246, 0.45);
+  background: rgba(59, 130, 246, 0.12);
+  color: var(--app-text);
+}
+
+.coach-program-compare-trigger-label {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  .coach-program-compare-trigger-label {
+    display: inline;
+  }
+}
+
+.coach-program-compare-panel {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 4.5rem);
+  right: max(0.75rem, env(safe-area-inset-right, 0px));
+  z-index: 70;
+  display: flex;
+  width: min(
+    max(26rem, calc(var(--compare-day-count, 4) * 5.75rem + 1.5rem)),
+    calc(100vw - 1.5rem)
+  );
+  max-height: min(78dvh, 36rem);
+  flex-direction: column;
+  gap: 0.65rem;
+  border-radius: calc(var(--coach-program-radius) + 2px);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(12, 12, 14, 0.98);
+  padding: 0.75rem;
+  box-shadow:
+    0 18px 48px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+@media (min-width: 1024px) {
+  .coach-program-compare-panel {
+    width: min(
+      max(32rem, calc(var(--compare-day-count, 4) * 6.25rem + 1.75rem)),
+      calc(100vw - 2rem)
+    );
+  }
+}
+
+@media (max-width: 767px) {
+  .coach-program-compare-panel {
+    left: max(0.5rem, env(safe-area-inset-left, 0px));
+    right: max(0.5rem, env(safe-area-inset-right, 0px));
+    width: auto;
+    max-width: none;
+  }
+}
+
+.coach-program-compare-panel-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+}
+
+.coach-program-compare-panel-kicker {
+  margin: 0;
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgb(96 165 250);
+}
+
+.coach-program-compare-panel-title {
+  margin: 0.15rem 0 0;
+  font-size: 0.875rem;
+  font-weight: 650;
+  line-height: 1.25;
+  color: var(--app-text);
+}
+
+.coach-program-compare-close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  min-width: 2rem;
+  height: 2rem;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--app-text-muted);
+}
+
+.coach-program-compare-pickers {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+}
+
+@media (min-width: 420px) {
+  .coach-program-compare-pickers {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.coach-program-compare-field {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--app-text-muted);
+}
+
+.coach-program-compare-select {
+  width: 100%;
+  min-width: 0;
+  min-height: 2.25rem;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(0, 0, 0, 0.35);
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  color: var(--app-text);
+  color-scheme: dark;
+}
+
+.coach-program-compare-preview-wrap {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.coach-program-compare-status {
+  padding: 1rem 0.75rem;
+  font-size: 0.8125rem;
+  color: var(--app-text-muted);
+  text-align: center;
+}
+
+.coach-program-compare-status--error {
+  color: rgb(248 113 113);
+}
+
+.coach-program-compare-open-week {
+  display: inline-flex;
+  width: 100%;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  min-height: 2.25rem;
+  border-radius: var(--coach-program-radius);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  background: rgba(59, 130, 246, 0.12);
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(147 197 253);
+}
+
+.coach-program-week-mini-preview {
+  max-height: 18rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.coach-program-week-mini-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--compare-day-count, 4), minmax(0, 1fr));
+  gap: 0.4rem;
+  padding: 0.45rem;
+  min-width: 0;
+}
+
+.coach-program-week-mini-day {
+  min-width: 0;
+}
+
+.coach-program-week-mini-day-header {
+  margin-bottom: 0.25rem;
+}
+
+.coach-program-week-mini-day-title {
+  margin: 0;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--app-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.coach-program-week-mini-day-date {
+  margin: 0.1rem 0 0;
+  font-size: 0.55rem;
+  color: var(--app-text-muted);
+}
+
+.coach-program-week-mini-day-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  border-radius: calc(var(--coach-program-radius) - 2px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.25rem;
+  min-height: 4.5rem;
+}
+
+.coach-program-week-mini-exercise {
+  border-radius: calc(var(--coach-program-radius) - 4px);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(0, 0, 0, 0.22);
+  padding: 0.2rem 0.25rem;
+}
+
+.coach-program-week-mini-exercise-name {
+  margin: 0;
+  font-size: 0.58rem;
+  font-weight: 650;
+  line-height: 1.15;
+  color: var(--app-text);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.coach-program-week-mini-exercise-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.1rem;
+  margin-top: 0.15rem;
+  font-size: 0.5rem;
+  color: var(--app-text-muted);
+  text-align: center;
+}
+
+.coach-program-week-mini-exercise-grid span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.coach-program-week-mini-empty-day,
+.coach-program-week-mini-preview-empty {
+  padding: 0.75rem;
+  font-size: 0.75rem;
+  color: var(--app-text-muted);
+  text-align: center;
+}
+
+.program-mobile-week-nav-compare .coach-program-compare-trigger {
+  min-width: 2.75rem;
+  padding: 0 0.55rem;
+}
+
+html:not(.dark) .coach-program-compare-trigger {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-muted);
+}
+
+html:not(.dark) .coach-program-compare-panel {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface);
+  box-shadow: 0 18px 48px rgba(15, 23, 42, 0.12);
+}
+
+html:not(.dark) .coach-program-compare-select {
+  border-color: var(--app-border-strong);
+  background: var(--app-input-bg);
+  color-scheme: light;
+}
+
+html:not(.dark) .coach-program-week-mini-day-card,
+html:not(.dark) .coach-program-week-mini-exercise {
+  border-color: var(--app-border-strong);
+  background: var(--app-surface-muted);
 }

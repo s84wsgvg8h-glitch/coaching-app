@@ -51,6 +51,8 @@ import {
   type CellRef,
   type ColKey,
 } from "./rawEditorCellUtils";
+import { isAthleteExtraExercise } from "@/lib/athleteExtraExercise";
+import { isAthleteChoiceExercise } from "@/lib/athleteExerciseVariation";
 
 type RawExerciseSeed = Partial<
   Pick<
@@ -113,6 +115,11 @@ export type RawProgramEditorProps = {
   duplicateExerciseRow: (
     dayId: string,
     exerciseId: string,
+  ) => void | Promise<void>;
+  onToggleAthleteVariationMode?: (
+    exerciseId: string,
+    enabled: boolean,
+    baseName?: string,
   ) => void | Promise<void>;
 };
 
@@ -284,6 +291,7 @@ const RawProgramEditor = forwardRef<RawProgramEditorHandle, RawProgramEditorProp
   insertExerciseFromRaw,
   applyRawClipboardPaste,
   duplicateExerciseRow,
+  onToggleAthleteVariationMode,
 }: RawProgramEditorProps,
   ref,
 ) {
@@ -2188,6 +2196,15 @@ const RawProgramEditor = forwardRef<RawProgramEditorHandle, RawProgramEditorProp
       </div>
 
       <div className="coach-program-raw-scroll" ref={gridRef}>
+        {days.length === 0 ? (
+          <div className="coach-program-raw-empty">
+            <p className="coach-program-raw-empty-title">Geen trainingdagen</p>
+            <p className="coach-program-raw-empty-desc">
+              Voeg dagen toe via Card View, of plak oefeningen hier zodra er dagen
+              zijn.
+            </p>
+          </div>
+        ) : null}
         <div className="coach-program-raw-sheet">
           {days.map((day) => (
             <div key={day.id} className="coach-program-raw-day-block">
@@ -2253,19 +2270,52 @@ const RawProgramEditor = forwardRef<RawProgramEditorHandle, RawProgramEditorProp
           role="menu"
         >
           {contextMenu.exerciseId ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                void duplicateExerciseRow(
-                  contextMenu.dayId,
-                  contextMenu.exerciseId!,
-                );
-                setContextMenu(null);
-              }}
-            >
-              Dupliceer rij
-            </button>
+            <>
+              {onToggleAthleteVariationMode ? (
+                (() => {
+                  const menuExercise = getExerciseAt(
+                    contextMenu.dayId,
+                    contextMenu.rowIndex,
+                  );
+                  if (!menuExercise || isAthleteExtraExercise(menuExercise)) {
+                    return null;
+                  }
+
+                  return (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      onClick={() => {
+                        const enabled = !isAthleteChoiceExercise(menuExercise);
+                        void onToggleAthleteVariationMode(
+                          menuExercise.id,
+                          enabled,
+                          menuExercise.name?.trim() || undefined,
+                        );
+                        setContextMenu(null);
+                      }}
+                    >
+                      {isAthleteChoiceExercise(menuExercise)
+                        ? "Variatie-modus uitzetten"
+                        : "Atleet kiest variatie"}
+                    </button>
+                  );
+                })()
+              ) : null}
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  void duplicateExerciseRow(
+                    contextMenu.dayId,
+                    contextMenu.exerciseId!,
+                  );
+                  setContextMenu(null);
+                }}
+              >
+                Dupliceer rij
+              </button>
+            </>
           ) : null}
           <button
             type="button"

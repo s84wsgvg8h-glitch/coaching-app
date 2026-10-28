@@ -1,0 +1,556 @@
+/* ─── Unified mobile dashboard (athlete + coach) ───
+   Shared spacing, panel surfaces, and topbar greeting. */
+
+@media (max-width: 1023px) {
+  :root {
+    --dashboard-mobile-widget-gap: 10px;
+    --dashboard-mobile-metrics-gap: 12px;
+    --dashboard-mobile-panel-radius: 22px;
+    --dashboard-mobile-panel-padding: 16px;
+    --dashboard-mobile-panel-surface: #121820;
+    --dashboard-mobile-panel-border: rgba(255, 255, 255, 0.045);
+  }
+
+  html:not(.dark) {
+    --dashboard-mobile-panel-surface: var(--app-surface);
+    --dashboard-mobile-panel-border: var(--app-border);
+  }
+
+  /* ── Topbar: compact greeting + transparent bar ── */
+  .shell-topbar-dashboard-greeting {
+    min-width: 0;
+    padding-top: 4px;
+    padding-bottom: 2px;
+  }
+
+  .shell-topbar-dashboard-greeting-title {
+    font-size: 1.125rem;
+    font-weight: 600;
+    letter-spacing: -0.025em;
+    line-height: 1.25;
+    color: var(--app-text);
+  }
+
+  .shell-topbar--athlete-dashboard,
+  .shell-topbar--coach-dashboard,
+  .shell-topbar--athlete-dashboard.shell-topbar--scroll-with-content,
+  .shell-topbar--coach-dashboard.shell-topbar--scroll-with-content {
+    border-bottom: none;
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .app-shell--athlete-dashboard-mobile .shell-topbar--athlete-dashboard .shell-topbar-inner {
+    align-items: center;
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+
+  .app-shell--coach-dashboard-mobile .shell-topbar--coach-dashboard .shell-topbar-inner {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding-top: 4px;
+    padding-bottom: 8px;
+  }
+
+  .app-shell--coach-dashboard-mobile .shell-topbar--coach-dashboard .shell-topbar-leading {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .app-shell--coach-dashboard-mobile .shell-topbar--coach-dashboard .shell-topbar-actions {
+    flex-shrink: 0;
+    margin-left: auto;
+  }
+
+  .app-shell--coach-dashboard-mobile .shell-topbar--coach-dashboard .shell-topbar-search-center,
+  .app-shell--coach-dashboard-mobile .shell-topbar--coach-dashboard .shell-topbar-search-mobile {
+    display: none !important;
+  }
+
+  .app-shell--coach-dashboard-mobile
+    .shell-topbar--coach-dashboard
+    .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar
+    .shell-topbar-action-copy {
+    display: none;
+  }
+
+  .app-shell--coach-dashboard-mobile .shell-topbar-dashboard-greeting {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+
+  /* Coach mobile home: widgets live on other tabs — keep dashboard empty */
+  .app-shell--coach-dashboard-mobile .coach-dashboard-desktop-only {
+    display: none !important;
+  }
+
+  /* Hide duplicate in-page coach greeting — topbar owns it on mobile */
+  .dashboard-greeting-header--mobile-only {
+    display: none !important;
+  }
+
+  /* ── Page content: no extra top offset ── */
+  .dashboard-page-content {
+    padding-top: 0 !important;
+  }
+
+  .app-shell--coach-dashboard-mobile .dashboard-page-content {
+    display: flex;
+    min-height: 0;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+
+  .app-shell--coach-dashboard-mobile
+    .mobile-page-shell__body--scroll:has(.coach-mobile-dashboard-search--active),
+  .app-shell--coach-dashboard-mobile
+    .mobile-page-shell__body--scroll:has(.coach-mobile-dashboard-search-field:focus-within) {
+    overflow: hidden !important;
+    scroll-padding-bottom: 0 !important;
+  }
+
+  .coach-mobile-dashboard-search--active,
+  .coach-mobile-dashboard-search:has(.coach-mobile-dashboard-search-field:focus-within) {
+    min-height: auto;
+    align-items: flex-start;
+    padding-top: 0.75rem;
+  }
+
+  /* ── Coach cockpit spacing ── */
+  .dashboard-cockpit {
+    gap: var(--dashboard-mobile-widget-gap);
+  }
+
+  .dashboard-cockpit-main,
+  .dashboard-cockpit-bottom,
+  .dashboard-cockpit-bottom-primary,
+  .dashboard-cockpit-secondary {
+    gap: var(--dashboard-mobile-widget-gap);
+  }
+
+  .dashboard-kpi-row {
+    gap: var(--dashboard-mobile-metrics-gap);
+  }
+
+  /* ── Coach KPI cards → athlete panel look ── */
+  .premium-coach-dashboard .dashboard-kpi-card--v2 {
+    min-height: 118px;
+    border-radius: var(--dashboard-mobile-panel-radius);
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: var(--dashboard-mobile-panel-surface);
+    box-shadow: none;
+  }
+
+  .premium-coach-dashboard .dashboard-kpi-card--v2:hover {
+    transform: none;
+    box-shadow: none;
+  }
+
+  .premium-coach-dashboard .dashboard-kpi-card--v2 .dashboard-kpi-inner {
+    padding: var(--dashboard-mobile-panel-padding);
+  }
+
+  /* ── Coach widget panels → flat athlete panels ── */
+  .premium-coach-dashboard .premium-card,
+  .premium-coach-dashboard .glass-accent-card,
+  .premium-coach-dashboard .dashboard-focus-panel,
+  .premium-coach-dashboard .ui-panel,
+  .premium-coach-dashboard .ui-panel-compact,
+  .premium-coach-dashboard .dashboard-panel,
+  .premium-coach-dashboard .coach-attention-panel,
+  .premium-coach-dashboard .dashboard-cockpit-retention-panel {
+    border-radius: var(--dashboard-mobile-panel-radius) !important;
+    border: 1px solid var(--dashboard-mobile-panel-border) !important;
+    background: var(--dashboard-mobile-panel-surface) !important;
+    box-shadow: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  .premium-coach-dashboard .premium-card::before,
+  .premium-coach-dashboard .glass-accent-card::before {
+    display: none !important;
+  }
+
+  .premium-coach-dashboard .dashboard-focus-panel,
+  .premium-coach-dashboard .ui-panel,
+  .premium-coach-dashboard .ui-panel-compact,
+  .premium-coach-dashboard .dashboard-panel,
+  .premium-coach-dashboard .coach-attention-panel,
+  .premium-coach-dashboard .dashboard-cockpit-retention-panel {
+    padding: var(--dashboard-mobile-panel-padding);
+  }
+
+  .premium-coach-dashboard .dashboard-focus-panel-header {
+    margin-bottom: 0.75rem;
+  }
+
+  /* Athlete dashboard: align gap tokens */
+  .athlete-dashboard--mobile-fit .athlete-dashboard-mobile-column,
+  .athlete-dashboard--mobile-fit .athlete-dashboard-mobile-primary {
+    gap: var(--dashboard-mobile-widget-gap);
+  }
+
+  .athlete-dashboard-bento,
+  .athlete-dashboard-bento-metrics {
+    gap: var(--dashboard-mobile-metrics-gap);
+  }
+
+  /* Coach mobile home search */
+  .coach-mobile-dashboard-search {
+    display: flex;
+    width: 100%;
+    min-height: auto;
+    flex: 1 1 auto;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 0.75rem 0.25rem 1rem;
+  }
+
+  .coach-mobile-dashboard-search-card {
+    width: 100%;
+    max-width: 22rem;
+    margin-inline: auto;
+  }
+
+  .coach-mobile-dashboard-search-input-wrap {
+    position: relative;
+    z-index: 2;
+  }
+
+  .coach-mobile-dashboard-search-card .app-search-field,
+  .coach-mobile-dashboard-search-field.app-search-field {
+    min-height: 52px;
+    border-radius: 16px;
+    border: 1px solid var(--dashboard-mobile-panel-border) !important;
+    background: var(--dashboard-mobile-panel-surface);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .coach-mobile-dashboard-search-card .app-search-field:focus-within,
+  .coach-mobile-dashboard-search-field.app-search-field:focus-within {
+    border-color: rgba(79, 140, 255, 0.45) !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  }
+
+  .coach-mobile-dashboard-search-field.app-search-field .app-search-input,
+  .coach-mobile-dashboard-search-field.app-search-field .app-search-input:focus,
+  .coach-mobile-dashboard-search-field.app-search-field .app-search-input:focus-visible,
+  html.dark
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input,
+  html.dark
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input:focus,
+  html.dark
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+
+  .coach-mobile-dashboard-search-shortcuts {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 0.625rem;
+  }
+
+  .coach-mobile-dashboard-search-shortcut {
+    display: inline-flex;
+    min-height: 34px;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.35rem;
+    border-radius: 16px;
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: var(--dashboard-mobile-panel-surface);
+    padding: 0.3rem 0.6rem;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--app-text);
+    white-space: nowrap;
+    transition:
+      border-color 0.15s ease,
+      background 0.15s ease;
+  }
+
+  .coach-mobile-dashboard-search-shortcut.is-active,
+  .coach-mobile-dashboard-search-shortcut:active {
+    border-color: rgba(59, 130, 246, 0.35);
+    background: var(--app-accent-muted);
+  }
+
+  .coach-mobile-dashboard-search-dropdown {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    left: 0;
+    z-index: 5;
+    max-height: min(40vh, 280px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: var(--dashboard-mobile-panel-surface);
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.22);
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--fixed {
+    position: fixed;
+    top: auto;
+    right: auto;
+    left: auto;
+    z-index: 70;
+    max-height: none;
+    transform: none;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--athlete-picker {
+    border-radius: 12px;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--athlete-picker
+    li:first-child
+    .coach-mobile-dashboard-search-item {
+    border-top: none;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--athlete-picker
+    .coach-mobile-dashboard-search-item--compact {
+    min-height: 36px;
+    padding: 0.28rem 0.6rem;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--athlete-picker
+    .coach-mobile-dashboard-search-item-label {
+    font-size: 13px;
+    font-weight: 500;
+    line-height: 1.2;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--athlete-picker
+    .coach-mobile-dashboard-search-empty {
+    padding: 0.65rem 0.6rem;
+    font-size: 12px;
+  }
+
+  .coach-mobile-dashboard-search-group {
+    padding: 0.65rem 0.85rem 0.25rem;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--app-text-subtle);
+  }
+
+  .coach-mobile-dashboard-search-item {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.1rem;
+    padding: 0.65rem 0.85rem;
+    text-align: left;
+    border-top: 1px solid rgba(255, 255, 255, 0.04);
+  }
+
+  .coach-mobile-dashboard-search-item--compact {
+    min-height: 44px;
+    flex-direction: row;
+    align-items: center;
+    gap: 0;
+    padding: 0.45rem 0.85rem;
+  }
+
+  html:not(.dark) .coach-mobile-dashboard-search-item {
+    border-top-color: var(--app-border);
+  }
+
+  .coach-mobile-dashboard-search-item.is-active,
+  .coach-mobile-dashboard-search-item:active {
+    background: var(--app-accent-muted);
+  }
+
+  .coach-mobile-dashboard-search-item-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-item-hint {
+    font-size: 12px;
+    color: var(--app-text-muted);
+  }
+
+  .coach-mobile-dashboard-search-empty {
+    padding: 0.85rem;
+    text-align: center;
+    font-size: 13px;
+    color: var(--app-text-muted);
+  }
+
+  .coach-mobile-dashboard-search-info-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 80;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+  }
+
+  .coach-mobile-dashboard-search-info-card {
+    width: min(100%, 20rem);
+    border-radius: 18px;
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: var(--dashboard-mobile-panel-surface);
+    padding: 1rem 1rem 0.9rem;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  }
+
+  .coach-mobile-dashboard-search-info-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  .coach-mobile-dashboard-search-info-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--app-text-subtle);
+  }
+
+  .coach-mobile-dashboard-search-info-close {
+    display: inline-flex;
+    height: 32px;
+    width: 32px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9999px;
+    color: var(--app-text-muted);
+  }
+
+  .coach-mobile-dashboard-search-info-athlete {
+    margin-top: 0.65rem;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-info-value-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.35rem;
+  }
+
+  .coach-mobile-dashboard-search-info-value {
+    margin-top: 0;
+    flex: 1 1 auto;
+    min-width: 0;
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.15;
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-info-edit-btn {
+    display: inline-flex;
+    height: 40px;
+    width: 40px;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--app-text-muted);
+  }
+
+  .coach-mobile-dashboard-search-info-edit {
+    margin-top: 0.5rem;
+  }
+
+  .coach-mobile-dashboard-search-info-input {
+    width: 100%;
+    min-height: 48px;
+    border-radius: 12px;
+    border: 1px solid var(--dashboard-mobile-panel-border) !important;
+    background: rgba(0, 0, 0, 0.2);
+    padding: 0.65rem 0.85rem;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-info-error {
+    margin-top: 0.45rem;
+    font-size: 12px;
+    color: rgb(251, 113, 133);
+  }
+
+  .coach-mobile-dashboard-search-info-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.75rem;
+  }
+
+  .coach-mobile-dashboard-search-info-secondary,
+  .coach-mobile-dashboard-search-info-primary {
+    display: flex;
+    min-height: 44px;
+    flex: 1 1 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 12px;
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .coach-mobile-dashboard-search-info-secondary {
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-info-primary {
+    border: 1px solid rgba(59, 130, 246, 0.35);
+    background: var(--app-accent-muted);
+    color: var(--app-text);
+  }
+
+  .coach-mobile-dashboard-search-info-dismiss {
+    display: flex;
+    width: 100%;
+    min-height: 44px;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1rem;
+    border-radius: 12px;
+    border: 1px solid var(--dashboard-mobile-panel-border);
+    background: rgba(255, 255, 255, 0.04);
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--app-text);
+  }
+}

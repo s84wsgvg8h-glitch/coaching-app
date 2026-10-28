@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { withPreserveWeekParam } from "@/lib/programNavigation";
 import { getProgramDayDate } from "@/lib/athleteFillScore";
 
 type ProgramTimelinePanelProps = {
@@ -111,7 +112,9 @@ export default function ProgramTimelinePanel({
               {block.weeks.map((week) => (
                 <li key={week.id}>
                   <Link
-                    href={`/programs/${block.id}/weeks/${week.id}?athlete=${athleteId}`}
+                    href={withPreserveWeekParam(
+                      `/programs/${block.id}/weeks/${week.id}?athlete=${athleteId}`,
+                    )}
                     className="inline-block rounded-lg border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text hover:border-brand-purple hover:text-brand-purple"
                   >
                     {week.title}

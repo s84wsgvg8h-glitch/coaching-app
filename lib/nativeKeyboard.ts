@@ -27,7 +27,28 @@ export function addNativeKeyboardListener(fn: (height: number) => void): () => v
 
 export function isCapacitorNativePlatform(): boolean {
   if (typeof document === "undefined") return false;
-  return document.documentElement.classList.contains("capacitor-native");
+  if (document.documentElement.classList.contains("capacitor-native")) {
+    return true;
+  }
+
+  if (typeof window !== "undefined") {
+    const capacitor = (
+      window as Window & {
+        Capacitor?: { isNativePlatform?: () => boolean };
+      }
+    ).Capacitor;
+    if (capacitor?.isNativePlatform?.()) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+export function isMobileUploadClient(): boolean {
+  if (isCapacitorNativePlatform()) return true;
+  if (typeof navigator === "undefined") return false;
+  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 }
 
 /** Single source of truth for keyboard offset CSS variables. */

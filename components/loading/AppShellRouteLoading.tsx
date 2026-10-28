@@ -1,16 +1,23 @@
 "use client";
 
 import type { ReactNode } from "react";
-import AppShell from "@/components/AppShell";
+import RouteLoadingShell from "@/components/loading/RouteLoadingShell";
 
 type AppShellRouteLoadingProps = {
   children: ReactNode;
   contentClassName?: string;
+  hideBottomNav?: boolean;
+  hideMobileTopBar?: boolean;
 };
 
 export default function AppShellRouteLoading({
   children,
-  contentClassName = "flex-1 px-4 pb-16 pt-2 md:px-6 md:pt-3",
+  hideBottomNav,
+  hideMobileTopBar,
 }: AppShellRouteLoadingProps) {
-  return <AppShell contentClassName={contentClassName}>{children}</AppShell>;
+  return (
+    <RouteLoadingShell hideBottomNav={hideBottomNav} hideMobileTopBar={hideMobileTopBar}>
+      {children}
+    </RouteLoadingShell>
+  );
 }

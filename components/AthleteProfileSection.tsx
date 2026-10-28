@@ -13,6 +13,14 @@ import {
   type Competition,
   type MeetResults,
 } from "@/lib/competitions";
+import {
+  formatOptionalTextFieldDisplay,
+  formatOptionalTextFieldInputValue,
+  isOptionalDashInput,
+  isOptionalTextFieldComplete,
+  parseOptionalTextFieldInput,
+} from "@/lib/optionalFieldDash";
+import { dismissAthleteAdminTodosAfterSave, refreshCoachAutoTodos } from "@/lib/coachTodos";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import MeetWeekCompetitionManager from "@/components/meet/MeetWeekCompetitionManager";
 import { markBlockIntakeReviewed, type BlockIntakeWizard } from "@/lib/blockIntakeWizard";
@@ -21,6 +29,7 @@ import {
   formatPaymentDayFieldValue,
   formatPaymentPrice,
   formatPaymentPriceFieldValue,
+  formatPaymentDayInputDisplay,
   isPaymentDashInput,
   isValidPaymentDayInput,
   isValidPaymentPriceInput,
@@ -48,6 +57,7 @@ import {
 
 type AthleteProfileSectionProps = {
   athleteId: string;
+  coachId?: string;
   canEdit?: boolean;
   canEditStartingPrs?: boolean;
   canEditCompetitions?: boolean;
@@ -63,6 +73,7 @@ type AthleteProfileSectionProps = {
 
 export default function AthleteProfileSection({
   athleteId,
+  coachId,
   canEdit = true,
   canEditStartingPrs = false,
   canEditCompetitions = false,
@@ -76,7 +87,9 @@ export default function AthleteProfileSection({
   className = "",
 }: AthleteProfileSectionProps) {
   const [geboortedatum, setGeboortedatum] = useState(initialGeboortedatum || "");
-  const [lidnummer, setLidnummer] = useState(initialLidnummer || "");
+  const [lidnummer, setLidnummer] = useState(
+    formatOptionalTextFieldInputValue(initialLidnummer),
+  );
   const [goalsText, setGoalsText] = useState(initialGoalsText || "");
   const [showAllCompetitions, setShowAllCompetitions] = useState(false);
   const [expandedMeetIds, setExpandedMeetIds] = useState<Set<string>>(new Set());
@@ -115,14 +128,39 @@ export default function AthleteProfileSection({
   const [message, setMessage] = useState("");
   const autoSaveReady = useRef(false);
   const saveMessageTimer = useRef<number | null>(null);
+  const autoSaveTimer = useRef<number | null>(null);
+  const saveProfileRef = useRef<(() => Promise<void>) | null>(null);
 
   useEffect(() => {
     deferEffectUpdate(() => {
       setGeboortedatum(initialGeboortedatum || "");
-      setLidnummer(initialLidnummer || "");
+      setLidnummer(formatOptionalTextFieldInputValue(initialLidnummer));
       setGoalsText(initialGoalsText || "");
     });
   }, [initialGeboortedatum, initialLidnummer, initialGoalsText, athleteId]);
+
+  function scheduleAutoSave(delay = 350) {
+    if (!canEdit || loading || !autoSaveReady.current) return;
+
+    if (autoSaveTimer.current) {
+      window.clearTimeout(autoSaveTimer.current);
+    }
+
+    autoSaveTimer.current = window.setTimeout(() => {
+      void saveProfileRef.current?.();
+    }, delay);
+  }
+
+  function flushAutoSave() {
+    if (!canEdit || loading || !autoSaveReady.current) return;
+
+    if (autoSaveTimer.current) {
+      window.clearTimeout(autoSaveTimer.current);
+      autoSaveTimer.current = null;
+    }
+
+    void saveProfileRef.current?.();
+  }
 
   function applyCompetitionRegistrationState(
     upcoming: Competition[],
@@ -238,6 +276,7 @@ export default function AthleteProfileSection({
       }
 
       setLoading(false);
+      autoSaveReady.current = true;
     }
 
     void load();
@@ -250,14 +289,10 @@ export default function AthleteProfileSection({
   useEffect(() => {
     autoSaveReady.current = false;
 
-    if (!loading) {
-      const timer = window.setTimeout(() => {
-        autoSaveReady.current = true;
-      }, 150);
-
-      return () => window.clearTimeout(timer);
-    }
-  }, [loading, athleteId]);
+    return () => {
+      autoSaveReady.current = false;
+    };
+  }, [athleteId]);
 
   useEffect(() => {
     if (!highlightField || loading) return;
@@ -437,11 +472,15 @@ export default function AthleteProfileSection({
     setSaving(true);
     setMessage("");
 
+    const parsedLidnummer = parseOptionalTextFieldInput(lidnummer);
+    const lidnummerMarkedNa = isOptionalDashInput(lidnummer);
+    const paymentMarkedNa = isPaymentDashInput(betalingPrijs);
+
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
         geboortedatum: geboortedatum || null,
-        lidnummer: lidnummer.trim() || null,
+        lidnummer: parsedLidnummer,
         goals_text: goalsText.trim() || null,
       })
       .eq("id", athleteId);
@@ -452,10 +491,13 @@ export default function AthleteProfileSection({
       return;
     }
 
+    let parsedPrice: number | null = null;
+    let parsedDay: number | null = null;
+
     if (canEditPayment) {
       if (!isValidPaymentPriceInput(betalingPrijs)) {
         setSaving(false);
-        setMessage("Vul een geldige prijs in of gebruik —.");
+        setMessage('Vul een geldige prijs in of gebruik "-".');
         return;
       }
 
@@ -464,13 +506,13 @@ export default function AthleteProfileSection({
         setMessage(
           paymentPriceInputHasAmount(betalingPrijs)
             ? "Betaaldag moet tussen 1 en 31 liggen."
-            : "Gebruik — voor betaaldag als er geen prijs is.",
+            : 'Gebruik "-" voor betaaldag als er geen prijs is.',
         );
         return;
       }
 
-      const parsedPrice = parsePaymentPriceInput(betalingPrijs);
-      let parsedDay = parsePaymentDayInput(betalingDag);
+      parsedPrice = parsePaymentPriceInput(betalingPrijs);
+      parsedDay = paymentMarkedNa ? null : parsePaymentDayInput(betalingDag);
       if (parsedPrice === null) {
         parsedDay = null;
       }
@@ -543,23 +585,37 @@ export default function AthleteProfileSection({
 
     setSaving(false);
 
-    setMessage("Profiel opgeslagen.");
+    void dismissAthleteAdminTodosAfterSave(coachId, athleteId, {
+      geboortedatum: geboortedatum || null,
+      lidnummer: parsedLidnummer,
+      betalingPrijs: parsedPrice,
+      betalingDag: parsedDay,
+      paymentMarkedNa,
+      lidnummerMarkedNa,
+    });
+    if (coachId) {
+      void refreshCoachAutoTodos(coachId);
+    }
+
+    setMessage("Opgeslagen.");
     if (saveMessageTimer.current) {
       window.clearTimeout(saveMessageTimer.current);
     }
     saveMessageTimer.current = window.setTimeout(() => {
       setMessage("");
-    }, 2000);
+    }, 1500);
   }
 
+  saveProfileRef.current = saveProfile;
+
   useEffect(() => {
-    if (!canEdit || loading || !autoSaveReady.current) return;
+    scheduleAutoSave();
 
-    const timer = window.setTimeout(() => {
-      void saveProfile();
-    }, 800);
-
-    return () => window.clearTimeout(timer);
+    return () => {
+      if (autoSaveTimer.current) {
+        window.clearTimeout(autoSaveTimer.current);
+      }
+    };
   }, [
     geboortedatum,
     lidnummer,
@@ -1004,10 +1060,13 @@ export default function AthleteProfileSection({
                       const next = event.target.value;
                       setBetalingPrijs(next);
                       if (isPaymentDashInput(next)) {
-                        setBetalingDag("—");
+                        setBetalingDag("-");
+                      } else if (isPaymentDashInput(betalingDag)) {
+                        setBetalingDag("");
                       }
                     }}
-                    placeholder="—"
+                    onBlur={flushAutoSave}
+                    placeholder="-"
                     className="profile-field-input profile-field-input--prefix"
                   />
                 </div>
@@ -1020,15 +1079,18 @@ export default function AthleteProfileSection({
                 <input
                   type="text"
                   inputMode="numeric"
-                  value={betalingDag}
+                  value={formatPaymentDayInputDisplay(betalingPrijs, betalingDag)}
                   onChange={(event) => setBetalingDag(event.target.value)}
-                  placeholder="—"
+                  onBlur={flushAutoSave}
+                  placeholder="-"
                   disabled={isPaymentDashInput(betalingPrijs)}
+                  aria-disabled={isPaymentDashInput(betalingPrijs)}
                   className="profile-field-input disabled:opacity-60"
                 />
                 <p className="profile-field-hint">
-                  Gebruik — als de atleet niet betaalt. Anders bijv. 20 = elke
-                  maand op de 20ste.
+                  {isPaymentDashInput(betalingPrijs)
+                    ? 'N.v.t. — betaaldag is automatisch ingevuld omdat de atleet niet betaalt.'
+                    : 'Gebruik "-" als de atleet niet betaalt. Anders bijv. 20 = elke maand op de 20ste.'}
                 </p>
               </div>
             </div>
@@ -1044,9 +1106,11 @@ export default function AthleteProfileSection({
                 <p className="profile-stat-card-label">Betaaldag</p>
                 <p className="profile-stat-card-value">
                   {formatPaymentDay(
-                    paymentPriceInputHasAmount(betalingPrijs)
-                      ? parsePaymentDayInput(betalingDag)
-                      : null,
+                    isPaymentDashInput(betalingPrijs)
+                      ? null
+                      : paymentPriceInputHasAmount(betalingPrijs)
+                        ? parsePaymentDayInput(betalingDag)
+                        : null,
                   )}
                 </p>
               </div>
@@ -1069,6 +1133,7 @@ export default function AthleteProfileSection({
                 type="date"
                 value={geboortedatum}
                 onChange={(event) => setGeboortedatum(event.target.value)}
+                onBlur={flushAutoSave}
                 className="profile-field-input"
               />
             </div>
@@ -1078,8 +1143,13 @@ export default function AthleteProfileSection({
                 type="text"
                 value={lidnummer}
                 onChange={(event) => setLidnummer(event.target.value)}
+                onBlur={flushAutoSave}
+                placeholder="-"
                 className="profile-field-input"
               />
+              <p className="profile-field-hint">
+                Gebruik "-" als er geen lidnummer is (bijv. geen KNKF-lid).
+              </p>
             </div>
           </div>
         ) : (
@@ -1092,13 +1162,13 @@ export default function AthleteProfileSection({
                 </p>
               </div>
             )}
-            {lidnummer && (
-              <div className="profile-stat-card">
-                <p className="profile-stat-card-label">Lidnummer</p>
-                <p className="profile-stat-card-value">{lidnummer}</p>
-              </div>
-            )}
-            {!geboortedatum && !lidnummer ? (
+            <div className="profile-stat-card">
+              <p className="profile-stat-card-label">Lidnummer</p>
+              <p className="profile-stat-card-value">
+                {formatOptionalTextFieldDisplay(initialLidnummer)}
+              </p>
+            </div>
+            {!geboortedatum && !isOptionalTextFieldComplete(initialLidnummer) ? (
               <p className="text-sm text-app-muted">Nog geen persoonsgegevens ingevuld.</p>
             ) : null}
           </div>

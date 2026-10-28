@@ -1,5 +1,6 @@
 "use client";
 
+import "@/styles/dashboard-coach.css";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -151,7 +152,7 @@ export default function CoachAppSidebar() {
   ];
 
   return (
-    <aside className="coach-app-sidebar" aria-label="Coach navigatie">
+    <aside className="coach-app-sidebar coach-app-sidebar--pinned" aria-label="Coach navigatie">
       <p className="coach-app-sidebar-brand">
         <span className="coach-app-sidebar-brand-mark" aria-hidden="true">
           ∞

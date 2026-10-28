@@ -24,7 +24,6 @@ async function runRemindersCron() {
   const admin = createClient(supabaseUrl, serviceKey);
 
   const { loadTeamFillScores } = await import("@/lib/athleteFillScoreHistory");
-  const { syncLowComplianceTodos } = await import("@/lib/coachTodoSync");
 
   const { data: coaches } = await admin
     .from("profiles")
@@ -69,7 +68,6 @@ async function runRemindersCron() {
 
   for (const coach of coaches || []) {
     const rows = await loadTeamFillScores(coach.id as string, coach.role === "admin");
-    await syncLowComplianceTodos(coach.id as string, rows, 50);
 
     for (const row of rows.filter((r) => r.fillScore < 50)) {
       sent += await deliverPush(coach.id as string, {

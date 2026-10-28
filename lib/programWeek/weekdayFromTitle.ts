@@ -1,6 +1,31 @@
 const WEEKDAY_PATTERN =
   /\b(zondag|maandag|dinsdag|woensdag|donderdag|vrijdag|zaterdag|zo|ma|di|wo|do|vr|za)\b/i;
 
+const DUTCH_WEEKDAY_NAMES = [
+  "zondag",
+  "maandag",
+  "dinsdag",
+  "woensdag",
+  "donderdag",
+  "vrijdag",
+  "zaterdag",
+] as const;
+
+/** Capitalize Dutch weekday names in a program day title (e.g. "maandag" → "Maandag"). */
+export function formatProgramDayTitle(title: string | null | undefined): string {
+  const trimmed = (title || "").trim();
+  if (!trimmed) return "";
+
+  let result = trimmed;
+  for (const weekday of DUTCH_WEEKDAY_NAMES) {
+    const pattern = new RegExp(`\\b${weekday}\\b`, "gi");
+    const capitalized = weekday.charAt(0).toUpperCase() + weekday.slice(1);
+    result = result.replace(pattern, capitalized);
+  }
+
+  return result;
+}
+
 const WEEKDAY_INDEX: Record<string, number> = {
   zondag: 0,
   zo: 0,

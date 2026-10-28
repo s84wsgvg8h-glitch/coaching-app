@@ -8,7 +8,7 @@ export default function DashboardCoachSkeleton() {
       <Skeleton className="h-9 w-2/3 max-w-sm rounded-xl" />
       <Skeleton className="h-4 w-1/2 max-w-xs rounded-lg" />
       <div className="dashboard-coach-skeleton-kpi-row">
-        {Array.from({ length: 4 }).map((_, index) => (
+        {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={index} className="dashboard-coach-skeleton-kpi" />
         ))}
       </div>

@@ -43,7 +43,6 @@ export function useProgramWeekExerciseDrag({
 
   function previewExerciseMove(indicator: ExerciseDropIndicator) {
     if (!draggedExercise || !draggedExerciseDataRef.current) return;
-    if (draggedExercise.dayId !== indicator.dayId) return;
 
     setExercisesByDay((current) => {
       const next = applyExerciseMovePreview(
@@ -246,6 +245,11 @@ export function useProgramWeekExerciseDrag({
     if (failed?.error) {
       showAppToast(failed.error.message);
       await loadDaysRef.current?.();
+      return;
+    }
+
+    if (isCrossDay) {
+      showAppToast("Oefening verplaatst naar andere dag");
     }
   }
 

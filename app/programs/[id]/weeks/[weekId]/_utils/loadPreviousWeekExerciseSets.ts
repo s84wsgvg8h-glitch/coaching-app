@@ -3,6 +3,7 @@ import type {
   PreviousWeekSetData,
   ProgramDay,
   ProgramExercise,
+  ProgramWeek,
 } from "@/lib/programWeek/types";
 
 export type LoadPreviousWeekExerciseSetsParams = {
@@ -17,6 +18,130 @@ export type LoadPreviousWeekExerciseSetsParams = {
   setPreviousWeekData: (data: PreviousWeekSetData | null) => void;
   setPreviousWeekMessage: (message: string) => void;
 };
+
+type ResolvedPreviousWeek = {
+  week: ProgramWeek;
+  blockTitle: string | null;
+};
+
+async function resolvePreviousWeek(
+  ownerAthleteId: string,
+  currentBlockId: string,
+  weekNumber: number,
+): Promise<ResolvedPreviousWeek | null> {
+  if (weekNumber > 1) {
+    const { data: previousWeekInBlock, error } = await supabase
+      .from("program_weeks")
+      .select("*")
+      .eq("program_block_id", currentBlockId)
+      .eq("week_number", weekNumber - 1)
+      .maybeSingle();
+
+    if (error) {
+      throw error;
+    }
+
+    if (previousWeekInBlock) {
+      return { week: previousWeekInBlock, blockTitle: null };
+    }
+  }
+
+  const { data: blocks, error: blocksError } = await supabase
+    .from("program_blocks")
+    .select("id, title, start_date")
+    .eq("athlete_id", ownerAthleteId)
+    .order("start_date", { ascending: true });
+
+  if (blocksError) {
+    throw blocksError;
+  }
+
+  const orderedBlocks = blocks || [];
+  const currentBlockIndex = orderedBlocks.findIndex(
+    (block) => block.id === currentBlockId,
+  );
+
+  if (currentBlockIndex <= 0) {
+    return null;
+  }
+
+  const previousBlock = orderedBlocks[currentBlockIndex - 1];
+
+  const { data: lastWeekInPreviousBlock, error: previousWeekError } =
+    await supabase
+      .from("program_weeks")
+      .select("*")
+      .eq("program_block_id", previousBlock.id)
+      .order("week_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+  if (previousWeekError) {
+    throw previousWeekError;
+  }
+
+  if (!lastWeekInPreviousBlock) {
+    return null;
+  }
+
+  return {
+    week: lastWeekInPreviousBlock,
+    blockTitle: previousBlock.title || null,
+  };
+}
+
+function formatPreviousWeekTitle(resolved: ResolvedPreviousWeek) {
+  const weekLabel =
+    resolved.week.title || `Week ${resolved.week.week_number}`;
+
+  if (resolved.blockTitle) {
+    return `${resolved.blockTitle} · ${weekLabel}`;
+  }
+
+  return weekLabel;
+}
+
+function matchPreviousExercise(
+  previousExercises: ProgramExercise[],
+  currentDay: ProgramDay,
+  currentExercise: ProgramExercise,
+  exercisesByDay: Record<string, ProgramExercise[]>,
+) {
+  const cleanName = (currentExercise.name || "").trim().toLowerCase();
+
+  const sameNameInPreviousWeek = previousExercises.filter(
+    (item) => (item.name || "").trim().toLowerCase() === cleanName,
+  );
+
+  const previousByExerciseNumber = sameNameInPreviousWeek.find(
+    (item) =>
+      item.exercise_number != null &&
+      item.exercise_number === currentExercise.exercise_number,
+  );
+
+  const currentDayExercises = (exercisesByDay[currentDay.id] || [])
+    .slice()
+    .sort((a, b) => {
+      const aNum = a.exercise_number;
+      const bNum = b.exercise_number;
+      if (aNum == null && bNum == null) return 0;
+      if (aNum == null) return 1;
+      if (bNum == null) return -1;
+      return aNum - bNum;
+    });
+  const sameNameInCurrentDay = currentDayExercises.filter(
+    (exercise) => (exercise.name || "").trim().toLowerCase() === cleanName,
+  );
+  const occurrenceIndex = sameNameInCurrentDay.findIndex(
+    (exercise) => exercise.id === currentExercise.id,
+  );
+  const previousByOccurrence =
+    sameNameInPreviousWeek[Math.max(occurrenceIndex, 0)];
+
+  return (
+    previousByExerciseNumber ?? previousByOccurrence ?? sameNameInPreviousWeek[0]
+  );
+}
 
 export async function loadPreviousWeekExerciseSets({
   ownerAthleteId,
@@ -35,36 +160,34 @@ export async function loadPreviousWeekExerciseSets({
     return;
   }
 
-  if (weekNumber <= 1) {
-    setPreviousWeekData(null);
-    setPreviousWeekMessage("Er is geen vorige week in dit block.");
-    setPreviousWeekOpen(true);
-    return;
-  }
-
   setPreviousWeekOpen(true);
   setLoadingPreviousWeekSets(true);
   setPreviousWeekData(null);
   setPreviousWeekMessage("");
 
-  const { data: previousWeek, error: previousWeekError } = await supabase
-    .from("program_weeks")
-    .select("*")
-    .eq("program_block_id", currentBlockId)
-    .eq("week_number", weekNumber - 1)
-    .maybeSingle();
+  let resolvedPreviousWeek: ResolvedPreviousWeek | null = null;
 
-  if (previousWeekError) {
+  try {
+    resolvedPreviousWeek = await resolvePreviousWeek(
+      ownerAthleteId,
+      currentBlockId,
+      weekNumber,
+    );
+  } catch (error) {
     setLoadingPreviousWeekSets(false);
-    setPreviousWeekMessage(previousWeekError.message);
+    setPreviousWeekMessage(
+      error instanceof Error ? error.message : "Vorige week kon niet worden geladen.",
+    );
     return;
   }
 
-  if (!previousWeek) {
+  if (!resolvedPreviousWeek) {
     setLoadingPreviousWeekSets(false);
     setPreviousWeekMessage("Er is geen vorige week gevonden.");
     return;
   }
+
+  const previousWeek = resolvedPreviousWeek.week;
 
   const { data: previousDays, error: previousDaysError } = await supabase
     .from("program_days")
@@ -106,39 +229,12 @@ export async function loadPreviousWeekExerciseSets({
     return;
   }
 
-  const cleanName = (currentExercise.name || "").trim().toLowerCase();
-
-  const sameNameInPreviousWeek = (previousExercises || []).filter(
-    (item) => (item.name || "").trim().toLowerCase() === cleanName,
+  const previousExercise = matchPreviousExercise(
+    previousExercises || [],
+    currentDay,
+    currentExercise,
+    exercisesByDay,
   );
-
-  const previousByExerciseNumber = sameNameInPreviousWeek.find(
-    (item) =>
-      item.exercise_number != null &&
-      item.exercise_number === currentExercise.exercise_number,
-  );
-
-  const currentDayExercises = (exercisesByDay[currentDay.id] || [])
-    .slice()
-    .sort((a, b) => {
-      const aNum = a.exercise_number;
-      const bNum = b.exercise_number;
-      if (aNum == null && bNum == null) return 0;
-      if (aNum == null) return 1;
-      if (bNum == null) return -1;
-      return aNum - bNum;
-    });
-  const sameNameInCurrentDay = currentDayExercises.filter(
-    (e) => (e.name || "").trim().toLowerCase() === cleanName,
-  );
-  const occurrenceIndex = sameNameInCurrentDay.findIndex(
-    (e) => e.id === currentExercise.id,
-  );
-  const previousByOccurrence =
-    sameNameInPreviousWeek[Math.max(occurrenceIndex, 0)];
-
-  const previousExercise =
-    previousByExerciseNumber ?? previousByOccurrence ?? sameNameInPreviousWeek[0];
 
   if (!previousExercise) {
     setLoadingPreviousWeekSets(false);
@@ -187,7 +283,7 @@ export async function loadPreviousWeekExerciseSets({
   }
 
   setPreviousWeekData({
-    weekTitle: previousWeek.title || `Week ${previousWeek.week_number}`,
+    weekTitle: formatPreviousWeekTitle(resolvedPreviousWeek),
     dayTitle: previousDay?.title || "Vorige week",
     exerciseName: previousExercise.name || currentExercise.name || "Oefening",
     rows: previousRows || [],

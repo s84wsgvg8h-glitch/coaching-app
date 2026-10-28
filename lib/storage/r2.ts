@@ -10,7 +10,7 @@ import type { StorageDeleteInput, StorageUploadResult } from "@/lib/storage/type
 
 let r2Client: S3Client | null = null;
 
-function getClient() {
+export function getR2Client() {
   const config = getR2Config();
   if (!config) {
     throw new Error("Cloudflare R2 is niet geconfigureerd.");
@@ -37,7 +37,7 @@ export function getR2PublicUrl(objectKey: string) {
 }
 
 export async function listR2Objects(prefix?: string) {
-  const { client, config } = getClient();
+  const { client, config } = getR2Client();
   const objects: { key: string; size?: number }[] = [];
   let continuationToken: string | undefined;
 
@@ -73,7 +73,7 @@ export async function uploadToR2(params: {
   body: Buffer | Uint8Array;
   contentType: string;
 }): Promise<StorageUploadResult> {
-  const { client, config } = getClient();
+  const { client, config } = getR2Client();
 
   await client.send(
     new PutObjectCommand({
@@ -97,7 +97,7 @@ export async function uploadToR2(params: {
 }
 
 export async function deleteFromR2(input: StorageDeleteInput) {
-  const { client, config } = getClient();
+  const { client, config } = getR2Client();
   const key = input.path.replace(/^\/+/, "");
 
   await client.send(
@@ -113,7 +113,7 @@ export async function createR2PresignedPutUrl(params: {
   contentType: string;
   expiresInSeconds?: number;
 }) {
-  const { client, config } = getClient();
+  const { client, config } = getR2Client();
   const key = params.objectKey.replace(/^\/+/, "");
 
   const command = new PutObjectCommand({

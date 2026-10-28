@@ -1,5 +1,10 @@
-import { PageLoading } from "@/components/ui/Skeleton";
+import AppShellRouteLoading from "@/components/loading/AppShellRouteLoading";
+import { AthleteGenericPageSkeleton } from "@/components/mobile/AthleteMobileSkeletons";
 
 export default function AthletesLoading() {
-  return <PageLoading label="Atleten laden…" />;
+  return (
+    <AppShellRouteLoading hideMobileTopBar>
+      <AthleteGenericPageSkeleton rows={8} />
+    </AppShellRouteLoading>
+  );
 }

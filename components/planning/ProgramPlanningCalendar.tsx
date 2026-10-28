@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
 import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
+import { withPreserveWeekParam } from "@/lib/programNavigation";
 import { getProgramDayDate } from "@/lib/athleteFillScore";
 import { loadProgramMacrocycles, createProgramMacrocycle } from "@/lib/programMacrocycles";
 import { loadAthleteUpcomingCompetitions } from "@/lib/competitions";
@@ -550,7 +551,9 @@ export default function ProgramPlanningCalendar({
                 title: week.title || `Week ${week.week_number}`,
                 weekNumber: week.week_number,
                 startDate: weekStart,
-                href: `/programs/${block.id}/weeks/${week.id}?athlete=${athleteId}`,
+                href: withPreserveWeekParam(
+                  `/programs/${block.id}/weeks/${week.id}?athlete=${athleteId}`,
+                ),
               };
             }),
         });

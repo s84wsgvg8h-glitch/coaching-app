@@ -5,6 +5,7 @@ import {
   getLoadKgInputDisplay,
 } from "@/lib/programWeek/intensityInput";
 import type {
+  AthleteExerciseSet,
   ProgramDay,
   ProgramExercise,
   ProgramWeek,
@@ -24,6 +25,15 @@ export type BlockProgressionSnapshot = {
   weeks: ProgramWeek[];
   daysByWeek: Record<string, ProgramDay[]>;
   exercisesByDay: Record<string, ProgramExercise[]>;
+  athleteSetsByExerciseId: Record<string, AthleteExerciseSet[]>;
+};
+
+export type ProgressionCellContent = {
+  plainText: string;
+  loadDiffers: boolean;
+  coachLoad: string | null;
+  athleteLoad: string | null;
+  rest: string;
 };
 
 function normalizeProgressionExerciseName(name: string | null | undefined) {
@@ -70,11 +80,53 @@ function getCoachPrescription(exercise: ProgramExercise) {
 }
 
 function getProgressionGroupPriority(name: string) {
-  const cleanName = name.toLowerCase();
-  if (cleanName.includes("squat")) return 1;
-  if (cleanName.includes("bench")) return 2;
-  if (cleanName.includes("deadlift")) return 3;
+  const category = getProgressionExerciseCategory(name);
+  if (category === "squat") return 1;
+  if (category === "bench") return 2;
+  if (category === "deadlift") return 3;
   return 4;
+}
+
+export type ProgressionLiftCategory = "squat" | "bench" | "deadlift" | "overig";
+
+export type ProgressionLiftFilter = {
+  showSquat: boolean;
+  showBench: boolean;
+  showDeadlift: boolean;
+  showOverig: boolean;
+};
+
+export const DEFAULT_PROGRESSION_LIFT_FILTER: ProgressionLiftFilter = {
+  showSquat: true,
+  showBench: true,
+  showDeadlift: true,
+  showOverig: true,
+};
+
+export function getProgressionExerciseCategory(
+  exerciseName: string,
+): ProgressionLiftCategory {
+  const cleanName = exerciseName.toLowerCase();
+  if (cleanName.includes("deadlift")) return "deadlift";
+  if (cleanName.includes("benchpress") || cleanName.includes("bench press")) {
+    return "bench";
+  }
+  if (cleanName.includes("bench")) return "bench";
+  if (cleanName.includes("squat")) return "squat";
+  return "overig";
+}
+
+export function filterCoachProgressionRows(
+  rows: CoachProgressionRow[],
+  filter: ProgressionLiftFilter,
+) {
+  return rows.filter((row) => {
+    const category = getProgressionExerciseCategory(row.baseName);
+    if (category === "squat") return filter.showSquat;
+    if (category === "bench") return filter.showBench;
+    if (category === "deadlift") return filter.showDeadlift;
+    return filter.showOverig;
+  });
 }
 
 export type ProgressionCellDisplay = {
@@ -101,6 +153,106 @@ function formatLoadKgText(exercise: ProgramExercise): string {
   return loadKg.includes("kg") ? loadKg : `${loadKg}kg`;
 }
 
+function formatLoadKgFromNumber(value: number) {
+  return `${formatProgressionNumber(value)}kg`;
+}
+
+export function averageAthleteLoadKg(
+  athleteSets: AthleteExerciseSet[] | undefined,
+) {
+  if (!athleteSets?.length) return null;
+
+  const weights = athleteSets
+    .map((set) => parseProgressionNumber(set.weight))
+    .filter((value): value is number => value !== null && value > 0);
+
+  if (weights.length === 0) return null;
+
+  const average =
+    weights.reduce((total, value) => total + value, 0) / weights.length;
+  return Math.round(average * 10) / 10;
+}
+
+function getCoachLoadLabel(exercise: ProgramExercise) {
+  return formatLoadKgText(exercise);
+}
+
+function buildProgressionLoadComparison(
+  exercise: ProgramExercise,
+  athleteSets?: AthleteExerciseSet[],
+) {
+  const coachKg = getCoachLoadLabel(exercise);
+  const coachLabel = coachKg || "-";
+  const athleteAverage = averageAthleteLoadKg(athleteSets);
+  const athleteLabel =
+    athleteAverage !== null ? formatLoadKgFromNumber(athleteAverage) : null;
+
+  if (!athleteLabel) {
+    return {
+      plainText: coachLabel,
+      differs: false,
+      coachLabel,
+      athleteLabel: null as string | null,
+    };
+  }
+
+  if (!coachKg) {
+    return {
+      plainText: athleteLabel,
+      differs: true,
+      coachLabel: "-",
+      athleteLabel,
+    };
+  }
+
+  const coachNumeric = parseProgressionNumber(getLoadKgInputDisplay(exercise));
+  if (coachNumeric !== null && Math.abs(coachNumeric - athleteAverage!) < 0.05) {
+    return {
+      plainText: coachLabel,
+      differs: false,
+      coachLabel,
+      athleteLabel: null,
+    };
+  }
+
+  return {
+    plainText: `${coachLabel} · ${athleteLabel}`,
+    differs: true,
+    coachLabel,
+    athleteLabel,
+  };
+}
+
+function buildProgressionCellRest(
+  exercise: ProgramExercise,
+  display: ProgressionCellDisplay,
+) {
+  const { showLoad, showReps, showRpe } = display;
+  const repsPart = (exercise.reps || "").trim();
+  const intensityPart = formatIntensityText(exercise);
+
+  if (showLoad && showReps && showRpe) {
+    return ` x ${repsPart || "-"} ${intensityPart || "-"}`.trimEnd();
+  }
+  if (!showLoad && showReps && !showRpe) {
+    return repsPart || "-";
+  }
+  if (!showLoad && !showReps && showRpe) {
+    return intensityPart || "-";
+  }
+  if (showLoad && showReps && !showRpe) {
+    return ` x ${repsPart || "-"}`;
+  }
+  if (showLoad && !showReps && showRpe) {
+    return intensityPart ? ` ${intensityPart}` : "";
+  }
+  if (!showLoad && showReps && showRpe) {
+    return `${repsPart || "-"} ${intensityPart || "-"}`.trim();
+  }
+
+  return "";
+}
+
 function formatIntensityText(exercise: ProgramExercise): string {
   const intensity = getIntensityInputDisplay(exercise);
   if (!intensity) return "";
@@ -123,7 +275,7 @@ function rawIntensityForEdit(exercise: ProgramExercise): string {
   return intensity;
 }
 
-export function formatCoachProgressionCellText(
+function formatCoachProgressionCellPlainText(
   exercise: ProgramExercise | null | undefined,
   display: ProgressionCellDisplay = DEFAULT_PROGRESSION_CELL_DISPLAY,
 ) {
@@ -159,6 +311,65 @@ export function formatCoachProgressionCellText(
   }
 
   return "";
+}
+
+export function formatCoachProgressionCellContent(
+  exercise: ProgramExercise | null | undefined,
+  display: ProgressionCellDisplay = DEFAULT_PROGRESSION_CELL_DISPLAY,
+  athleteSets?: AthleteExerciseSet[],
+): ProgressionCellContent {
+  if (!exercise) {
+    return {
+      plainText: "",
+      loadDiffers: false,
+      coachLoad: null,
+      athleteLoad: null,
+      rest: "",
+    };
+  }
+
+  const { showLoad, showReps, showRpe } = display;
+  if (!showLoad && !showReps && !showRpe) {
+    return {
+      plainText: "",
+      loadDiffers: false,
+      coachLoad: null,
+      athleteLoad: null,
+      rest: "",
+    };
+  }
+
+  if (!showLoad) {
+    const plainText = formatCoachProgressionCellPlainText(exercise, display);
+    return {
+      plainText,
+      loadDiffers: false,
+      coachLoad: null,
+      athleteLoad: null,
+      rest: plainText,
+    };
+  }
+
+  const loadComparison = buildProgressionLoadComparison(exercise, athleteSets);
+  const rest = buildProgressionCellRest(exercise, display);
+  const plainText = `${loadComparison.plainText}${rest}`.trim();
+
+  return {
+    plainText,
+    loadDiffers: loadComparison.differs,
+    coachLoad: loadComparison.coachLabel,
+    athleteLoad: loadComparison.athleteLabel,
+    rest,
+  };
+}
+
+export function formatCoachProgressionCellText(
+  exercise: ProgramExercise | null | undefined,
+  display: ProgressionCellDisplay = DEFAULT_PROGRESSION_CELL_DISPLAY,
+  athleteSets?: AthleteExerciseSet[],
+) {
+  return formatCoachProgressionCellContent(exercise, display, athleteSets)
+    .plainText;
 }
 
 export function formatCoachProgressionCellTextForEdit(
@@ -362,13 +573,20 @@ export function buildCoachProgressionRows(
           Key includes exercise_number so multiple rows on the same day with the
           same prescription (e.g. three 1x2 bench sets with different intensity)
           stay separate — matching the raw program layout.
+          When block_slot_key is set, use it so athlete variation renames stay grouped.
         */
-        const key = [
-          cleanName,
-          day.day_number,
-          prescription.toLowerCase(),
-          String(exerciseNumber),
-        ].join("__");
+        const key = exercise.block_slot_key
+          ? [
+              exercise.block_slot_key,
+              String(day.day_number),
+              String(exerciseNumber),
+            ].join("__")
+          : [
+              cleanName,
+              day.day_number,
+              prescription.toLowerCase(),
+              String(exerciseNumber),
+            ].join("__");
 
         if (!rowMap.has(key)) {
           rowMap.set(key, {
@@ -406,20 +624,40 @@ export function buildCoachProgressionRows(
 }
 
 export function getProgressionExerciseColorClass(exerciseName: string) {
-  const cleanName = exerciseName.toLowerCase();
-  if (cleanName.includes("deadlift")) return "is-deadlift";
-  if (cleanName.includes("benchpress") || cleanName.includes("bench press")) {
-    return "is-bench";
-  }
-  if (cleanName.includes("bench")) return "is-bench";
-  if (cleanName.includes("squat")) return "is-squat";
+  const category = getProgressionExerciseCategory(exerciseName);
+  if (category === "deadlift") return "is-deadlift";
+  if (category === "bench") return "is-bench";
+  if (category === "squat") return "is-squat";
   return "";
+}
+
+export function patchProgressionSnapshotExercise(
+  snapshot: BlockProgressionSnapshot,
+  exerciseId: string,
+  updates: Partial<Pick<ProgramExercise, "load" | "reps" | "rpe">>,
+): BlockProgressionSnapshot {
+  let changed = false;
+  const nextExercisesByDay: Record<string, ProgramExercise[]> = {};
+
+  for (const [dayId, exercises] of Object.entries(snapshot.exercisesByDay)) {
+    nextExercisesByDay[dayId] = exercises.map((exercise) => {
+      if (exercise.id !== exerciseId) return exercise;
+      changed = true;
+      return { ...exercise, ...updates };
+    });
+  }
+
+  if (!changed) return snapshot;
+  return { ...snapshot, exercisesByDay: nextExercisesByDay };
 }
 
 export async function fetchBlockProgressionSnapshot(
   weeks: ProgramWeek[],
   fetchDays: (weekIds: string[]) => Promise<ProgramDay[]>,
   fetchExercises: (dayIds: string[]) => Promise<ProgramExercise[]>,
+  fetchAthleteSets?: (
+    exerciseIds: string[],
+  ) => Promise<AthleteExerciseSet[]>,
 ): Promise<BlockProgressionSnapshot> {
   const sortedWeeks = [...weeks].sort(
     (a, b) => a.week_number - b.week_number,
@@ -427,7 +665,12 @@ export async function fetchBlockProgressionSnapshot(
   const weekIds = sortedWeeks.map((week) => week.id);
 
   if (weekIds.length === 0) {
-    return { weeks: [], daysByWeek: {}, exercisesByDay: {} };
+    return {
+      weeks: [],
+      daysByWeek: {},
+      exercisesByDay: {},
+      athleteSetsByExerciseId: {},
+    };
   }
 
   const days = await fetchDays(weekIds);
@@ -460,9 +703,27 @@ export async function fetchBlockProgressionSnapshot(
     exercisesByDay[exercise.program_day_id].push(exercise);
   });
 
+  const athleteSetsByExerciseId: Record<string, AthleteExerciseSet[]> = {};
+  const exerciseIds = exercises.map((exercise) => exercise.id);
+
+  if (fetchAthleteSets && exerciseIds.length > 0) {
+    const athleteSets = await fetchAthleteSets(exerciseIds);
+    athleteSets.forEach((set) => {
+      if (!athleteSetsByExerciseId[set.program_exercise_id]) {
+        athleteSetsByExerciseId[set.program_exercise_id] = [];
+      }
+      athleteSetsByExerciseId[set.program_exercise_id].push(set);
+    });
+
+    Object.values(athleteSetsByExerciseId).forEach((sets) => {
+      sets.sort((a, b) => a.set_number - b.set_number);
+    });
+  }
+
   return {
     weeks: sortedWeeks,
     daysByWeek,
     exercisesByDay,
+    athleteSetsByExerciseId,
   };
 }

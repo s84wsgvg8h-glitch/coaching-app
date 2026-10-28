@@ -12,22 +12,17 @@ import { isCoachLikeRole } from "@/lib/authRoles";
 import TodoComposer from "@/components/todo/TodoComposer";
 import TodoKanbanCard from "@/components/todo/TodoKanbanCard";
 import TodoKanbanColumn from "@/components/todo/TodoKanbanColumn";
-import TodoSoundToggle from "@/components/todo/TodoSoundToggle";
 import { resolveAthleteIdFromTodoTitle } from "@/lib/todoTitleSuggestions";
 import { parseTodoInput } from "@/lib/todoTitleParser";
-import { playTaskCompleteSound } from "@/lib/todo/playTaskCompleteSound";
 import {
   TASK_COMPLETE_ANIMATION_MS,
-  TASK_COMPLETE_SOUND_DELAY_MS,
   TASK_DONE_ENTER_MS,
   waitMs,
 } from "@/lib/todo/taskCompletionTiming";
-import { useTaskSoundPreference } from "@/hooks/useTaskSoundPreference";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
 import {
   createCoachTodo,
   loadCoachTodosFast,
-  syncCoachTodosInBackground,
   toggleCoachTodo,
   updateCoachTodoKanbanStatus,
   type CoachTodo,
@@ -85,9 +80,9 @@ function buildCompletedTodo(todo: CoachTodo): CoachTodo {
 
 export default function TodoPage() {
   const [coachId, setCoachId] = useState("");
+  const [isAdmin, setIsAdmin] = useState(false);
   const [todos, setTodos] = useState<CoachTodo[]>([]);
   const [loading, setLoading] = useState(true);
-  const [syncing, setSyncing] = useState(false);
   const [newTitle, setNewTitle] = useState("");
   const [saving, setSaving] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
@@ -102,7 +97,6 @@ export default function TodoPage() {
     useState<CoachTodoKanbanStatus>("todo");
 
   const reducedMotion = usePrefersReducedMotion();
-  const { soundEnabled, setSoundEnabled } = useTaskSoundPreference();
   const completionLockRef = useRef(false);
 
   const athleteNameById = useMemo(
@@ -142,17 +136,13 @@ export default function TodoPage() {
         setCompletingTodoId(todo.id);
       }
 
-      if (soundEnabled && !reducedMotion) {
-        window.setTimeout(() => playTaskCompleteSound(), TASK_COMPLETE_SOUND_DELAY_MS);
-      }
-
       await waitMs(animationMs);
       setCompletingTodoId(null);
       markEnteringDone(todo.id);
       completionLockRef.current = false;
       return true;
     },
-    [markEnteringDone, reducedMotion, soundEnabled],
+    [markEnteringDone, reducedMotion],
   );
 
   useEffect(() => {
@@ -181,6 +171,7 @@ export default function TodoPage() {
 
       const admin = profile?.role === "admin";
       setCoachId(user.id);
+      setIsAdmin(admin);
 
       const { data: athletes } = await supabase
         .from("profiles")
@@ -192,6 +183,7 @@ export default function TodoPage() {
 
       const { data, error } = await loadCoachTodosFast(user.id, {
         includeOldCompleted: true,
+        isAdmin: admin,
       });
       if (error) {
         setErrorMessage(error.message);
@@ -200,15 +192,6 @@ export default function TodoPage() {
         setTodos(data);
       }
       setLoading(false);
-
-      setSyncing(true);
-      void syncCoachTodosInBackground(user.id, admin).then(async () => {
-        const refreshed = await loadCoachTodosFast(user.id, {
-          includeOldCompleted: true,
-        });
-        if (!refreshed.error) setTodos(refreshed.data);
-        setSyncing(false);
-      });
     }
 
     void init();
@@ -416,9 +399,6 @@ export default function TodoPage() {
         <PageHeader
           title="To-do"
           description="Taken, deadlines en automatische meldingen voor je atleten."
-          actions={
-            <TodoSoundToggle enabled={soundEnabled} onChange={setSoundEnabled} />
-          }
         />
 
         <TodoComposer
@@ -431,11 +411,6 @@ export default function TodoPage() {
 
         {errorMessage ? (
           <p className="mt-3 text-[13px] text-app-destructive">{errorMessage}</p>
-        ) : null}
-        {syncing ? (
-          <p className="mt-2 text-[12px] text-app-muted">
-            Automatische taken worden bijgewerkt…
-          </p>
         ) : null}
 
         {loading ? (

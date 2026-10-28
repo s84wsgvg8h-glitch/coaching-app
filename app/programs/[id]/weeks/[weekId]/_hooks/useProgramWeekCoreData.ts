@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -13,9 +13,13 @@ import {
 } from "@/lib/athleteVideoSubmit";
 import { getCachedProgramWeekCore } from "@/hooks/useProgramWeekCore";
 import {
-  loadProgramWeekCore,
-  type ProgramWeekCoreData,
-} from "@/lib/programWeekCoreLoader";
+  loadProgramWeekCoreCached,
+  persistProgramWeekSnapshot,
+} from "@/lib/programWeekCoreClient";
+import { getStoredProgramWeek } from "@/lib/programWeekLocalStore";
+import { getProgramEditQueueCount } from "@/lib/offlineProgramEditQueue";
+import { isOfflineEnvironment } from "@/lib/offlineNetwork";
+import type { ProgramWeekCoreData } from "@/lib/programWeekCoreLoader";
 import { queryKeys } from "@/lib/queryKeys";
 import type {
   ProgramBlock,
@@ -50,6 +54,7 @@ export function useProgramWeekCoreData({
 }) {
   const queryClient = useQueryClient();
   const saveStatusTimeoutRef = useRef<number | null>(null);
+  const pendingSavesRef = useRef(Promise.resolve());
 
   const initialCore = getCachedProgramWeekCore(
     queryClient,
@@ -76,15 +81,48 @@ export function useProgramWeekCoreData({
   const [athleteDisplayName, setAthleteDisplayName] = useState("Atleet");
   const [videoSubmitTarget, setVideoSubmitTarget] =
     useState<AthleteVideoSubmitTarget>("chat");
+  const [loadedFromCache, setLoadedFromCache] = useState(Boolean(initialCore));
+  const snapshotPersistTimeoutRef = useRef<number | null>(null);
 
-  function applyCoreData(data: ProgramWeekCoreData) {
+  useEffect(() => {
+    if (!authRole) return;
+    setRole(authRole);
+  }, [authRole]);
+
+  function buildCoreSnapshot(
+    overrides?: Partial<ProgramWeekCoreData>,
+  ): ProgramWeekCoreData {
+    return {
+      userId,
+      role: authRole || role,
+      block: currentBlock,
+      week,
+      days,
+      exercisesByDay,
+      ...overrides,
+    };
+  }
+
+  function schedulePersistSnapshot(overrides?: Partial<ProgramWeekCoreData>) {
+    if (!blockId || !weekId || !programReady) return;
+    if (snapshotPersistTimeoutRef.current) {
+      window.clearTimeout(snapshotPersistTimeoutRef.current);
+    }
+    snapshotPersistTimeoutRef.current = window.setTimeout(() => {
+      void persistProgramWeekSnapshot(blockId, weekId, buildCoreSnapshot(overrides));
+    }, 350);
+  }
+
+  function applyCoreData(data: ProgramWeekCoreData, fromCache = false) {
     setUserId(data.userId);
-    setRole(data.role || authRole || "");
+    setRole(authRole || data.role || "");
     setCurrentBlock(data.block);
     setWeek(data.week);
     setDays(data.days);
     setExercisesByDay(data.exercisesByDay);
     setProgramReady(true);
+    setLoadedFromCache(fromCache);
+    schedulePersistSnapshot(data);
   }
 
   async function loadSecondaryData(
@@ -93,39 +131,40 @@ export function useProgramWeekCoreData({
     loadedUserId: string,
   ) {
     void (async () => {
-      const items = await loadExerciseLibraryItems(false);
-      setLibraryItems(items);
-      setLibraryItemsById(
-        Object.fromEntries(items.map((item) => [item.id, item])),
-      );
-
-      await loadProgramNavigationRef.current?.(
-        blockData,
-        loadedRole,
-        loadedUserId,
-      );
-
       const ownerAthleteId =
         athleteId ||
         blockData?.athlete_id ||
         (loadedRole === "atleet" ? loadedUserId : "");
 
-      if (ownerAthleteId) {
-        const [{ data: athleteProfile }, submitTarget] = await Promise.all([
-          supabase
-            .from("profiles")
-            .select("coach_id, full_name")
-            .eq("id", ownerAthleteId)
-            .maybeSingle(),
-          loadAthleteVideoSubmitTarget(ownerAthleteId),
-        ]);
-
-        setAthleteDisplayName(athleteProfile?.full_name || "Atleet");
-        setAthleteCoachId(
-          athleteProfile?.coach_id || loadedUserId,
+      const libraryPromise = loadExerciseLibraryItems(false).then((items) => {
+        setLibraryItems(items);
+        setLibraryItemsById(
+          Object.fromEntries(items.map((item) => [item.id, item])),
         );
-        setVideoSubmitTarget(submitTarget);
-      }
+      });
+
+      const navPromise = loadProgramNavigationRef.current?.(
+        blockData,
+        loadedRole,
+        loadedUserId,
+      );
+
+      const athletePromise = ownerAthleteId
+        ? Promise.all([
+            supabase
+              .from("profiles")
+              .select("coach_id, full_name")
+              .eq("id", ownerAthleteId)
+              .maybeSingle(),
+            loadAthleteVideoSubmitTarget(ownerAthleteId),
+          ]).then(([{ data: athleteProfile }, submitTarget]) => {
+            setAthleteDisplayName(athleteProfile?.full_name || "Atleet");
+            setAthleteCoachId(athleteProfile?.coach_id || loadedUserId);
+            setVideoSubmitTarget(submitTarget);
+          })
+        : Promise.resolve();
+
+      await Promise.all([libraryPromise, navPromise, athletePromise]);
     })();
   }
 
@@ -140,9 +179,17 @@ export function useProgramWeekCoreData({
   }
 
   async function runSave(callback: () => Promise<void>) {
-    try {
+    const saveOperation = pendingSavesRef.current.then(async () => {
+      schedulePersistSnapshot();
       await callback();
+      schedulePersistSnapshot();
       setSavedSoon();
+    });
+
+    pendingSavesRef.current = saveOperation.catch(() => {});
+
+    try {
+      await saveOperation;
     } catch (error: unknown) {
       console.error("SAVE ERROR:", error);
       console.error("SAVE ERROR JSON:", JSON.stringify(error, null, 2));
@@ -162,9 +209,19 @@ export function useProgramWeekCoreData({
                 ? errRecord.hint
                 : JSON.stringify(error, null, 2) || "Opslaan mislukt";
 
+      if (isOfflineEnvironment() || getProgramEditQueueCount() > 0) {
+        schedulePersistSnapshot();
+        setSavedSoon();
+        return;
+      }
+
       alert(message);
       throw error;
     }
+  }
+
+  async function awaitPendingSaves() {
+    await pendingSavesRef.current;
   }
 
   function getOwnerAthleteId() {
@@ -228,6 +285,8 @@ export function useProgramWeekCoreData({
       return;
     }
 
+    let hasLocalData = false;
+
     const cached = getCachedProgramWeekCore(
       queryClient,
       blockId,
@@ -235,25 +294,57 @@ export function useProgramWeekCoreData({
     ) as ProgramWeekCoreData | undefined;
 
     if (cached) {
-      applyCoreData(cached);
-      void loadSecondaryData(cached.block, cached.role || authRole, authUserId);
-      return;
+      hasLocalData = true;
+      applyCoreData({ ...cached, role: authRole || cached.role });
+      void loadSecondaryData(
+        cached.block,
+        authRole || cached.role,
+        authUserId,
+      );
+    } else {
+      const stored = await getStoredProgramWeek(blockId, weekId);
+      if (stored?.data) {
+        hasLocalData = true;
+        applyCoreData(
+          { ...stored.data, role: authRole || stored.data.role },
+          true,
+        );
+        void loadSecondaryData(
+          stored.data.block,
+          authRole || stored.data.role,
+          authUserId,
+        );
+      } else {
+        setProgramReady(false);
+        setUserId(authUserId);
+        setRole(authRole || "");
+      }
     }
 
-    setProgramReady(false);
-    setUserId(authUserId);
-    setRole(authRole || "");
-
     try {
-      const data = await loadProgramWeekCore(blockId, weekId, {
+      const result = await loadProgramWeekCoreCached(blockId, weekId, {
         userId: authUserId,
-        role: authRole,
+        role: authRole || "",
       });
-      queryClient.setQueryData(queryKeys.programWeekCore(blockId, weekId), data);
-      applyCoreData(data);
-      void loadSecondaryData(data.block, authRole, authUserId);
-    } catch {
-      router.replace("/login");
+      queryClient.setQueryData(queryKeys.programWeekCore(blockId, weekId), {
+        ...result.data,
+        role: authRole || result.data.role,
+      });
+      applyCoreData(
+        { ...result.data, role: authRole || result.data.role },
+        result.fromCache,
+      );
+      void loadSecondaryData(result.data.block, authRole, authUserId);
+    } catch (error) {
+      if (!hasLocalData) {
+        const message =
+          error instanceof Error ? error.message : "Programma laden mislukt";
+        if (isOfflineEnvironment()) {
+          alert(message);
+          return;
+        }
+        router.replace("/login");
+      }
     }
   }
 
@@ -303,12 +394,14 @@ export function useProgramWeekCoreData({
     exercisesByDay,
     setExercisesByDay,
     programReady,
+    loadedFromCache,
     libraryItems,
     libraryItemsById,
     athleteCoachId,
     athleteDisplayName,
     videoSubmitTarget,
     runSave,
+    awaitPendingSaves,
     getOwnerAthleteId,
     loadData,
     loadDays,

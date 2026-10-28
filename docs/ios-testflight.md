@@ -137,7 +137,7 @@ Handmatig in Xcode:
 5. Wacht op processing (~5–15 min)
 6. **Internal Testing** → testers toevoegen
 
-**Laatste upload (lokaal):** versie **1.0**, build **3**, `server.url` = `https://limitlesscoaching.app`
+**Laatste upload (lokaal):** versie **1.0**, build **4**, `server.url` = `https://limitlesscoaching.app`
 
 ## Na web-wijzigingen
 
@@ -207,6 +207,7 @@ node scripts/verify-ios-release.mjs
 | `npm run ios:dev` | Sync **localhost** + simulator (local UI) |
 | `npm run ios:archive` | Verify + cap sync + archive + upload naar App Store Connect |
 | `npm run cap:open:ios` | Xcode openen |
+| `node scripts/configure-r2-cors.mjs` | R2 bucket CORS voor directe video-upload (PUT) |
 | `npm run create:app-review-demo` | App Store review accounts + sample data |
 | `npm run verify:review-demo` | Login + program/chat check voor review accounts |
 

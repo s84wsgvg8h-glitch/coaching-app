@@ -1,4 +1,5 @@
 import type { Dispatch, ReactNode, SetStateAction } from "react";
+import type { AthleteExtraExerciseInput } from "@/lib/athleteExtraExercise";
 import type { BlockIntakeWizard } from "@/lib/blockIntakeWizard";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
@@ -14,6 +15,7 @@ import type { useProgramVideoRecorder } from "@/hooks/useProgramVideoRecorder";
 import type { useProgramWeekAthleteLogging } from "../_hooks/useProgramWeekAthleteLogging";
 import type { useProgramWeekCoachMutations } from "../_hooks/useProgramWeekCoachMutations";
 import type { ProgramWeekPageViewProps } from "../_components/programWeekPageViewProps";
+import type { ProgramSidebarCompetitionEntry } from "@/lib/programWeek/competitionSidebar";
 
 type VideoRecorderApi = ReturnType<typeof useProgramVideoRecorder>;
 type AthleteLoggingApi = ReturnType<typeof useProgramWeekAthleteLogging>;
@@ -24,6 +26,8 @@ export type BuildProgramWeekPageViewPropsInput = {
   isAthleteView: boolean;
   isCoachView: boolean;
   athleteSidebarBlocks: ProgramWeekPageViewProps["athleteSidebarBlocks"];
+  sidebarCompetitions: ProgramSidebarCompetitionEntry[];
+  sidebarAthleteId: string;
   setOpenBlockIds: Dispatch<SetStateAction<Record<string, boolean>>>;
   goToProgram: (blockId: string, weekId: string) => void;
   blocksSidebar: ReactNode;
@@ -40,10 +44,15 @@ export type BuildProgramWeekPageViewPropsInput = {
   userId: string;
   athleteCoachId: string;
   athleteId: string | null;
+  coachAthleteOptions: ProgramWeekPageViewProps["coachAthleteOptions"];
+  currentCoachAthleteId: string;
+  onCoachAthleteChange?: ProgramWeekPageViewProps["onCoachAthleteChange"];
+  coachAthleteSwitching: boolean;
   programSearchContext: ProgramSearchContext;
   blockWeekNav: ReactNode;
   editorView: ProgramWeekPageViewProps["editorView"];
   setEditorView: ProgramWeekPageViewProps["setEditorView"];
+  registerProgramEditFlush: ProgramWeekPageViewProps["registerProgramEditFlush"];
   setPlanningSplitOpen: Dispatch<SetStateAction<boolean>>;
   getExerciseLibraryItem: (exercise: ProgramExercise) => ExerciseLibraryItem | null;
   saveExerciseLibraryLink: (exerciseId: string, libraryId: string | null) => Promise<void>;
@@ -55,6 +64,10 @@ export type BuildProgramWeekPageViewPropsInput = {
   openVideoRecorder: VideoRecorderApi["openVideoRecorder"];
   videoRecorder: VideoRecorderApi;
   offlineQueueCount: number;
+  offlineSyncSyncing: boolean;
+  offlineSyncOnline: boolean;
+  onRetryOfflineSync: () => void | Promise<void>;
+  onDismissOfflineSync: () => void;
   templateApplyOpen: boolean;
   setTemplateApplyOpen: Dispatch<SetStateAction<boolean>>;
   planningAthleteId: string;
@@ -96,12 +109,34 @@ export type BuildProgramWeekPageViewPropsInput = {
   weekStatsReport: ProgramWeekPageViewProps["weekStatsReport"];
   progressionSnapshot: BlockProgressionSnapshot | null;
   progressionLoading: boolean;
+  progressionBlocks: ProgramBlock[];
+  progressionWeeksByBlock: Record<string, ProgramWeek[]>;
   onProgressionSaveCell: (
     exerciseId: string,
     updates: { load: string; reps: string; rpe: string },
   ) => void | Promise<void>;
   athleteLogging: AthleteLoggingApi;
   coachMutations: CoachMutationsApi;
+  onAddExtraExercise?: (
+    dayId: string,
+    payload: Pick<AthleteExtraExerciseInput, "name" | "sets" | "reps" | "rpe">,
+  ) => Promise<void>;
+  onDeleteExtraExercise?: (exerciseId: string) => Promise<void>;
+  onRenameExtraExercise?: (exerciseId: string, name: string) => Promise<void>;
+  onChooseExerciseVariation?: (
+    exerciseId: string,
+    variationName: string,
+  ) => Promise<void>;
+  onToggleAthleteVariationMode?: (
+    exerciseId: string,
+    enabled: boolean,
+    baseName?: string,
+  ) => void | Promise<void>;
+  addingExtraExercise: boolean;
+  deletingExtraExerciseId: string;
+  renamingExtraExerciseId: string;
+  choosingVariationExerciseId: string;
+  onPullToRefresh?: () => Promise<void> | void;
 };
 
 export function buildProgramWeekPageViewProps(
@@ -114,6 +149,8 @@ export function buildProgramWeekPageViewProps(
     isAthleteView: input.isAthleteView,
     isCoachView: input.isCoachView,
     athleteSidebarBlocks: input.athleteSidebarBlocks,
+    sidebarCompetitions: input.sidebarCompetitions,
+    sidebarAthleteId: input.sidebarAthleteId,
     setOpenBlockIds: input.setOpenBlockIds,
     goToProgram: input.goToProgram,
     blocksSidebar: input.blocksSidebar,
@@ -146,11 +183,25 @@ export function buildProgramWeekPageViewProps(
     getExercisePriorityLabel: coachMutations.getExercisePriorityLabel,
     openAthleteExercisePanel: athleteLogging.openAthleteExercisePanel,
     setPreviewLibraryItem: input.setPreviewLibraryItem,
+    onAddExtraExercise: input.onAddExtraExercise,
+    onDeleteExtraExercise: input.onDeleteExtraExercise,
+    onRenameExtraExercise: input.onRenameExtraExercise,
+    onChooseExerciseVariation: input.onChooseExerciseVariation,
+    onToggleAthleteVariationMode: input.onToggleAthleteVariationMode,
+    addingExtraExercise: input.addingExtraExercise,
+    deletingExtraExerciseId: input.deletingExtraExerciseId,
+    renamingExtraExerciseId: input.renamingExtraExerciseId,
+    choosingVariationExerciseId: input.choosingVariationExerciseId,
     blockWeekNav: input.blockWeekNav,
     editorView: input.editorView,
     setEditorView: input.setEditorView,
+    registerProgramEditFlush: input.registerProgramEditFlush,
     setPlanningSplitOpen: input.setPlanningSplitOpen,
     athleteId: input.athleteId,
+    coachAthleteOptions: input.coachAthleteOptions,
+    currentCoachAthleteId: input.currentCoachAthleteId,
+    onCoachAthleteChange: input.onCoachAthleteChange,
+    coachAthleteSwitching: input.coachAthleteSwitching,
     programSearchContext: input.programSearchContext,
     creatingExerciseDayId: coachMutations.creatingExerciseDayId,
     openDayNoteId: coachMutations.openDayNoteId,
@@ -197,6 +248,7 @@ export function buildProgramWeekPageViewProps(
     handleExerciseDragStart: coachMutations.handleExerciseDragStart,
     handleExerciseDragOver: coachMutations.handleExerciseDragOver,
     handleExerciseDragOverDay: coachMutations.handleExerciseDragOverDay,
+    handleExerciseDragOverDayTail: coachMutations.handleExerciseDragOverDayTail,
     saveExerciseOrder: coachMutations.saveExerciseOrder,
     updateExerciseLocal: coachMutations.updateExerciseLocal,
     saveExerciseField: coachMutations.saveExerciseField,
@@ -246,6 +298,10 @@ export function buildProgramWeekPageViewProps(
     getAverageFromRows: athleteLogging.getAverageFromRows,
     videoRecorder: input.videoRecorder,
     offlineQueueCount: input.offlineQueueCount,
+    offlineSyncSyncing: input.offlineSyncSyncing,
+    offlineSyncOnline: input.offlineSyncOnline,
+    onRetryOfflineSync: input.onRetryOfflineSync,
+    onDismissOfflineSync: input.onDismissOfflineSync,
     templateApplyOpen: input.templateApplyOpen,
     setTemplateApplyOpen: input.setTemplateApplyOpen,
     planningAthleteId: input.planningAthleteId,
@@ -274,6 +330,9 @@ export function buildProgramWeekPageViewProps(
     athleteDisplayName: input.athleteDisplayName,
     progressionSnapshot: input.progressionSnapshot,
     progressionLoading: input.progressionLoading,
+    progressionBlocks: input.progressionBlocks,
+    progressionWeeksByBlock: input.progressionWeeksByBlock,
     onProgressionSaveCell: input.onProgressionSaveCell,
+    onPullToRefresh: input.onPullToRefresh,
   };
 }

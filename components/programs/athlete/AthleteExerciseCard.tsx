@@ -1,13 +1,21 @@
 "use client";
 
-import { Play } from "lucide-react";
+import { Play, Trash2 } from "lucide-react";
+import AthleteChoiceVariationBadge from "@/components/programs/week/AthleteChoiceVariationBadge";
 import type { ExerciseLibraryItem } from "@/lib/exerciseLibrary";
+import type { ProgramExercise } from "@/lib/programWeek/types";
 
 type AthleteExerciseCardProps = {
   name: string;
   priorityLabel: string;
   priorityClass: string;
   hasLibraryVideo: boolean;
+  isExtra?: boolean;
+  isAthleteChoice?: boolean;
+  athleteChoiceExercise?: Pick<
+    ProgramExercise,
+    "exercise_format" | "variation_base_name" | "name" | "block_slot_key"
+  >;
   sets: string;
   reps: string;
   rpe: string;
@@ -17,6 +25,8 @@ type AthleteExerciseCardProps = {
   isSelected?: boolean;
   onOpen: () => void;
   onPreviewVideo?: () => void;
+  onDelete?: () => void;
+  deleting?: boolean;
 };
 
 export default function AthleteExerciseCard({
@@ -24,6 +34,9 @@ export default function AthleteExerciseCard({
   priorityLabel,
   priorityClass,
   hasLibraryVideo,
+  isExtra = false,
+  isAthleteChoice = false,
+  athleteChoiceExercise,
   sets,
   reps,
   rpe,
@@ -33,10 +46,14 @@ export default function AthleteExerciseCard({
   isSelected = false,
   onOpen,
   onPreviewVideo,
+  onDelete,
+  deleting = false,
 }: AthleteExerciseCardProps) {
   return (
     <div
-      className={`athlete-program-exercise ${isSelected ? "is-selected" : ""}`}
+      className={`athlete-program-exercise ${isSelected ? "is-selected" : ""} ${
+        isExtra ? "is-extra" : ""
+      }`}
     >
       {hasLibraryVideo ? (
         <button
@@ -59,7 +76,18 @@ export default function AthleteExerciseCard({
       <button type="button" onClick={onOpen} className="athlete-program-exercise-main">
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-1.5">
-            <h3 className="text-[13px] font-semibold text-app-text">{name}</h3>
+            <p className="athlete-program-exercise-name text-app-text">{name}</p>
+            {isExtra ? (
+              <span className="athlete-program-badge athlete-program-badge--extra">
+                Extra
+              </span>
+            ) : null}
+            {isAthleteChoice && athleteChoiceExercise ? (
+              <AthleteChoiceVariationBadge
+                exercise={athleteChoiceExercise}
+                variant="athlete"
+              />
+            ) : null}
             {hasLibraryVideo ? (
               <span className="athlete-program-badge athlete-program-badge--uitleg">
                 Uitleg
@@ -87,6 +115,21 @@ export default function AthleteExerciseCard({
           </div>
         </div>
       </button>
+
+      {isExtra && onDelete ? (
+        <button
+          type="button"
+          onClick={(event) => {
+            event.stopPropagation();
+            onDelete();
+          }}
+          disabled={deleting}
+          className="athlete-program-exercise-delete app-focus-ring"
+          aria-label={`${name} verwijderen`}
+        >
+          <Trash2 className="h-2.5 w-2.5" aria-hidden="true" />
+        </button>
+      ) : null}
     </div>
   );
 }

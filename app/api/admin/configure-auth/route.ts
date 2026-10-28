@@ -42,6 +42,8 @@ export async function POST(request: Request) {
       `${appUrl}/login`,
       `${appUrl}/signup`,
       `${appUrl}/dashboard`,
+      `${appUrl}/reset-password`,
+      `${appUrl}/reset-password/update`,
     ]),
   );
 

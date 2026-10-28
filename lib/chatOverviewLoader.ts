@@ -28,13 +28,31 @@ type LoadChatOverviewOptions = {
   skipUnreadCounts?: boolean;
 };
 
+const PROFILE_LIST_SELECT = "id, full_name, role, avatar_url, coach_id";
+
+function buildSettingsMap(loadedSettings: ChatConversationSettings[]) {
+  const settingsMap: Record<string, ChatConversationSettings> = {};
+
+  for (const item of loadedSettings) {
+    settingsMap[
+      getSettingsKey(
+        item.peer_user_id
+          ? { peerUserId: item.peer_user_id }
+          : { groupId: item.group_id! },
+      )
+    ] = item;
+  }
+
+  return settingsMap;
+}
+
 async function loadOverviewContacts(
   currentUserId: string,
   role: string,
   settingsMap: Record<string, ChatConversationSettings>,
   options: LoadChatOverviewOptions,
 ) {
-  let contactQuery = supabase.from("profiles").select("*");
+  let contactQuery = supabase.from("profiles").select(PROFILE_LIST_SELECT);
 
   if (isCoachLikeRole(role)) {
     if (isAdminRole(role)) {
@@ -197,18 +215,22 @@ export async function loadChatOverview(
   role: string,
   options: LoadChatOverviewOptions = {},
 ): Promise<ChatOverviewData> {
-  const loadedSettings = await loadAllConversationSettings(userId);
-  const settingsMap: Record<string, ChatConversationSettings> = {};
+  if (options.skipUnreadCounts) {
+    const [loadedSettings, contacts, groups] = await Promise.all([
+      loadAllConversationSettings(userId),
+      loadOverviewContacts(userId, role, {}, options),
+      loadOverviewGroups(userId, {}, options),
+    ]);
 
-  for (const item of loadedSettings) {
-    settingsMap[
-      getSettingsKey(
-        item.peer_user_id
-          ? { peerUserId: item.peer_user_id }
-          : { groupId: item.group_id! },
-      )
-    ] = item;
+    return {
+      contacts,
+      groups,
+      settingsMap: buildSettingsMap(loadedSettings),
+    };
   }
+
+  const loadedSettings = await loadAllConversationSettings(userId);
+  const settingsMap = buildSettingsMap(loadedSettings);
 
   const [contacts, groups] = await Promise.all([
     loadOverviewContacts(userId, role, settingsMap, options),

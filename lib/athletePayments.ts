@@ -1,4 +1,5 @@
 import { isAdminRole } from "@/lib/authRoles";
+import { isOptionalDashInput } from "@/lib/optionalFieldDash";
 import {
   applyAthleteScope,
   loadCoachOrgContext,
@@ -104,14 +105,13 @@ export function formatPaymentDay(value: number | null) {
 }
 
 export function isPaymentDashInput(value: string) {
-  const trimmed = value.trim();
-  return trimmed === "-" || trimmed === "—" || trimmed === "–";
+  return isOptionalDashInput(value);
 }
 
 export function formatPaymentPriceFieldValue(
   price: number | null | undefined,
 ) {
-  if (price === null || price === undefined || Number.isNaN(price)) return "—";
+  if (price === null || price === undefined || Number.isNaN(price)) return "";
   return String(price);
 }
 
@@ -120,7 +120,7 @@ export function formatPaymentDayFieldValue(
   day: number | null | undefined,
 ) {
   if (price === null || price === undefined || Number.isNaN(price)) {
-    return "—";
+    return "";
   }
   if (day === null || day === undefined || Number.isNaN(day)) return "";
   return String(day);
@@ -263,6 +263,8 @@ export function isValidPaymentDayInput(
   dayInput: string,
   priceInput: string,
 ) {
+  if (isPaymentDashInput(priceInput)) return true;
+
   if (isPaymentDashInput(dayInput)) {
     return !paymentPriceInputHasAmount(priceInput);
   }
@@ -270,6 +272,25 @@ export function isValidPaymentDayInput(
   const trimmed = dayInput.trim();
   if (!trimmed) return true;
 
+  return parsePaymentDayInput(dayInput) !== null;
+}
+
+export function formatPaymentDayInputDisplay(
+  priceInput: string,
+  dayInput: string,
+) {
+  if (isPaymentDashInput(priceInput)) return "-";
+  return dayInput;
+}
+
+export function isPaymentDayFieldComplete(
+  priceInput: string,
+  dayInput: string,
+) {
+  if (isPaymentDashInput(priceInput)) return true;
+  if (!paymentPriceInputHasAmount(priceInput)) {
+    return isPaymentDashInput(dayInput) || !dayInput.trim();
+  }
   return parsePaymentDayInput(dayInput) !== null;
 }
 

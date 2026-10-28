@@ -3,14 +3,12 @@
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import {
-  useEffect,
-  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
 } from "react";
-import { createPortal } from "react-dom";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
+import ProgramMobileNavMenu from "@/components/programs/week/ProgramMobileNavMenu";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import {
   formatDateRangeLabel,
@@ -19,9 +17,12 @@ import {
   getWeekEndDateObject,
   getWeekStartDateObject,
 } from "@/lib/programWeek/dateFormatting";
+import {
+  resolveBlockWeeksForDisplay,
+  resolveNavBlocksForDisplay,
+} from "@/lib/programWeek/navDisplay";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
-import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
 export type ProgramBlockWeekMobileNavProps = {
   role: string;
@@ -58,94 +59,6 @@ export type ProgramBlockWeekMobileNavProps = {
   onCreateWeek: (targetBlockId: string) => void;
   onCancelWeek: () => void;
 };
-
-type MenuAnchor = {
-  top: number;
-  left: number;
-  width: number;
-};
-
-function ProgramMobileNavMenu({
-  open,
-  anchorRef,
-  children,
-  onClose,
-}: {
-  open: boolean;
-  anchorRef: React.RefObject<HTMLButtonElement | null>;
-  children: ReactNode;
-  onClose: () => void;
-}) {
-  const [anchor, setAnchor] = useState<MenuAnchor | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    deferEffectUpdate(() => {
-      setMounted(true);
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open) {
-      deferEffectUpdate(() => {
-        setAnchor(null);
-      });
-      return;
-    }
-
-    function updateAnchor() {
-      const rect = anchorRef.current?.getBoundingClientRect();
-      if (!rect) {
-        setAnchor(null);
-        return;
-      }
-
-      const width = Math.max(rect.width, 168);
-      const maxLeft = Math.max(8, window.innerWidth - width - 8);
-      const left = Math.min(Math.max(8, rect.left), maxLeft);
-
-      setAnchor({
-        top: rect.bottom + 6,
-        left,
-        width,
-      });
-    }
-
-    updateAnchor();
-    window.addEventListener("resize", updateAnchor);
-    window.addEventListener("scroll", updateAnchor, true);
-
-    return () => {
-      window.removeEventListener("resize", updateAnchor);
-      window.removeEventListener("scroll", updateAnchor, true);
-    };
-  }, [open, anchorRef]);
-
-  if (!mounted || !open || !anchor) return null;
-
-  return createPortal(
-    <>
-      <button
-        type="button"
-        aria-label="Sluit menu"
-        className="program-mobile-week-nav-backdrop fixed inset-0 z-[250] cursor-default bg-transparent"
-        onClick={onClose}
-      />
-      <div
-        role="menu"
-        className="program-mobile-week-nav-menu fixed z-[251] max-h-[min(16rem,50dvh)] overflow-y-auto overscroll-contain rounded-2xl border py-1 shadow-xl"
-        style={{
-          top: anchor.top,
-          left: anchor.left,
-          width: anchor.width,
-        }}
-      >
-        {children}
-      </div>
-    </>,
-    document.body,
-  );
-}
 
 export default function ProgramBlockWeekMobileNav({
   role,
@@ -205,9 +118,19 @@ export default function ProgramBlockWeekMobileNav({
   const darkNav = role === "atleet" || isCoachLikeRole(role);
   const athleteMobileNav = role === "atleet";
   const athleteCompact = athleteMobileNav;
-  const blockWeeks = weeksByBlock[blockId] || [];
+  const displayNavBlocks = resolveNavBlocksForDisplay(
+    navBlocks,
+    currentBlock,
+    blockId,
+  );
+  const blockWeeks = resolveBlockWeeksForDisplay(
+    weeksByBlock,
+    blockId,
+    week,
+    weekId,
+  );
   const activeBlock =
-    navBlocks.find((block) => block.id === blockId) || currentBlock;
+    displayNavBlocks.find((block) => block.id === blockId) || currentBlock;
   const activeWeek = blockWeeks.find((item) => item.id === weekId) || week;
 
   const activeBlockStart = activeBlock
@@ -218,11 +141,11 @@ export default function ProgramBlockWeekMobileNav({
     : null;
   const activeWeekStart =
     activeBlock && activeWeek
-      ? getWeekStartDateObject(activeBlock, activeWeek)
+      ? getWeekStartDateObject(activeBlock, activeWeek, blockWeeks)
       : null;
   const activeWeekEnd =
     activeBlock && activeWeek
-      ? getWeekEndDateObject(activeBlock, activeWeek)
+      ? getWeekEndDateObject(activeBlock, activeWeek, blockWeeks)
       : null;
 
   const blockSelectorButton = (
@@ -287,8 +210,8 @@ export default function ProgramBlockWeekMobileNav({
     <div
       className={`program-mobile-week-nav relative z-30 w-full max-w-full overflow-visible backdrop-blur lg:hidden ${
         athleteCompact
-          ? "program-mobile-week-nav--athlete-compact px-3 pb-1"
-          : "sticky top-0 -mx-3 mb-4 space-y-3 px-3 pb-3 pt-[max(0.25rem,env(safe-area-inset-top))] md:-mx-6 md:px-6"
+          ? "program-mobile-week-nav--athlete-compact px-3 pb-1 pt-[max(0.375rem,env(safe-area-inset-top))]"
+          : "sticky top-0 -mx-3 mb-4 space-y-3 px-3 pb-3 pt-[max(0.375rem,env(safe-area-inset-top))] md:-mx-6 md:px-6"
       } ${
         darkNav
           ? "program-mobile-week-nav--dark"
@@ -326,10 +249,10 @@ export default function ProgramBlockWeekMobileNav({
         anchorRef={blockButtonRef}
         onClose={closeMenus}
       >
-        {navBlocks.length === 0 ? (
+        {displayNavBlocks.length === 0 ? (
           <p className="px-4 py-3 text-sm text-app-muted">Geen blocks gevonden.</p>
         ) : (
-          navBlocks.map((block) => {
+          displayNavBlocks.map((block) => {
             const weeksForBlock = weeksByBlock[block.id] || [];
             const blockStart = getBlockStartDateObject(block);
             const blockEnd = getBlockEndDateObject(block, weeksForBlock);
@@ -368,10 +291,10 @@ export default function ProgramBlockWeekMobileNav({
         ) : (
           blockWeeks.map((item) => {
             const weekStart = activeBlock
-              ? getWeekStartDateObject(activeBlock, item)
+              ? getWeekStartDateObject(activeBlock, item, blockWeeks)
               : null;
             const weekEnd = activeBlock
-              ? getWeekEndDateObject(activeBlock, item)
+              ? getWeekEndDateObject(activeBlock, item, blockWeeks)
               : null;
             const isActive = item.id === weekId;
 

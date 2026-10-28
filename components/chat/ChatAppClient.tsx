@@ -1,7 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useEffect, useMemo, useRef, useState, startTransition } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  startTransition,
+} from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -13,12 +21,9 @@ import {
   MoreVertical,
   Pin,
   Plus,
-  Search,
   SendHorizontal,
   Users,
   X,
-  Sparkles,
-  BarChart2,
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
@@ -62,6 +67,7 @@ import {
   uploadChatAudio,
   uploadChatMedia,
 } from "@/lib/chatMedia";
+import { toStorageMetadata } from "@/lib/storage/types";
 import {
   getUnreadCountForConversation,
   markConversationAsRead,
@@ -73,7 +79,6 @@ import {
   formatChatListTime,
   formatDateDivider,
   formatMessageTime,
-  getInitials,
   getMessageBubbleRadiusClass,
   getMessagePreview,
   getReplyText,
@@ -84,16 +89,9 @@ import {
 } from "@/lib/chatUtils";
 import ChatSwipeReplyRow from "@/components/chat/ChatSwipeReplyRow";
 import ExerciseVideoMessage from "@/components/chat/ExerciseVideoMessage";
-import ChatVideoCoachFeedbackViewer from "@/components/chat/ChatVideoCoachFeedbackViewer";
 import PollMessage from "@/components/chat/PollMessage";
-import ChatMediaCapture from "@/components/chat/ChatMediaCapture";
-import ChatMediaComposer from "@/components/chat/ChatMediaComposer";
-import GroupInfoPanel from "@/components/chat/GroupInfoPanel";
 import ChatAvatar from "@/components/chat/ChatAvatar";
 import ChatConversationMenu from "@/components/chat/ChatConversationMenu";
-import ChatReportSheet, {
-  type ChatReportTarget,
-} from "@/components/chat/ChatReportSheet";
 import ChatVoiceMessage from "@/components/chat/ChatVoiceMessage";
 import ChatVoiceRecorder from "@/components/chat/ChatVoiceRecorder";
 import { loadAthleteProgramPosition } from "@/lib/athleteProgramContext";
@@ -102,7 +100,24 @@ import {
   loadDirectMessagePreviews,
   loadGroupMessagePreviews,
 } from "@/lib/chatConversationPreviews";
-import { saveChatReturnRoute, saveChatEntryReturn, getChatEntryReturn } from "@/lib/chatNavigation";
+import {
+  loadDirectMessagesAll,
+  loadDirectMessagesRecent,
+  loadGroupMessagesAll,
+  loadGroupMessagesRecent,
+} from "@/lib/chatMessageLoader";
+import {
+  appendCachedChatMessage,
+  getCachedChatMessages,
+  getDirectChatCacheKey,
+  getGroupChatCacheKey,
+  prefetchChatMessages,
+  removeCachedChatMessage,
+  replaceCachedChatMessageId,
+  resolveChatMessages,
+  setCachedChatMessages,
+} from "@/lib/chatMessageCache";
+import { saveChatReturnRoute, saveChatEntryReturn } from "@/lib/chatNavigation";
 import {
   searchMessagesGlobally,
   getSearchableMessageText,
@@ -116,20 +131,11 @@ import ChatMessageMenu, {
   ChatMessageMenuTrigger,
 } from "@/components/chat/ChatMessageMenu";
 import HighlightedText from "@/components/chat/HighlightedText";
-import ChatProgramPanel from "@/components/chat/ChatProgramPanel";
-import ChatBwPanel from "@/components/chat/ChatBwPanel";
-import ChatExternalsPanel from "@/components/chat/ChatExternalsPanel";
-import ChatVolumePanel from "@/components/chat/ChatVolumePanel";
-import ChatIntensityPanel from "@/components/chat/ChatIntensityPanel";
-import ChatMaxPanel from "@/components/chat/ChatMaxPanel";
-import ChatRawDataPanel from "@/components/chat/ChatRawDataPanel";
-import ChatInjuriesPanel from "@/components/chat/ChatInjuriesPanel";
-import ChatAiPanel from "@/components/chat/ChatAiPanel";
-import ChatTodoPanel from "@/components/chat/ChatTodoPanel";
-import ChatCoachAgendaOverviewPanel from "@/components/chat/ChatCoachAgendaOverviewPanel";
+import type { ChatReportTarget } from "@/components/chat/ChatReportSheet";
 import ChatAiMessage from "@/components/chat/ChatAiMessage";
-import ChatBroadcastModal from "@/components/chat/ChatBroadcastModal";
 import ChatMessageReactions from "@/components/chat/ChatMessageReactions";
+import ChatPlainVideoMessage from "@/components/chat/ChatPlainVideoMessage";
+import ChatBubbleMeta from "@/components/chat/ChatBubbleMeta";
 import {
   loadMessageReactions,
   toggleMessageReaction,
@@ -179,11 +185,79 @@ import {
   type PollMessagePayload,
   type PollVote,
 } from "@/lib/chatPolls";
-import PollDetailsPanel from "@/components/chat/PollDetailsPanel";
 import {
   getActiveChatRoute,
   type ChatListEntry,
 } from "@/components/chat/chatAppRoute";
+
+const ChatProgramPanel = dynamic(
+  () => import("@/components/chat/ChatProgramPanel"),
+  { ssr: false },
+);
+const ChatBwPanel = dynamic(() => import("@/components/chat/ChatBwPanel"), {
+  ssr: false,
+});
+const ChatExternalsPanel = dynamic(
+  () => import("@/components/chat/ChatExternalsPanel"),
+  { ssr: false },
+);
+const ChatVolumePanel = dynamic(
+  () => import("@/components/chat/ChatVolumePanel"),
+  { ssr: false },
+);
+const ChatIntensityPanel = dynamic(
+  () => import("@/components/chat/ChatIntensityPanel"),
+  { ssr: false },
+);
+const ChatMaxPanel = dynamic(() => import("@/components/chat/ChatMaxPanel"), {
+  ssr: false,
+});
+const ChatRawDataPanel = dynamic(
+  () => import("@/components/chat/ChatRawDataPanel"),
+  { ssr: false },
+);
+const ChatInjuriesPanel = dynamic(
+  () => import("@/components/chat/ChatInjuriesPanel"),
+  { ssr: false },
+);
+const ChatAiPanel = dynamic(() => import("@/components/chat/ChatAiPanel"), {
+  ssr: false,
+});
+const ChatTodoPanel = dynamic(() => import("@/components/chat/ChatTodoPanel"), {
+  ssr: false,
+});
+const ChatCoachAgendaOverviewPanel = dynamic(
+  () => import("@/components/chat/ChatCoachAgendaOverviewPanel"),
+  { ssr: false },
+);
+const ChatBroadcastModal = dynamic(
+  () => import("@/components/chat/ChatBroadcastModal"),
+  { ssr: false },
+);
+const ChatMediaCapture = dynamic(
+  () => import("@/components/chat/ChatMediaCapture"),
+  { ssr: false },
+);
+const ChatMediaComposer = dynamic(
+  () => import("@/components/chat/ChatMediaComposer"),
+  { ssr: false },
+);
+const GroupInfoPanel = dynamic(
+  () => import("@/components/chat/GroupInfoPanel"),
+  { ssr: false },
+);
+const ChatReportSheet = dynamic(
+  () => import("@/components/chat/ChatReportSheet"),
+  { ssr: false },
+);
+const ChatVideoCoachFeedbackViewer = dynamic(
+  () => import("@/components/chat/ChatVideoCoachFeedbackViewer"),
+  { ssr: false },
+);
+const PollDetailsPanel = dynamic(
+  () => import("@/components/chat/PollDetailsPanel"),
+  { ssr: false },
+);
 
 export default function ChatAppClient() {
   const router = useRouter();
@@ -302,6 +376,7 @@ export default function ChatAppClient() {
   const messageLongPressTriggeredRef = useRef(false);
   const messageTouchStartRef = useRef<{ x: number; y: number } | null>(null);
   const lastMessageTapRef = useRef<{ time: number; msgId: string } | null>(null);
+  const switchConversationTokenRef = useRef(0);
 
   useEffect(() => {
     const media = window.matchMedia("(max-width: 1023px)");
@@ -324,8 +399,12 @@ export default function ChatAppClient() {
     let cancelled = false;
 
     async function syncOverview() {
+      const cachedOverview = queryClient.getQueryData<ChatOverviewData>(
+        queryKeys.chatOverview(authUserId, authRole),
+      );
       const overview =
         overviewQuery.data ??
+        cachedOverview ??
         (await queryClient.fetchQuery({
           queryKey: queryKeys.chatOverview(authUserId, authRole),
           queryFn: () =>
@@ -447,21 +526,14 @@ export default function ChatAppClient() {
     void syncActiveConversationReadState();
   }, [activeUserId, activeGroupId, userId, isBootstrapping]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (messages.length === 0) return;
+    if (!shouldStickToBottomRef.current && !isInitialScrollRef.current) return;
+
+    scrollToBottomInstant();
 
     if (isInitialScrollRef.current) {
-      requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          scrollToBottom("instant");
-          isInitialScrollRef.current = false;
-        });
-      });
-      return;
-    }
-
-    if (shouldStickToBottomRef.current) {
-      scrollToBottom("smooth");
+      isInitialScrollRef.current = false;
     }
   }, [messages]);
 
@@ -610,32 +682,26 @@ export default function ChatAppClient() {
     createGroupOpen,
   ]);
 
-  function scrollToBottom(behavior: ScrollBehavior = "smooth") {
+  function scrollToBottomInstant() {
     const container = messagesContainerRef.current;
     if (!container) return;
-
-    requestAnimationFrame(() => {
-      if (behavior === "instant") {
-        container.scrollTop = container.scrollHeight;
-        return;
-      }
-
-      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-    });
+    container.scrollTop = container.scrollHeight;
   }
 
   function forceScrollToBottom() {
     shouldStickToBottomRef.current = true;
+    scrollToBottomInstant();
+    requestAnimationFrame(scrollToBottomInstant);
+  }
 
-    const scroll = () => scrollToBottom("instant");
-
-    requestAnimationFrame(() => {
-      requestAnimationFrame(scroll);
-    });
-
-    window.setTimeout(scroll, 120);
-    window.setTimeout(scroll, 350);
-    window.setTimeout(scroll, 700);
+  function getActiveConversationCacheKey() {
+    if (activeUserId && userId) {
+      return getDirectChatCacheKey(userId, activeUserId);
+    }
+    if (activeGroupId) {
+      return getGroupChatCacheKey(activeGroupId);
+    }
+    return "";
   }
 
   function handleMediaLoaded() {
@@ -703,44 +769,6 @@ export default function ChatAppClient() {
       container.scrollHeight - container.scrollTop - container.clientHeight;
 
     shouldStickToBottomRef.current = distanceFromBottom < 120;
-  }
-
-  async function bootstrap() {
-    if (!authUserId || !authRole) return;
-
-    const bootstrapUserId = authUserId;
-    const bootstrapRole = authRole;
-
-    setBootstrapping(true);
-    setUserId(bootstrapUserId);
-    setUserRole(bootstrapRole);
-    setUserName(authProfile?.full_name || "");
-
-    const cacheKey = queryKeys.chatOverview(bootstrapUserId, bootstrapRole);
-    const overview =
-      queryClient.getQueryData<ChatOverviewData>(cacheKey) ??
-      (await queryClient.fetchQuery({
-        queryKey: cacheKey,
-        queryFn: () =>
-          loadChatOverview(bootstrapUserId, bootstrapRole, {
-            skipUnreadCounts: true,
-          }),
-        ...athleteQueryDefaults,
-      }));
-
-    if (!overview) {
-      setBootstrapping(false);
-      return;
-    }
-
-    const blockedIds = await loadBlockedUserIds(authUserId);
-    const blockedSet = new Set(blockedIds);
-
-    setBlockedUserIds(blockedSet);
-    setConversationSettings(overview.settingsMap);
-    setContacts(overview.contacts.filter((contact) => !blockedSet.has(contact.id)));
-    setGroups(overview.groups);
-    setBootstrapping(false);
   }
 
   async function syncMessageReactions(loadedMessages: ChatMessage[]) {
@@ -899,33 +927,15 @@ export default function ChatAppClient() {
     );
   }
 
-  async function loadDirectMessages(currentUserId: string, otherUserId: string) {
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .or(
-        `and(sender_id.eq.${currentUserId},receiver_id.eq.${otherUserId}),and(sender_id.eq.${otherUserId},receiver_id.eq.${currentUserId})`,
-      )
-      .is("group_id", null)
-      .order("created_at", { ascending: true });
-
-    return (data || []) as ChatMessage[];
-  }
-
-  async function loadGroupMessages(groupId: string) {
-    const { data } = await supabase
-      .from("messages")
-      .select("*")
-      .eq("group_id", groupId)
-      .order("created_at", { ascending: true });
-
-    return (data || []) as ChatMessage[];
-  }
-
   async function switchConversation(route: ReturnType<typeof getActiveChatRoute>) {
+    const switchToken = ++switchConversationTokenRef.current;
     setSwitchingConversation(true);
     setReplyingTo(null);
     setMessage("");
+
+    function isStaleSwitch() {
+      return switchToken !== switchConversationTokenRef.current;
+    }
 
     try {
       if (route.type === "none" || !userId) {
@@ -959,16 +969,55 @@ export default function ChatAppClient() {
           ),
         );
 
-        await markConversationAsRead(userId, route.id);
-        setPeerLastReadAt(await loadPeerReadState(route.id, userId));
-        const loadedMessages = filterMessagesByClearedAt(
-          await loadDirectMessages(userId, route.id),
+        const cacheKey = getDirectChatCacheKey(userId, route.id);
+        const cached = getCachedChatMessages(cacheKey);
+        if (cached?.length) {
+          setMessages(filterMessagesByClearedAt(cached, clearedAt));
+          isInitialScrollRef.current = true;
+          setSwitchingConversation(false);
+        }
+
+        void loadPeerReadState(route.id, userId).then((peerRead) => {
+          if (isStaleSwitch()) return;
+          setPeerLastReadAt(peerRead);
+        });
+
+        const loadedMessages = await resolveChatMessages(cacheKey, () =>
+          loadDirectMessagesRecent(userId, route.id),
+        );
+
+        if (isStaleSwitch()) return;
+
+        const filteredMessages = filterMessagesByClearedAt(
+          loadedMessages,
           clearedAt,
         );
-        setMessages(loadedMessages);
-        await syncMessageReactions(loadedMessages);
+        setCachedChatMessages(cacheKey, loadedMessages);
+        setMessages(filteredMessages);
         isInitialScrollRef.current = true;
+        deferEffectUpdate(() => {
+          void syncMessageReactions(filteredMessages);
+        });
+
+        void loadDirectMessagesAll(userId, route.id).then((allMessages) => {
+          if (isStaleSwitch()) return;
+          const fullFiltered = filterMessagesByClearedAt(allMessages, clearedAt);
+          if (fullFiltered.length <= filteredMessages.length) return;
+          setCachedChatMessages(cacheKey, allMessages);
+          setMessages(fullFiltered);
+          deferEffectUpdate(() => {
+            void syncMessageReactions(fullFiltered);
+          });
+        });
         return;
+      }
+
+      const cacheKey = getGroupChatCacheKey(route.id);
+      const cached = getCachedChatMessages(cacheKey);
+      if (cached?.length) {
+        setMessages(filterMessagesByClearedAt(cached, clearedAt));
+        isInitialScrollRef.current = true;
+        setSwitchingConversation(false);
       }
 
       const group =
@@ -980,9 +1029,26 @@ export default function ChatAppClient() {
           .maybeSingle()
           .then(({ data }) => (data as ChatGroupListItem | null))) ||
         null;
+
+      if (isStaleSwitch()) return;
+
       setActiveGroup(group);
       setActiveContact(null);
-      const memberProfiles = await loadChatGroupMemberProfiles(route.id);
+
+      const [memberProfiles, memberRowsResult, loadedMessages] =
+        await Promise.all([
+          loadChatGroupMemberProfiles(route.id),
+          supabase
+            .from("chat_group_members")
+            .select("user_id, role")
+            .eq("group_id", route.id),
+          resolveChatMessages(cacheKey, () =>
+            loadGroupMessagesRecent(route.id),
+          ),
+        ]);
+
+      if (isStaleSwitch()) return;
+
       setGroupMemberProfiles(memberProfiles);
       setGroupMemberNames(
         Object.fromEntries(
@@ -993,13 +1059,8 @@ export default function ChatAppClient() {
         ),
       );
 
-      const { data: memberRows } = await supabase
-        .from("chat_group_members")
-        .select("user_id, role")
-        .eq("group_id", route.id);
-
       const roles: Record<string, "member" | "admin"> = {};
-      for (const row of memberRows || []) {
+      for (const row of memberRowsResult.data || []) {
         roles[row.user_id] = row.role === "admin" ? "admin" : "member";
       }
       setGroupMemberRoles(roles);
@@ -1010,37 +1071,43 @@ export default function ChatAppClient() {
         ),
       );
 
-      await markGroupAsRead(userId, route.id);
-
-      if (route.type === "group-info") {
-        if (messages.length === 0 || messages[0]?.group_id !== route.id) {
-          const loadedMessages = filterMessagesByClearedAt(
-            await loadGroupMessages(route.id),
-            clearedAt,
-          );
-          setMessages(loadedMessages);
-          await syncMessageReactions(loadedMessages);
-        }
-        return;
-      }
-
-      const loadedMessages = filterMessagesByClearedAt(
-        await loadGroupMessages(route.id),
+      const filteredMessages = filterMessagesByClearedAt(
+        loadedMessages,
         clearedAt,
       );
-      setMessages(loadedMessages);
-      await syncMessageReactions(loadedMessages);
+      setCachedChatMessages(cacheKey, loadedMessages);
+      setMessages(filteredMessages);
       isInitialScrollRef.current = true;
+      deferEffectUpdate(() => {
+        void syncMessageReactions(filteredMessages);
+      });
+
+      void loadGroupMessagesAll(route.id).then((allMessages) => {
+        if (isStaleSwitch()) return;
+        const fullFiltered = filterMessagesByClearedAt(allMessages, clearedAt);
+        if (fullFiltered.length <= filteredMessages.length) return;
+        setCachedChatMessages(cacheKey, allMessages);
+        setMessages(fullFiltered);
+        deferEffectUpdate(() => {
+          void syncMessageReactions(fullFiltered);
+        });
+      });
     } catch (error) {
       if (error instanceof Error) {
         console.error("CHAT SWITCH ERROR:", error.message);
       }
     } finally {
-      setSwitchingConversation(false);
+      if (!isStaleSwitch()) {
+        setSwitchingConversation(false);
+      }
     }
   }
 
   function openDirectChat(otherUserId: string) {
+    if (userId) {
+      prefetchChatMessages(userId, { kind: "direct", id: otherUserId });
+    }
+
     setContacts((current) =>
       current.map((contact) =>
         contact.id === otherUserId ? { ...contact, unreadCount: 0 } : contact,
@@ -1053,6 +1120,10 @@ export default function ChatAppClient() {
   }
 
   function openGroupChat(groupId: string) {
+    if (userId) {
+      prefetchChatMessages(userId, { kind: "group", id: groupId });
+    }
+
     setGroups((current) =>
       current.map((group) =>
         group.id === groupId ? { ...group, unreadCount: 0 } : group,
@@ -1096,12 +1167,7 @@ export default function ChatAppClient() {
     };
 
     focusInput();
-    window.requestAnimationFrame(() => {
-      focusInput();
-      window.requestAnimationFrame(focusInput);
-    });
-    window.setTimeout(focusInput, 120);
-    window.setTimeout(focusInput, 280);
+    requestAnimationFrame(focusInput);
   }
 
   function handleReply(msg: ChatMessage) {
@@ -1267,13 +1333,14 @@ export default function ChatAppClient() {
     };
 
     setMessages((current) => [...current, optimisticMessage]);
+    const cacheKey = getActiveConversationCacheKey();
+    if (cacheKey) {
+      appendCachedChatMessage(cacheKey, optimisticMessage);
+    }
     setMessage("");
     setReplyingTo(null);
-    inputRef.current?.blur();
-    window.requestAnimationFrame(() => {
-      forceScrollToBottom();
-      window.requestAnimationFrame(forceScrollToBottom);
-    });
+    shouldStickToBottomRef.current = true;
+    focusMessageInput();
 
     let error: { message: string } | null = null;
     let insertedId: string | null = null;
@@ -1316,17 +1383,25 @@ export default function ChatAppClient() {
       setMessages((current) =>
         current.filter((item) => item.id !== optimisticId),
       );
+      if (cacheKey) {
+        removeCachedChatMessage(cacheKey, optimisticId);
+      }
       setMessage(messageText);
+      focusMessageInput();
       alert(error.message);
       return;
     }
 
     if (insertedId) {
+      const confirmedMessage = { ...optimisticMessage, id: insertedId };
       setMessages((current) =>
         current.map((item) =>
-          item.id === optimisticId ? { ...item, id: insertedId! } : item,
+          item.id === optimisticId ? confirmedMessage : item,
         ),
       );
+      if (cacheKey) {
+        replaceCachedChatMessageId(cacheKey, optimisticId, confirmedMessage);
+      }
     }
 
     if (activeGroupId) {
@@ -1411,7 +1486,11 @@ export default function ChatAppClient() {
     caption = "",
     replyOverride?: ChatMessage | null,
   ) {
-    if (!userId || (!activeUserId && !activeGroupId) || uploadingMedia) return;
+    if (!userId || (!activeUserId && !activeGroupId)) {
+      showAppToast("Open eerst een chatgesprek.");
+      return;
+    }
+    if (uploadingMedia) return;
     if (!canSendMessages) {
       alert("Alleen beheerders kunnen berichten sturen in deze groep.");
       return;
@@ -1420,22 +1499,51 @@ export default function ChatAppClient() {
     const mediaType = getChatMediaFileType(file);
 
     if (!mediaType) {
-      alert("Kies een foto of video");
+      showAppToast("Kies een foto of video");
       return;
     }
 
     const reply = replyOverride ?? replyingTo;
 
+    const optimisticId = crypto.randomUUID();
+    const optimisticUrl = URL.createObjectURL(file);
+    const createdAt = new Date().toISOString();
+    const optimisticMessage: ChatMessage = {
+      id: optimisticId,
+      sender_id: userId,
+      receiver_id: activeUserId || null,
+      group_id: activeGroupId || null,
+      body: caption.trim() || null,
+      file_url: optimisticUrl,
+      file_type: mediaType,
+      created_at: createdAt,
+      read_at: null,
+      reply_to_body: reply ? getReplyText(reply) : null,
+      reply_to_file_type: reply?.file_type || null,
+      reply_to_sender_id: reply?.sender_id || null,
+    };
+
+    setMessages((current) => [...current, optimisticMessage]);
+    updateSidebarAfterMessage(
+      getMessagePreview(optimisticMessage, userId),
+      createdAt,
+    );
+    setReplyingTo(null);
+    setPendingMediaFile(null);
+    forceScrollToBottom();
+
     setUploadingMedia(true);
 
     try {
-      const { url, fileType, error: uploadError } = await uploadChatMedia(
+      const { url, fileType, storage, error: uploadError } = await uploadChatMedia(
         userId,
         file,
       );
 
       if (uploadError || !url || !fileType) {
-        alert(uploadError?.message || "Upload mislukt");
+        setMessages((current) => current.filter((message) => message.id !== optimisticId));
+        URL.revokeObjectURL(optimisticUrl);
+        showAppToast(uploadError?.message || "Upload mislukt");
         return;
       }
 
@@ -1447,37 +1555,22 @@ export default function ChatAppClient() {
         groupId: activeGroupId || undefined,
         receiverId: activeUserId || undefined,
         replyTo: reply,
+        storage: storage ? toStorageMetadata(storage) : null,
       });
 
       if (error) {
+        setMessages((current) => current.filter((message) => message.id !== optimisticId));
+        URL.revokeObjectURL(optimisticUrl);
         alert(error.message);
         return;
       }
 
-      const createdAt = new Date().toISOString();
-      const optimisticMessage: ChatMessage = {
-        id: crypto.randomUUID(),
-        sender_id: userId,
-        receiver_id: activeUserId || null,
-        group_id: activeGroupId || null,
-        body: caption.trim() || null,
-        file_url: url,
-        file_type: fileType,
-        created_at: createdAt,
-        read_at: null,
-        reply_to_body: reply ? getReplyText(reply) : null,
-        reply_to_file_type: reply?.file_type || null,
-        reply_to_sender_id: reply?.sender_id || null,
-      };
-
-      setMessages((current) => [...current, optimisticMessage]);
-      updateSidebarAfterMessage(
-        getMessagePreview(optimisticMessage, userId),
-        createdAt,
+      URL.revokeObjectURL(optimisticUrl);
+      setMessages((current) =>
+        current.map((message) =>
+          message.id === optimisticId ? { ...message, file_url: url } : message,
+        ),
       );
-      setReplyingTo(null);
-      setPendingMediaFile(null);
-      forceScrollToBottom();
     } finally {
       setUploadingMedia(false);
     }
@@ -2082,12 +2175,10 @@ export default function ChatAppClient() {
     message: ChatMessage,
     exerciseVideo: ReturnType<typeof parseExerciseVideoMessage>,
   ) {
-    if (exerciseVideo || parsePollMessage(message.body) || message.file_url) {
+    if (exerciseVideo || parsePollMessage(message.body)) {
       return false;
     }
-    if (!message.body) return false;
-    if (message.body.includes("\n")) return false;
-    return message.body.length <= 48;
+    return true;
   }
 
   async function sendPoll() {
@@ -2203,6 +2294,16 @@ export default function ChatAppClient() {
     }
   }
 
+  function prefetchListEntryMessages(entry: ChatListEntry) {
+    if (!userId) return;
+    prefetchChatMessages(
+      userId,
+      entry.kind === "direct"
+        ? { kind: "direct", id: entry.id }
+        : { kind: "group", id: entry.id },
+    );
+  }
+
   function handleListEntryClick(entry: ChatListEntry) {
     if (listLongPressTriggeredRef.current) {
       listLongPressTriggeredRef.current = false;
@@ -2256,6 +2357,7 @@ export default function ChatAppClient() {
         <button
           type="button"
           onClick={() => handleListEntryClick(entry)}
+          onPointerDown={() => prefetchListEntryMessages(entry)}
           onContextMenu={(event) => {
             event.preventDefault();
             openListMenu(entry);
@@ -2865,56 +2967,43 @@ export default function ChatAppClient() {
                 : "flex"
           }`}
         >
-          <div className="shrink-0 border-b border-app-border bg-app-surface px-3 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-4 md:pt-4">
-            <div className="mb-3 flex items-center justify-between gap-2 md:mb-4 md:gap-3">
-              <div className="flex min-w-0 items-center gap-1.5 md:gap-2">
-                <button
-                  type="button"
-                  onClick={() => router.push(getChatEntryReturn())}
-                  className="page-back-btn page-back-btn--topbar app-focus-ring hidden lg:inline-flex"
-                  aria-label="Terug naar vorige pagina"
-                >
-                  <ArrowLeft className="h-4 w-4 shrink-0" />
-                  <span className="hidden sm:inline">Terug</span>
-                </button>
-                <h1 className="text-lg font-semibold tracking-tight text-app-text md:text-xl">
+          <div className="chat-list-header shrink-0 border-b border-app-border bg-app-surface px-3 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-4 md:pt-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between gap-2 md:gap-3">
+                <h1 className="chat-list-header-title min-w-0 text-lg font-semibold tracking-tight text-app-text md:text-xl">
                   Chats
                 </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                {isCoachLikeRole(userRole) && (
-                  <>
-                    <button
-                      type="button"
-                      onClick={() => setBroadcastOpen(true)}
-                      className="app-focus-ring flex h-10 items-center rounded-full bg-brand-purple px-3 text-xs font-semibold text-white"
-                    >
-                      Broadcast
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setCreateGroupOpen(true)}
-                      className="ui-icon-btn app-focus-ring"
-                      aria-label="Nieuwe groep"
-                    >
-                      <Users className="h-5 w-5" />
-                    </button>
-                  </>
-                )}
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-app-accent text-sm font-semibold text-white">
-                  {getInitials(userName)}
+                <div className="flex items-center gap-2">
+                  {isCoachLikeRole(userRole) && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => setBroadcastOpen(true)}
+                        className="app-focus-ring flex h-10 items-center rounded-full bg-brand-purple px-3 text-xs font-semibold text-white"
+                      >
+                        Broadcast
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setCreateGroupOpen(true)}
+                        className="ui-icon-btn app-focus-ring"
+                        aria-label="Nieuwe groep"
+                      >
+                        <Users className="h-5 w-5" />
+                      </button>
+                    </>
+                  )}
                 </div>
               </div>
-            </div>
 
-            <ChatSearchField
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder="Zoek op naam of bericht"
-            />
+              <ChatSearchField
+                value={searchQuery}
+                onChange={setSearchQuery}
+                placeholder="Zoek op naam of bericht"
+              />
 
-            {searchQuery.trim().length < 2 ? (
-              <div className="-mx-1 mt-2 flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-none">
+              {searchQuery.trim().length < 2 ? (
+                <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-0.5 scrollbar-none">
                 <button
                   type="button"
                   onClick={() => setListFilter("all")}
@@ -2939,6 +3028,7 @@ export default function ChatAppClient() {
                 </button>
               </div>
             ) : null}
+            </div>
           </div>
 
           <div className="chat-list-scroll">
@@ -3024,6 +3114,7 @@ export default function ChatAppClient() {
           <ChatProgramPanel
             athleteId={activeUserId}
             athleteName={activeAthleteName}
+            coachId={userId}
             onClose={closeProgramPanel}
           />
         )}
@@ -3181,10 +3272,10 @@ export default function ChatAppClient() {
                       <Users className="h-4 w-4" />
                     </ChatAvatar>
                     <div className="min-w-0 flex-1">
-                      <h2 className="truncate text-sm font-bold text-app-text md:text-base">
+                      <h2 className="chat-conversation-title truncate font-semibold text-app-text">
                         {conversationTitle}
                       </h2>
-                      <p className="truncate text-xs text-app-muted">
+                      <p className="chat-conversation-subtitle truncate text-app-muted">
                         {groupMembersSubtitle || `${Object.keys(groupMemberNames).length} deelnemers`}
                       </p>
                     </div>
@@ -3201,10 +3292,10 @@ export default function ChatAppClient() {
                       className="h-8 w-8"
                     />
                     <div className="min-w-0">
-                      <h2 className="truncate text-sm font-bold text-app-text md:text-base">
+                      <h2 className="chat-conversation-title truncate font-semibold text-app-text">
                         {conversationTitle}
                       </h2>
-                      <p className="text-xs text-app-muted">
+                      <p className="chat-conversation-subtitle text-app-muted">
                         {userRole === "coach" ? (
                           <>
                             Atleet
@@ -3223,27 +3314,6 @@ export default function ChatAppClient() {
                   </Link>
                 )}
 
-                <button
-                  type="button"
-                  onClick={() => setMessageSearchOpen((current) => !current)}
-                  className="ui-icon-btn app-focus-ring"
-                  aria-label="Zoek in chat"
-                >
-                  <Search className="h-5 w-5" />
-                </button>
-
-                {!activeGroupId && activeUserId ? (
-                  <button
-                    type="button"
-                    onClick={() => setMessage("/ai")}
-                    className="chat-ai-btn flex h-9 w-9 items-center justify-center app-focus-ring"
-                    aria-label="AI-assistent openen"
-                    title="AI-assistent"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                  </button>
-                ) : null}
-
                 <ChatConversationMenu
                   pinned={Boolean(currentConversationSettings?.pinned)}
                   muted={Boolean(currentConversationSettings?.muted)}
@@ -3254,6 +3324,9 @@ export default function ChatAppClient() {
                   onClear={() => void handleClearConversation()}
                   onDelete={() => void handleDeleteConversation()}
                   onReport={handleReportConversation}
+                  onSearch={() => setMessageSearchOpen(true)}
+                  showAiAssistant={Boolean(activeUserId && !activeGroupId)}
+                  onAiAssistant={() => setMessage("/ai")}
                   onBlock={
                     activeUserId
                       ? () =>
@@ -3329,8 +3402,10 @@ export default function ChatAppClient() {
                 ref={messagesContainerRef}
                 data-chat-scroll="true"
                 onScroll={handleMessagesScroll}
-                className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain chat-messages-scroll px-3 py-3 transition-opacity duration-150 md:px-6 ${
-                  switchingConversation ? "opacity-70" : "opacity-100"
+                className={`min-h-0 flex-1 overflow-y-auto overflow-x-hidden overscroll-contain chat-messages-scroll px-3 py-3 md:px-6 ${
+                  switchingConversation && messages.length === 0
+                    ? "opacity-70"
+                    : "opacity-100"
                 }`}
               >
                 {switchingConversation && messages.length === 0 && (
@@ -3356,6 +3431,22 @@ export default function ChatAppClient() {
                   const pollMessage = parsePollMessage(msg.body);
                   const aiAssistantMessage = parseAiAssistantMessage(msg.body);
                   const inlineTimestamp = shouldUseInlineTimestamp(msg, exerciseVideo);
+                  const showReadReceipt = isMine && !activeGroupId;
+                  const mediaOverlayMeta =
+                    showTimestamp &&
+                    inlineTimestamp &&
+                    Boolean(msg.file_url) &&
+                    !msg.body?.trim() &&
+                    !exerciseVideo &&
+                    !pollMessage ? (
+                      <ChatBubbleMeta
+                        time={formatMessageTime(msg.created_at)}
+                        isMine={isMine}
+                        isRead={isOutgoingMessageRead(msg)}
+                        showReadReceipt={showReadReceipt}
+                        overlay
+                      />
+                    ) : null;
                   const highlightSearchMatch =
                     Boolean(searchHighlightQuery) &&
                     messageMatchesQuery(msg, searchHighlightQuery);
@@ -3410,18 +3501,19 @@ export default function ChatAppClient() {
                       )}
 
                       <div
-                        className={`flex w-full max-w-full overflow-hidden ${groupedWithPrevious ? "mb-0.5" : "mb-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
+                        className={`flex w-full max-w-full overflow-visible ${groupedWithNext ? "mb-px" : "mb-1.5"} ${isMine ? "justify-end" : "justify-start"}`}
                         onDoubleClick={(event) => {
                           event.stopPropagation();
                           handleReply(msg);
                         }}
                       >
                         <ChatSwipeReplyRow
+                          className="max-w-[75%] w-fit md:max-w-[65%]"
                           onReply={() => handleReply(msg)}
                           onSwipeStart={cancelMessageLongPress}
                         >
                           <div
-                            className={`flex max-w-[82%] flex-col md:max-w-[65%] ${
+                            className={`flex w-full flex-col ${
                               isMine ? "items-end" : "items-start"
                             }`}
                           >
@@ -3432,7 +3524,7 @@ export default function ChatAppClient() {
                             ) : null}
 
                             <div
-                              className={`group relative w-fit max-w-full touch-manipulation select-none px-2.5 py-1.5 shadow-sm md:select-text ${
+                              className={`group relative w-fit max-w-full touch-manipulation select-none md:select-text ${
                                 isMine
                                   ? "chat-bubble-own"
                                   : "chat-bubble-other"
@@ -3484,13 +3576,16 @@ export default function ChatAppClient() {
                           )}
 
                           {msg.file_url && msg.file_type === "image" && (
-                            <img
-                              src={msg.file_url}
-                              alt="Gedeelde foto"
-                              onLoad={handleMediaLoaded}
-                              onClick={(event) => event.stopPropagation()}
-                              className="mb-2 max-h-72 w-full rounded-xl object-cover"
-                            />
+                            <div className="chat-bubble-media mb-2">
+                              <img
+                                src={msg.file_url}
+                                alt="Gedeelde foto"
+                                onLoad={handleMediaLoaded}
+                                onClick={(event) => event.stopPropagation()}
+                                className="max-h-72 w-full object-cover"
+                              />
+                              {mediaOverlayMeta}
+                            </div>
                           )}
 
                           {msg.file_url && msg.file_type === "video" && exerciseVideo && (
@@ -3512,39 +3607,42 @@ export default function ChatAppClient() {
                           {msg.file_url && msg.file_type === "video" &&
                             !exerciseVideo &&
                             (isCoachLikeRole(userRole) && !isMine ? (
-                              <button
-                                type="button"
-                                onClick={(event) => {
-                                  event.stopPropagation();
-                                  setCoachVideoReview({
-                                    url: msg.file_url!,
-                                    title: "Video feedback",
-                                    replyMessage: msg,
-                                  });
-                                }}
-                                className="relative mb-2 block w-full overflow-hidden rounded-[16px] text-left"
-                              >
-                                <video
-                                  src={msg.file_url}
-                                  preload="metadata"
-                                  playsInline
-                                  onLoadedData={handleMediaLoaded}
-                                  className="max-h-72 w-full object-cover"
-                                />
-                                <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">
-                                  Open met feedback
-                                </span>
-                              </button>
+                              <div className="chat-bubble-media mb-2">
+                                <button
+                                  type="button"
+                                  onClick={(event) => {
+                                    event.stopPropagation();
+                                    setCoachVideoReview({
+                                      url: msg.file_url!,
+                                      title: "Video feedback",
+                                      replyMessage: msg,
+                                    });
+                                  }}
+                                  className="relative block w-full overflow-hidden rounded-[16px] text-left"
+                                >
+                                  <video
+                                    src={msg.file_url}
+                                    preload="metadata"
+                                    playsInline
+                                    onLoadedData={handleMediaLoaded}
+                                    className="max-h-72 w-full object-cover"
+                                  />
+                                  <span className="absolute inset-0 flex items-center justify-center bg-black/25 text-sm font-semibold text-white">
+                                    Open met feedback
+                                  </span>
+                                </button>
+                                {mediaOverlayMeta}
+                              </div>
                             ) : (
-                              <video
-                                src={msg.file_url}
-                                controls
-                                preload="metadata"
-                                playsInline
-                                onLoadedData={handleMediaLoaded}
-                                onClick={(event) => event.stopPropagation()}
-                                className="mb-2 max-h-72 w-full rounded-[16px]"
-                              />
+                              <div className="chat-bubble-media mb-2">
+                                <ChatPlainVideoMessage
+                                  videoUrl={msg.file_url}
+                                  title="Video"
+                                  onMediaLoaded={handleMediaLoaded}
+                                  embedded
+                                />
+                                {mediaOverlayMeta}
+                              </div>
                             ))}
 
                           {msg.file_url && msg.file_type === "audio" && (
@@ -3553,6 +3651,18 @@ export default function ChatAppClient() {
                                 src={msg.file_url}
                                 isMine={isMine}
                               />
+                              {showTimestamp &&
+                              inlineTimestamp &&
+                              !msg.body?.trim() ? (
+                                <div className="chat-bubble-footer-meta">
+                                  <ChatBubbleMeta
+                                    time={formatMessageTime(msg.created_at)}
+                                    isMine={isMine}
+                                    isRead={isOutgoingMessageRead(msg)}
+                                    showReadReceipt={showReadReceipt}
+                                  />
+                                </div>
+                              ) : null}
                             </div>
                           )}
 
@@ -3581,54 +3691,37 @@ export default function ChatAppClient() {
 
                           {msg.body && !exerciseVideo && !pollMessage && (
                             inlineTimestamp && showTimestamp ? (
-                              <div
-                                className={`flex flex-wrap items-end gap-x-2 gap-y-1 ${
-                                  isMine ? "justify-end" : "justify-start"
-                                }`}
-                              >
+                              <div className="chat-bubble-text-content">
                                 {highlightSearchMatch ? (
                                   <HighlightedText
                                     text={msg.body}
                                     query={searchHighlightQuery}
-                                    className="whitespace-pre-wrap break-words text-[13px] leading-5"
+                                    className="chat-bubble-text"
                                   />
                                 ) : (
-                                  <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
-                                    {msg.body}
-                                  </p>
+                                  <span className="chat-bubble-text">{msg.body}</span>
                                 )}
-                                <div
-                                  className={`flex shrink-0 items-center gap-1 ${
-                                    isMine ? "text-white/70" : "text-app-subtle"
-                                  }`}
-                                >
-                                  <span className="text-[10px] tabular-nums">
-                                    {formatMessageTime(msg.created_at)}
-                                  </span>
-                                  {isMine &&
-                                    !activeGroupId &&
-                                    (isOutgoingMessageRead(msg) ? (
-                                      <CheckCheck className="h-3 w-3" />
-                                    ) : (
-                                      <Check className="h-3 w-3" />
-                                    ))}
-                                </div>
+                                <span className="chat-bubble-meta-spacer" aria-hidden="true" />
+                                <ChatBubbleMeta
+                                  time={formatMessageTime(msg.created_at)}
+                                  isMine={isMine}
+                                  isRead={isOutgoingMessageRead(msg)}
+                                  showReadReceipt={showReadReceipt}
+                                />
                               </div>
                             ) : highlightSearchMatch ? (
                               <HighlightedText
                                 text={msg.body}
                                 query={searchHighlightQuery}
-                                className="whitespace-pre-wrap break-words text-[13px] leading-5"
+                                className="chat-bubble-text"
                               />
                             ) : (
-                              <p className="whitespace-pre-wrap break-words text-[13px] leading-5">
-                                {msg.body}
-                              </p>
+                              <p className="chat-bubble-text">{msg.body}</p>
                             )
                           )}
 
                           {!msg.body && !msg.file_url && msg.file_type && (
-                            <p className="text-[13px] italic opacity-80">
+                            <p className="chat-bubble-text italic opacity-80">
                               {getReplyText(msg)}
                             </p>
                           )}
@@ -3709,8 +3802,8 @@ export default function ChatAppClient() {
                 </div>
               )}
 
-              <footer className="chat-compose-footer shrink-0 px-3 pt-1.5 md:px-4 md:py-2.5">
-                <div className="chat-input-bar relative flex items-center gap-1.5 px-2.5 py-1.5 md:px-3">
+              <footer className="chat-compose-footer shrink-0 px-2 pt-1 md:px-4 md:py-2.5">
+                <div className="chat-compose-row relative flex items-end gap-1 md:items-center md:gap-2">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -3719,85 +3812,66 @@ export default function ChatAppClient() {
                     className="hidden"
                   />
 
-                  <div className="relative hidden md:block">
-                    <button
-                      type="button"
-                      onClick={() => setAttachMenuOpen((current) => !current)}
-                      disabled={!canSendMessages || uploadingMedia}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Bijlage toevoegen"
-                    >
-                      <Plus className="h-5 w-5" />
-                    </button>
+                  <div className="chat-compose-leading-actions flex shrink-0 items-center">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setAttachMenuOpen((current) => !current)}
+                        disabled={!canSendMessages || uploadingMedia}
+                        className="chat-compose-icon-btn disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Bijlage toevoegen"
+                      >
+                        <Plus className="h-5 w-5" />
+                      </button>
 
-                    {attachMenuOpen && (
-                      <>
-                        <button
-                          type="button"
-                          aria-label="Menu sluiten"
-                          className="fixed inset-0 z-10"
-                          onClick={() => setAttachMenuOpen(false)}
-                        />
-                        <div className="chat-attach-menu">
+                      {attachMenuOpen && (
+                        <>
                           <button
                             type="button"
-                            onClick={() => {
-                              setAttachMenuOpen(false);
-                              fileInputRef.current?.click();
-                            }}
-                            className="chat-menu-item"
-                          >
-                            Foto of video
-                          </button>
-                          {activeGroupId && (
+                            aria-label="Menu sluiten"
+                            className="fixed inset-0 z-10"
+                            onClick={() => setAttachMenuOpen(false)}
+                          />
+                          <div className="chat-attach-menu">
                             <button
                               type="button"
                               onClick={() => {
                                 setAttachMenuOpen(false);
-                                setPollCreateOpen(true);
+                                fileInputRef.current?.click();
                               }}
                               className="chat-menu-item"
                             >
-                              Poll
+                              Foto of video
                             </button>
-                          )}
-                        </div>
-                      </>
-                    )}
+                            {activeGroupId && (
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setAttachMenuOpen(false);
+                                  setPollCreateOpen(true);
+                                }}
+                                className="chat-menu-item"
+                              >
+                                Poll
+                              </button>
+                            )}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
 
-                  <button
-                    type="button"
-                    onClick={() => setMediaCaptureOpen(true)}
-                    disabled={!canSendMessages || uploadingMedia}
-                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
-                    aria-label="Camera openen"
-                  >
-                    <Camera className="h-5 w-5" />
-                  </button>
-
-                  {activeGroupId && (
-                    <button
-                      type="button"
-                      onClick={() => setPollCreateOpen(true)}
-                      disabled={!canSendMessages || uploadingMedia}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-app-text transition hover:bg-app-surface-hover disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
-                      aria-label="Poll maken"
-                    >
-                      <BarChart2 className="h-5 w-5" />
-                    </button>
-                  )}
-
-                  <div className="chat-message-input-wrap relative flex min-h-[30px] min-w-0 flex-1 items-center pl-1">
-                    {slashCommandMenuOpen && (
-                      <ChatSlashCommandMenu
-                        commands={slashCommandSuggestions}
-                        activeIndex={slashCommandActiveIndex}
-                        onSelect={selectSlashCommand}
-                        onHover={setSlashCommandActiveIndex}
-                      />
-                    )}
-                    <textarea
+                  <div className="chat-input-bar relative flex min-w-0 flex-1 items-center">
+                    <div className="chat-message-input-wrap relative flex min-w-0 flex-1 items-center">
+                      {slashCommandMenuOpen && (
+                        <ChatSlashCommandMenu
+                          commands={slashCommandSuggestions}
+                          activeIndex={slashCommandActiveIndex}
+                          onSelect={selectSlashCommand}
+                          onHover={setSlashCommandActiveIndex}
+                        />
+                      )}
+                      <textarea
                     ref={inputRef}
                     rows={1}
                     value={message}
@@ -3920,33 +3994,47 @@ export default function ChatAppClient() {
                                 ? "Todo geopend..."
                                 : agendaPanelOpen
                                   ? "Agenda geopend..."
-                                : "Typ een bericht"
+                                : ""
                     }
                     disabled={!canSendMessages || uploadingMedia}
                     className="chat-message-input disabled:opacity-60"
                   />
+                    </div>
                   </div>
 
-                  {message.trim() && !slashPanelOpen && !slashCommandMenuOpen ? (
+                  <div className="chat-compose-trailing-actions flex shrink-0 items-center gap-0">
                     <button
                       type="button"
-                      onClick={sendMessage}
-                      disabled={uploadingMedia}
-                      className="chat-send-btn flex h-9 w-9 shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
-                      aria-label="Verstuur bericht"
-                    >
-                      <SendHorizontal className="h-4 w-4" />
-                    </button>
-                  ) : !slashPanelOpen && !slashCommandMenuOpen ? (
-                    <ChatVoiceRecorder
+                      onClick={() => setMediaCaptureOpen(true)}
                       disabled={!canSendMessages || uploadingMedia}
-                      onSend={(blob, mimeType) => {
-                        void sendVoiceMessage(blob, mimeType);
-                      }}
-                    />
-                  ) : (
-                    <div className="h-10 w-10 shrink-0" aria-hidden />
-                  )}
+                      className="chat-compose-icon-btn disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
+                      aria-label="Camera openen"
+                    >
+                      <Camera className="h-5 w-5" />
+                    </button>
+
+                    {message.trim() && !slashPanelOpen && !slashCommandMenuOpen ? (
+                      <button
+                        type="button"
+                        onMouseDown={(event) => event.preventDefault()}
+                        onClick={sendMessage}
+                        disabled={uploadingMedia}
+                        className="chat-send-btn flex h-8 w-8 shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
+                        aria-label="Verstuur bericht"
+                      >
+                        <SendHorizontal className="h-4 w-4" />
+                      </button>
+                    ) : !slashPanelOpen && !slashCommandMenuOpen ? (
+                      <ChatVoiceRecorder
+                        disabled={!canSendMessages || uploadingMedia}
+                        onSend={(blob, mimeType) => {
+                          void sendVoiceMessage(blob, mimeType);
+                        }}
+                      />
+                    ) : (
+                      <div className="h-8 w-8 shrink-0" aria-hidden />
+                    )}
+                  </div>
                 </div>
               </footer>
               </div>

@@ -7,12 +7,21 @@
     --athlete-dash-title: #111827;
     --athlete-dash-muted: #6b7280;
     --athlete-dash-body: #374151;
-    --athlete-dash-label: #3b82f6;
+    --athlete-dash-label: var(--app-accent);
     --athlete-dash-border: rgba(15, 23, 42, 0.08);
     --athlete-dash-border-soft: rgba(15, 23, 42, 0.06);
     --athlete-dash-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
     --athlete-dash-shadow-sm: 0 6px 20px rgba(15, 23, 42, 0.06);
     --athlete-dash-inset: #f3f4f6;
+    --athlete-panel-accent: var(--app-accent);
+    --athlete-panel-surface: #ffffff;
+    --athlete-panel-border: rgba(15, 23, 42, 0.08);
+    --athlete-panel-shadow: none;
+    --athlete-panel-shadow-cta:
+      0 8px 24px rgba(15, 23, 42, 0.06),
+      0 0 18px rgba(var(--app-accent-rgb), 0.12);
+    --athlete-panel-inset: #f3f4f6;
+    --athlete-panel-inset-border: rgba(15, 23, 42, 0.06);
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .mobile-page-shell,
@@ -42,9 +51,41 @@
     color: var(--athlete-dash-body);
   }
 
+  html:not(.dark)
+    .app-shell--athlete-dashboard-mobile
+    .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar {
+    border: 1px solid rgba(var(--app-accent-rgb), 0.35);
+    background: linear-gradient(
+      135deg,
+      rgba(var(--app-accent-rgb), 0.55),
+      rgba(var(--app-accent-rgb), 0.28)
+    ) !important;
+    box-shadow: none;
+    color: #ffffff;
+  }
+
+  html:not(.dark)
+    .app-shell--athlete-dashboard-mobile
+    .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar
+    .shell-topbar-action-avatar {
+    background: transparent !important;
+    color: #ffffff;
+  }
+
   html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-action-chip:hover {
     border-color: rgba(59, 130, 246, 0.22);
     background: #ffffff;
+  }
+
+  html:not(.dark)
+    .app-shell--athlete-dashboard-mobile
+    .shell-topbar-action-chip.shell-topbar-action-chip--athlete-avatar:hover {
+    border-color: rgba(59, 130, 246, 0.28);
+    background: linear-gradient(
+      135deg,
+      rgba(59, 130, 246, 0.3),
+      rgba(59, 130, 246, 0.12)
+    ) !important;
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .shell-topbar-action-chip--active {
@@ -53,9 +94,9 @@
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-card {
-    border: 1px solid var(--athlete-dash-border-soft);
-    background: var(--athlete-dash-card);
-    box-shadow: var(--athlete-dash-shadow);
+    border: 1px solid var(--athlete-panel-border);
+    background: var(--athlete-panel-surface);
+    box-shadow: var(--athlete-panel-shadow);
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-card::before {
@@ -63,11 +104,11 @@
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-eyebrow {
-    color: var(--athlete-dash-label);
+    color: var(--athlete-panel-accent);
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-eyebrow--alert::before {
-    background: var(--athlete-dash-label);
+    background: var(--athlete-panel-accent);
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-fill-ring svg circle:first-child {
@@ -122,11 +163,30 @@
 
 @media (max-width: 1023px) {
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-cta-btn {
-    border: none;
-    background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
-    box-shadow:
-      0 8px 24px rgba(37, 99, 235, 0.28),
-      0 4px 12px rgba(15, 23, 42, 0.06);
+    --athlete-cta-accent: var(--athlete-panel-accent);
+    --athlete-cta-surface: var(--athlete-panel-surface);
+    border: 1px solid var(--athlete-panel-border);
+    box-shadow: var(--athlete-panel-shadow-cta);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-cta-btn-title {
+    color: var(--athlete-dash-title, #0f172a);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard-cta-btn-play {
+    color: #ffffff;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard--mobile-fit .athlete-chat-widget h2 {
+    color: var(--athlete-dash-title);
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard--mobile-fit .athlete-dashboard-log-btn--compact {
+    color: #ffffff;
+  }
+
+  html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-dashboard--mobile-fit .athlete-chat-widget-badge {
+    color: #ffffff;
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-chat-widget h2 {
@@ -232,12 +292,7 @@
   }
 
   html:not(.dark) .athlete-mobile-tab-bar__item.is-active {
-    color: var(--athlete-dash-label);
-  }
-
-  html:not(.dark) .athlete-mobile-tab-bar__item.is-active .athlete-mobile-tab-bar__icon-wrap {
-    background: rgba(59, 130, 246, 0.1);
-    color: var(--athlete-dash-label);
+    color: var(--app-accent);
   }
 
   html:not(.dark) .app-shell--athlete-dashboard-mobile .athlete-inline-toast--error {

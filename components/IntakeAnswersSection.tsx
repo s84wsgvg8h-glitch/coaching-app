@@ -7,9 +7,12 @@ import {
   loadIntakeTemplate,
   type IntakeFormField,
 } from "@/lib/intakeForm";
+import { clearIntakeTodoForAthlete } from "@/lib/coachTodoSync";
+import { COACH_TODOS_CHANGED_EVENT } from "@/lib/coachTodos";
 
 type IntakeAnswersSectionProps = {
   athleteId: string;
+  coachId?: string;
   className?: string;
   collapsible?: boolean;
   defaultOpen?: boolean;
@@ -17,6 +20,7 @@ type IntakeAnswersSectionProps = {
 
 export default function IntakeAnswersSection({
   athleteId,
+  coachId,
   className = "",
   collapsible = false,
   defaultOpen = true,
@@ -44,6 +48,11 @@ export default function IntakeAnswersSection({
       setAnswers(response?.answers || {});
       setCompletedAt(response?.completed_at || null);
       setLoading(false);
+
+      if (coachId && response?.completed_at) {
+        await clearIntakeTodoForAthlete(coachId, athleteId);
+        window.dispatchEvent(new CustomEvent(COACH_TODOS_CHANGED_EVENT));
+      }
     }
 
     void load();
@@ -51,7 +60,7 @@ export default function IntakeAnswersSection({
     return () => {
       cancelled = true;
     };
-  }, [athleteId]);
+  }, [athleteId, coachId]);
 
   const header = (
     <div className="flex items-start justify-between gap-4">

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Ban, Flag, MoreVertical } from "lucide-react";
+import { Ban, Flag, MoreVertical, Search, Sparkles } from "lucide-react";
 
 type ChatConversationMenuProps = {
   onPin: () => void;
@@ -67,7 +67,8 @@ export default function ChatConversationMenu({
                 onClick={() => run(onSearch)}
                 className="chat-menu-item"
               >
-                Zoeken
+                <Search className="h-4 w-4" />
+                Zoeken in chat
               </button>
             ) : null}
             {showAiAssistant && onAiAssistant ? (
@@ -76,6 +77,7 @@ export default function ChatConversationMenu({
                 onClick={() => run(onAiAssistant)}
                 className="chat-menu-item"
               >
+                <Sparkles className="h-4 w-4" />
                 AI-assistent
               </button>
             ) : null}

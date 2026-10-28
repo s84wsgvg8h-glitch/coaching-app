@@ -118,7 +118,7 @@ export default function AthleteAppSidebar() {
   ];
 
   return (
-    <aside className="athlete-app-sidebar coach-app-sidebar hidden lg:flex">
+    <aside className="athlete-app-sidebar coach-app-sidebar coach-app-sidebar--pinned hidden lg:flex">
       <div className="coach-app-sidebar-brand">
         <span className="coach-app-sidebar-brand-mark" aria-hidden="true">
           A

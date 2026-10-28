@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import ExerciseVideoBadge from "@/components/ExerciseVideoBadge";
+import ChatFullscreenVideoOverlay from "@/components/chat/ChatFullscreenVideoOverlay";
 import ChatVideoCoachFeedbackViewer from "@/components/chat/ChatVideoCoachFeedbackViewer";
 import {
   formatDutchSetLabel,
@@ -98,13 +99,7 @@ export default function ExerciseVideoMessage({
         </button>
 
         {caption && (
-          <p
-            className={`mt-2 whitespace-pre-wrap break-words text-[14px] leading-6 ${
-              isMine ? "text-white/90" : "text-app-muted"
-            }`}
-          >
-            {caption}
-          </p>
+          <p className="chat-bubble-text mt-2 opacity-90">{caption}</p>
         )}
       </div>
 
@@ -122,44 +117,33 @@ export default function ExerciseVideoMessage({
               onSendFeedback={onSendFeedback}
             />
           ) : (
-            <div className="fixed inset-0 z-[9999] flex flex-col bg-black text-white">
-              <div className="flex items-center justify-between px-4 py-[max(12px,env(safe-area-inset-top))]">
-                <button
-                  type="button"
-                  onClick={() => setFullscreenOpen(false)}
-                  className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-2xl font-light"
-                  aria-label="Sluit video"
-                >
-                  ×
-                </button>
-                <div className="min-w-0 flex-1 px-3 text-right">
-                  <p className="truncate text-sm font-bold">{payload.exerciseName}</p>
-                  <p className="truncate text-xs text-white/70">
-                    {formatDutchSetLabel(payload.setNumber)}
-                    {statsLine ? ` · ${statsLine}` : ""}
-                  </p>
+            <ChatFullscreenVideoOverlay
+              onClose={() => setFullscreenOpen(false)}
+              title={payload.exerciseName}
+              subtitle={`${formatDutchSetLabel(payload.setNumber)}${
+                statsLine ? ` · ${statsLine}` : ""
+              }`}
+              hideFooter={!caption}
+              media={
+                <div className="chat-fullscreen-video__media-wrap">
+                  <video
+                    src={videoUrl}
+                    controls
+                    autoPlay
+                    playsInline
+                    preload="auto"
+                    className="chat-fullscreen-video__media"
+                  />
                 </div>
-              </div>
-
-              <div className="flex min-h-0 flex-1 items-center justify-center px-2">
-                <video
-                  src={videoUrl}
-                  controls
-                  autoPlay
-                  playsInline
-                  preload="auto"
-                  className="max-h-full max-w-full object-contain"
-                />
-              </div>
-
-              {caption && (
-                <div className="shrink-0 border-t border-white/10 px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+              }
+              footer={
+                caption ? (
                   <p className="whitespace-pre-wrap break-words text-sm leading-6 text-white/90">
                     {caption}
                   </p>
-                </div>
-              )}
-            </div>
+                ) : undefined
+              }
+            />
           ),
           document.body,
         )}

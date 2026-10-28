@@ -36,7 +36,7 @@ export default function PollMessage({
 
   return (
     <div className="space-y-3">
-      <p className="text-[15px] font-bold leading-6">{payload.question}</p>
+      <p className="chat-bubble-text font-semibold">{payload.question}</p>
 
       <div className="space-y-2">
         {payload.options.map((option) => {

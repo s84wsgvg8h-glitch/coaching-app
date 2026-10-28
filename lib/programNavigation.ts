@@ -33,6 +33,36 @@ export type ResolvedProgramEntry = {
   dayId?: string | null;
 };
 
+/** When set, week page keeps the URL week instead of redirecting to today's week. */
+export const PRESERVE_WEEK_PARAM = "preserveWeek";
+
+export function withPreserveWeekParam(href: string) {
+  const [path, query = ""] = href.split("?");
+  const params = new URLSearchParams(query);
+  params.set(PRESERVE_WEEK_PARAM, "1");
+  const nextQuery = params.toString();
+  return nextQuery ? `${path}?${nextQuery}` : path;
+}
+
+export function appendProgramWeekQueryParams(
+  href: string,
+  params: Record<string, string | null | undefined>,
+) {
+  const [path, query = ""] = href.split("?");
+  const search = new URLSearchParams(query);
+
+  for (const [key, value] of Object.entries(params)) {
+    if (value == null || value === "") {
+      search.delete(key);
+      continue;
+    }
+    search.set(key, value);
+  }
+
+  const nextQuery = search.toString();
+  return nextQuery ? `${path}?${nextQuery}` : path;
+}
+
 function toDateOnly(value: string | null | undefined) {
   if (!value) return null;
   const date = new Date(`${value}T12:00:00`);
@@ -73,6 +103,96 @@ function pickCurrentWeek(
   return weeks[Math.min(weekIndex, weeks.length - 1)];
 }
 
+export type ClosestProgramDayEntry = {
+  weekId: string;
+  dayId: string;
+};
+
+function groupProgramDaysByWeekId<
+  T extends Pick<ProgramDay, "id" | "day_number" | "scheduled_date" | "title"> & {
+    program_week_id?: string;
+  },
+>(days: T[]) {
+  const grouped: Record<
+    string,
+    Pick<ProgramDay, "id" | "day_number" | "scheduled_date" | "title">[]
+  > = {};
+
+  for (const day of days) {
+    const weekId = day.program_week_id;
+    if (!weekId) continue;
+
+    if (!grouped[weekId]) grouped[weekId] = [];
+    grouped[weekId].push({
+      id: day.id,
+      day_number: day.day_number,
+      scheduled_date: day.scheduled_date,
+      title: day.title,
+    });
+  }
+
+  return grouped;
+}
+
+export function pickClosestProgramDayEntry(
+  block: ProgramBlockRow,
+  weeks: ProgramWeekRow[],
+  daysByWeekId: Record<
+    string,
+    Pick<ProgramDay, "id" | "day_number" | "scheduled_date" | "title">[]
+  >,
+  referenceDate: Date = new Date(),
+): ClosestProgramDayEntry | null {
+  if (weeks.length === 0) return null;
+
+  const today = new Date(referenceDate);
+  today.setHours(12, 0, 0, 0);
+
+  let closest: (ClosestProgramDayEntry & { diff: number; dayDate: Date }) | null =
+    null;
+
+  for (const week of weeks) {
+    const days = daysByWeekId[week.id] || [];
+    if (days.length === 0) continue;
+
+    const dayDates = buildProgramWeekDayDates(
+      block as ProgramBlock,
+      week,
+      days as ProgramDay[],
+      weeks,
+    );
+
+    for (const day of days) {
+      const date = dayDates.get(day.id);
+      if (!date) continue;
+
+      const dayDate = new Date(date);
+      dayDate.setHours(12, 0, 0, 0);
+      const diff = Math.abs(dayDate.getTime() - today.getTime());
+
+      if (
+        !closest ||
+        diff < closest.diff ||
+        (diff === closest.diff && dayDate > closest.dayDate)
+      ) {
+        closest = {
+          weekId: week.id,
+          dayId: day.id,
+          diff,
+          dayDate,
+        };
+      }
+    }
+  }
+
+  if (!closest) return null;
+
+  return {
+    weekId: closest.weekId,
+    dayId: closest.dayId,
+  };
+}
+
 export function pickClosestProgramDayId(
   days: Pick<ProgramDay, "id" | "day_number" | "scheduled_date" | "title">[],
   block: ProgramBlockRow,
@@ -80,33 +200,34 @@ export function pickClosestProgramDayId(
 ) {
   if (days.length === 0) return null;
 
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
-
-  let closestDay = days[0];
-  let closestDiff = Number.POSITIVE_INFINITY;
-
-  const dayDates = buildProgramWeekDayDates(
-    block as ProgramBlock,
-    week,
-    days as ProgramDay[],
+  return (
+    pickClosestProgramDayEntry(block, [week], { [week.id]: days })?.dayId ??
+    days[0].id
   );
+}
 
-  for (const day of days) {
-    const date = dayDates.get(day.id);
-    if (!date) continue;
+async function loadClosestProgramDayForBlock(
+  block: ProgramBlockRow,
+  weeks: ProgramWeekRow[],
+) {
+  if (weeks.length === 0) return null;
 
-    const dayDate = new Date(date);
-    dayDate.setHours(12, 0, 0, 0);
-    const diff = Math.abs(dayDate.getTime() - today.getTime());
+  const weekIds = weeks.map((week) => week.id);
+  const { data: days, error } = await supabase
+    .from("program_days")
+    .select("id, day_number, scheduled_date, title, program_week_id")
+    .in("program_week_id", weekIds)
+    .order("day_number", { ascending: true });
 
-    if (diff < closestDiff) {
-      closestDiff = diff;
-      closestDay = day;
-    }
+  if (error || !days || days.length === 0) {
+    return null;
   }
 
-  return closestDay.id;
+  return pickClosestProgramDayEntry(
+    block,
+    weeks,
+    groupProgramDaysByWeekId(days),
+  );
 }
 
 async function loadClosestDayIdForWeek(
@@ -196,6 +317,13 @@ export async function resolveProgramEntryForAthlete(
     block.start_date,
   );
 
+  const weekRows = (weeks || []) as ProgramWeekRow[];
+  const closestDayEntry = await loadClosestProgramDayForBlock(block, weekRows);
+
+  if (closestDayEntry) {
+    week = weekRows.find((item) => item.id === closestDayEntry.weekId) || week;
+  }
+
   if (!week) {
     const { week: createdWeek, error: createWeekError } =
       await createProgramWeekForBlock({
@@ -214,7 +342,7 @@ export async function resolveProgramEntryForAthlete(
     week = createdWeek as ProgramWeekRow;
   }
 
-  const dayId = await loadClosestDayIdForWeek(week, block);
+  const dayId = closestDayEntry?.dayId ?? (await loadClosestDayIdForWeek(week, block));
 
   return {
     data: {
@@ -322,7 +450,7 @@ export async function resolveProgramEntryFromBlockId(
 ): Promise<{ data: ResolvedProgramEntry | null; error: string | null }> {
   const { data: block, error: blockError } = await supabase
     .from("program_blocks")
-    .select("id, athlete_id")
+    .select("id, athlete_id, start_date, title")
     .eq("id", blockId)
     .maybeSingle();
 
@@ -350,13 +478,17 @@ export async function resolveProgramEntryFromBlockId(
   }
 
   const blockRow = block as ProgramBlockRow;
-  const week = pickCurrentWeek((weeks || []) as ProgramWeekRow[], blockRow.start_date);
+  const weekRows = (weeks || []) as ProgramWeekRow[];
+  const closestDayEntry = await loadClosestProgramDayForBlock(blockRow, weekRows);
+  const week =
+    weekRows.find((item) => item.id === closestDayEntry?.weekId) ||
+    pickCurrentWeek(weekRows, blockRow.start_date);
 
   if (!week) {
     return { data: null, error: "Geen week gevonden in dit programma." };
   }
 
-  const dayId = await loadClosestDayIdForWeek(week, blockRow);
+  const dayId = closestDayEntry?.dayId ?? (await loadClosestDayIdForWeek(week, blockRow));
 
   return {
     data: { blockId, weekId: week.id, athleteId, dayId },

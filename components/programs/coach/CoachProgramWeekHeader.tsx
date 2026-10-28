@@ -2,11 +2,16 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { Calendar, ChevronDown, ChevronLeft } from "lucide-react";
-import ProgramSearch from "@/components/ProgramSearch";
+import { ChevronDown, ChevronLeft } from "lucide-react";
+import CoachProgramWeekCompareView from "@/components/programs/coach/CoachProgramWeekCompareView";
 import CoachProgramWeekStatsModal from "@/components/programs/coach/CoachProgramWeekStatsModal";
-import type { ProgramSearchContext } from "@/lib/programSearch";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
+import type {
+  ProgramBlock,
+  ProgramDay,
+  ProgramExercise,
+  ProgramWeek,
+} from "@/lib/programWeek/types";
 
 export type CoachSbdSummaryItem = {
   label: string;
@@ -24,12 +29,7 @@ export type CoachProgramAthleteOption = {
 type CoachProgramWeekHeaderProps = {
   blockTitle: string;
   weekTitle: string;
-  programSearchContext: ProgramSearchContext;
-  planningSplitOpen: boolean;
-  onTogglePlanning: () => void;
   backHref: string;
-  sbdWeekSummary?: CoachSbdSummaryItem[];
-  weekStatsReport?: WeekStatsReport | null;
   editorView?: EditorView;
   onEditorViewChange?: (view: EditorView) => void;
   showEditorViewToggle?: boolean;
@@ -37,9 +37,21 @@ type CoachProgramWeekHeaderProps = {
   currentAthleteId?: string;
   onAthleteChange?: (athleteId: string) => void;
   athleteSwitching?: boolean;
+  showCompareView?: boolean;
+  compareNavBlocks?: ProgramBlock[];
+  compareWeeksByBlock?: Record<string, ProgramWeek[]>;
+  compareBlockId?: string;
+  compareWeekId?: string;
+  compareCurrentBlock?: ProgramBlock | null;
+  compareCurrentWeek?: ProgramWeek | null;
+  compareCurrentDays?: ProgramDay[];
+  compareCurrentExercisesByDay?: Record<string, ProgramExercise[]>;
+  onCompareOpenWeek?: (blockId: string, weekId: string) => void;
+  userId?: string;
+  role?: string;
 };
 
-function SbdSummaryPill({
+export function SbdSummaryPill({
   items,
   onClick,
 }: {
@@ -73,6 +85,17 @@ function SbdSummaryPill({
   );
 }
 
+const EDITOR_VIEW_OPTIONS: {
+  value: EditorView;
+  label: string;
+  shortLabel: string;
+}[] = [
+  { value: "card", label: "Card View", shortLabel: "Card" },
+  { value: "raw", label: "Raw View", shortLabel: "Raw" },
+  { value: "progression", label: "Progressie", shortLabel: "Prog" },
+  { value: "athlete", label: "Atleet View", shortLabel: "Atleet" },
+];
+
 function EditorViewToggle({
   editorView,
   onEditorViewChange,
@@ -82,39 +105,92 @@ function EditorViewToggle({
 }) {
   return (
     <div
-      className="coach-program-editor-view-toggle"
+      className="coach-program-editor-view-toggle hidden lg:inline-flex"
       role="group"
       aria-label="Editorweergave"
     >
-      <button
-        type="button"
-        className={editorView === "card" ? "is-active" : ""}
-        onClick={() => onEditorViewChange("card")}
-      >
-        Card View
-      </button>
-      <button
-        type="button"
-        className={editorView === "raw" ? "is-active" : ""}
-        onClick={() => onEditorViewChange("raw")}
-      >
-        Raw View
-      </button>
-      <button
-        type="button"
-        className={editorView === "progression" ? "is-active" : ""}
-        onClick={() => onEditorViewChange("progression")}
-      >
-        Progressie
-      </button>
-      <button
-        type="button"
-        className={editorView === "athlete" ? "is-active" : ""}
-        onClick={() => onEditorViewChange("athlete")}
-      >
-        Atleet View
-      </button>
+      {EDITOR_VIEW_OPTIONS.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          className={editorView === option.value ? "is-active" : ""}
+          onClick={() => onEditorViewChange(option.value)}
+        >
+          {option.label}
+        </button>
+      ))}
     </div>
+  );
+}
+
+function EditorViewSelect({
+  editorView,
+  onEditorViewChange,
+  className = "",
+}: {
+  editorView: EditorView;
+  onEditorViewChange: (view: EditorView) => void;
+  className?: string;
+}) {
+  return (
+    <div className={`coach-program-editor-view-select ${className}`.trim()}>
+      <select
+        value={editorView}
+        onChange={(event) =>
+          onEditorViewChange(event.target.value as EditorView)
+        }
+        className="coach-program-editor-view-select-input"
+        aria-label="Editorweergave"
+      >
+        {EDITOR_VIEW_OPTIONS.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.shortLabel}
+          </option>
+        ))}
+      </select>
+      <ChevronDown
+        className="coach-program-editor-view-select-chevron"
+        aria-hidden="true"
+      />
+    </div>
+  );
+}
+
+export function CoachProgramEditorViewSelect(props: {
+  editorView: EditorView;
+  onEditorViewChange: (view: EditorView) => void;
+  className?: string;
+}) {
+  return <EditorViewSelect {...props} />;
+}
+
+export function CoachProgramWeekStatsFooter({
+  weekTitle,
+  sbdWeekSummary = [],
+  weekStatsReport = null,
+}: {
+  weekTitle: string;
+  sbdWeekSummary?: CoachSbdSummaryItem[];
+  weekStatsReport?: WeekStatsReport | null;
+}) {
+  const [weekStatsOpen, setWeekStatsOpen] = useState(false);
+
+  if (sbdWeekSummary.length === 0) return null;
+
+  const openWeekStats = weekStatsReport ? () => setWeekStatsOpen(true) : undefined;
+
+  return (
+    <>
+      <div className="coach-program-week-stats-footer">
+        <SbdSummaryPill items={sbdWeekSummary} onClick={openWeekStats} />
+      </div>
+      <CoachProgramWeekStatsModal
+        open={weekStatsOpen}
+        weekTitle={weekTitle}
+        report={weekStatsReport}
+        onClose={() => setWeekStatsOpen(false)}
+      />
+    </>
   );
 }
 
@@ -163,12 +239,7 @@ function AthleteSwitcher({
 export default function CoachProgramWeekHeader({
   blockTitle,
   weekTitle,
-  programSearchContext,
-  planningSplitOpen,
-  onTogglePlanning,
   backHref,
-  sbdWeekSummary = [],
-  weekStatsReport = null,
   editorView = "card",
   onEditorViewChange,
   showEditorViewToggle = false,
@@ -176,18 +247,31 @@ export default function CoachProgramWeekHeader({
   currentAthleteId,
   onAthleteChange,
   athleteSwitching = false,
+  showCompareView = false,
+  compareNavBlocks = [],
+  compareWeeksByBlock = {},
+  compareBlockId = "",
+  compareWeekId = "",
+  compareCurrentBlock = null,
+  compareCurrentWeek = null,
+  compareCurrentDays = [],
+  compareCurrentExercisesByDay = {},
+  onCompareOpenWeek,
+  userId = "",
+  role = "",
 }: CoachProgramWeekHeaderProps) {
-  const [weekStatsOpen, setWeekStatsOpen] = useState(false);
-
-  const openWeekStats = weekStatsReport ? () => setWeekStatsOpen(true) : undefined;
-  const showAthleteSwitcher =
-    athleteOptions.length > 0 && currentAthleteId && onAthleteChange;
+  const showAthleteSwitcher = athleteOptions.length > 0 && onAthleteChange;
+  const showCompare =
+    showCompareView &&
+    userId &&
+    compareNavBlocks.length > 0 &&
+    compareBlockId &&
+    compareWeekId;
 
   return (
-    <>
-      <div className="coach-program-week-header-wrap">
+    <div className="coach-program-week-header-wrap hidden lg:block">
         <div className="coach-program-week-header-bar">
-          <div className="coach-program-week-header-leading">
+          <div className="coach-program-week-header-leading hidden lg:flex">
             <Link
               href={backHref}
               className="coach-program-back-btn coach-program-back-btn--icon shrink-0"
@@ -205,7 +289,9 @@ export default function CoachProgramWeekHeader({
           </div>
 
           <div className="coach-program-week-header-trailing">
-            {(showAthleteSwitcher || (showEditorViewToggle && onEditorViewChange)) ? (
+            {(showAthleteSwitcher ||
+              showCompare ||
+              (showEditorViewToggle && onEditorViewChange)) ? (
               <div className="coach-program-week-header-center">
                 {showAthleteSwitcher ? (
                   <AthleteSwitcher
@@ -213,6 +299,22 @@ export default function CoachProgramWeekHeader({
                     currentAthleteId={currentAthleteId}
                     onAthleteChange={onAthleteChange}
                     disabled={athleteSwitching}
+                  />
+                ) : null}
+
+                {showCompare ? (
+                  <CoachProgramWeekCompareView
+                    currentBlockId={compareBlockId}
+                    currentWeekId={compareWeekId}
+                    currentBlock={compareCurrentBlock}
+                    currentWeek={compareCurrentWeek}
+                    currentDays={compareCurrentDays}
+                    currentExercisesByDay={compareCurrentExercisesByDay}
+                    navBlocks={compareNavBlocks}
+                    weeksByBlock={compareWeeksByBlock}
+                    userId={userId}
+                    role={role}
+                    onOpenWeek={onCompareOpenWeek}
                   />
                 ) : null}
 
@@ -224,38 +326,8 @@ export default function CoachProgramWeekHeader({
                 ) : null}
               </div>
             ) : null}
-
-            <div className="coach-program-week-header-tools">
-              <button
-                type="button"
-                onClick={onTogglePlanning}
-                className={`coach-program-action-btn coach-program-action-btn--icon ${
-                  planningSplitOpen ? "is-active" : ""
-                }`}
-                aria-label="Block planning"
-                title="Block planning"
-              >
-                <Calendar className="h-4 w-4" aria-hidden="true" />
-              </button>
-
-              <SbdSummaryPill items={sbdWeekSummary} onClick={openWeekStats} />
-
-              <ProgramSearch
-                context={programSearchContext}
-                variant="coach-dark"
-                layout="icon"
-              />
-            </div>
           </div>
         </div>
       </div>
-
-      <CoachProgramWeekStatsModal
-        open={weekStatsOpen}
-        weekTitle={weekTitle}
-        report={weekStatsReport}
-        onClose={() => setWeekStatsOpen(false)}
-      />
-    </>
   );
 }

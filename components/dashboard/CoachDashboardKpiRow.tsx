@@ -1,24 +1,17 @@
 "use client";
 
-import { MessageCircle, ListChecks, Users } from "lucide-react";
+import { MessageCircle, Users } from "lucide-react";
 import DashboardKpiCard from "@/components/dashboard/DashboardKpiCard";
-import TeamEngagementWidget from "@/components/dashboard/TeamEngagementWidget";
 
 type CoachDashboardKpiRowProps = {
-  coachId: string;
-  role: string;
   athleteCount: number;
   activeAthleteCount: number;
-  openTodoCount: number;
   unreadMessages: number;
 };
 
 export default function CoachDashboardKpiRow({
-  coachId,
-  role,
   athleteCount,
   activeAthleteCount,
-  openTodoCount,
   unreadMessages,
 }: CoachDashboardKpiRowProps) {
   return (
@@ -43,16 +36,6 @@ export default function CoachDashboardKpiRow({
         tone="green"
         icon={<MessageCircle className="h-[18px] w-[18px]" strokeWidth={1.75} />}
       />
-      <DashboardKpiCard
-        label="Taken vandaag"
-        value={openTodoCount}
-        hint={openTodoCount > 0 ? "Openstaand vandaag" : "Alles bij"}
-        href="/todo"
-        ariaLabel="Naar to-do"
-        tone="orange"
-        icon={<ListChecks className="h-[18px] w-[18px]" strokeWidth={1.75} />}
-      />
-      <TeamEngagementWidget coachId={coachId} role={role} variant="kpi" />
     </div>
   );
 }

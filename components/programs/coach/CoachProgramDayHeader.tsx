@@ -1,5 +1,9 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { parseCompactDutchDate } from "@/lib/programWeek/dateFormatting";
+import { formatProgramDayTitle } from "@/lib/programWeek/weekdayFromTitle";
+
 type CoachProgramDayHeaderProps = {
   title: string;
   dateLabel: string;
@@ -19,6 +23,12 @@ export default function CoachProgramDayHeader({
   onTitleBlur,
   onDateChange,
 }: CoachProgramDayHeaderProps) {
+  const [dateDraft, setDateDraft] = useState(dateLabel);
+
+  useEffect(() => {
+    setDateDraft(dateLabel);
+  }, [dateLabel, dateInputValue]);
+
   return (
     <div className="coach-program-day-header">
       {editable ? (
@@ -37,16 +47,32 @@ export default function CoachProgramDayHeader({
             aria-label="Dagnaam"
           />
           <input
-            type="date"
-            value={dateInputValue}
-            onChange={(event) => onDateChange?.(event.target.value)}
+            type="text"
+            inputMode="numeric"
+            value={dateDraft}
+            onChange={(event) => setDateDraft(event.target.value)}
+            onBlur={() => {
+              const parsed = parseCompactDutchDate(dateDraft);
+              if (parsed) {
+                onDateChange?.(parsed);
+                return;
+              }
+              setDateDraft(dateLabel);
+            }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                event.currentTarget.blur();
+              }
+            }}
+            placeholder="dd-mm-jj"
             className="coach-program-day-pill coach-program-day-pill-date"
             aria-label="Datum van deze dag"
           />
         </div>
       ) : (
         <div className="coach-program-day-header-row-inner">
-          <h2 className="coach-program-day-title">{title}</h2>
+          <h2 className="coach-program-day-title">{formatProgramDayTitle(title)}</h2>
           <p className="coach-program-day-date">{dateLabel}</p>
         </div>
       )}

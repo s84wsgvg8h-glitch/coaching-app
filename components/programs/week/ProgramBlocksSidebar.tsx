@@ -174,8 +174,7 @@ export default function ProgramBlocksSidebar({
                   }`
             }
           >
-            <h2 className="text-lg font-bold">Programma</h2>
-            <p className="text-xs text-gray-500">Macrocycles, blocks en weken</p>
+            <h2 className="text-lg font-bold">Planning</h2>
           </div>
 
           {!coachProgramUi ? (

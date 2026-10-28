@@ -66,18 +66,17 @@ export async function loadProgramWeekCore(
 
   const role = options?.role ?? "";
 
-  const [blockResult, weekResult] = await Promise.all([
+  const [blockResult, weekResult, daysResult] = await Promise.all([
     supabase.from("program_blocks").select("*").eq("id", blockId).maybeSingle(),
     supabase.from("program_weeks").select("*").eq("id", weekId).maybeSingle(),
+    supabase
+      .from("program_days")
+      .select("*")
+      .eq("program_week_id", weekId)
+      .order("day_number", { ascending: true }),
   ]);
 
-  const { data: daysData } = await supabase
-    .from("program_days")
-    .select("*")
-    .eq("program_week_id", weekId)
-    .order("day_number", { ascending: true });
-
-  const loadedDays = (daysData || []) as ProgramDay[];
+  const loadedDays = (daysResult.data || []) as ProgramDay[];
   const exercisesByDay =
     loadedDays.length > 0 ? await loadExercisesForDays(loadedDays) : {};
 

@@ -1,9 +1,17 @@
 "use client";
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
+import { useRef } from "react";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
-import ProgramWeekAddMenu from "./ProgramWeekAddMenu";
+import ProgramMobileNavMenu from "@/components/programs/week/ProgramMobileNavMenu";
+import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
+import {
+  CoachProgramEditorViewSelect,
+  type EditorView,
+} from "@/components/programs/coach/CoachProgramWeekHeader";
+import CoachProgramWeekCompareView from "@/components/programs/coach/CoachProgramWeekCompareView";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { DELETE_X_BTN } from "@/lib/programWeek/constants";
 import {
   formatDateRangeLabel,
   getBlockEndDateObject,
@@ -11,12 +19,22 @@ import {
   getWeekEndDateObject,
   getWeekStartDateObject,
 } from "@/lib/programWeek/dateFormatting";
+import {
+  resolveBlockWeeksForDisplay,
+  resolveNavBlocksForDisplay,
+} from "@/lib/programWeek/navDisplay";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
-import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
+import type {
+  ProgramBlock,
+  ProgramDay,
+  ProgramExercise,
+  ProgramWeek,
+} from "@/lib/programWeek/types";
 import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
 
 export type ProgramWeekBlockWeekNavProps = {
   role: string;
+  userId: string;
   blockId: string;
   weekId: string;
   navBlocks: ProgramBlock[];
@@ -53,6 +71,23 @@ export type ProgramWeekBlockWeekNavProps = {
   createMacrocycle: () => void | Promise<void>;
   createBlock: () => void | Promise<void>;
   createWeek: (targetBlockId: string) => void | Promise<void>;
+  duplicateBlock: (block: ProgramBlock) => void | Promise<void>;
+  deleteBlock: (block: ProgramBlock) => void | Promise<void>;
+  pendingBlockAction: { blockId: string; type: "duplicate" | "delete" } | null;
+  duplicateWeek: (week: ProgramWeek) => void | Promise<void>;
+  deleteWeek: (week: ProgramWeek) => void | Promise<void>;
+  setEditingBlockId: Dispatch<SetStateAction<string>>;
+  setEditingBlockTitle: Dispatch<SetStateAction<string>>;
+  setEditingBlockStartDate: Dispatch<SetStateAction<string>>;
+  setEditingBlockMacrocycleId: Dispatch<SetStateAction<string>>;
+  setEditingWeekId: Dispatch<SetStateAction<string>>;
+  setEditingWeekTitle: Dispatch<SetStateAction<string>>;
+  editorView?: EditorView;
+  onEditorViewChange?: (view: EditorView) => void;
+  showEditorViewToggle?: boolean;
+  showCompareView?: boolean;
+  compareCurrentDays?: ProgramDay[];
+  compareCurrentExercisesByDay?: Record<string, ProgramExercise[]>;
 } & Pick<
   ProgramWeekAddMenuProps,
   | "programAddMenuOpen"
@@ -65,6 +100,7 @@ export type ProgramWeekBlockWeekNavProps = {
 
 export default function ProgramWeekBlockWeekNav({
   role,
+  userId,
   blockId,
   weekId,
   navBlocks,
@@ -107,10 +143,43 @@ export default function ProgramWeekBlockWeekNav({
   createMacrocycle,
   createBlock,
   createWeek,
+  duplicateBlock,
+  deleteBlock,
+  pendingBlockAction,
+  duplicateWeek,
+  deleteWeek,
+  setEditingBlockId,
+  setEditingBlockTitle,
+  setEditingBlockStartDate,
+  setEditingBlockMacrocycleId,
+  setEditingWeekId,
+  setEditingWeekTitle,
+  editorView = "card",
+  onEditorViewChange,
+  showEditorViewToggle = false,
+  showCompareView = false,
+  compareCurrentDays = [],
+  compareCurrentExercisesByDay = {},
 }: ProgramWeekBlockWeekNavProps) {
-  const darkNav = role === "atleet" || isCoachLikeRole(role);
-  const blockWeeks = weeksByBlock[blockId] || [];
-  const activeBlock = navBlocks.find((block) => block.id === blockId) || currentBlock;
+  const isCoach = isCoachLikeRole(role);
+  const darkNav = role === "atleet" || isCoach;
+  const isBlockActionPending = (targetBlockId: string) =>
+    pendingBlockAction?.blockId === targetBlockId;
+  const blockButtonRef = useRef<HTMLButtonElement | null>(null);
+  const weekButtonRef = useRef<HTMLButtonElement | null>(null);
+  const displayNavBlocks = resolveNavBlocksForDisplay(
+    navBlocks,
+    currentBlock,
+    blockId,
+  );
+  const blockWeeks = resolveBlockWeeksForDisplay(
+    weeksByBlock,
+    blockId,
+    week,
+    weekId,
+  );
+  const activeBlock =
+    displayNavBlocks.find((block) => block.id === blockId) || currentBlock;
   const activeWeek = blockWeeks.find((item) => item.id === weekId) || week;
 
   const activeBlockStart = activeBlock
@@ -121,30 +190,45 @@ export default function ProgramWeekBlockWeekNav({
     : null;
   const activeWeekStart =
     activeBlock && activeWeek
-      ? getWeekStartDateObject(activeBlock, activeWeek)
+      ? getWeekStartDateObject(activeBlock, activeWeek, blockWeeks)
       : null;
   const activeWeekEnd =
     activeBlock && activeWeek
-      ? getWeekEndDateObject(activeBlock, activeWeek)
+      ? getWeekEndDateObject(activeBlock, activeWeek, blockWeeks)
       : null;
+
+  function closeMenus() {
+    setBlockNavOpen(false);
+    setWeekNavOpen(false);
+  }
+
+  function openBlockMenu() {
+    setWeekNavOpen(false);
+    setBlockNavOpen((current) => !current);
+  }
+
+  function openWeekMenu() {
+    setBlockNavOpen(false);
+    setWeekNavOpen((current) => !current);
+  }
 
   return (
 
       <div
-        className={`program-mobile-week-nav sticky top-0 z-20 -mx-3 mb-4 space-y-3 px-3 pb-3 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur lg:hidden md:-mx-6 md:px-6 ${
+        className={`program-mobile-week-nav relative z-30 -mx-3 mb-3 space-y-2 overflow-visible px-3 pb-2 pt-[max(0.25rem,env(safe-area-inset-top))] backdrop-blur lg:hidden md:-mx-6 md:px-6 ${
           darkNav ? "program-mobile-week-nav--dark" : "border-b border-gray-200 bg-gray-100/95"
-        }`}
+        }${isCoach ? " program-mobile-week-nav--coach-compact" : ""}`}
       >
         <div className="grid grid-cols-2 gap-2">
           <div ref={blockNavRef} className="relative min-w-0">
             <button
+              ref={blockButtonRef}
               type="button"
-              onClick={() => {
-                setWeekNavOpen(false);
-                setBlockNavOpen((current) => !current);
-              }}
-              className={`flex w-full items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm font-bold transition active:scale-95 ${
-                blockId
+              onClick={openBlockMenu}
+              aria-expanded={blockNavOpen}
+              aria-haspopup="menu"
+              className={`program-mobile-week-nav-chip flex w-full items-center justify-between gap-2 rounded-full border px-3 py-1.5 text-left text-xs font-bold transition active:scale-95 ${
+                blockNavOpen || blockId
                   ? "border-black bg-black text-white"
                   : "border-gray-200 bg-white text-black"
               }`}
@@ -152,7 +236,7 @@ export default function ProgramWeekBlockWeekNav({
               <span className="min-w-0 truncate">
                 {activeBlock?.title || "Block"}
                 <span
-                  className={`block text-[11px] font-semibold ${
+                  className={`block text-[10px] font-semibold ${
                     blockId ? "text-white/75" : "text-gray-500"
                   }`}
                 >
@@ -160,56 +244,24 @@ export default function ProgramWeekBlockWeekNav({
                 </span>
               </span>
               <span
-                className={`shrink-0 text-xs ${
+                className={`shrink-0 text-[10px] ${
                   blockId ? "text-white/70" : "text-gray-400"
                 }`}
               >
-                ▼
+                {blockNavOpen ? "▲" : "▼"}
               </span>
             </button>
-
-            {blockNavOpen && (
-              <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
-                {navBlocks.map((block) => {
-                  const weeksForBlock = weeksByBlock[block.id] || [];
-                  const blockStart = getBlockStartDateObject(block);
-                  const blockEnd = getBlockEndDateObject(block, weeksForBlock);
-                  const isActive = block.id === blockId;
-
-                  return (
-                    <button
-                      key={block.id}
-                      type="button"
-                      onClick={() => {
-                        setBlockNavOpen(false);
-                        goToBlock(block.id);
-                      }}
-                      className={`flex w-full flex-col px-4 py-2.5 text-left transition hover:bg-gray-50 ${
-                        isActive ? "bg-gray-100" : ""
-                      }`}
-                    >
-                      <span className="truncate text-sm font-bold text-black">
-                        {block.title}
-                      </span>
-                      <span className="text-[11px] font-semibold text-gray-500">
-                        {formatDateRangeLabel(blockStart, blockEnd)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           <div ref={weekNavRef} className="relative min-w-0">
             <button
+              ref={weekButtonRef}
               type="button"
-              onClick={() => {
-                setBlockNavOpen(false);
-                setWeekNavOpen((current) => !current);
-              }}
-              className={`flex w-full items-center justify-between gap-2 rounded-full border px-4 py-2 text-left text-sm font-bold transition active:scale-95 ${
-                weekId
+              onClick={openWeekMenu}
+              aria-expanded={weekNavOpen}
+              aria-haspopup="menu"
+              className={`program-mobile-week-nav-chip flex w-full items-center justify-between gap-2 rounded-full border px-3 py-1.5 text-left text-xs font-bold transition active:scale-95 ${
+                weekNavOpen || weekId
                   ? "border-black bg-black text-white"
                   : "border-gray-200 bg-white text-black"
               }`}
@@ -217,7 +269,7 @@ export default function ProgramWeekBlockWeekNav({
               <span className="min-w-0 truncate">
                 {activeWeek?.title || "Week"}
                 <span
-                  className={`block text-[11px] font-semibold ${
+                  className={`block text-[10px] font-semibold ${
                     weekId ? "text-white/75" : "text-gray-500"
                   }`}
                 >
@@ -225,62 +277,297 @@ export default function ProgramWeekBlockWeekNav({
                 </span>
               </span>
               <span
-                className={`shrink-0 text-xs ${
+                className={`shrink-0 text-[10px] ${
                   weekId ? "text-white/70" : "text-gray-400"
                 }`}
               >
-                ▼
+                {weekNavOpen ? "▲" : "▼"}
               </span>
             </button>
-
-            {weekNavOpen && (
-              <div className="absolute left-0 right-0 top-full z-30 mt-1 max-h-60 overflow-y-auto rounded-2xl border border-gray-200 bg-white py-1 shadow-lg">
-                {blockWeeks.map((item) => {
-                  const weekStart =
-                    activeBlock ? getWeekStartDateObject(activeBlock, item) : null;
-                  const weekEnd =
-                    activeBlock ? getWeekEndDateObject(activeBlock, item) : null;
-                  const isActive = item.id === weekId;
-
-                  return (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setWeekNavOpen(false);
-                        goToProgram(blockId, item.id);
-                      }}
-                      className={`flex w-full flex-col px-4 py-2.5 text-left transition hover:bg-gray-50 ${
-                        isActive ? "bg-gray-100" : ""
-                      }`}
-                    >
-                      <span className="truncate text-sm font-bold text-black">
-                        {item.title}
-                      </span>
-                      <span className="text-[11px] font-semibold text-gray-500">
-                        {formatDateRangeLabel(weekStart, weekEnd)}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         </div>
 
-        {isCoachLikeRole(role) && (
-          <div className="flex flex-wrap gap-2">
-            <ProgramWeekAddMenu
-              buttonClassName="rounded-full border border-dashed border-gray-300 bg-white px-4 py-2 text-sm font-bold text-gray-600 active:scale-95"
-              programAddMenuOpen={programAddMenuOpen}
-              setProgramAddMenuOpen={setProgramAddMenuOpen}
-              onAddMacrocycle={onAddMacrocycle}
-              onAddTemplate={onAddTemplate}
-              onAddBlock={onAddBlock}
-              onAddWeek={onAddWeek}
+        <ProgramMobileNavMenu
+          open={blockNavOpen}
+          anchorRef={blockButtonRef}
+          onClose={closeMenus}
+          wide={isCoach}
+        >
+          {displayNavBlocks.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-app-muted">Geen blocks gevonden.</p>
+          ) : (
+            displayNavBlocks.map((block) => {
+              const weeksForBlock = weeksByBlock[block.id] || [];
+              const blockStart = getBlockStartDateObject(block);
+              const blockEnd = getBlockEndDateObject(block, weeksForBlock);
+              const isActive = block.id === blockId;
+
+              return (
+                <div
+                  key={block.id}
+                  className={`program-mobile-week-nav-menu-row ${
+                    isActive ? "is-active" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      closeMenus();
+                      goToBlock(block.id);
+                    }}
+                    className="program-mobile-week-nav-menu-row-main"
+                  >
+                    <span className="truncate text-sm font-bold">{block.title}</span>
+                    <span className="text-[11px] font-semibold opacity-80">
+                      {formatDateRangeLabel(blockStart, blockEnd)}
+                    </span>
+                  </button>
+
+                  {isCoach ? (
+                    <div className="program-mobile-week-nav-menu-row-actions">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          setEditingBlockId(block.id);
+                          setEditingBlockTitle(block.title);
+                          setEditingBlockStartDate(block.start_date || "");
+                          setEditingBlockMacrocycleId(block.macrocycle_id || "");
+                        }}
+                        className="program-mobile-week-nav-menu-action"
+                        title="Aanpassen"
+                        aria-label={`${block.title} aanpassen`}
+                      >
+                        ✎
+                      </button>
+
+                      <button
+                        type="button"
+                        disabled={Boolean(pendingBlockAction)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          void duplicateBlock(block);
+                        }}
+                        className="program-mobile-week-nav-menu-action disabled:cursor-not-allowed disabled:opacity-60"
+                        title="Dupliceren"
+                        aria-label={`${block.title} dupliceren`}
+                        aria-busy={
+                          isBlockActionPending(block.id) &&
+                          pendingBlockAction?.type === "duplicate"
+                        }
+                      >
+                        {isBlockActionPending(block.id) &&
+                        pendingBlockAction?.type === "duplicate" ? (
+                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                        ) : (
+                          "⧉"
+                        )}
+                      </button>
+
+                      <CreateTemplateButton
+                        coachId={userId}
+                        blockId={block.id}
+                        actingUserId={userId}
+                        actingRole={role}
+                        compact
+                        activeTone={isActive ? "dark" : "light"}
+                      />
+
+                      <button
+                        type="button"
+                        disabled={Boolean(pendingBlockAction)}
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          void deleteBlock(block);
+                        }}
+                        className={`${DELETE_X_BTN} program-mobile-week-nav-menu-action program-mobile-week-nav-menu-action--delete disabled:cursor-not-allowed disabled:opacity-60`}
+                        title="Verwijderen"
+                        aria-label={`${block.title} verwijderen`}
+                        aria-busy={
+                          isBlockActionPending(block.id) &&
+                          pendingBlockAction?.type === "delete"
+                        }
+                      >
+                        {isBlockActionPending(block.id) &&
+                        pendingBlockAction?.type === "delete" ? (
+                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                        ) : (
+                          "✕"
+                        )}
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+
+          {isCoach && !creatingBlock ? (
+            <button
+              type="button"
+              onClick={() => {
+                closeMenus();
+                onAddBlock();
+              }}
+              className="program-mobile-week-nav-menu-add-week"
+            >
+              + Block toevoegen
+            </button>
+          ) : null}
+        </ProgramMobileNavMenu>
+
+        <ProgramMobileNavMenu
+          open={weekNavOpen}
+          anchorRef={weekButtonRef}
+          onClose={closeMenus}
+          wide={isCoach}
+        >
+          {blockWeeks.length === 0 ? (
+            <p className="px-4 py-3 text-sm text-app-muted">Geen weken in dit block.</p>
+          ) : (
+            blockWeeks.map((item) => {
+              const weekStart =
+                activeBlock
+                  ? getWeekStartDateObject(activeBlock, item, blockWeeks)
+                  : null;
+              const weekEnd =
+                activeBlock
+                  ? getWeekEndDateObject(activeBlock, item, blockWeeks)
+                  : null;
+              const isActive = item.id === weekId;
+
+              return (
+                <div
+                  key={item.id}
+                  className={`program-mobile-week-nav-menu-row ${
+                    isActive ? "is-active" : ""
+                  }`}
+                >
+                  <button
+                    type="button"
+                    role="menuitem"
+                    onClick={() => {
+                      closeMenus();
+                      goToProgram(blockId, item.id);
+                    }}
+                    className="program-mobile-week-nav-menu-row-main"
+                  >
+                    <span className="truncate text-sm font-bold">{item.title}</span>
+                    <span className="text-[11px] font-semibold opacity-80">
+                      {formatDateRangeLabel(weekStart, weekEnd)}
+                    </span>
+                  </button>
+
+                  {isCoach ? (
+                    <div className="program-mobile-week-nav-menu-row-actions">
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          setEditingWeekId(item.id);
+                          setEditingWeekTitle(item.title);
+                        }}
+                        className="program-mobile-week-nav-menu-action"
+                        title="Aanpassen"
+                        aria-label={`${item.title} aanpassen`}
+                      >
+                        ✎
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          void duplicateWeek(item);
+                        }}
+                        className="program-mobile-week-nav-menu-action"
+                        title="Dupliceren"
+                        aria-label={`${item.title} dupliceren`}
+                      >
+                        ⧉
+                      </button>
+
+                      <CreateTemplateButton
+                        coachId={userId}
+                        weekId={item.id}
+                        actingUserId={userId}
+                        actingRole={role}
+                        compact
+                        activeTone={isActive ? "dark" : "light"}
+                      />
+
+                      <button
+                        type="button"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
+                          closeMenus();
+                          void deleteWeek(item);
+                        }}
+                        className={`${DELETE_X_BTN} program-mobile-week-nav-menu-action program-mobile-week-nav-menu-action--delete`}
+                        title="Verwijderen"
+                        aria-label={`${item.title} verwijderen`}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ) : null}
+                </div>
+              );
+            })
+          )}
+
+          {isCoach && creatingWeekBlockId !== blockId ? (
+            <button
+              type="button"
+              onClick={() => {
+                closeMenus();
+                setCreatingWeekBlockId(blockId);
+                setNewWeekTitle(`Week ${blockWeeks.length + 1}`);
+              }}
+              className="program-mobile-week-nav-menu-add-week"
+            >
+              + Week toevoegen
+            </button>
+          ) : null}
+        </ProgramMobileNavMenu>
+
+        {isCoach && showEditorViewToggle && onEditorViewChange ? (
+          <div className="program-mobile-week-nav-toolbar flex items-center gap-2 overflow-visible">
+            {showCompareView ? (
+              <CoachProgramWeekCompareView
+                className="program-mobile-week-nav-compare"
+                currentBlockId={blockId}
+                currentWeekId={weekId}
+                currentBlock={currentBlock}
+                currentWeek={week}
+                currentDays={compareCurrentDays}
+                currentExercisesByDay={compareCurrentExercisesByDay}
+                navBlocks={navBlocks}
+                weeksByBlock={weeksByBlock}
+                userId={userId}
+                role={role}
+                onOpenWeek={goToProgram}
+              />
+            ) : null}
+            <CoachProgramEditorViewSelect
+              editorView={editorView}
+              onEditorViewChange={onEditorViewChange}
+              className="program-mobile-week-nav-view-select"
             />
           </div>
-        )}
+        ) : null}
 
         {isCoachLikeRole(role) && creatingMacrocycle && (
           <div className="rounded-2xl border border-purple-200 bg-white p-3 shadow-sm">

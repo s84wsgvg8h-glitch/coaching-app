@@ -5,14 +5,16 @@
 }
 
 :root {
-  --dashboard-sidebar-collapsed-width: 68px;
-  --dashboard-sidebar-expanded-width: 248px;
+  --dashboard-sidebar-collapsed-width: 186px;
+  --dashboard-sidebar-expanded-width: 186px;
   --dashboard-sidebar-width: var(--dashboard-sidebar-collapsed-width);
   --coach-shell-topbar-height: calc(2.85rem + env(safe-area-inset-top, 0px));
   --dashboard-kpi-min-height: 56px;
   --dashboard-focus-panel-min-height: 0;
   --dashboard-cockpit-gap: 0.4rem;
-  --dashboard-agenda-rail-width: 248px;
+  --dashboard-agenda-rail-width: 220px;
+  --dashboard-side-col-max: 280px;
+  --dashboard-cockpit-search-width: 600px;
 }
 
 .dashboard-coach-shell {
@@ -31,25 +33,82 @@
   .dashboard-coach-sidebar,
   .coach-app-sidebar {
     display: flex;
-    width: var(--dashboard-sidebar-collapsed-width);
+    width: var(--dashboard-sidebar-expanded-width);
     flex-shrink: 0;
     flex-direction: column;
     border-right: 1px solid var(--glass-surface-border);
     background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
-    padding: 0.75rem 0.55rem 1rem;
+    padding: 0.65rem 0.45rem 0.85rem;
     max-height: 100dvh;
     overflow-x: hidden;
     overflow-y: auto;
     position: relative;
     z-index: 40;
-    transition:
-      width 250ms ease,
-      box-shadow 250ms ease;
+  }
+
+  .coach-app-sidebar--pinned {
+    width: var(--dashboard-sidebar-expanded-width);
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-brand-text,
+  .coach-app-sidebar--pinned .coach-app-sidebar-section-label,
+  .coach-app-sidebar--pinned .coach-app-sidebar-link-label,
+  .coach-app-sidebar--pinned .coach-app-sidebar-footer-text {
+    opacity: 1;
+    width: auto;
+    min-width: 0;
+    overflow: hidden;
+    white-space: nowrap;
+    pointer-events: auto;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-brand {
+    justify-content: flex-start;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-link {
+    justify-content: flex-start;
+    gap: 0.45rem;
+    padding: 0.4rem 0.45rem;
+    font-size: 12px;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-link-icon {
+    height: 1.125rem;
+    width: 1.125rem;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-badge {
+    position: static;
+    margin-left: auto;
+    min-width: 1.1rem;
+    height: 1.1rem;
+    font-size: 9px;
+    line-height: 1.1rem;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-profile,
+  .coach-app-sidebar--pinned .coach-app-sidebar-plan {
+    justify-content: flex-start;
+    padding: 0.45rem 0.5rem;
+    font-size: 12px;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-brand-text {
+    font-size: 11px;
+    letter-spacing: 0.04em;
+  }
+
+  .coach-app-sidebar--pinned .coach-app-sidebar-section-label {
+    font-size: 9px;
+    padding: 0 0.35rem;
   }
 
   .coach-app-sidebar:hover {
     width: var(--dashboard-sidebar-expanded-width);
-    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.35);
+    box-shadow: none;
   }
 
   .coach-app-sidebar:not(:hover) .coach-app-sidebar-brand-text,
@@ -65,49 +124,38 @@
     transition: opacity 200ms ease;
   }
 
-  .coach-app-sidebar:hover .coach-app-sidebar-brand-text,
-  .coach-app-sidebar:hover .coach-app-sidebar-section-label,
-  .coach-app-sidebar:hover .coach-app-sidebar-link-label,
-  .coach-app-sidebar:hover .coach-app-sidebar-footer-text {
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-brand-text,
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-section-label,
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-link-label,
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-footer-text {
     opacity: 1;
     width: auto;
-    transition: opacity 200ms ease 50ms;
+    min-width: 0;
+    pointer-events: auto;
   }
 
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-brand {
-    justify-content: center;
-    padding-left: 0;
-    padding-right: 0;
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-brand {
+    justify-content: flex-start;
+    padding-left: 0.35rem;
+    padding-right: 0.35rem;
   }
 
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-link {
-    position: relative;
-    justify-content: center;
-    gap: 0;
-    padding-left: 0.5rem;
-    padding-right: 0.5rem;
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-link {
+    position: static;
+    justify-content: flex-start;
+    gap: 0.45rem;
+    padding: 0.4rem 0.45rem;
   }
 
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-badge {
-    position: absolute;
-    top: 4px;
-    right: 4px;
-    margin-left: 0;
-    min-width: 1rem;
-    height: 1rem;
-    padding: 0 0.25rem;
-    font-size: 9px;
-    line-height: 1rem;
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-badge {
+    position: static;
+    margin-left: auto;
   }
 
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-profile,
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-plan {
-    justify-content: center;
-    padding: 0.5rem;
-  }
-
-  .coach-app-sidebar:not(:hover) .coach-app-sidebar-plan .coach-app-sidebar-footer-text {
-    display: none;
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-profile,
+  .coach-app-sidebar--pinned:not(:hover) .coach-app-sidebar-plan {
+    justify-content: flex-start;
+    padding: 0.45rem 0.5rem;
   }
 }
 
@@ -252,17 +300,17 @@
   color: var(--app-accent);
 }
 
-/* KPI row — rectangular cards, 4-up on desktop */
+/* KPI row — rectangular cards, 3-up on desktop */
 
 .dashboard-kpi-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.5rem;
+  gap: var(--dashboard-mobile-metrics-gap, 12px);
 }
 
 @media (min-width: 768px) {
   .dashboard-kpi-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 0.65rem;
   }
 }
@@ -350,26 +398,23 @@
   max-height: none;
 }
 
-@media (min-width: 768px) {
-  .dashboard-focus-panel.dashboard-focus-panel--wide .dashboard-focus-panel-body {
-    flex-direction: row;
-    gap: 0.85rem;
-    align-items: stretch;
-  }
+.dashboard-focus-appointment-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
 
-  .dashboard-focus-panel.dashboard-focus-panel--wide .dashboard-focus-appointments {
-    flex: 1;
-    min-width: 0;
-    border-bottom: none;
-    border-right: 1px solid var(--glass-surface-border);
-    padding-bottom: 0;
-    padding-right: 0.75rem;
-  }
+.dashboard-focus-appointment-group {
+  min-width: 0;
+}
 
-  .dashboard-focus-panel.dashboard-focus-panel--wide .dashboard-focus-todos {
-    flex: 1;
-    min-width: 0;
-  }
+.dashboard-focus-appointment-day-label {
+  margin-bottom: 0.25rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--app-accent);
 }
 
 /* Quick actions footer */
@@ -419,7 +464,7 @@
 
 @media (min-width: 768px) {
   .dashboard-coach-skeleton-kpi-row {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
 
@@ -755,16 +800,17 @@
   }
 
   .dashboard-cockpit-kpi {
-    flex-shrink: 0;
+    display: none;
   }
 
   .dashboard-cockpit-main {
     display: grid;
     min-height: 0;
     flex: 1 1 auto;
-    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.82fr) var(
-        --dashboard-agenda-rail-width
-      );
+    grid-template-columns:
+      minmax(0, var(--dashboard-side-col-max))
+      minmax(0, 1fr)
+      minmax(0, var(--dashboard-side-col-max));
     gap: var(--dashboard-cockpit-gap);
     overflow: hidden;
   }
@@ -802,7 +848,7 @@
 
   .dashboard-cockpit-col--focus .dashboard-focus-appointments {
     flex-shrink: 0;
-    max-height: 32%;
+    max-height: 38%;
     overflow-y: auto;
     border-bottom: 1px solid var(--glass-surface-border);
     padding-bottom: 0.35rem;
@@ -831,7 +877,188 @@
   }
 
   .dashboard-cockpit-col--center {
-    gap: var(--dashboard-cockpit-gap);
+    gap: 0;
+    align-items: center;
+  }
+
+  .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
+    flex-shrink: 0;
+    min-width: 0;
+    width: min(100%, var(--dashboard-cockpit-search-width));
+    max-width: var(--dashboard-cockpit-search-width);
+    margin-top: 1.15rem;
+    margin-bottom: 0.25rem;
+    align-self: center;
+  }
+
+  .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {
+    border: none;
+    background: transparent;
+    padding: 0;
+    box-shadow: none;
+    width: 100%;
+    max-width: none;
+  }
+
+  .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-input-wrap {
+    min-width: 0;
+    background: transparent;
+  }
+
+  .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcuts {
+    margin-top: 0.45rem;
+    justify-content: center;
+  }
+
+  .coach-dashboard-search-embedded.coach-mobile-dashboard-search {
+    display: block;
+    width: min(100%, var(--dashboard-cockpit-search-width));
+    max-width: var(--dashboard-cockpit-search-width);
+    padding: 0;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {
+    width: 100%;
+    max-width: none;
+    margin: 0;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field {
+    min-height: 40px;
+    border-radius: 12px;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    padding: 0 0.65rem;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field:focus-within {
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-input,
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-input:focus,
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-input:focus-visible {
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+    -webkit-appearance: none;
+    appearance: none;
+  }
+
+  .coach-dashboard-search-embedded
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input::-webkit-search-decoration,
+  .coach-dashboard-search-embedded
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input::-webkit-search-results-decoration,
+  .coach-dashboard-search-embedded
+    .coach-mobile-dashboard-search-field.app-search-field
+    .app-search-input::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+    display: none;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-field-icon {
+    color: var(--app-subtle);
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcuts {
+    justify-content: center;
+    gap: 0.35rem;
+  }
+
+  .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcut {
+    min-height: 32px;
+    border-radius: 9px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.25rem 0.65rem;
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded {
+    z-index: 90;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: #121820;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    box-shadow:
+      0 8px 24px rgba(0, 0, 0, 0.45),
+      0 0 0 1px rgba(0, 0, 0, 0.25);
+    padding: 0.25rem;
+  }
+
+  html:not(.dark) .coach-mobile-dashboard-search-dropdown--embedded {
+    background: #ffffff;
+    border-color: rgba(15, 23, 42, 0.12);
+    box-shadow:
+      0 8px 24px rgba(15, 23, 42, 0.14),
+      0 0 0 1px rgba(15, 23, 42, 0.06);
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-group {
+    padding: 0.45rem 0.65rem 0.2rem;
+    font-size: 10px;
+    letter-spacing: 0.07em;
+    color: var(--app-subtle);
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-item {
+    min-height: 40px;
+    border-radius: 10px;
+    border-top: none;
+    margin-bottom: 0.1rem;
+    padding: 0.45rem 0.65rem;
+    transition: background 0.12s ease;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-item.is-active,
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-item:hover {
+    background: var(--glass-hover-bg, rgba(255, 255, 255, 0.06));
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-item-label {
+    font-size: 13px;
+    font-weight: 500;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-item-hint {
+    font-size: 11px;
+    color: var(--app-subtle);
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded .coach-mobile-dashboard-search-empty {
+    padding: 0.75rem 0.65rem;
+    font-size: 12px;
+    color: var(--app-muted);
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded.coach-mobile-dashboard-search-dropdown--athlete-picker {
+    padding: 0.2rem;
+  }
+
+  .coach-mobile-dashboard-search-dropdown--embedded.coach-mobile-dashboard-search-dropdown--athlete-picker
+    .coach-mobile-dashboard-search-item--compact {
+    min-height: 36px;
+    padding: 0.35rem 0.65rem;
+  }
+
+  .premium-coach-ui .shell-topbar--coach-dashboard:not(.shell-topbar--dashboard) .shell-topbar-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.45rem 0;
   }
 
   .dashboard-cockpit-panel {
@@ -869,22 +1096,115 @@
     height: 100%;
     min-height: 0;
     flex: 1;
-    padding: 0.55rem 0.65rem 0.5rem;
+    padding: 0.55rem 0.6rem 0.5rem;
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    box-shadow: none;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-timeline--rail::before {
+    display: none;
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-timeline-header {
-    margin-bottom: 0.35rem;
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     flex-shrink: 0;
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-timeline-header h2 {
-    font-size: 15px !important;
+    font-size: 14px !important;
+    font-weight: 600;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-timeline-header a {
+    font-size: 10px;
+    padding: 0.2rem 0.45rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(79, 140, 255, 0.22);
+    background: rgba(79, 140, 255, 0.08);
+    text-decoration: none;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-timeline-header a:hover {
+    background: rgba(79, 140, 255, 0.14);
+    text-decoration: none;
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-scroll {
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-hour-row {
+    grid-template-columns: 52px minmax(0, 1fr);
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-hour-label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding-top: 0;
+    padding-right: 0;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    color: var(--app-subtle);
+    opacity: 0.85;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-hour-label::after {
+    content: "";
+    display: block;
+    width: 10px;
+    height: 1px;
+    margin-top: 0.42rem;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.16);
+  }
+
+  html:not(.dark) .dashboard-cockpit-col--agenda .today-agenda-hour-label::after {
+    background: rgba(15, 23, 42, 0.18);
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-hour-line {
+    border-top: none;
+    background: transparent;
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-now-line {
+    height: 2px;
+    background: linear-gradient(
+      90deg,
+      rgba(79, 140, 255, 0.15) 0%,
+      rgba(79, 140, 255, 0.95) 12%,
+      rgba(79, 140, 255, 0.95) 88%,
+      rgba(79, 140, 255, 0.15) 100%
+    );
+    box-shadow: 0 0 12px rgba(79, 140, 255, 0.45);
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-now-badge {
+    top: -0.55rem;
+    font-size: 9px;
+    font-weight: 700;
+    padding: 0.12rem 0.4rem;
+    border-radius: 9999px;
+    border: 1px solid rgba(79, 140, 255, 0.35);
+    background: rgba(15, 20, 32, 0.95);
+    box-shadow: 0 0 10px rgba(79, 140, 255, 0.25);
+  }
+
+  .dashboard-cockpit-col--agenda .today-agenda-block {
+    border-radius: 8px;
+    border-width: 1px;
+    padding: 0.3rem 0.4rem;
+    backdrop-filter: blur(6px);
   }
 
   .dashboard-cockpit-bottom {
@@ -995,9 +1315,17 @@
 
   .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop {
     display: flex;
-    flex: 1 1 auto;
+    flex: 0 1 50%;
+    max-height: 50%;
     min-height: 0;
+    width: min(100%, var(--dashboard-cockpit-search-width));
+    margin-top: auto;
+    align-self: center;
     overflow: hidden;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--glass-surface-border);
+    background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
+    padding: 0.45rem 0.55rem 0.5rem;
   }
 
   .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop .dashboard-panel,
@@ -1010,6 +1338,19 @@
     background: transparent;
     box-shadow: none;
     padding: 0;
+  }
+
+  .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop .dashboard-panel > div:first-child {
+    margin-bottom: 0.35rem;
+  }
+
+  .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop .dashboard-panel h2 {
+    font-size: 12px;
+    line-height: 1.2;
+  }
+
+  .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop .dashboard-inbox-subtitle {
+    display: none;
   }
 
   .premium-coach-ui .dashboard-cockpit-panel--inbox-desktop ul {
@@ -1157,13 +1498,13 @@
   .dashboard-cockpit {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: var(--dashboard-mobile-widget-gap, 10px);
   }
 
   .dashboard-cockpit-main {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: var(--dashboard-mobile-widget-gap, 10px);
   }
 
   .dashboard-cockpit-col--agenda {
@@ -1173,7 +1514,7 @@
   .dashboard-cockpit-bottom-primary {
     display: flex;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: var(--dashboard-mobile-widget-gap, 10px);
     max-height: none;
   }
 
@@ -1181,6 +1522,6 @@
     display: flex;
     max-height: none;
     flex-direction: column;
-    gap: 0.65rem;
+    gap: var(--dashboard-mobile-widget-gap, 10px);
   }
 }

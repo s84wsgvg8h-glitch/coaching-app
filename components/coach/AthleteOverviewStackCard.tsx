@@ -27,10 +27,29 @@ import {
 import type { CoachAthleteOverviewRow } from "@/lib/coachAthleteOverview";
 import type { AthleteDailyTrackingRow } from "@/lib/athleteOverviewDailyTracking";
 import type { AthleteLastActivity } from "@/lib/athleteLastActivity";
+import {
+  formatActivityBadgeLabel,
+  getActivityBadgeClassName,
+} from "@/lib/athleteLastActivity";
 import type { AthleteStatusMeta } from "@/lib/athleteStatus";
 import { isAdminRole } from "@/lib/authRoles";
 
 type ExpandedSection = null | "payments" | "fillScore" | "bodyweight";
+
+function AthleteActivityBadge({
+  daysAgo,
+}: {
+  daysAgo: number | null | undefined;
+}) {
+  const normalized = daysAgo ?? null;
+  return (
+    <span
+      className={`ui-badge shrink-0 rounded-full !px-2 !py-0.5 text-[10px] tabular-nums ${getActivityBadgeClassName(normalized)}`}
+    >
+      {formatActivityBadgeLabel(normalized)}
+    </span>
+  );
+}
 
 export type AthleteOverviewRowProps = {
   row: CoachAthleteOverviewRow;
@@ -299,8 +318,6 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
   const {
     row,
     displayName,
-    handle,
-    statusMeta,
     activity,
     tracking,
     scoresLoading,
@@ -340,12 +357,6 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
 
   const monthLabel = new Date().toLocaleDateString("nl-NL", { month: "long" });
   const daysAgo = activity?.daysAgo;
-  const activityLabel =
-    daysAgo === null || daysAgo === undefined
-      ? ""
-      : daysAgo === 0
-        ? "vandaag"
-        : `${daysAgo}d`;
   const birthDate = formatBirthDateShort(row.geboortedatum);
   const scoreTone = fillScoreTone(row.fillScore);
   const priceCompact = formatPaymentPriceCompact(row.betalingPrijs);
@@ -360,13 +371,17 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
     .join(" ");
 
   function handleRowClick() {
+    if (selectionMode) {
+      onToggleSelect(!selected);
+      return;
+    }
     onOpen();
   }
 
   function handleRowKeyDown(event: React.KeyboardEvent) {
     if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      onOpen();
+      handleRowClick();
     }
   }
 
@@ -377,8 +392,10 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
         onClick={handleRowClick}
         onKeyDown={handleRowKeyDown}
         tabIndex={0}
-        role="link"
-        aria-label={`Open hub van ${displayName}`}
+        role={selectionMode ? "button" : "link"}
+        aria-label={
+          selectionMode ? `${displayName} selecteren` : `Open hub van ${displayName}`
+        }
       >
         {selectionMode ? (
           <td className="athletes-td-select" onClick={stopRowNav}>
@@ -405,20 +422,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
                 <span className="truncate text-[14px] font-bold text-app-text">
                   {displayName}
                 </span>
-                <span
-                  className={`ui-badge shrink-0 rounded-full !px-2 !py-0.5 text-[10px] ${statusMeta.badgeClass}`}
-                >
-                  {statusMeta.label}
-                </span>
-              </span>
-              <span className="mt-0.5 flex flex-wrap items-center gap-x-1.5 text-[11px] text-app-subtle/75">
-                <span className="truncate">{handle}</span>
-                {activityLabel ? (
-                  <>
-                    <span className="text-app-border">·</span>
-                    <span className="shrink-0 tabular-nums">{activityLabel}</span>
-                  </>
-                ) : null}
+                <AthleteActivityBadge daysAgo={daysAgo} />
               </span>
             </span>
           </div>
@@ -588,8 +592,6 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
   const {
     row,
     displayName,
-    handle,
-    statusMeta,
     activity,
     tracking,
     scoresLoading,
@@ -604,6 +606,7 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
     onRemove,
   } = props;
 
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [expanded, setExpanded] = useState<ExpandedSection>(null);
 
   const paymentHistory = useMemo(
@@ -613,12 +616,6 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
 
   const monthLabel = new Date().toLocaleDateString("nl-NL", { month: "long" });
   const daysAgo = activity?.daysAgo;
-  const activityLabel =
-    daysAgo === null || daysAgo === undefined
-      ? ""
-      : daysAgo === 0
-        ? "vandaag"
-        : `${daysAgo}d`;
   const birthDate = formatBirthDateShort(row.geboortedatum);
   const scoreTone = fillScoreTone(row.fillScore);
   const priceCompact = formatPaymentPriceCompact(row.betalingPrijs);
@@ -632,24 +629,45 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
     setExpanded((current) => (current === section ? null : section));
   }
 
+  function toggleDetails(event: React.MouseEvent) {
+    stopRowNav(event);
+    setDetailsOpen((current) => {
+      if (current) setExpanded(null);
+      return !current;
+    });
+  }
+
+  function handleCardActivate() {
+    if (selectionMode) {
+      onToggleSelect(!selected);
+      return;
+    }
+    onOpen();
+  }
+
   return (
     <article
       className={[
         "athletes-mobile-card px-3 py-2 transition",
         highlightRow ? "bg-amber-500/[0.05]" : "",
         expanded ? "bg-app-surface-raised/10" : "",
+        detailsOpen ? "athletes-mobile-card--details-open" : "",
+        selectionMode ? "athletes-mobile-card--selection" : "",
       ]
         .filter(Boolean)
         .join(" ")}
-      onClick={onOpen}
-      role="link"
+      onClick={handleCardActivate}
+      role={selectionMode ? "button" : "link"}
       tabIndex={0}
       onKeyDown={(event) => {
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onOpen();
+          handleCardActivate();
         }
       }}
+      aria-label={
+        selectionMode ? `${displayName} selecteren` : `Open hub van ${displayName}`
+      }
     >
       <div className="flex items-start gap-2">
         {selectionMode ? (
@@ -665,15 +683,9 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
           <span className="flex items-center gap-2">
             <ChatAvatar name={displayName} className="h-8 w-8 text-[10px]" />
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5">
+              <span className="flex min-w-0 items-center gap-1.5">
                 <span className="truncate text-[13px] font-semibold">{displayName}</span>
-                <span className={`ui-badge !px-1.5 !py-0 text-[10px] ${statusMeta.badgeClass}`}>
-                  {statusMeta.label}
-                </span>
-              </span>
-              <span className="text-[10px] text-app-subtle">
-                {handle}
-                {activityLabel ? ` · ${activityLabel}` : ""}
+                <AthleteActivityBadge daysAgo={daysAgo} />
               </span>
             </span>
           </span>
@@ -684,14 +696,14 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
             className="athletes-action-btn"
             onClick={stopRowNav}
           >
-            <MessageSquare className="h-4 w-4" />
+            <MessageSquare className="h-3.5 w-3.5" />
           </Link>
           <Link
             href={`/programs?athlete=${row.id}`}
             className="athletes-action-btn"
             onClick={stopRowNav}
           >
-            <ClipboardList className="h-4 w-4" />
+            <ClipboardList className="h-3.5 w-3.5" />
           </Link>
           {!isAdminRole(coachRole) ? (
             <button
@@ -702,32 +714,44 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
               }}
               className="athletes-action-btn athletes-action-btn--danger"
             >
-              <X className="h-4 w-4" />
+              <X className="h-3.5 w-3.5" />
             </button>
           ) : null}
+          <button
+            type="button"
+            onClick={toggleDetails}
+            className={`athletes-action-btn ${
+              detailsOpen ? "athletes-action-btn--active" : ""
+            }`}
+            aria-expanded={detailsOpen}
+            aria-label={detailsOpen ? "Details verbergen" : "Details tonen"}
+          >
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                detailsOpen ? "rotate-180" : ""
+              }`}
+            />
+          </button>
         </div>
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-1.5" onClick={stopRowNav}>
+      {detailsOpen ? (
+      <div className="athletes-mobile-detail-grid mt-2" onClick={stopRowNav}>
         {priceCompact ? (
           <button
             type="button"
             onClick={togglePayments}
-            className={`rounded-md border px-2 py-1 text-[11px] tabular-nums ${
-              expanded === "payments"
-                ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
-                : "border-dotted border-app-border/60"
-            }`}
+            className="athletes-mobile-detail-chip app-focus-ring"
           >
             {priceCompact}
           </button>
         ) : null}
         {row.betalingDag !== null ? (
-          <span className="rounded-md px-2 py-1 text-[11px] text-app-muted">Dag {row.betalingDag}</span>
+          <span className="athletes-mobile-detail-chip">Dag {row.betalingDag}</span>
         ) : null}
         {row.weeksOut !== null ? (
           <span
-            className="rounded-md px-2 py-1 text-[11px] text-app-muted"
+            className="athletes-mobile-detail-chip"
             onClick={stopRowNav}
             onPointerDown={stopRowNav}
           >
@@ -738,18 +762,29 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
             />
           </span>
         ) : null}
-        <button type="button" onClick={() => toggleSection("fillScore")} className={`rounded-md px-2 py-1 text-[11px] ${scoreTone}`}>
+        <button
+          type="button"
+          onClick={() => toggleSection("fillScore")}
+          className={`athletes-mobile-detail-chip app-focus-ring ${scoreTone}`}
+        >
           {scoresLoading ? "…" : `${row.fillScore}%`}
         </button>
         {row.bodyweightKg !== null ? (
-          <button type="button" onClick={() => toggleSection("bodyweight")} className="rounded-md px-2 py-1 text-[11px]">
+          <button
+            type="button"
+            onClick={() => toggleSection("bodyweight")}
+            className="athletes-mobile-detail-chip app-focus-ring"
+          >
             {row.bodyweightKg}kg
           </button>
         ) : null}
-        {birthDate ? <span className="rounded-md px-2 py-1 text-[11px] text-app-muted">{birthDate}</span> : null}
+        {birthDate ? (
+          <span className="athletes-mobile-detail-chip">{birthDate}</span>
+        ) : null}
       </div>
+      ) : null}
 
-      {expanded === "payments" && paymentHistory.length > 0 ? (
+      {detailsOpen && expanded === "payments" && paymentHistory.length > 0 ? (
         <div className="mt-1 flex flex-wrap gap-2">
           {paymentHistory.map((entry) => {
             const styles = paymentPillStyles(entry.status);
@@ -764,7 +799,7 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
         </div>
       ) : null}
 
-      {expanded === "fillScore" ? (
+      {detailsOpen && expanded === "fillScore" ? (
         <ExpandedTrackingPanel
           label="Invulscore"
           monthLabel={monthLabel}
@@ -776,7 +811,7 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
         />
       ) : null}
 
-      {expanded === "bodyweight" ? (
+      {detailsOpen && expanded === "bodyweight" ? (
         <ExpandedTrackingPanel
           label="Bodyweight"
           monthLabel={monthLabel}

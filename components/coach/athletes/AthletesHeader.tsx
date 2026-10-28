@@ -1,10 +1,12 @@
 "use client";
 
-import { CheckSquare, List, UserPlus } from "lucide-react";
-import {
-  athletesPillBtnGhost,
-  athletesPillBtnPrimary,
-} from "@/components/coach/athletes/athletesCrmClasses";
+import { useEffect, useRef, useState } from "react";
+import { CheckSquare, List, Search, UserPlus } from "lucide-react";
+import SearchInput from "@/components/ui/SearchInput";
+import { athletesPillBtnPrimary } from "@/components/coach/athletes/athletesCrmClasses";
+
+const athletesIconBtnBase =
+  "athletes-header-icon-btn inline-flex shrink-0 items-center justify-center rounded-full border transition app-focus-ring";
 
 type AthletesHeaderProps = {
   pendingCount: number;
@@ -12,6 +14,8 @@ type AthletesHeaderProps = {
   selectedCount: number;
   onToggleSelection: () => void;
   onInvite?: () => void;
+  search?: string;
+  onSearchChange?: (value: string) => void;
 };
 
 export default function AthletesHeader({
@@ -20,9 +24,42 @@ export default function AthletesHeader({
   selectedCount,
   onToggleSelection,
   onInvite,
+  search = "",
+  onSearchChange,
 }: AthletesHeaderProps) {
+  const [searchOpen, setSearchOpen] = useState(Boolean(search));
+  const mobileSearchRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (search) setSearchOpen(true);
+  }, [search]);
+
+  useEffect(() => {
+    if (!searchOpen) return;
+    window.requestAnimationFrame(() => {
+      mobileSearchRef.current?.focus();
+    });
+  }, [searchOpen]);
+
+  function handleSearchChange(value: string) {
+    onSearchChange?.(value);
+    if (value) setSearchOpen(true);
+  }
+
+  function toggleSearch() {
+    if (searchOpen || search.length > 0) {
+      setSearchOpen(false);
+      onSearchChange?.("");
+      mobileSearchRef.current?.blur();
+      return;
+    }
+    setSearchOpen(true);
+  }
+
+  const showSearchField = Boolean(onSearchChange) && searchOpen;
+
   return (
-    <header className="mb-7">
+    <header className="mb-4 lg:mb-7">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <div className="flex flex-wrap items-center gap-3">
@@ -35,16 +72,28 @@ export default function AthletesHeader({
               </span>
             ) : null}
           </div>
-          <p className="mt-2.5 max-w-2xl text-[13px] leading-relaxed text-app-subtle/90 md:text-[14px]">
-            Overzicht van al je atleten en hun voortgang, betalingen en engagement.
-          </p>
         </div>
 
-        <div className="flex shrink-0 flex-wrap items-center gap-2">
+        <div className="flex shrink-0 items-center gap-2">
+          {onSearchChange ? (
+            <button
+              type="button"
+              onClick={toggleSearch}
+              className={`${athletesIconBtnBase} ${
+                showSearchField
+                  ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
+                  : "border-app-border/80 bg-app-surface/40 text-app-muted hover:border-app-border hover:text-app-text"
+              }`}
+              aria-label="Atleten zoeken"
+              title="Zoeken"
+            >
+              <Search className="h-4 w-4" />
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={onToggleSelection}
-            className={`inline-flex h-11 w-11 items-center justify-center rounded-full border transition app-focus-ring ${
+            className={`${athletesIconBtnBase} ${
               selectionMode
                 ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
                 : "border-app-border/80 bg-app-surface/40 text-app-muted hover:border-app-border hover:text-app-text"
@@ -64,13 +113,33 @@ export default function AthletesHeader({
             </span>
           ) : null}
           {onInvite ? (
-            <button type="button" onClick={onInvite} className={athletesPillBtnPrimary}>
+            <button
+              type="button"
+              onClick={onInvite}
+              className={`${athletesIconBtnBase} ${athletesPillBtnPrimary}`}
+              aria-label="Atleet uitnodigen"
+              title="Uitnodigen"
+            >
               <UserPlus className="h-4 w-4" />
-              Uitnodigen
             </button>
           ) : null}
         </div>
       </div>
+
+      {showSearchField && onSearchChange ? (
+        <div className="mt-3">
+          <SearchInput
+            ref={mobileSearchRef}
+            value={search}
+            onChange={handleSearchChange}
+            placeholder="Zoek atleet..."
+            variant="rounded"
+            className="w-full athletes-header-search-field"
+            inputClassName="text-base"
+            aria-label="Zoek atleet"
+          />
+        </div>
+      ) : null}
     </header>
   );
 }

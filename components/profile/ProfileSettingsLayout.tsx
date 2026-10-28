@@ -18,6 +18,7 @@ type ProfileSettingsLayoutProps = {
   onSectionChange: (sectionId: string) => void;
   headerExtra?: ReactNode;
   mobileHeaderExtra?: ReactNode;
+  mobileFooter?: ReactNode;
   fullWidth?: boolean;
   children: ReactNode;
 };
@@ -30,6 +31,7 @@ export default function ProfileSettingsLayout({
   onSectionChange,
   headerExtra,
   mobileHeaderExtra,
+  mobileFooter,
   fullWidth = false,
   children,
 }: ProfileSettingsLayoutProps) {
@@ -124,6 +126,10 @@ export default function ProfileSettingsLayout({
           {children}
         </div>
       </div>
+
+      {mobileFooter ? (
+        <div className="profile-settings-mobile-footer order-last lg:hidden">{mobileFooter}</div>
+      ) : null}
     </div>
   );
 }

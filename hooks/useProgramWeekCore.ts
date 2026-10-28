@@ -1,7 +1,10 @@
 "use client";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { loadProgramWeekCore } from "@/lib/programWeekCoreLoader";
+import {
+  loadProgramWeekCoreCached,
+  persistProgramWeekSnapshot,
+} from "@/lib/programWeekCoreClient";
 import { queryKeys } from "@/lib/queryKeys";
 import { athleteQueryDefaults } from "@/lib/queryOptions";
 
@@ -20,11 +23,14 @@ export function useProgramWeekCore(
 
   return useQuery({
     queryKey: queryKeys.programWeekCore(blockId, weekId),
-    queryFn: () =>
-      loadProgramWeekCore(blockId, weekId, {
+    queryFn: async () => {
+      const result = await loadProgramWeekCoreCached(blockId, weekId, {
         userId,
         role,
-      }),
+      });
+      await persistProgramWeekSnapshot(blockId, weekId, result.data);
+      return result.data;
+    },
     enabled: enabled && Boolean(blockId && weekId),
     ...athleteQueryDefaults,
   });
@@ -38,7 +44,11 @@ export function prefetchProgramWeekCore(
 ) {
   return queryClient.prefetchQuery({
     queryKey: queryKeys.programWeekCore(blockId, weekId),
-    queryFn: () => loadProgramWeekCore(blockId, weekId, options),
+    queryFn: async () => {
+      const result = await loadProgramWeekCoreCached(blockId, weekId, options);
+      await persistProgramWeekSnapshot(blockId, weekId, result.data);
+      return result.data;
+    },
     ...athleteQueryDefaults,
   });
 }
