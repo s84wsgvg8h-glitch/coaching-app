@@ -43,6 +43,31 @@ export function coachAthleteSubscriptionStatusLabel(status: string): string {
   }
 }
 
+const SUBSCRIPTION_STATUS_RANK = [
+  "active",
+  "trialing",
+  "past_due",
+  "unpaid",
+  "incomplete",
+  "paused",
+  "canceled",
+  "incomplete_expired",
+];
+
+export function pickPreferredAthleteSubscription(
+  subscriptions: CoachAthleteSubscriptionRow[],
+): CoachAthleteSubscriptionRow | null {
+  if (subscriptions.length === 0) return null;
+
+  return [...subscriptions].sort((left, right) => {
+    const leftRank = SUBSCRIPTION_STATUS_RANK.indexOf(left.status);
+    const rightRank = SUBSCRIPTION_STATUS_RANK.indexOf(right.status);
+    const normalizedLeft = leftRank === -1 ? SUBSCRIPTION_STATUS_RANK.length : leftRank;
+    const normalizedRight = rightRank === -1 ? SUBSCRIPTION_STATUS_RANK.length : rightRank;
+    return normalizedLeft - normalizedRight;
+  })[0];
+}
+
 export function filterCoachSubscriptions(
   subscriptions: CoachAthleteSubscriptionRow[],
   statusFilter: CoachSubscriptionStatusFilter,

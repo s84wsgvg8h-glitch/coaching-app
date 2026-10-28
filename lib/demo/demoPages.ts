@@ -42,7 +42,6 @@ const COACH_DEMO_PAGES: DemoPageLink[] = [
   { group: "Data", href: "/oefeningenbibliotheek", label: "Oefeningenbibliotheek" },
   { group: "Data", href: "/video-gallery", label: "Video galerij" },
   { group: "Admin", href: "/betalingen", label: "Betalingen" },
-  { group: "Admin", href: "/coach/subscriptions", label: "Abonnementen" },
   { group: "Admin", href: "/organisatie", label: "Organisatie" },
   { group: "Admin", href: "/merch", label: "Merch shop" },
   { group: "Admin", href: "/limitless-data", label: "Limitless Data" },

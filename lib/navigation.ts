@@ -60,13 +60,7 @@ export function getNavLinks(
       href: "/betalingen",
       icon: "💳",
       title: "Betalingen",
-      description: "Maandprijzen en Stripe-koppeling.",
-    },
-    {
-      href: "/coach/subscriptions",
-      icon: "🔄",
-      title: "Abonnementen",
-      description: "Stripe-abonnementen van je atleten.",
+      description: "Maandprijzen en Stripe-abonnementen per atleet.",
     },
     {
       href: "/organisatie",
@@ -186,7 +180,6 @@ const COACH_GROUP_MAP: Record<string, NavGroup["label"]> = {
   "/programs": "Data",
   "/merch": "Admin",
   "/betalingen": "Admin",
-  "/coach/subscriptions": "Admin",
   "/organisatie": "Admin",
   "/limitless-data": "Admin",
   "/admin": "Admin",
@@ -271,6 +264,10 @@ export function isActiveNavPath(pathname: string, href: string) {
     return pathname === "/programs" || pathname.startsWith("/programs/");
   }
 
+  if (href === "/betalingen") {
+    return pathname === "/betalingen" || pathname === "/coach/subscriptions";
+  }
+
   if (href === "/settings/competition-checklist") {
     return (
       pathname === "/settings/competition-checklist" ||
@@ -292,7 +289,7 @@ const PAGE_TITLE_OVERRIDES: Record<string, string> = {
   "/atleten-overzicht": "Atleten overzicht",
   "/athlete-profiles": "Atleten profielen",
   "/organisatie": "Organisatie",
-  "/coach/subscriptions": "Abonnementen",
+  "/coach/subscriptions": "Betalingen",
   "/ai-vragen": "AI-vragen",
   "/statistics": "Statistieken",
   "/raw-data": "Ruwe data",

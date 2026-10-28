@@ -142,11 +142,6 @@ export default function CoachAppSidebar() {
           label: "Organisatie",
           icon: <Building2 className="h-[18px] w-[18px]" strokeWidth={1.75} />,
         },
-        {
-          href: "/coach/subscriptions",
-          label: "Abonnementen",
-          icon: <CreditCard className="h-[18px] w-[18px]" strokeWidth={1.75} />,
-        },
       ],
     },
   ];
@@ -215,7 +210,7 @@ export default function CoachAppSidebar() {
               Betalingen
             </span>
             <span className="block text-[10px] text-app-muted">
-              Stripe & abonnement
+              Prijzen en abonnementen
             </span>
           </span>
         </Link>

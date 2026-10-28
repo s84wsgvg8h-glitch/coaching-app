@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
     const portalSession = await stripe.billingPortal.sessions.create(
       {
         customer: ownership.customerId,
-        return_url: `${getAppUrl()}/coach/subscriptions`,
+        return_url: `${getAppUrl()}/betalingen`,
       },
       stripeConnectOptions(connectAccountId),
     );
