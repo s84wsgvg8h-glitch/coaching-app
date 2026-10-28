@@ -5835,10 +5835,16 @@ html:not(.dark) .coach-program-editor-view-toggle {
   background: rgba(59, 130, 246, 0.08);
 }
 
-.coach-program-progression-cell.is-selected .coach-program-progression-cell-btn {
+.coach-program-progression-cell.is-selected .coach-program-progression-cell-btn,
+.coach-program-progression-cell.is-selected .coach-program-progression-cell-empty {
   border-color: rgba(59, 130, 246, 0.55);
   background: rgba(59, 130, 246, 0.12);
   box-shadow: inset 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.coach-program-progression-cell.is-selection-focus .coach-program-progression-cell-btn,
+.coach-program-progression-cell.is-selection-focus .coach-program-progression-cell-empty {
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.8);
 }
 
 .coach-program-progression-cell.is-editing {
@@ -5861,9 +5867,15 @@ html:not(.dark) .coach-program-editor-view-toggle {
 
 .coach-program-progression-cell-empty {
   display: block;
+  width: 100%;
+  min-height: 2.5rem;
   padding: 0.55rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
   font-size: 0.75rem;
   color: var(--app-text-muted);
+  text-align: left;
 }
 
 .coach-program-progression-cell-readonly {

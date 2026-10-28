@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
+  type PointerEvent as ReactPointerEvent,
 } from "react";
 import type {
   ProgramBlock,
@@ -37,9 +38,13 @@ const DISPLAY_STORAGE_KEY = "coach-progression-cell-display";
 const LIFT_FILTER_STORAGE_KEY = "coach-progression-lift-filter";
 const MAX_UNDO_BATCHES = 50;
 
-type ProgressionUndoEntry = {
+type ProgressionUndoChange = {
   exerciseId: string;
   previous: { load: string; reps: string; rpe: string };
+};
+
+type ProgressionUndoEntry = {
+  changes: ProgressionUndoChange[];
 };
 
 type ProgressionCellRef = {
@@ -72,6 +77,42 @@ export type CoachProgramProgressionPanelProps = {
 
 function progressionCellKey(ref: ProgressionCellRef) {
   return `${ref.rowIndex}:${ref.weekIndex}`;
+}
+
+function parseProgressionCellKey(key: string): ProgressionCellRef | null {
+  const [row, week] = key.split(":");
+  const rowIndex = Number(row);
+  const weekIndex = Number(week);
+  if (!Number.isInteger(rowIndex) || !Number.isInteger(weekIndex)) return null;
+  return { rowIndex, weekIndex };
+}
+
+function selectionBounds(anchor: ProgressionCellRef, focus: ProgressionCellRef) {
+  return {
+    rowStart: Math.min(anchor.rowIndex, focus.rowIndex),
+    rowEnd: Math.max(anchor.rowIndex, focus.rowIndex),
+    weekStart: Math.min(anchor.weekIndex, focus.weekIndex),
+    weekEnd: Math.max(anchor.weekIndex, focus.weekIndex),
+  };
+}
+
+function cellInSelectionBounds(
+  ref: ProgressionCellRef,
+  bounds: ReturnType<typeof selectionBounds>,
+) {
+  return (
+    ref.rowIndex >= bounds.rowStart &&
+    ref.rowIndex <= bounds.rowEnd &&
+    ref.weekIndex >= bounds.weekStart &&
+    ref.weekIndex <= bounds.weekEnd
+  );
+}
+
+function selectionCellCount(bounds: ReturnType<typeof selectionBounds>) {
+  return (
+    (bounds.rowEnd - bounds.rowStart + 1) *
+    (bounds.weekEnd - bounds.weekStart + 1)
+  );
 }
 
 function editArrowDirectionFromKey(key: string): EditArrowDirection | null {
@@ -250,6 +291,8 @@ const CoachProgramProgressionPanel = forwardRef<
   ref,
 ) {
   const [activeCell, setActiveCell] = useState<ProgressionCellRef | null>(null);
+  const [selectionAnchor, setSelectionAnchor] =
+    useState<ProgressionCellRef | null>(null);
   const [editingExercise, setEditingExercise] = useState<ProgramExercise | null>(
     null,
   );
@@ -264,6 +307,7 @@ const CoachProgramProgressionPanel = forwardRef<
   const progressionRef = useRef<HTMLDivElement | null>(null);
   const editInputRef = useRef<HTMLTextAreaElement | null>(null);
   const activeCellRef = useRef<ProgressionCellRef | null>(null);
+  const selectionAnchorRef = useRef<ProgressionCellRef | null>(null);
   const editingExerciseRef = useRef<ProgramExercise | null>(null);
   const draftRef = useRef("");
   const cellDisplayRef = useRef(cellDisplay);
@@ -292,6 +336,10 @@ const CoachProgramProgressionPanel = forwardRef<
   }, [activeCell]);
 
   useEffect(() => {
+    selectionAnchorRef.current = selectionAnchor;
+  }, [selectionAnchor]);
+
+  useEffect(() => {
     editingExerciseRef.current = editingExercise;
   }, [editingExercise]);
 
@@ -312,6 +360,8 @@ const CoachProgramProgressionPanel = forwardRef<
     if (activeCell.rowIndex >= filteredRows.length) {
       setActiveCell(null);
       activeCellRef.current = null;
+      setSelectionAnchor(null);
+      selectionAnchorRef.current = null;
     }
   }, [activeCell, filteredRows.length]);
 
@@ -398,8 +448,7 @@ const CoachProgramProgressionPanel = forwardRef<
 
       if (options?.recordUndo !== false) {
         pushUndoEntry({
-          exerciseId: exercise.id,
-          previous,
+          changes: [{ exerciseId: exercise.id, previous }],
         });
       }
     });
@@ -436,8 +485,16 @@ const CoachProgramProgressionPanel = forwardRef<
 
     setActiveCell(null);
     activeCellRef.current = null;
+    setSelectionAnchor(null);
+    selectionAnchorRef.current = null;
 
-    await onSaveCellRef.current(entry.exerciseId, entry.previous);
+    const restore = commitInFlightRef.current.then(async () => {
+      for (const change of [...entry.changes].reverse()) {
+        await onSaveCellRef.current!(change.exerciseId, change.previous);
+      }
+    });
+    commitInFlightRef.current = restore.catch(() => {});
+    await restore;
   }
 
   function getExerciseAt(ref: ProgressionCellRef): ProgramExercise | null {
@@ -447,15 +504,87 @@ const CoachProgramProgressionPanel = forwardRef<
     return row.cells[week.id] ?? null;
   }
 
-  function selectCell(ref: ProgressionCellRef) {
+  function selectCell(
+    ref: ProgressionCellRef,
+    options?: { extend?: boolean },
+  ) {
     onActivate?.();
     setActiveCell(ref);
     activeCellRef.current = ref;
+    if (!options?.extend || !selectionAnchorRef.current) {
+      setSelectionAnchor(ref);
+      selectionAnchorRef.current = ref;
+    }
+  }
+
+  function selectedCellRefs() {
+    const focus = activeCellRef.current;
+    const anchor = selectionAnchorRef.current ?? focus;
+    if (!focus || !anchor) return [];
+
+    const bounds = selectionBounds(anchor, focus);
+    const cells: ProgressionCellRef[] = [];
+    for (let rowIndex = bounds.rowStart; rowIndex <= bounds.rowEnd; rowIndex += 1) {
+      for (
+        let weekIndex = bounds.weekStart;
+        weekIndex <= bounds.weekEnd;
+        weekIndex += 1
+      ) {
+        cells.push({ rowIndex, weekIndex });
+      }
+    }
+    return cells;
+  }
+
+  function selectedExercises() {
+    const seen = new Set<string>();
+    const exercises: ProgramExercise[] = [];
+    for (const ref of selectedCellRefs()) {
+      const exercise = getExerciseAt(ref);
+      if (!exercise || seen.has(exercise.id)) continue;
+      seen.add(exercise.id);
+      exercises.push(exercise);
+    }
+    return exercises;
+  }
+
+  async function persistSelectionChanges(
+    exercises: ProgramExercise[],
+    resolveUpdates: (
+      exercise: ProgramExercise,
+    ) => { load: string; reps: string; rpe: string } | null,
+  ) {
+    const changes: ProgressionUndoChange[] = [];
+    const pending: Array<{
+      exercise: ProgramExercise;
+      updates: { load: string; reps: string; rpe: string };
+    }> = [];
+
+    for (const exercise of exercises) {
+      const updates = resolveUpdates(exercise);
+      if (!updates) continue;
+      const previous = getExerciseSnapshot(exercise);
+      if (!hasExerciseFieldChanges(previous, updates)) continue;
+      changes.push({ exerciseId: exercise.id, previous });
+      pending.push({ exercise, updates });
+    }
+
+    if (pending.length === 0) return;
+
+    pushUndoEntry({ changes });
+
+    const saveOperation = commitInFlightRef.current.then(async () => {
+      for (const item of pending) {
+        await onSaveCellRef.current!(item.exercise.id, item.updates);
+      }
+    });
+    commitInFlightRef.current = saveOperation.catch(() => {});
+    await saveOperation;
   }
 
   function startEdit(
     ref: ProgressionCellRef,
-    options?: { preserve?: boolean; initialChar?: string },
+    options?: { preserve?: boolean; initialChar?: string; keepSelection?: boolean },
   ) {
     if (readOnly) return;
 
@@ -467,7 +596,12 @@ const CoachProgramProgressionPanel = forwardRef<
       ? formatCoachProgressionCellTextForEdit(exercise, cellDisplayRef.current)
       : options?.initialChar ?? "";
 
-    selectCell(ref);
+    if (options?.keepSelection) {
+      setActiveCell(ref);
+      activeCellRef.current = ref;
+    } else {
+      selectCell(ref);
+    }
     setEditPreserveMode(preserve);
     setEditingExercise(exercise);
     editingExerciseRef.current = exercise;
@@ -475,29 +609,29 @@ const CoachProgramProgressionPanel = forwardRef<
     draftRef.current = nextDraft;
   }
 
-  async function clearActiveCell(exercise: ProgramExercise) {
+  async function clearSelectedCells() {
     if (readOnly || !onSaveCellRef.current) return;
 
     if (editingExerciseRef.current) {
       cancelEdit();
     }
 
-    const updates = buildCoachProgressionClearUpdates(
-      exercise,
-      cellDisplayRef.current,
+    const display = cellDisplayRef.current;
+    await persistSelectionChanges(selectedExercises(), (exercise) =>
+      buildCoachProgressionClearUpdates(exercise, display),
     );
-    await persistCellChange(exercise, updates);
   }
 
   async function commitEdit() {
     const exercise = editingExerciseRef.current;
     if (!exercise || !onSaveCellRef.current) return;
 
-    const parsed = parseCoachProgressionEditText(
-      draftRef.current,
-      cellDisplayRef.current,
-      exercise,
-    );
+    const text = draftRef.current;
+    const display = cellDisplayRef.current;
+    const targets = selectedExercises();
+    const exercises = targets.some((item) => item.id === exercise.id)
+      ? targets
+      : [exercise, ...targets];
 
     setEditingExercise(null);
     editingExerciseRef.current = null;
@@ -505,8 +639,9 @@ const CoachProgramProgressionPanel = forwardRef<
     draftRef.current = "";
     setEditPreserveMode(false);
 
-    if (!parsed) return;
-    await persistCellChange(exercise, parsed);
+    await persistSelectionChanges(exercises, (target) =>
+      parseCoachProgressionEditText(text, display, target),
+    );
   }
 
   function cancelEdit() {
@@ -529,6 +664,7 @@ const CoachProgramProgressionPanel = forwardRef<
   function moveActiveCellByArrow(
     from: ProgressionCellRef,
     direction: EditArrowDirection,
+    extend = false,
   ) {
     const rowCount = rowsRef.current.length;
     const weekCount = weeksRef.current.length;
@@ -547,7 +683,7 @@ const CoachProgramProgressionPanel = forwardRef<
       weekIndex = Math.min(weekCount - 1, weekIndex + 1);
     }
 
-    selectCell({ rowIndex, weekIndex });
+    selectCell({ rowIndex, weekIndex }, { extend });
   }
 
   async function commitEditAndMoveByArrow(
@@ -618,7 +754,7 @@ const CoachProgramProgressionPanel = forwardRef<
           if (editingExerciseRef.current) {
             await commitEdit();
           }
-          startEdit(current, { preserve: true });
+          startEdit(current, { preserve: true, keepSelection: true });
         })();
         return;
       }
@@ -632,7 +768,7 @@ const CoachProgramProgressionPanel = forwardRef<
         if (!exercise) return;
         event.preventDefault();
         event.stopPropagation();
-        startEdit(current, { initialChar: event.key });
+        startEdit(current, { initialChar: event.key, keepSelection: true });
         return;
       }
 
@@ -645,11 +781,10 @@ const CoachProgramProgressionPanel = forwardRef<
         (event.key === "Delete" || event.key === "Backspace") &&
         !isEditing
       ) {
-        const exercise = getExerciseAt(current);
-        if (!exercise) return;
+        if (selectedExercises().length === 0) return;
         event.preventDefault();
         event.stopPropagation();
-        void clearActiveCell(exercise);
+        void clearSelectedCells();
         return;
       }
 
@@ -657,7 +792,7 @@ const CoachProgramProgressionPanel = forwardRef<
       if (arrowDirection) {
         event.preventDefault();
         event.stopPropagation();
-        moveActiveCellByArrow(current, arrowDirection);
+        moveActiveCellByArrow(current, arrowDirection, event.shiftKey);
         return;
       }
 
@@ -743,6 +878,7 @@ const CoachProgramProgressionPanel = forwardRef<
   }
 
   function handleCellPointerDown(
+    event: ReactPointerEvent<HTMLButtonElement>,
     ref: ProgressionCellRef,
     exercise: ProgramExercise | null,
   ) {
@@ -755,16 +891,45 @@ const CoachProgramProgressionPanel = forwardRef<
       void commitEdit();
     }
 
-    const wasAlreadySelected =
-      activeCellRef.current !== null &&
-      progressionCellKey(activeCellRef.current) === progressionCellKey(ref) &&
+    if (event.shiftKey) {
+      event.preventDefault();
+      selectCell(ref, { extend: true });
+      return;
+    }
+
+    const anchor = selectionAnchorRef.current;
+    const focus = activeCellRef.current;
+    const wasSingleSelected =
+      focus !== null &&
+      anchor !== null &&
+      progressionCellKey(focus) === progressionCellKey(ref) &&
+      progressionCellKey(anchor) === progressionCellKey(ref) &&
       !editingExerciseRef.current;
 
     selectCell(ref);
 
-    if (!readOnly && wasAlreadySelected && exercise) {
-      startEdit(ref, { preserve: true });
-    }
+    if (event.pointerType === "touch") return;
+
+    let moved = false;
+    const onMove = (moveEvent: PointerEvent) => {
+      const hit = document.elementFromPoint(moveEvent.clientX, moveEvent.clientY);
+      const cell = hit?.closest<HTMLElement>("[data-cell]");
+      if (!cell || !progressionRef.current?.contains(cell)) return;
+      const next = parseProgressionCellKey(cell.getAttribute("data-cell") || "");
+      if (!next) return;
+      if (progressionCellKey(next) !== progressionCellKey(ref)) moved = true;
+      selectCell(next, { extend: true });
+    };
+    const onUp = () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+      if (!moved && wasSingleSelected && exercise && !readOnly) {
+        startEdit(ref, { preserve: true, keepSelection: true });
+      }
+    };
+
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
   }
 
   if (loading) {
@@ -814,10 +979,10 @@ const CoachProgramProgressionPanel = forwardRef<
 
         {showHint ? (
           <p className="coach-program-progression-hint">
-            Vul per week in hoe je wilt progresseren. Navigeer met pijltjes: typ
-            direct om de cel te vervangen (zoals Excel), of klik / dubbelklik /
-            F2 om bestaande inhoud aan te passen. Delete wist de geselecteerde
-            cel. ⌘Z / Ctrl+Z maakt de laatste wijziging ongedaan.
+            Vul per week in hoe je wilt progresseren. Sleep of Shift+klik om
+            meerdere cellen te selecteren. Typen zet in alle geselecteerde
+            cellen dezelfde waarde. Delete wist ze. ⌘Z / Ctrl+Z maakt de laatste
+            wijziging ongedaan.
           </p>
         ) : null}
 
@@ -900,6 +1065,10 @@ const CoachProgramProgressionPanel = forwardRef<
             ))}
 
             {filteredRows.map((row, rowIndex) => {
+              const anchor = selectionAnchor ?? activeCell;
+              const bounds =
+                activeCell && anchor ? selectionBounds(anchor, activeCell) : null;
+              const multiSelection = bounds ? selectionCellCount(bounds) > 1 : false;
               const sbdClass = getProgressionExerciseColorClass(row.baseName);
 
               return (
@@ -927,7 +1096,11 @@ const CoachProgramProgressionPanel = forwardRef<
                       cellDisplay,
                       athleteSets,
                     );
-                    const isSelected =
+                    const isSelected = Boolean(
+                      bounds && cellInSelectionBounds(cellRef, bounds),
+                    );
+                    const isSelectionFocus =
+                      multiSelection &&
                       activeCell !== null &&
                       progressionCellKey(activeCell) ===
                         progressionCellKey(cellRef);
@@ -944,6 +1117,8 @@ const CoachProgramProgressionPanel = forwardRef<
                           rowIndex % 2 === 0 ? "is-even" : "is-odd"
                         } ${exercise ? "is-editable" : "is-empty"} ${
                           isSelected && !isEditing ? "is-selected" : ""
+                        } ${
+                          isSelectionFocus && !isEditing ? "is-selection-focus" : ""
                         } ${isEditing ? "is-editing" : ""} ${
                           readOnly ? "is-readonly" : ""
                         }`}
@@ -990,12 +1165,15 @@ const CoachProgramProgressionPanel = forwardRef<
                           ) : (
                             <button
                               type="button"
-                              onPointerDown={() =>
-                                handleCellPointerDown(cellRef, exercise)
+                              onPointerDown={(event) =>
+                                handleCellPointerDown(event, cellRef, exercise)
                               }
                               onDoubleClick={(event) => {
                                 event.preventDefault();
-                                startEdit(cellRef, { preserve: true });
+                                startEdit(cellRef, {
+                                  preserve: true,
+                                  keepSelection: true,
+                                });
                               }}
                               className="coach-program-progression-cell-btn"
                             >
@@ -1005,8 +1183,8 @@ const CoachProgramProgressionPanel = forwardRef<
                         ) : (
                           <button
                             type="button"
-                            onPointerDown={() =>
-                              handleCellPointerDown(cellRef, null)
+                            onPointerDown={(event) =>
+                              handleCellPointerDown(event, cellRef, null)
                             }
                             className="coach-program-progression-cell-empty"
                             disabled={readOnly}

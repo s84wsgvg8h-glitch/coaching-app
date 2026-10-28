@@ -494,25 +494,7 @@ function BetalingenPageContent() {
   return (
     <AppShell>
       <PageContainer size="full">
-        <PageHeader
-          title="Betalingen"
-          actions={
-            <button
-              type="button"
-              onClick={() => void handleConnectStripe()}
-              disabled={loading || connecting || !stripeConfigured}
-              className="app-btn-primary w-full disabled:opacity-50 sm:w-auto"
-            >
-              {connecting
-                ? "Stripe openen..."
-                : !overview || stripeConnected || overview.stripeConnectOnboardedAt
-                  ? "Beheer Stripe"
-                  : stripePendingOnboarding || overview?.stripeConnectAccountId
-                    ? "Koppeling afronden"
-                    : "Koppel met Stripe"}
-            </button>
-          }
-        />
+        <PageHeader title="Betalingen" />
 
         {message ? (
           <Panel className="mb-4 border-brand-purple/30 bg-brand-purple/10 text-[13px] text-app-text">
@@ -528,12 +510,31 @@ function BetalingenPageContent() {
         ) : (
           <div className="min-w-0">
               <div className="mb-4 flex flex-col gap-3">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Zoek op naam of e-mailadres…"
-                  className="w-full max-w-xl"
-                />
+                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                  <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Zoek op naam of e-mailadres…"
+                    className="w-full min-w-0 sm:max-w-xl"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void handleConnectStripe()}
+                    disabled={loading || connecting || !stripeConfigured}
+                    className="app-btn-primary w-full shrink-0 disabled:opacity-50 sm:ml-auto sm:w-auto"
+                  >
+                    {connecting
+                      ? "Stripe openen..."
+                      : !overview ||
+                          stripeConnected ||
+                          overview.stripeConnectOnboardedAt
+                        ? "Beheer Stripe"
+                        : stripePendingOnboarding ||
+                            overview.stripeConnectAccountId
+                          ? "Koppeling afronden"
+                          : "Koppel met Stripe"}
+                  </button>
+                </div>
                 <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                   {FILTERS.map((filter) => {
                     const active = coverageFilter === filter.key;
