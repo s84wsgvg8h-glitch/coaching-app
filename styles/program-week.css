@@ -279,13 +279,21 @@ html.dark .program-week-shell select {
 
 .program-nav-sidebar-rail-icon {
   display: flex;
-  height: 34px;
-  width: 34px;
+  height: 44px;
+  width: 44px;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   background: var(--app-surface-muted);
   color: var(--app-text-muted);
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.program-nav-sidebar-rail-icon:hover {
+  background: var(--app-surface-hover);
+  color: var(--app-text);
 }
 
 .program-nav-sidebar-rail-block {

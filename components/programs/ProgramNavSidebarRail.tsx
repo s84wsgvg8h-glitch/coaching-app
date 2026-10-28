@@ -1,6 +1,7 @@
 "use client";
 
-import { Layers, Plus } from "lucide-react";
+import Link from "next/link";
+import { Home, Plus } from "lucide-react";
 
 export type ProgramNavRailWeek = {
   id: string;
@@ -28,9 +29,14 @@ export default function ProgramNavSidebarRail({
 }: ProgramNavSidebarRailProps) {
   return (
     <div className="program-nav-sidebar-rail" aria-label="Programma navigatie">
-      <div className="program-nav-sidebar-rail-icon" title="Programma">
-        <Layers className="h-5 w-5" aria-hidden="true" />
-      </div>
+      <Link
+        href="/dashboard"
+        className="program-nav-sidebar-rail-icon"
+        title="Dashboard"
+        aria-label="Naar dashboard"
+      >
+        <Home className="h-5 w-5" aria-hidden="true" />
+      </Link>
 
       <div className="program-nav-sidebar-rail-weeks">
         {weeks.map((week) => (

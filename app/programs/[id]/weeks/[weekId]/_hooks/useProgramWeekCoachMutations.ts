@@ -140,8 +140,11 @@ export function useProgramWeekCoachMutations({
 
   const [uitlegMode, setUitlegMode] = useState(false);
   const offlineCtx = { blockId, weekId };
+  const creatingDayRef = useRef(false);
 
   async function createDay(dayNumber: number) {
+    if (creatingDayRef.current) return;
+
     if (!newDayTitle.trim()) {
       alert("Vul een naam in voor de dag");
       return;
@@ -155,23 +158,23 @@ export function useProgramWeekCoachMutations({
       warmup: "",
     };
 
-    const queued = await offlineInsertProgramDay(offlineCtx, row);
-    if (queued) {
+    creatingDayRef.current = true;
+    try {
+      const queued = await offlineInsertProgramDay(offlineCtx, row);
       setNewDayTitle("");
       setIsCreatingDay(false);
-      return;
+      if (!queued) {
+        await loadDays();
+      }
+    } catch (error) {
+      const message =
+        error && typeof error === "object" && "message" in error
+          ? String((error as { message?: string }).message || "")
+          : "";
+      alert(message || "Dag kon niet worden aangemaakt.");
+    } finally {
+      creatingDayRef.current = false;
     }
-
-    const { error } = await supabase.from("program_days").insert(row);
-
-    if (error) {
-      alert(error.message);
-      return;
-    }
-
-    setNewDayTitle("");
-    setIsCreatingDay(false);
-    await loadDays();
   }
 
 
