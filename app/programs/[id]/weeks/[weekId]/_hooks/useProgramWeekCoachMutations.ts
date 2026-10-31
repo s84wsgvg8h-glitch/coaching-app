@@ -150,19 +150,30 @@ export function useProgramWeekCoachMutations({
     exerciseId: string,
     patch: Record<string, string | number | null>,
   ) {
-    if (!isApplyAllWeeksActive(blockId)) return;
+    if (!blockId || !isApplyAllWeeksActive(blockId)) return;
 
     try {
-      await applyExercisePatchAcrossBlock({
+      const updated = await applyExercisePatchAcrossBlock({
         blockId,
         exerciseId,
         patch,
       });
+      if (updated > 0) {
+        showAppToast(
+          updated === 1
+            ? "Ook bijgewerkt in 1 andere week"
+            : `Ook bijgewerkt in ${updated} andere weken`,
+        );
+      } else {
+        showAppToast("Geen overeenkomende oefening in andere weken gevonden");
+      }
     } catch (error) {
       const message =
-        error && typeof error === "object" && "message" in error
-          ? String((error as { message?: string }).message || "")
-          : "";
+        error instanceof Error
+          ? error.message
+          : error && typeof error === "object" && "message" in error
+            ? String((error as { message?: string }).message || "")
+            : "";
       showAppToast(message || "Andere weken konden niet worden bijgewerkt.");
     }
   }

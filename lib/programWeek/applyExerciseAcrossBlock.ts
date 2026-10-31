@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { getApiAuthHeaders } from "@/lib/apiClient";
 import { parseWeekdayFromDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 
 export const APPLY_ALL_WEEKS_MS = 10 * 60 * 1000;
@@ -12,18 +12,23 @@ type StoredApplyAllWeeks = {
   until: number;
 };
 
-type DaySlot = {
+export type DaySlot = {
   id: string;
   title: string | null;
   day_number: number | null;
   program_week_id: string;
 };
 
-type ExerciseSlot = {
+export type ExerciseSlot = {
   id: string;
+  name?: string | null;
   program_day_id: string;
   exercise_number: number | null;
 };
+
+function normalizeExerciseMatchName(name: string | null | undefined) {
+  return (name || "").trim().toLowerCase().replace(/\s+/g, " ");
+}
 
 export function daySlotKey(day: {
   title?: string | null;
@@ -34,7 +39,64 @@ export function daySlotKey(day: {
   return `number:${day.day_number ?? 0}`;
 }
 
+function sortExercises(list: ExerciseSlot[]) {
+  return [...list].sort(
+    (left, right) =>
+      (left.exercise_number ?? Number.MAX_SAFE_INTEGER) -
+        (right.exercise_number ?? Number.MAX_SAFE_INTEGER) ||
+      left.id.localeCompare(right.id),
+  );
+}
+
+function occurrenceIndex(list: ExerciseSlot[], exerciseId: string) {
+  const source = list.find((exercise) => exercise.id === exerciseId);
+  if (!source) return -1;
+  const name = normalizeExerciseMatchName(source.name);
+  let index = 0;
+  for (const exercise of list) {
+    if (exercise.id === exerciseId) return index;
+    if (normalizeExerciseMatchName(exercise.name) === name) index += 1;
+  }
+  return -1;
+}
+
+function matchSiblingExercise(
+  sourceList: ExerciseSlot[],
+  source: ExerciseSlot,
+  sourceIndex: number,
+  targetList: ExerciseSlot[],
+) {
+  if (source.exercise_number != null) {
+    const sameNumber = targetList.filter(
+      (exercise) => exercise.exercise_number === source.exercise_number,
+    );
+    if (sameNumber.length === 1) return sameNumber[0];
+  }
+
+  const name = normalizeExerciseMatchName(source.name);
+  if (name) {
+    const sameName = targetList.filter(
+      (exercise) => normalizeExerciseMatchName(exercise.name) === name,
+    );
+    const namedIndex = occurrenceIndex(sourceList, source.id);
+    if (namedIndex >= 0 && sameName[namedIndex]) return sameName[namedIndex];
+    if (sameName.length === 1) return sameName[0];
+  }
+
+  return sourceIndex >= 0 ? targetList[sourceIndex] : undefined;
+}
+
+/** @deprecated Use findSiblingExerciseIds */
 export function siblingExerciseIds(input: {
+  sourceExerciseId: string;
+  sourceDayId: string;
+  days: DaySlot[];
+  exercises: ExerciseSlot[];
+}) {
+  return findSiblingExerciseIds(input);
+}
+
+export function findSiblingExerciseIds(input: {
   sourceExerciseId: string;
   sourceDayId: string;
   days: DaySlot[];
@@ -56,13 +118,8 @@ export function siblingExerciseIds(input: {
     byDay.set(exercise.program_day_id, list);
   }
 
-  for (const list of byDay.values()) {
-    list.sort(
-      (left, right) =>
-        (left.exercise_number ?? Number.MAX_SAFE_INTEGER) -
-          (right.exercise_number ?? Number.MAX_SAFE_INTEGER) ||
-        left.id.localeCompare(right.id),
-    );
+  for (const [dayId, list] of byDay) {
+    byDay.set(dayId, sortExercises(list));
   }
 
   const sourceList = byDay.get(input.sourceDayId) || [];
@@ -75,13 +132,7 @@ export function siblingExerciseIds(input: {
   const ids: string[] = [];
   for (const [dayId, list] of byDay) {
     if (dayId === input.sourceDayId) continue;
-    const byNumber =
-      source.exercise_number != null
-        ? list.find(
-            (exercise) => exercise.exercise_number === source.exercise_number,
-          )
-        : undefined;
-    const match = byNumber || (sourceIndex >= 0 ? list[sourceIndex] : undefined);
+    const match = matchSiblingExercise(sourceList, source, sourceIndex, list);
     if (match && match.id !== input.sourceExerciseId) ids.push(match.id);
   }
 
@@ -146,65 +197,38 @@ export async function applyExercisePatchAcrossBlock(input: {
     return 0;
   }
 
-  const { data: exercise, error: exerciseError } = await supabase
-    .from("program_exercises")
-    .select("id, program_day_id, exercise_number")
-    .eq("id", input.exerciseId)
-    .maybeSingle();
+  if (!isApplyAllWeeksActive(input.blockId)) {
+    return 0;
+  }
 
-  if (exerciseError) throw exerciseError;
-  if (!exercise?.program_day_id) return 0;
-
-  const { data: weeks, error: weeksError } = await supabase
-    .from("program_weeks")
-    .select("id")
-    .eq("program_block_id", input.blockId);
-
-  if (weeksError) throw weeksError;
-  const weekIds = (weeks || []).map((week) => week.id);
-  if (weekIds.length === 0) return 0;
-
-  const { data: days, error: daysError } = await supabase
-    .from("program_days")
-    .select("id, title, day_number, program_week_id")
-    .in("program_week_id", weekIds);
-
-  if (daysError) throw daysError;
-
-  const dayRows = (days || []) as DaySlot[];
-  const dayIds = dayRows.map((day) => day.id);
-  if (dayIds.length === 0) return 0;
-
-  const { data: exercises, error: exercisesError } = await supabase
-    .from("program_exercises")
-    .select("id, program_day_id, exercise_number")
-    .in("program_day_id", dayIds);
-
-  if (exercisesError) throw exercisesError;
-
-  const ids = siblingExerciseIds({
-    sourceExerciseId: exercise.id,
-    sourceDayId: exercise.program_day_id,
-    days: dayRows,
-    exercises: (exercises || []) as ExerciseSlot[],
+  const response = await fetch("/api/programs/apply-exercise-across-block", {
+    method: "POST",
+    headers: await getApiAuthHeaders({ "Content-Type": "application/json" }),
+    body: JSON.stringify({
+      blockId: input.blockId,
+      exerciseId: input.exerciseId,
+      patch,
+    }),
   });
 
-  if (ids.length === 0) return 0;
+  const payload = (await response.json().catch(() => null)) as {
+    updated?: number;
+    error?: string;
+  } | null;
 
-  const { error: updateError } = await supabase
-    .from("program_exercises")
-    .update(patch)
-    .in("id", ids);
+  if (!response.ok) {
+    throw new Error(payload?.error || "Andere weken konden niet worden bijgewerkt.");
+  }
 
-  if (updateError) throw updateError;
+  const updated = Number(payload?.updated || 0);
 
-  if (typeof window !== "undefined") {
+  if (updated > 0 && typeof window !== "undefined") {
     window.dispatchEvent(
       new CustomEvent(PROGRAM_BLOCK_EXERCISES_UPDATED_EVENT, {
-        detail: { blockId: input.blockId },
+        detail: { blockId: input.blockId, updated },
       }),
     );
   }
 
-  return ids.length;
+  return updated;
 }

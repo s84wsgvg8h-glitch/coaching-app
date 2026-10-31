@@ -11,6 +11,7 @@ import AppSidebar from "@/components/AppSidebar";
 import MobileBottomNav from "@/components/MobileBottomNav";
 import CoachMobileBottomNav from "@/components/coach/CoachMobileBottomNav";
 import DemoModeBanner from "@/components/DemoModeBanner";
+import AppToastHost from "@/components/ui/AppToastHost";
 import MobilePullToRefreshInner from "@/components/mobile/MobilePullToRefreshInner";
 import ProgramWeekSkeleton from "@/components/programs/ProgramWeekSkeleton";
 import ProgramAthleteVideoRecorder from "@/components/programs/week/ProgramAthleteVideoRecorder";
@@ -420,6 +421,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       {!embeddedInChat && !isAthleteView ? blocksSidebar : null}
       {!embeddedInChat && isAthleteView ? <MobileBottomNav /> : null}
       {!embeddedInChat && isCoachView ? <CoachMobileBottomNav /> : null}
+      {!embeddedInChat ? <AppToastHost /> : null}
 
       <main
         ref={mainScrollRef}
