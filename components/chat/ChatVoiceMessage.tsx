@@ -60,6 +60,12 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
       return;
     }
 
+    // Load only on play so opening chat does not touch the iOS audio session.
+    if (audio.preload !== "auto") {
+      audio.preload = "auto";
+      audio.load();
+    }
+
     await audio.play();
     setPlaying(true);
   }
@@ -68,7 +74,7 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
 
   return (
     <div className="flex min-w-[220px] items-center gap-3">
-      <audio ref={audioRef} src={src} preload="metadata" className="hidden" />
+      <audio ref={audioRef} src={src} preload="none" className="hidden" />
 
       <button
         type="button"

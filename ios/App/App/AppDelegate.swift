@@ -7,8 +7,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-    /// Keep Spotify/Apple Music playing while the WebView opens the camera for video capture.
-    private func configureAudioSessionForCameraWithBackgroundMusic() {
+    /// Soft default: mix with Spotify/Apple Music. Do not activate playAndRecord
+    /// on launch — that claims the mic session and ducks or stops background music.
+    private func preferAmbientAudioSession() {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(.ambient, mode: .default, options: [.mixWithOthers])
+        } catch {
+            NSLog("AVAudioSession ambient setup failed: \(error.localizedDescription)")
+        }
+    }
+
+    /// Call only when starting mic/camera recording. mixWithOthers keeps music
+    /// playing where iOS allows it during capture.
+    func configureAudioSessionForRecordingWithBackgroundMusic() {
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(
@@ -23,7 +35,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        configureAudioSessionForCameraWithBackgroundMusic()
+        preferAmbientAudioSession()
         return true
     }
 
@@ -42,8 +54,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // WebKit may reset the session when getUserMedia starts; re-apply mixWithOthers.
-        configureAudioSessionForCameraWithBackgroundMusic()
+        // Do not re-activate playAndRecord here — that interrupted music every
+        // time the app came to the foreground.
+        preferAmbientAudioSession()
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
