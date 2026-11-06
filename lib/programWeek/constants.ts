@@ -15,6 +15,19 @@ export function isExerciseCardDragBlockedTarget(
   );
 }
 
+/** Block day-card drag when interacting with controls or exercise cards. */
+export function isDayCardDragBlockedTarget(
+  target: EventTarget | null,
+): boolean {
+  if (!(target instanceof Element)) return true;
+
+  return Boolean(
+    target.closest(
+      "input, textarea, select, button, a, label, [contenteditable='true'], .coach-exercise-block",
+    ),
+  );
+}
+
 export function setEmptyDragImage(event: React.DragEvent) {
   event.dataTransfer.effectAllowed = "move";
   const node = document.createElement("span");

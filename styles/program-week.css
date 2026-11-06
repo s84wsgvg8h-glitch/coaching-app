@@ -1797,12 +1797,12 @@ html.dark .program-week-shell select {
   }
 
   .coach-program-day-pill-date {
-    flex-basis: 3.25rem;
-    width: 3.25rem;
+    flex: 1 1 auto;
+    width: auto;
     min-width: 3.25rem;
-    max-width: 3.25rem;
+    max-width: none;
     font-size: 11px;
-    padding-inline: 4px;
+    padding-inline: 6px;
   }
 
   .coach-program-shell .program-day-chip {
@@ -1823,12 +1823,7 @@ html.dark .program-week-shell select {
 
   .coach-program-day-header-row {
     gap: 2px;
-  }
-
-  .coach-program-day-header-row .coach-program-drag-handle {
-    margin-top: 2px;
-    transform: scale(0.75);
-    transform-origin: top left;
+    margin-bottom: 6px;
   }
 
   .coach-program-card-dismiss,
@@ -2834,19 +2829,17 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-day-header-row {
-  align-items: flex-start;
-}
-
-.coach-program-day-header-row .coach-program-drag-handle {
-  margin-top: 5px;
+  align-items: stretch;
+  min-width: 0;
 }
 
 .coach-program-day-header-row-inner {
   display: flex;
   align-items: stretch;
-  justify-content: space-between;
+  justify-content: flex-start;
   gap: 8px;
   min-width: 0;
+  width: 100%;
 }
 
 .coach-program-day-title,
@@ -2896,9 +2889,10 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-day-pill-title {
-  flex: 1 1 auto;
+  flex: 0 1 auto;
   min-width: 0;
   width: auto;
+  max-width: 55%;
   padding: 0 10px;
   font-size: 14px;
   font-weight: 700;
@@ -2907,12 +2901,12 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-day-pill-date {
-  flex: 0 0 4.35rem;
-  width: 4.35rem;
+  flex: 1 1 auto;
+  width: auto;
   min-width: 4.35rem;
-  max-width: 4.35rem;
+  max-width: none;
   justify-content: center;
-  padding: 0 6px;
+  padding: 0 10px;
   font-size: 14px;
   font-weight: 500;
   line-height: 1;
@@ -2920,6 +2914,33 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   color-scheme: dark;
   box-sizing: border-box;
   text-align: center;
+}
+
+.coach-program-day-card--draggable {
+  cursor: grab;
+  touch-action: pan-y;
+  user-select: none;
+  -webkit-user-drag: element;
+}
+
+.coach-program-day-card--draggable:active {
+  cursor: grabbing;
+}
+
+.coach-program-day-card--draggable input,
+.coach-program-day-card--draggable textarea,
+.coach-program-day-card--draggable select,
+.coach-program-day-card--draggable button,
+.coach-program-day-card--draggable .coach-exercise-block {
+  cursor: auto;
+  user-select: text;
+  touch-action: manipulation;
+}
+
+.coach-program-day-card--draggable .coach-exercise-block--draggable {
+  cursor: grab;
+  user-select: none;
+  touch-action: pan-y;
 }
 
 .coach-program-card-dismiss {

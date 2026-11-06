@@ -2,7 +2,7 @@
 
 import type { ReactNode, RefObject } from "react";
 import { useEffect, useState } from "react";
-import { Copy, GripVertical } from "lucide-react";
+import { Copy } from "lucide-react";
 import CoachExerciseNameInput from "@/components/programs/coach/CoachExerciseNameInput";
 import AthleteChoiceVariationBadge from "@/components/programs/week/AthleteChoiceVariationBadge";
 import { isAthleteExtraExercise } from "@/lib/athleteExtraExercise";
@@ -17,7 +17,13 @@ import CoachProgramWeekHeader, {
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
 import { isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
-import { COACH_CARD_DISMISS_BTN, DELETE_X_BTN, isExerciseCardDragBlockedTarget, setDragPreviewFromElement } from "@/lib/programWeek/constants";
+import {
+  COACH_CARD_DISMISS_BTN,
+  DELETE_X_BTN,
+  isDayCardDragBlockedTarget,
+  isExerciseCardDragBlockedTarget,
+  setDragPreviewFromElement,
+} from "@/lib/programWeek/constants";
 import {
   getCoachExerciseColorClass,
   getCoachExercisePriorityClass,
@@ -453,52 +459,12 @@ export default function CoachProgramWeekContent({
                           aria-hidden
                         />
                       ) : null}
-                      <div className="coach-program-day-header-row flex items-start gap-1">
-                        {isCoach ? (
-                          <span
-                            draggable
-                            tabIndex={-1}
-                            onDragStart={(event) => {
-                              const column = event.currentTarget.closest(
-                                ".coach-program-day-column",
-                              );
-                              if (column instanceof HTMLElement) {
-                                setDragPreviewFromElement(event, column);
-                              }
-                              handleDragStart(day.id);
-                            }}
-                            onDragEnd={() => void saveDayOrder()}
-                            className="coach-program-drag-handle shrink-0"
-                            aria-label="Dag verplaatsen"
-                            title="Sleep om dag te verplaatsen"
-                          >
-                            <GripVertical className="h-4 w-4" aria-hidden />
-                          </span>
-                        ) : null}
-                        <div className="min-w-0 flex-1">
-                          <CoachProgramDayHeader
-                            title={day.title}
-                            dateLabel={getDayDate(day)}
-                            dateInputValue={getDayDateInputValue(day)}
-                            editable={isCoach}
-                            onTitleChange={(value) =>
-                              updateDayLocal(day.id, "title", value)
-                            }
-                            onTitleBlur={() => {
-                              void saveDayMeta(day.id, { title: day.title });
-                            }}
-                            onDateChange={(value) => {
-                              updateDayLocal(day.id, "scheduled_date", value);
-                              void saveDayMeta(day.id, {
-                                scheduled_date: value || null,
-                              });
-                            }}
-                          />
-                        </div>
-                      </div>
 
                       <div
+                        draggable={isCoach}
                         className={`coach-program-day-card relative flex flex-col transition-[transform,opacity,box-shadow,border-color] duration-500 ease-[cubic-bezier(0.22,1,0.36,1)] ${
+                          isCoach ? "coach-program-day-card--draggable" : ""
+                        } ${
                           isDraggingDay
                             ? "shadow-2xl ring-2 ring-brand-blue/25"
                             : ""
@@ -519,13 +485,56 @@ export default function CoachProgramWeekContent({
                             ? "max-lg:min-h-0 lg:min-h-[420px]"
                             : "max-lg:min-h-0 lg:min-h-[230px]"
                         }`}
+                        title={
+                          isCoach
+                            ? "Houd ingedrukt buiten oefeningen om de dag te slepen"
+                            : undefined
+                        }
+                        onDragStart={(event) => {
+                          if (!isCoach) return;
+                          if (isDayCardDragBlockedTarget(event.target)) {
+                            event.preventDefault();
+                            return;
+                          }
+                          const column = event.currentTarget.closest(
+                            ".coach-program-day-column",
+                          );
+                          if (column instanceof HTMLElement) {
+                            setDragPreviewFromElement(event, column);
+                          }
+                          handleDragStart(day.id);
+                        }}
+                        onDragEnd={() => {
+                          if (!isCoach) return;
+                          void saveDayOrder();
+                        }}
                         onDragOver={(e) => {
                           if (!draggedExercise) return;
                           handleExerciseDragOverDay(e, day.id);
                         }}
                         onContextMenu={(event) => openDayContextMenu(event, day.id)}
                       >
-                      <div className="flex flex-col h-full">
+                      <div className="flex h-full flex-col">
+                        <div className="coach-program-day-header-row mb-3 min-w-0">
+                          <CoachProgramDayHeader
+                            title={day.title}
+                            dateLabel={getDayDate(day)}
+                            dateInputValue={getDayDateInputValue(day)}
+                            editable={isCoach}
+                            onTitleChange={(value) =>
+                              updateDayLocal(day.id, "title", value)
+                            }
+                            onTitleBlur={() => {
+                              void saveDayMeta(day.id, { title: day.title });
+                            }}
+                            onDateChange={(value) => {
+                              updateDayLocal(day.id, "scheduled_date", value);
+                              void saveDayMeta(day.id, {
+                                scheduled_date: value || null,
+                              });
+                            }}
+                          />
+                        </div>
                         <div className="coach-program-day-chips">
                           <div className="coach-program-day-chips-start">
                             {isCoach && !day.warmup?.trim() && (
@@ -1374,26 +1383,6 @@ export default function CoachProgramWeekContent({
 
                 {isCoach && !isCreatingDay && (
                   <div className="coach-program-add-day-column">
-                    <div
-                      className="coach-program-add-day-header-spacer coach-program-day-header-row flex items-start gap-1"
-                      aria-hidden="true"
-                    >
-                      <span className="coach-program-drag-handle mt-1 shrink-0 invisible">
-                        <GripVertical className="h-4 w-4" aria-hidden />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="coach-program-day-header">
-                          <div className="coach-program-day-header-row-inner">
-                            <span className="coach-program-day-pill coach-program-day-pill-title invisible">
-                              &nbsp;
-                            </span>
-                            <span className="coach-program-day-pill coach-program-day-pill-date invisible">
-                              &nbsp;
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                     <button
                       type="button"
                       onClick={() => setIsCreatingDay(true)}
@@ -1410,26 +1399,6 @@ export default function CoachProgramWeekContent({
 
                 {isCoach && isCreatingDay && (
                   <div className="coach-program-add-day-column">
-                    <div
-                      className="coach-program-add-day-header-spacer coach-program-day-header-row flex items-start gap-1"
-                      aria-hidden="true"
-                    >
-                      <span className="coach-program-drag-handle mt-1 shrink-0 invisible">
-                        <GripVertical className="h-4 w-4" aria-hidden />
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <div className="coach-program-day-header">
-                          <div className="coach-program-day-header-row-inner">
-                            <span className="coach-program-day-pill coach-program-day-pill-title invisible">
-                              &nbsp;
-                            </span>
-                            <span className="coach-program-day-pill coach-program-day-pill-date invisible">
-                              &nbsp;
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
                     <div className="coach-program-add-day-form">
                     <h2>Nieuwe dag</h2>
 
