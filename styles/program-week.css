@@ -1499,6 +1499,18 @@ html.dark .program-week-shell select {
   height: 100dvh;
 }
 
+.program-block-overlap-warning-btn {
+  color: #f59e0b !important;
+}
+
+.program-block-overlap-warning-btn[data-on-dark="true"] {
+  color: #fbbf24 !important;
+}
+
+.program-block-overlap-warning-btn:hover {
+  background: rgba(245, 158, 11, 0.14) !important;
+}
+
 .coach-program-sidebar-add-btn {
   display: inline-flex;
   align-items: center;

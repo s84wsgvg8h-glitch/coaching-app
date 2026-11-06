@@ -438,23 +438,7 @@ export default function ProgramWeekBlocksSidebar({
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <div className="min-w-0 flex-1">
-                                <div className="mb-1 flex min-h-[14px] items-center gap-1">
-                                  <p
-                                    className={`min-w-0 truncate text-[10px] ${
-                                      activeBlock ? "text-gray-300" : "text-gray-400"
-                                    }`}
-                                  >
-                                    {formatDate(block.start_date)}
-                                  </p>
-                                  {blockOverlapMap[block.id]?.length ? (
-                                    <ProgramBlockOverlapWarning
-                                      overlappingTitles={blockOverlapMap[block.id]!}
-                                      onDark={activeBlock}
-                                      className="relative"
-                                    />
-                                  ) : null}
-                                </div>
+                              <div className="relative min-w-0 flex-1">
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -465,10 +449,24 @@ export default function ProgramWeekBlocksSidebar({
                                   }
                                   className="w-full text-left"
                                 >
+                                  <p
+                                    className={`mb-1 text-[10px] ${
+                                      activeBlock ? "text-gray-300" : "text-gray-400"
+                                    }`}
+                                  >
+                                    {formatDate(block.start_date)}
+                                  </p>
                                   <h3 className="font-bold text-sm leading-tight">
                                     {isOpen ? "⌄" : "›"} {block.title}
                                   </h3>
                                 </button>
+                                {blockOverlapMap[block.id]?.length ? (
+                                  <ProgramBlockOverlapWarning
+                                    overlappingTitles={blockOverlapMap[block.id]!}
+                                    onDark={activeBlock}
+                                    className="absolute right-0 top-0 z-10"
+                                  />
+                                ) : null}
                               </div>
       
                               {isCoachLikeRole(role) && (

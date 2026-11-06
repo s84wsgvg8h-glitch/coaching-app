@@ -1,69 +1,69 @@
+import { toWeekStartDateInputValue } from "@/lib/dateInput";
 import {
-  getBlockEndDateObject,
   getBlockStartDateObject,
+  getBlockWeekCount,
 } from "@/lib/programWeek/dateFormatting";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
 
 export type ProgramBlockOverlapMap = Record<string, string[]>;
 
-type BlockRange = {
+type BlockWeekRange = {
   id: string;
   title: string;
-  start: Date;
-  end: Date;
+  startMs: number;
+  /** YYYY-MM-DD van elke weekstart in dit block. */
+  weekStarts: string[];
 };
 
-function startOfLocalDay(date: Date = new Date()) {
-  const result = new Date(date);
-  result.setHours(0, 0, 0, 0);
-  return result;
-}
-
-function rangesOverlap(a: BlockRange, b: BlockRange) {
-  return a.start.getTime() <= b.end.getTime() && b.start.getTime() <= a.end.getTime();
-}
-
-function isLaterBlock(a: BlockRange, b: BlockRange) {
-  if (a.start.getTime() !== b.start.getTime()) {
-    return a.start.getTime() > b.start.getTime() ? a : b;
+function getBlockWeekStarts(start: Date, weekCount: number) {
+  const weekStarts: string[] = [];
+  for (let index = 0; index < weekCount; index += 1) {
+    const weekStart = new Date(start);
+    weekStart.setDate(start.getDate() + index * 7);
+    // Normaliseer naar maandag, zodat dinsdag-startende blocks dezelfde
+    // kalenderweek delen als een block dat die week op maandag start.
+    weekStarts.push(toWeekStartDateInputValue(weekStart));
   }
-  if (a.end.getTime() !== b.end.getTime()) {
-    return a.end.getTime() > b.end.getTime() ? a : b;
+  return [...new Set(weekStarts)];
+}
+
+function isLaterBlock(a: BlockWeekRange, b: BlockWeekRange) {
+  if (a.startMs !== b.startMs) {
+    return a.startMs > b.startMs ? a : b;
   }
   return a.id.localeCompare(b.id) > 0 ? a : b;
 }
 
-function isBlockOngoing(range: BlockRange, today: Date) {
-  return (
-    today.getTime() >= range.start.getTime() &&
-    today.getTime() <= range.end.getTime()
-  );
+function sharedWeekStarts(a: BlockWeekRange, b: BlockWeekRange) {
+  const right = new Set(b.weekStarts);
+  return a.weekStarts.filter((weekStart) => right.has(weekStart));
 }
 
 /**
- * Per block-id: titels van eerdere blocks waarmee dit block overlapt.
- * Alleen het latere block krijgt een waarschuwing, en alleen als dat block nu loopt.
+ * Per block-id: titels van eerdere blocks waarmee dit block dezelfde kalenderweek deelt.
+ * Alleen het latere block krijgt een waarschuwing, en alleen als de huidige week
+ * in die overlap zit.
  */
 export function getProgramBlockOverlapMap(
   blocks: ProgramBlock[],
   weeksByBlock: Record<string, ProgramWeek[]>,
   todayInput: Date = new Date(),
 ): ProgramBlockOverlapMap {
-  const today = startOfLocalDay(todayInput);
+  const currentWeekStart = toWeekStartDateInputValue(todayInput);
 
   const ranges = blocks
     .map((block) => {
       const start = getBlockStartDateObject(block);
-      const end = getBlockEndDateObject(block, weeksByBlock[block.id] || []);
-      if (!start || !end) return null;
+      if (!start) return null;
+      const weekCount = getBlockWeekCount(weeksByBlock[block.id] || []);
       return {
         id: block.id,
         title: (block.title || "Block").trim() || "Block",
-        start,
-        end,
-      } satisfies BlockRange;
+        startMs: start.getTime(),
+        weekStarts: getBlockWeekStarts(start, weekCount),
+      } satisfies BlockWeekRange;
     })
-    .filter((range): range is BlockRange => range !== null);
+    .filter((range): range is BlockWeekRange => range !== null);
 
   const overlapMap: ProgramBlockOverlapMap = {};
 
@@ -71,11 +71,12 @@ export function getProgramBlockOverlapMap(
     for (let j = i + 1; j < ranges.length; j += 1) {
       const left = ranges[i]!;
       const right = ranges[j]!;
-      if (!rangesOverlap(left, right)) continue;
+      const shared = sharedWeekStarts(left, right);
+      if (shared.length === 0) continue;
+      // Alleen waarschuwen als de overlap nu speelt (deze kalenderweek).
+      if (!shared.includes(currentWeekStart)) continue;
 
       const later = isLaterBlock(left, right);
-      if (!isBlockOngoing(later, today)) continue;
-
       const earlier = later.id === left.id ? right : left;
       if (!overlapMap[later.id]) overlapMap[later.id] = [];
       if (!overlapMap[later.id]!.includes(earlier.title)) {
