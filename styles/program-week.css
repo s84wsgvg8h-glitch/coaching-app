@@ -1739,12 +1739,13 @@ html.dark .program-week-shell select {
   .coach-program-day-pill-date {
     display: flex;
     align-items: center;
-    height: 20px;
-    min-height: 20px;
-    max-height: 20px;
-    padding: 0 3px;
+    height: 28px;
+    min-height: 28px;
+    max-height: 28px;
+    padding: 0 6px;
     line-height: 1;
     box-sizing: border-box;
+    border-radius: var(--coach-program-radius);
   }
 
   .coach-program-day-chips {
@@ -1791,16 +1792,17 @@ html.dark .program-week-shell select {
   }
 
   .coach-program-day-pill-title {
-    font-size: 8px;
+    font-size: 11px;
+    padding-inline: 6px;
   }
 
   .coach-program-day-pill-date {
-    flex-basis: 2.35rem;
-    width: 2.35rem;
-    min-width: 2.35rem;
-    max-width: 2.35rem;
-    font-size: 8px;
-    padding-inline: 2px;
+    flex-basis: 3.25rem;
+    width: 3.25rem;
+    min-width: 3.25rem;
+    max-width: 3.25rem;
+    font-size: 11px;
+    padding-inline: 4px;
   }
 
   .coach-program-shell .program-day-chip {
@@ -2870,11 +2872,19 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-day-pill {
+  display: flex;
+  align-items: center;
+  height: 36px;
+  min-height: 36px;
+  max-height: 36px;
+  box-sizing: border-box;
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: var(--coach-program-radius);
   background: rgba(0, 0, 0, 0.28);
   color: var(--app-text);
   outline: none;
+  -webkit-appearance: none;
+  appearance: none;
   transition:
     border-color 0.15s ease,
     box-shadow 0.15s ease;
@@ -2889,10 +2899,10 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   flex: 1 1 auto;
   min-width: 0;
   width: auto;
-  padding: 6px 8px;
+  padding: 0 10px;
   font-size: 14px;
   font-weight: 700;
-  line-height: 1.25;
+  line-height: 1;
   box-sizing: border-box;
 }
 
@@ -2901,10 +2911,11 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   width: 4.35rem;
   min-width: 4.35rem;
   max-width: 4.35rem;
-  padding: 6px 4px;
+  justify-content: center;
+  padding: 0 6px;
   font-size: 14px;
   font-weight: 500;
-  line-height: 1.25;
+  line-height: 1;
   color: var(--app-text-muted);
   color-scheme: dark;
   box-sizing: border-box;
@@ -3484,9 +3495,11 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 @media (max-width: 767px) {
   .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-day-pill {
-    min-height: 20px;
-    height: 20px;
+    min-height: 28px;
+    height: 28px;
+    max-height: 28px;
     padding-block: 0;
+    border-radius: var(--coach-program-radius);
   }
 
   .coach-program-shell:not(.coach-program-shell--raw-view) .program-day-chip {
