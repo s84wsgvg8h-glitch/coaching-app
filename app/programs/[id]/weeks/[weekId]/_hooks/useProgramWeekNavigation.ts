@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction, type TransitionStartFunction } from "react";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { toDateInputValue, toWeekStartDateInputValue } from "@/lib/dateInput";
+import { toWeekStartDateInputValue } from "@/lib/dateInput";
 import { persistBlockEditModalNote } from "@/components/programs/ProgramBlockEditModal";
 import { persistWeekEditModalNote } from "@/components/programs/ProgramWeekEditModal";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
@@ -24,7 +24,6 @@ import {
   withPreserveWeekParam,
 } from "@/lib/programNavigation";
 import type { EditorView } from "@/components/programs/coach/CoachProgramWeekHeader";
-import { getDuplicatedBlockStartDateObject } from "@/lib/programWeek/dateFormatting";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
 import {
   getStoredProgramNavigation,
@@ -826,13 +825,7 @@ export function useProgramWeekNavigation({
     }
 
     const sourceWeeks = weeksByBlock[blockToDuplicate.id] || [];
-    const duplicatedStart = getDuplicatedBlockStartDateObject(
-      blockToDuplicate,
-      sourceWeeks,
-    );
-    const startDate = duplicatedStart
-      ? toDateInputValue(duplicatedStart)
-      : toDateInputValue(new Date());
+    const startDate = toWeekStartDateInputValue();
 
     setPendingBlockAction({ blockId: blockToDuplicate.id, type: "duplicate" });
     showAppToast("Block wordt gekopieerd…");
