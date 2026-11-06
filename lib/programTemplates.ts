@@ -1,5 +1,6 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
+import { toWeekStartDateInputValue } from "@/lib/dateInput";
 import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
 import { loadProgramHierarchy, type ProgramHierarchy } from "@/lib/programData";
 
@@ -353,7 +354,7 @@ export async function applyProgramTemplate(
     athleteId,
     title: structure.block.title,
     description: structure.block.description || "",
-    startDate: startDate || new Date().toISOString().slice(0, 10),
+    startDate: startDate || toWeekStartDateInputValue(),
   });
 
   if (blockError || !blockId) {

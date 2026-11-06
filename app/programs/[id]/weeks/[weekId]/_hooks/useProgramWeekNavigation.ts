@@ -2,7 +2,7 @@
 
 import { useCallback, useRef, useState, type Dispatch, type SetStateAction, type TransitionStartFunction } from "react";
 import type { AppRouterInstance } from "next/dist/shared/lib/app-router-context.shared-runtime";
-import { toDateInputValue } from "@/components/programs/ProgramBlockDateField";
+import { toDateInputValue, toWeekStartDateInputValue } from "@/lib/dateInput";
 import { persistBlockEditModalNote } from "@/components/programs/ProgramBlockEditModal";
 import { persistWeekEditModalNote } from "@/components/programs/ProgramWeekEditModal";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
@@ -648,7 +648,7 @@ export function useProgramWeekNavigation({
       setCreatingBlock(true);
       setCreatingMacrocycle(false);
       setCreatingWeekBlockId("");
-      setNewBlockStartDate(toDateInputValue(new Date()));
+      setNewBlockStartDate(toWeekStartDateInputValue());
       return;
     }
 

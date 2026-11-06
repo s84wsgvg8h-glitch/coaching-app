@@ -1,19 +1,13 @@
 "use client";
 
 import { ChevronDown, ChevronUp } from "lucide-react";
+import { toDateInputValue } from "@/lib/dateInput";
 
 type ProgramBlockDateFieldProps = {
   value: string;
   onChange: (value: string) => void;
   className?: string;
 };
-
-function toDateInputValue(date: Date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 function shiftDate(value: string, deltaDays: number) {
   const base = value ? new Date(`${value}T12:00:00`) : new Date();
@@ -67,4 +61,4 @@ export default function ProgramBlockDateField({
   );
 }
 
-export { toDateInputValue };
+export { toDateInputValue, toWeekStartDateInputValue } from "@/lib/dateInput";

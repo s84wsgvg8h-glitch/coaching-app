@@ -15,6 +15,7 @@ import {
   saveProgramPlanningWeekNote,
 } from "@/lib/programPlanningNotes";
 import PlanningHoverNote from "@/components/planning/PlanningHoverNote";
+import { toWeekStartDateInputValue } from "@/lib/dateInput";
 
 type TimelineWeek = {
   id: string;
@@ -825,7 +826,13 @@ export default function ProgramPlanningCalendar({
           <button
             type="button"
             onClick={() => {
-              setAddingBlock((open) => !open);
+              setAddingBlock((open) => {
+                const next = !open;
+                if (next) {
+                  setNewBlockStartDate(toWeekStartDateInputValue());
+                }
+                return next;
+              });
               setAddingMacro(false);
               setAddingWeekBlockId("");
             }}

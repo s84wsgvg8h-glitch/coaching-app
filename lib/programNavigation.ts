@@ -1,6 +1,7 @@
 import { supabase } from "@/lib/supabaseClient";
 import { createProgramBlockForAthlete } from "@/lib/programBlockCreate";
 import { createProgramWeekForBlock } from "@/lib/programWeekCreate";
+import { toWeekStartDateInputValue } from "@/lib/dateInput";
 import { buildProgramWeekDayDates } from "@/lib/programWeek/dateFormatting";
 import type { ProgramBlock, ProgramDay } from "@/lib/programWeek/types";
 
@@ -276,7 +277,7 @@ export async function resolveProgramEntryForAthlete(
       athleteId,
       title: "Block 1",
       description: "",
-      startDate: new Date().toISOString().split("T")[0],
+      startDate: toWeekStartDateInputValue(),
     });
 
     if (createError || !blockId) {
