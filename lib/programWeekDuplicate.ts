@@ -6,6 +6,8 @@ export type DuplicateProgramWeekInput = {
   targetBlockId: string;
   targetWeekNumber: number;
   targetTitle: string;
+  /** Extra day shift for scheduled_date (block start delta). */
+  extraDayOffset?: number | null;
 };
 
 export async function duplicateProgramWeekId(
@@ -16,7 +18,8 @@ export async function duplicateProgramWeekId(
     p_target_block_id: input.targetBlockId,
     p_target_week_number: input.targetWeekNumber,
     p_target_title: input.targetTitle.trim(),
-    p_extra_day_offset: null,
+    p_extra_day_offset:
+      typeof input.extraDayOffset === "number" ? input.extraDayOffset : null,
   });
 
   if (error) {

@@ -23,6 +23,12 @@ type DuplicateProgramBlockResult = {
   error: string | null;
 };
 
+function daysBetweenIsoDates(fromDate: string, toDate: string) {
+  const from = new Date(`${fromDate}T12:00:00`);
+  const to = new Date(`${toDate}T12:00:00`);
+  return Math.round((to.getTime() - from.getTime()) / 86_400_000);
+}
+
 function parseDuplicateRpcResult(data: unknown): DuplicateProgramBlockResult {
   if (!data || typeof data !== "object") {
     return {
@@ -54,6 +60,7 @@ async function duplicateProgramBlockViaRpc(
   const { data, error } = await supabase.rpc("duplicate_program_block", {
     p_source_block_id: input.sourceBlockId,
     p_title: input.title.trim(),
+    p_start_date: input.startDate || null,
   });
 
   if (error) {
@@ -74,6 +81,23 @@ async function duplicateProgramBlockViaRpc(
 async function duplicateProgramBlockViaClient(
   input: DuplicateProgramBlockInput,
 ): Promise<DuplicateProgramBlockResult> {
+  const { data: sourceBlock, error: sourceError } = await supabase
+    .from("program_blocks")
+    .select("start_date")
+    .eq("id", input.sourceBlockId)
+    .maybeSingle();
+
+  if (sourceError) {
+    return { blockId: null, firstWeekId: null, error: sourceError.message };
+  }
+
+  const sourceStartDate =
+    typeof sourceBlock?.start_date === "string" ? sourceBlock.start_date : null;
+  const dayOffset =
+    sourceStartDate && input.startDate
+      ? daysBetweenIsoDates(sourceStartDate, input.startDate)
+      : 0;
+
   const { blockId, error: createError } = await createProgramBlockForAthlete({
     athleteId: input.athleteId,
     title: input.title.trim(),
@@ -121,6 +145,7 @@ async function duplicateProgramBlockViaClient(
         targetBlockId: blockId,
         targetWeekNumber: sourceWeek.week_number,
         targetTitle: sourceWeek.title,
+        extraDayOffset: dayOffset,
       });
 
       if (weekError || !weekId) {
