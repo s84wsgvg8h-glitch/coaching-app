@@ -1,12 +1,15 @@
 "use client";
 
 import type { Dispatch, SetStateAction } from "react";
+import { useMemo } from "react";
 import ProgramNavSidebarRail from "@/components/programs/ProgramNavSidebarRail";
+import ProgramBlockOverlapWarning from "@/components/programs/ProgramBlockOverlapWarning";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
 import ProgramWeekAddMenu from "./ProgramWeekAddMenu";
 import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
 import { isCoachLikeRole } from "@/lib/authRoles";
+import { getProgramBlockOverlapMap } from "@/lib/programBlockOverlap";
 import { DELETE_X_BTN } from "@/lib/programWeek/constants";
 import { formatDate } from "@/lib/programWeek/dateFormatting";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
@@ -156,6 +159,10 @@ export default function ProgramWeekBlocksSidebar({
     ),
     ...navBlocks.filter((block) => !block.macrocycle_id),
   ];
+  const blockOverlapMap = useMemo(
+    () => getProgramBlockOverlapMap(navBlocks, weeksByBlock),
+    [navBlocks, weeksByBlock],
+  );
   const sidebarExpanded =
     programAddMenuOpen ||
     creatingMacrocycle ||
@@ -439,7 +446,7 @@ export default function ProgramWeekBlocksSidebar({
                                     [block.id]: !current[block.id],
                                   }))
                                 }
-                                className="flex-1 text-left"
+                                className="min-w-0 flex-1 text-left"
                               >
                                 <p
                                   className={`text-[10px] mb-1 ${
@@ -453,6 +460,13 @@ export default function ProgramWeekBlocksSidebar({
                                   {isOpen ? "⌄" : "›"} {block.title}
                                 </h3>
                               </button>
+
+                              {blockOverlapMap[block.id]?.length ? (
+                                <ProgramBlockOverlapWarning
+                                  overlappingTitles={blockOverlapMap[block.id]!}
+                                  onDark={activeBlock}
+                                />
+                              ) : null}
       
                               {isCoachLikeRole(role) && (
                                 <div className="flex gap-1">

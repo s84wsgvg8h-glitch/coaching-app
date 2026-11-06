@@ -1,10 +1,12 @@
 "use client";
 
 import type { Dispatch, RefObject, SetStateAction } from "react";
-import { useRef } from "react";
+import { useMemo, useRef } from "react";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
+import ProgramBlockOverlapWarning from "@/components/programs/ProgramBlockOverlapWarning";
 import ProgramMobileNavMenu from "@/components/programs/week/ProgramMobileNavMenu";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
+import { getProgramBlockOverlapMap } from "@/lib/programBlockOverlap";
 import {
   CoachProgramEditorViewSelect,
   type EditorView,
@@ -172,6 +174,10 @@ export default function ProgramWeekBlockWeekNav({
     currentBlock,
     blockId,
   );
+  const blockOverlapMap = useMemo(
+    () => getProgramBlockOverlapMap(displayNavBlocks, weeksByBlock),
+    [displayNavBlocks, weeksByBlock],
+  );
   const blockWeeks = resolveBlockWeeksForDisplay(
     weeksByBlock,
     blockId,
@@ -220,14 +226,14 @@ export default function ProgramWeekBlockWeekNav({
         }${isCoach ? " program-mobile-week-nav--coach-compact" : ""}`}
       >
         <div className="grid grid-cols-2 gap-2">
-          <div ref={blockNavRef} className="relative min-w-0">
+          <div ref={blockNavRef} className="relative flex min-w-0 items-center gap-1">
             <button
               ref={blockButtonRef}
               type="button"
               onClick={openBlockMenu}
               aria-expanded={blockNavOpen}
               aria-haspopup="menu"
-              className={`program-mobile-week-nav-chip flex w-full items-center justify-between gap-2 rounded-full border px-3 py-1.5 text-left text-xs font-bold transition active:scale-95 ${
+              className={`program-mobile-week-nav-chip flex min-w-0 flex-1 items-center justify-between gap-2 rounded-full border px-3 py-1.5 text-left text-xs font-bold transition active:scale-95 ${
                 blockNavOpen || blockId
                   ? "border-black bg-black text-white"
                   : "border-gray-200 bg-white text-black"
@@ -251,6 +257,13 @@ export default function ProgramWeekBlockWeekNav({
                 {blockNavOpen ? "▲" : "▼"}
               </span>
             </button>
+            {activeBlock && blockOverlapMap[activeBlock.id]?.length ? (
+              <ProgramBlockOverlapWarning
+                overlappingTitles={blockOverlapMap[activeBlock.id]!}
+                onDark={Boolean(blockId)}
+                className="shrink-0"
+              />
+            ) : null}
           </div>
 
           <div ref={weekNavRef} className="relative min-w-0">
@@ -324,84 +337,96 @@ export default function ProgramWeekBlockWeekNav({
                     </span>
                   </button>
 
-                  {isCoach ? (
+                  {isCoach || blockOverlapMap[block.id]?.length ? (
                     <div className="program-mobile-week-nav-menu-row-actions">
-                      <button
-                        type="button"
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          closeMenus();
-                          setEditingBlockId(block.id);
-                          setEditingBlockTitle(block.title);
-                          setEditingBlockStartDate(block.start_date || "");
-                          setEditingBlockMacrocycleId(block.macrocycle_id || "");
-                        }}
-                        className="program-mobile-week-nav-menu-action"
-                        title="Aanpassen"
-                        aria-label={`${block.title} aanpassen`}
-                      >
-                        ✎
-                      </button>
+                      {blockOverlapMap[block.id]?.length ? (
+                        <ProgramBlockOverlapWarning
+                          overlappingTitles={blockOverlapMap[block.id]!}
+                          onDark={isActive}
+                        />
+                      ) : null}
+                      {isCoach ? (
+                        <>
+                          <button
+                            type="button"
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              closeMenus();
+                              setEditingBlockId(block.id);
+                              setEditingBlockTitle(block.title);
+                              setEditingBlockStartDate(block.start_date || "");
+                              setEditingBlockMacrocycleId(
+                                block.macrocycle_id || "",
+                              );
+                            }}
+                            className="program-mobile-week-nav-menu-action"
+                            title="Aanpassen"
+                            aria-label={`${block.title} aanpassen`}
+                          >
+                            ✎
+                          </button>
 
-                      <button
-                        type="button"
-                        disabled={Boolean(pendingBlockAction)}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          closeMenus();
-                          void duplicateBlock(block);
-                        }}
-                        className="program-mobile-week-nav-menu-action disabled:cursor-not-allowed disabled:opacity-60"
-                        title="Dupliceren"
-                        aria-label={`${block.title} dupliceren`}
-                        aria-busy={
-                          isBlockActionPending(block.id) &&
-                          pendingBlockAction?.type === "duplicate"
-                        }
-                      >
-                        {isBlockActionPending(block.id) &&
-                        pendingBlockAction?.type === "duplicate" ? (
-                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                        ) : (
-                          "⧉"
-                        )}
-                      </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(pendingBlockAction)}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              closeMenus();
+                              void duplicateBlock(block);
+                            }}
+                            className="program-mobile-week-nav-menu-action disabled:cursor-not-allowed disabled:opacity-60"
+                            title="Dupliceren"
+                            aria-label={`${block.title} dupliceren`}
+                            aria-busy={
+                              isBlockActionPending(block.id) &&
+                              pendingBlockAction?.type === "duplicate"
+                            }
+                          >
+                            {isBlockActionPending(block.id) &&
+                            pendingBlockAction?.type === "duplicate" ? (
+                              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                            ) : (
+                              "⧉"
+                            )}
+                          </button>
 
-                      <CreateTemplateButton
-                        coachId={userId}
-                        blockId={block.id}
-                        actingUserId={userId}
-                        actingRole={role}
-                        compact
-                        activeTone={isActive ? "dark" : "light"}
-                      />
+                          <CreateTemplateButton
+                            coachId={userId}
+                            blockId={block.id}
+                            actingUserId={userId}
+                            actingRole={role}
+                            compact
+                            activeTone={isActive ? "dark" : "light"}
+                          />
 
-                      <button
-                        type="button"
-                        disabled={Boolean(pendingBlockAction)}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          event.stopPropagation();
-                          closeMenus();
-                          void deleteBlock(block);
-                        }}
-                        className={`${DELETE_X_BTN} program-mobile-week-nav-menu-action program-mobile-week-nav-menu-action--delete disabled:cursor-not-allowed disabled:opacity-60`}
-                        title="Verwijderen"
-                        aria-label={`${block.title} verwijderen`}
-                        aria-busy={
-                          isBlockActionPending(block.id) &&
-                          pendingBlockAction?.type === "delete"
-                        }
-                      >
-                        {isBlockActionPending(block.id) &&
-                        pendingBlockAction?.type === "delete" ? (
-                          <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                        ) : (
-                          "✕"
-                        )}
-                      </button>
+                          <button
+                            type="button"
+                            disabled={Boolean(pendingBlockAction)}
+                            onClick={(event) => {
+                              event.preventDefault();
+                              event.stopPropagation();
+                              closeMenus();
+                              void deleteBlock(block);
+                            }}
+                            className={`${DELETE_X_BTN} program-mobile-week-nav-menu-action program-mobile-week-nav-menu-action--delete disabled:cursor-not-allowed disabled:opacity-60`}
+                            title="Verwijderen"
+                            aria-label={`${block.title} verwijderen`}
+                            aria-busy={
+                              isBlockActionPending(block.id) &&
+                              pendingBlockAction?.type === "delete"
+                            }
+                          >
+                            {isBlockActionPending(block.id) &&
+                            pendingBlockAction?.type === "delete" ? (
+                              <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                            ) : (
+                              "✕"
+                            )}
+                          </button>
+                        </>
+                      ) : null}
                     </div>
                   ) : null}
                 </div>
