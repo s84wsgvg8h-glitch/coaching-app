@@ -431,42 +431,45 @@ export default function ProgramWeekBlocksSidebar({
                           }}
                         >
                           <div
-                            className={`group/block p-3 ${
+                            className={`group/block relative p-3 ${
                               activeBlock
                                 ? "bg-black text-white"
                                 : "bg-gray-50 text-black"
                             }`}
                           >
                             <div className="flex items-start justify-between gap-2">
-                              <button
-                                type="button"
-                                onClick={() =>
-                                  setOpenBlockIds((current) => ({
-                                    ...current,
-                                    [block.id]: !current[block.id],
-                                  }))
-                                }
-                                className="min-w-0 flex-1 text-left"
-                              >
-                                <p
-                                  className={`text-[10px] mb-1 ${
-                                    activeBlock ? "text-gray-300" : "text-gray-400"
-                                  }`}
+                              <div className="min-w-0 flex-1">
+                                <div className="mb-1 flex min-h-[14px] items-center gap-1">
+                                  <p
+                                    className={`min-w-0 truncate text-[10px] ${
+                                      activeBlock ? "text-gray-300" : "text-gray-400"
+                                    }`}
+                                  >
+                                    {formatDate(block.start_date)}
+                                  </p>
+                                  {blockOverlapMap[block.id]?.length ? (
+                                    <ProgramBlockOverlapWarning
+                                      overlappingTitles={blockOverlapMap[block.id]!}
+                                      onDark={activeBlock}
+                                      className="relative"
+                                    />
+                                  ) : null}
+                                </div>
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setOpenBlockIds((current) => ({
+                                      ...current,
+                                      [block.id]: !current[block.id],
+                                    }))
+                                  }
+                                  className="w-full text-left"
                                 >
-                                  {formatDate(block.start_date)}
-                                </p>
-      
-                                <h3 className="font-bold text-sm leading-tight">
-                                  {isOpen ? "⌄" : "›"} {block.title}
-                                </h3>
-                              </button>
-
-                              {blockOverlapMap[block.id]?.length ? (
-                                <ProgramBlockOverlapWarning
-                                  overlappingTitles={blockOverlapMap[block.id]!}
-                                  onDark={activeBlock}
-                                />
-                              ) : null}
+                                  <h3 className="font-bold text-sm leading-tight">
+                                    {isOpen ? "⌄" : "›"} {block.title}
+                                  </h3>
+                                </button>
+                              </div>
       
                               {isCoachLikeRole(role) && (
                                 <div className="flex gap-1">

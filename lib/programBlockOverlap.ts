@@ -6,20 +6,51 @@ import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
 
 export type ProgramBlockOverlapMap = Record<string, string[]>;
 
-function rangesOverlap(
-  aStart: Date,
-  aEnd: Date,
-  bStart: Date,
-  bEnd: Date,
-) {
-  return aStart.getTime() <= bEnd.getTime() && bStart.getTime() <= aEnd.getTime();
+type BlockRange = {
+  id: string;
+  title: string;
+  start: Date;
+  end: Date;
+};
+
+function startOfLocalDay(date: Date = new Date()) {
+  const result = new Date(date);
+  result.setHours(0, 0, 0, 0);
+  return result;
 }
 
-/** Per block-id: titels van andere blocks waarvan de week-datums overlappen. */
+function rangesOverlap(a: BlockRange, b: BlockRange) {
+  return a.start.getTime() <= b.end.getTime() && b.start.getTime() <= a.end.getTime();
+}
+
+function isLaterBlock(a: BlockRange, b: BlockRange) {
+  if (a.start.getTime() !== b.start.getTime()) {
+    return a.start.getTime() > b.start.getTime() ? a : b;
+  }
+  if (a.end.getTime() !== b.end.getTime()) {
+    return a.end.getTime() > b.end.getTime() ? a : b;
+  }
+  return a.id.localeCompare(b.id) > 0 ? a : b;
+}
+
+function isBlockOngoing(range: BlockRange, today: Date) {
+  return (
+    today.getTime() >= range.start.getTime() &&
+    today.getTime() <= range.end.getTime()
+  );
+}
+
+/**
+ * Per block-id: titels van eerdere blocks waarmee dit block overlapt.
+ * Alleen het latere block krijgt een waarschuwing, en alleen als dat block nu loopt.
+ */
 export function getProgramBlockOverlapMap(
   blocks: ProgramBlock[],
   weeksByBlock: Record<string, ProgramWeek[]>,
+  todayInput: Date = new Date(),
 ): ProgramBlockOverlapMap {
+  const today = startOfLocalDay(todayInput);
+
   const ranges = blocks
     .map((block) => {
       const start = getBlockStartDateObject(block);
@@ -30,9 +61,9 @@ export function getProgramBlockOverlapMap(
         title: (block.title || "Block").trim() || "Block",
         start,
         end,
-      };
+      } satisfies BlockRange;
     })
-    .filter((range): range is NonNullable<typeof range> => range !== null);
+    .filter((range): range is BlockRange => range !== null);
 
   const overlapMap: ProgramBlockOverlapMap = {};
 
@@ -40,12 +71,16 @@ export function getProgramBlockOverlapMap(
     for (let j = i + 1; j < ranges.length; j += 1) {
       const left = ranges[i]!;
       const right = ranges[j]!;
-      if (!rangesOverlap(left.start, left.end, right.start, right.end)) continue;
+      if (!rangesOverlap(left, right)) continue;
 
-      if (!overlapMap[left.id]) overlapMap[left.id] = [];
-      if (!overlapMap[right.id]) overlapMap[right.id] = [];
-      overlapMap[left.id]!.push(right.title);
-      overlapMap[right.id]!.push(left.title);
+      const later = isLaterBlock(left, right);
+      if (!isBlockOngoing(later, today)) continue;
+
+      const earlier = later.id === left.id ? right : left;
+      if (!overlapMap[later.id]) overlapMap[later.id] = [];
+      if (!overlapMap[later.id]!.includes(earlier.title)) {
+        overlapMap[later.id]!.push(earlier.title);
+      }
     }
   }
 

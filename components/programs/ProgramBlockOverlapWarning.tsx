@@ -37,11 +37,11 @@ export default function ProgramBlockOverlapWarning({
   return (
     <span
       ref={rootRef}
-      className={`group/overlap relative inline-flex shrink-0 ${className}`}
+      className={`group/overlap pointer-events-auto inline-flex shrink-0 ${className}`}
     >
       <button
         type="button"
-        className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition ${
+        className={`inline-flex h-5 w-5 items-center justify-center rounded-md transition ${
           onDark
             ? "text-amber-300 hover:bg-white/15"
             : "text-amber-500 hover:bg-amber-500/10"
@@ -55,7 +55,7 @@ export default function ProgramBlockOverlapWarning({
           setOpen((current) => !current);
         }}
       >
-        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" strokeWidth={2.25} />
       </button>
 
       <span
