@@ -2447,9 +2447,15 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-back-btn--icon {
-  min-height: 40px;
-  min-width: 40px;
-  padding: 8px;
+  box-sizing: border-box;
+  width: var(--coach-program-header-control-height, 2.75rem);
+  height: var(--coach-program-header-control-height, 2.75rem);
+  min-width: var(--coach-program-header-control-height, 2.75rem);
+  min-height: var(--coach-program-header-control-height, 2.75rem);
+  max-width: var(--coach-program-header-control-height, 2.75rem);
+  max-height: var(--coach-program-header-control-height, 2.75rem);
+  padding: 0;
+  flex-shrink: 0;
 }
 
 .coach-program-back-btn:hover {
@@ -4425,7 +4431,7 @@ html:not(.dark) .coach-program-sidebar-flyout .absolute.right-0.top-full {
   }
 
   .coach-program-action-btn,
-  .coach-program-back-btn {
+  .coach-program-back-btn:not(.coach-program-back-btn--icon) {
     min-height: 44px;
   }
 
