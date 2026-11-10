@@ -7,6 +7,7 @@ import {
   flushProgramEditQueue,
   getProgramEditQueueCount,
   mirrorProgramEditQueueToIdb,
+  PROGRAM_EDIT_QUEUE_CHANGED_EVENT,
   restoreProgramEditQueueFromIdb,
 } from "@/lib/offlineProgramEditQueue";
 
@@ -68,10 +69,15 @@ export function useOfflineProgramSync() {
       }
     }
 
+    function handleQueueChanged() {
+      refreshCount();
+    }
+
     void retry();
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
     document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener(PROGRAM_EDIT_QUEUE_CHANGED_EVENT, handleQueueChanged);
 
     const intervalId = window.setInterval(() => {
       if (getProgramEditQueueCount() > 0 && navigator.onLine) {
@@ -83,6 +89,10 @@ export function useOfflineProgramSync() {
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
       document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener(
+        PROGRAM_EDIT_QUEUE_CHANGED_EVENT,
+        handleQueueChanged,
+      );
       window.clearInterval(intervalId);
     };
   }, [refreshCount, retry]);

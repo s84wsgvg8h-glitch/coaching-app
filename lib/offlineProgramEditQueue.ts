@@ -94,12 +94,26 @@ function queueItemKey(item: QueuedProgramEdit) {
   return `${op.type}:${op.fn}:${JSON.stringify(op.args)}`;
 }
 
+export const PROGRAM_EDIT_QUEUE_CHANGED_EVENT = "program-edit-queue-changed";
+
+function dispatchProgramEditQueueChanged(options?: { mirror?: boolean }) {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(
+    new CustomEvent(PROGRAM_EDIT_QUEUE_CHANGED_EVENT, {
+      detail: { count: readQueue().length },
+    }),
+  );
+  if (options?.mirror === false) return;
+  void mirrorProgramEditQueueToIdb();
+}
+
 export function getProgramEditQueueCount() {
   return readQueue().length;
 }
 
 export function clearProgramEditQueue() {
   writeQueue([]);
+  dispatchProgramEditQueueChanged();
 }
 
 export function enqueueProgramEdit(input: {
@@ -119,6 +133,7 @@ export function enqueueProgramEdit(input: {
   const withoutDuplicate = readQueue().filter((item) => queueItemKey(item) !== key);
   withoutDuplicate.push(nextItem);
   writeQueue(withoutDuplicate);
+  dispatchProgramEditQueueChanged();
 }
 
 async function executeProgramEdit(op: ProgramEditOperation) {
@@ -150,10 +165,12 @@ function bumpAttempt(item: QueuedProgramEdit) {
       row.id === item.id ? { ...row, attempts: (row.attempts || 0) + 1 } : row,
     ),
   );
+  dispatchProgramEditQueueChanged({ mirror: false });
 }
 
 function dequeueItem(item: QueuedProgramEdit) {
   writeQueue(readQueue().filter((row) => row.id !== item.id));
+  dispatchProgramEditQueueChanged({ mirror: false });
 }
 
 export async function executeProgramEditOrQueue(input: {
@@ -235,6 +252,8 @@ export async function flushProgramEditQueue(): Promise<FlushProgramEditQueueResu
 
     failed += 1;
   }
+
+  await mirrorProgramEditQueueToIdb();
 
   return {
     synced,

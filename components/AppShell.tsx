@@ -18,6 +18,7 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCommandPaletteHotkey } from "@/hooks/useCommandPaletteHotkey";
 import { usePrefetchAppRoutes } from "@/hooks/usePrefetchAppRoutes";
 import { usePrefetchAppData } from "@/hooks/usePrefetchAppData";
+import { useOfflineProgramSync } from "@/hooks/useOfflineProgramSync";
 import { useCoachAutoTodoSync } from "@/hooks/useCoachAutoTodoSync";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import {
@@ -61,6 +62,8 @@ export default function AppShell({
   );
   const showAthleteNav = role === "atleet";
   const showCoachNav = isCoachLikeRole(role);
+  // Keep program offline-edit sync alive app-wide for coaches.
+  useOfflineProgramSync();
   useCoachAutoTodoSync(
     showCoachNav && userId ? userId : null,
     role === "admin",

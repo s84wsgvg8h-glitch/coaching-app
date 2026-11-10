@@ -231,6 +231,18 @@ export function useProgramWeekCoreData({
   }
 
   async function loadExercisesForDays(loadedDays: ProgramDay[]) {
+    if (isOfflineEnvironment()) {
+      const stored = await getStoredProgramWeek(blockId, weekId);
+      if (stored?.data?.exercisesByDay) {
+        const grouped: Record<string, ProgramExercise[]> = {};
+        loadedDays.forEach((day) => {
+          grouped[day.id] = stored.data.exercisesByDay[day.id] || [];
+        });
+        setExercisesByDay(grouped);
+      }
+      return;
+    }
+
     const dayIds = loadedDays.map((day) => day.id);
 
     const { data, error } = await supabase
@@ -263,6 +275,15 @@ export function useProgramWeekCoreData({
   }
 
   async function loadDays() {
+    if (isOfflineEnvironment()) {
+      const stored = await getStoredProgramWeek(blockId, weekId);
+      if (stored?.data) {
+        setDays(stored.data.days || []);
+        setExercisesByDay(stored.data.exercisesByDay || {});
+      }
+      return;
+    }
+
     const { data } = await supabase
       .from("program_days")
       .select("*")

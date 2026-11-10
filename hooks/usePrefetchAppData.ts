@@ -17,11 +17,12 @@ import { prefetchNotificationCount } from "@/hooks/useNotificationCount";
 import { prefetchTeamEngagementScore } from "@/hooks/useTeamEngagementScore";
 import { getCoachLastAthleteId } from "@/lib/coachLastAthlete";
 import { loadCoachProgramAthletes } from "@/lib/coachProgramAthletes";
-import { prefetchProgramWeekFromHref, parseProgramWeekHref } from "@/lib/prefetchProgramWeekFromHref";
 import {
-  cacheAllWeeksForBlock,
-  cacheAthleteProgramsOffline,
-} from "@/lib/programWeekCoreClient";
+  prefetchAllCoachProgramsForOffline,
+  prefetchAthleteProgramsForOffline,
+} from "@/lib/programOfflinePrefetch";
+import { prefetchProgramWeekFromHref, parseProgramWeekHref } from "@/lib/prefetchProgramWeekFromHref";
+import { cacheAllWeeksForBlock } from "@/lib/programWeekCoreClient";
 import { readAthleteProgramHrefSession } from "@/lib/programEntrySessionCache";
 import { queryKeys } from "@/lib/queryKeys";
 import { getRealSupabase } from "@/lib/supabaseClient";
@@ -92,8 +93,10 @@ export function usePrefetchAppData(
           if (parsed) {
             void cacheAllWeeksForBlock(parsed.blockId, { userId, role });
           }
-          void cacheAthleteProgramsOffline(userId, { userId, role });
         }
+
+        // Always cache the athlete's full program locally for offline use.
+        void prefetchAthleteProgramsForOffline(userId, { userId, role });
 
         scheduleIdlePrefetch(() => {
           void import("@/app/kennisbank/page");
@@ -150,12 +153,16 @@ export function usePrefetchAppData(
                 if (parsed) {
                   void cacheAllWeeksForBlock(parsed.blockId, { userId, role });
                 }
-                void cacheAthleteProgramsOffline(lastAthleteId, {
-                  userId,
-                  role,
-                });
               }
             }
+
+            // Cache every athlete program locally for offline coaching.
+            void prefetchAllCoachProgramsForOffline(userId, {
+              userId,
+              role,
+              prioritizeAthleteIds: lastAthleteId ? [lastAthleteId] : [],
+              concurrency: 2,
+            });
           })();
 
           void import("@/app/athletes/page");
