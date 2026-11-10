@@ -149,9 +149,6 @@ export default function CoachAppSidebar() {
   return (
     <aside className="coach-app-sidebar coach-app-sidebar--pinned" aria-label="Coach navigatie">
       <p className="coach-app-sidebar-brand">
-        <span className="coach-app-sidebar-brand-mark" aria-hidden="true">
-          ∞
-        </span>
         <span className="coach-app-sidebar-brand-text">Limitless Coaching</span>
       </p>
       <nav className="coach-app-sidebar-nav-root flex-1">

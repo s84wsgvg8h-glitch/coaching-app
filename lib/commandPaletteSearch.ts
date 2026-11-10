@@ -16,6 +16,10 @@ import {
 } from "@/lib/athletePayments";
 import { formatOptionalTextFieldInputValue } from "@/lib/optionalFieldDash";
 
+function coachAthleteProgramHref(athleteId: string) {
+  return `/programs?athlete=${encodeURIComponent(athleteId)}`;
+}
+
 export type CommandItem = {
   id: string;
   label: string;
@@ -303,23 +307,19 @@ export async function loadCommandPaletteData(
         : null,
   }));
 
-  const programResults = await Promise.all(
-    athleteRows.map(async (athlete) => {
-      const { data: entry } = await resolveProgramEntryForAthlete(athlete.id, userId);
-      if (!entry) return null;
-      return {
-        athleteId: athlete.id,
-        athleteName: athlete.full_name || "Atleet",
-        href: buildProgramWeekPath(entry, { coachViewingAthlete: true }),
-        label: `Programma — ${athlete.full_name || "Atleet"}`,
-      } satisfies CommandProgramRow;
-    }),
-  );
+  // Lightweight program links — /programs?athlete= resolves the current week on navigation.
+  // Avoids N× resolveProgramEntryForAthlete round-trips that blocked the athlete list.
+  const programs: CommandProgramRow[] = athleteRows.map((athlete) => ({
+    athleteId: athlete.id,
+    athleteName: athlete.full_name || "Atleet",
+    href: coachAthleteProgramHref(athlete.id),
+    label: `Programma — ${athlete.full_name || "Atleet"}`,
+  }));
 
   return {
     athletes: athleteRows,
     athleteDetails,
-    programs: programResults.filter((row): row is CommandProgramRow => row !== null),
+    programs,
     athleteProgramHref: null,
   };
 }
