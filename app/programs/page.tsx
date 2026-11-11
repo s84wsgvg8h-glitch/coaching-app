@@ -8,7 +8,6 @@ import { ChevronRight, Dumbbell, Users } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import EmptyState from "@/components/ui/EmptyState";
 import { PageContainer } from "@/components/ui/design-system";
-import { PageLoading } from "@/components/ui/Skeleton";
 import { showAppToast } from "@/lib/appToast";
 import { getCoachLastAthleteId, setCoachLastAthleteId } from "@/lib/coachLastAthlete";
 import {
