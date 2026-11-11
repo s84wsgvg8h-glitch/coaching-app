@@ -2413,13 +2413,16 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-back-btn--icon {
+  --coach-program-back-btn-size: calc(
+    var(--coach-program-header-control-height, 2.75rem) * 0.75
+  );
   box-sizing: border-box;
-  width: var(--coach-program-header-control-height, 2.75rem);
-  height: var(--coach-program-header-control-height, 2.75rem);
-  min-width: var(--coach-program-header-control-height, 2.75rem);
-  min-height: var(--coach-program-header-control-height, 2.75rem);
-  max-width: var(--coach-program-header-control-height, 2.75rem);
-  max-height: var(--coach-program-header-control-height, 2.75rem);
+  width: var(--coach-program-back-btn-size);
+  height: var(--coach-program-back-btn-size);
+  min-width: var(--coach-program-back-btn-size);
+  min-height: var(--coach-program-back-btn-size);
+  max-width: var(--coach-program-back-btn-size);
+  max-height: var(--coach-program-back-btn-size);
   padding: 0;
   flex-shrink: 0;
 }
