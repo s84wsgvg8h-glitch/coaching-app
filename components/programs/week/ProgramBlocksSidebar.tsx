@@ -359,7 +359,7 @@ export default function ProgramBlocksSidebar({
                         </button>
 
                         {isCoachLikeRole(role) && (
-                          <div className="flex gap-1">
+                          <div className="flex gap-1 opacity-0 transition-opacity group-hover/block:opacity-100 focus-within:opacity-100">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -410,9 +410,7 @@ export default function ProgramBlocksSidebar({
                                 e.stopPropagation();
                                 onDeleteBlock(block);
                               }}
-                              className={`${DELETE_X_BTN} opacity-0 group-hover/block:opacity-100 ${
-                                activeBlock ? "opacity-100" : ""
-                              }`}
+                              className={DELETE_X_BTN}
                               title="Verwijderen"
                             >
                               ✕
@@ -450,7 +448,7 @@ export default function ProgramBlocksSidebar({
                                 </button>
 
                                 {isCoachLikeRole(role) && (
-                                  <>
+                                  <div className="flex gap-1 opacity-0 transition-opacity group-hover/week:opacity-100 focus-within:opacity-100">
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -501,14 +499,12 @@ export default function ProgramBlocksSidebar({
                                         e.stopPropagation();
                                         onDeleteWeek(item);
                                       }}
-                                      className={`${DELETE_X_BTN} opacity-0 group-hover/week:opacity-100 ${
-                                        activeWeek ? "opacity-100" : ""
-                                      }`}
+                                      className={DELETE_X_BTN}
                                       title="Verwijderen"
                                     >
                                       ✕
                                     </button>
-                                  </>
+                                  </div>
                                 )}
                               </div>
                             </div>

@@ -468,7 +468,13 @@ export default function ProgramWeekBlocksSidebar({
                               </div>
       
                               {isCoachLikeRole(role) && (
-                                <div className="flex gap-1">
+                                <div
+                                  className={`flex gap-1 transition-opacity ${
+                                    isBlockActionPending(block.id)
+                                      ? "opacity-100"
+                                      : "opacity-0 group-hover/block:opacity-100 focus-within:opacity-100"
+                                  }`}
+                                >
                                   <button
                                     type="button"
                                     onClick={(e) => {
@@ -537,9 +543,7 @@ export default function ProgramWeekBlocksSidebar({
                                       e.stopPropagation();
                                       void deleteBlock(block);
                                     }}
-                                    className={`${DELETE_X_BTN} opacity-0 group-hover/block:opacity-100 disabled:cursor-not-allowed disabled:opacity-60 ${
-                                      activeBlock ? "opacity-100" : ""
-                                    }`}
+                                    className={`${DELETE_X_BTN} disabled:cursor-not-allowed disabled:opacity-60`}
                                     title="Verwijderen"
                                     aria-busy={
                                       isBlockActionPending(block.id) &&
@@ -621,7 +625,7 @@ export default function ProgramWeekBlocksSidebar({
                                         </button>
       
                                         {isCoachLikeRole(role) && (
-                                          <>
+                                          <div className="flex gap-1 opacity-0 transition-opacity group-hover/week:opacity-100 focus-within:opacity-100">
                                             <button
                                               type="button"
                                               onClick={(e) => {
@@ -673,14 +677,12 @@ export default function ProgramWeekBlocksSidebar({
                                                 e.stopPropagation();
                                                 deleteWeek(item);
                                               }}
-                                              className={`${DELETE_X_BTN} opacity-0 group-hover/week:opacity-100 ${
-                                                activeWeek ? "opacity-100" : ""
-                                              }`}
+                                              className={DELETE_X_BTN}
                                               title="Verwijderen"
                                             >
                                               ✕
                                             </button>
-                                          </>
+                                          </div>
                                         )}
                                       </div>
                                     </div>
