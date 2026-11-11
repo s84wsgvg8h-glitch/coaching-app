@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
-import { Columns2, ExternalLink, X } from "lucide-react";
+import { ExternalLink, GitCompareArrows, X } from "lucide-react";
 import CoachProgramWeekMiniPreview from "@/components/programs/coach/CoachProgramWeekMiniPreview";
 import { useProgramWeekCompareSnapshot } from "@/hooks/useProgramWeekCompareSnapshot";
 import type {
@@ -169,13 +169,16 @@ export default function CoachProgramWeekCompareView({
         className="coach-program-header-seg coach-program-compare-trigger"
         aria-expanded={open}
         aria-controls="coach-program-compare-panel"
+        aria-label="Vergelijken"
+        title="Vergelijken"
         onClick={() => setOpen((value) => !value)}
       >
         <span
-          className={`coach-program-header-seg-btn${open ? " is-active" : ""}`}
+          className={`coach-program-header-seg-btn coach-program-compare-trigger-icon${
+            open ? " is-active" : ""
+          }`}
         >
-          <Columns2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-          <span className="coach-program-compare-trigger-label">Compare</span>
+          <GitCompareArrows className="h-4 w-4 shrink-0" aria-hidden="true" />
         </span>
       </button>
 

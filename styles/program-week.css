@@ -6062,14 +6062,10 @@ html:not(.dark) .coach-program-progression-load-athlete {
   color: inherit;
 }
 
-.coach-program-compare-trigger-label {
-  display: none;
-}
-
-@media (min-width: 1280px) {
-  .coach-program-compare-trigger-label {
-    display: inline;
-  }
+.coach-program-compare-trigger-icon {
+  width: calc(var(--coach-program-header-control-height) - 0.4rem);
+  min-width: calc(var(--coach-program-header-control-height) - 0.4rem);
+  padding: 0;
 }
 
 .coach-program-compare-panel {
