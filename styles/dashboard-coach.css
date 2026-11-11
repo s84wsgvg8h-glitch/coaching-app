@@ -38,12 +38,26 @@
     flex-direction: column;
     border-right: 1px solid var(--glass-surface-border);
     background: var(--glass-surface-bg, rgba(255, 255, 255, 0.02));
-    padding: 0.65rem 0.45rem 0.85rem;
+    padding: 0.5rem 0.45rem 0.65rem;
+    height: 100dvh;
     max-height: 100dvh;
-    overflow-x: hidden;
-    overflow-y: auto;
+    overflow: hidden;
     position: relative;
     z-index: 40;
+  }
+
+  .coach-app-sidebar-nav-root {
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .coach-app-sidebar-section {
+    margin-bottom: 0.55rem;
+  }
+
+  .coach-app-sidebar-link {
+    min-height: 34px;
+    padding: 0.28rem 0.5rem;
   }
 
   .coach-app-sidebar--pinned {

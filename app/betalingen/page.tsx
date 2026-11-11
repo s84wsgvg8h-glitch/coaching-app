@@ -655,9 +655,6 @@ function PaymentAthleteRow({
     <tr className="border-b border-app-border/70 last:border-b-0">
       <td className="px-4 py-3 align-middle">
         <p className="font-medium text-app-text">{row.athleteName}</p>
-        {row.athleteEmail && row.athleteEmail !== "—" ? (
-          <p className="mt-0.5 text-[12px] text-app-muted">{row.athleteEmail}</p>
-        ) : null}
       </td>
       <td className="px-4 py-3 align-middle">{formatPaymentPrice(row.monthlyPrice)}</td>
       <td className="px-4 py-3 align-middle">{row.paymentDay ?? "—"}</td>
@@ -710,11 +707,6 @@ function PaymentAthleteCard({
           <p className="truncate text-[14px] font-semibold text-app-text">
             {row.athleteName}
           </p>
-          {row.athleteEmail && row.athleteEmail !== "—" ? (
-            <p className="mt-0.5 truncate text-[12px] text-app-muted">
-              {row.athleteEmail}
-            </p>
-          ) : null}
         </div>
         <SubscriptionStatus subscription={row.subscription} />
       </div>
