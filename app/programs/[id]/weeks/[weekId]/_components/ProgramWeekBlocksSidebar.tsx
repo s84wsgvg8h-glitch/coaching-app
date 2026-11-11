@@ -10,7 +10,6 @@ import ProgramWeekAddMenu from "./ProgramWeekAddMenu";
 import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { getProgramBlockOverlapMap } from "@/lib/programBlockOverlap";
-import { DELETE_X_BTN } from "@/lib/programWeek/constants";
 import { formatDate } from "@/lib/programWeek/dateFormatting";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
@@ -435,8 +434,8 @@ export default function ProgramWeekBlocksSidebar({
                                 : "bg-gray-50 text-black"
                             }`}
                           >
-                            <div className="flex items-start justify-between gap-2">
-                              <div className="relative min-w-0 flex-1">
+                            <div className="relative">
+                              <div className="relative min-w-0">
                                 <button
                                   type="button"
                                   onClick={() =>
@@ -445,7 +444,7 @@ export default function ProgramWeekBlocksSidebar({
                                       [block.id]: !current[block.id],
                                     }))
                                   }
-                                  className="w-full text-left"
+                                  className="w-full text-center"
                                 >
                                   <p
                                     className={`mb-1 text-[10px] ${
@@ -469,10 +468,10 @@ export default function ProgramWeekBlocksSidebar({
       
                               {isCoachLikeRole(role) && (
                                 <div
-                                  className={`flex gap-1 transition-opacity ${
+                                  className={`absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 transition-opacity ${
                                     isBlockActionPending(block.id)
-                                      ? "opacity-100"
-                                      : "opacity-0 group-hover/block:opacity-100 focus-within:opacity-100"
+                                      ? "pointer-events-auto opacity-100"
+                                      : "pointer-events-none opacity-0 group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
                                   }`}
                                 >
                                   <button
@@ -543,7 +542,7 @@ export default function ProgramWeekBlocksSidebar({
                                       e.stopPropagation();
                                       void deleteBlock(block);
                                     }}
-                                    className={`${DELETE_X_BTN} disabled:cursor-not-allowed disabled:opacity-60`}
+                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
                                     title="Verwijderen"
                                     aria-busy={
                                       isBlockActionPending(block.id) &&
@@ -613,19 +612,19 @@ export default function ProgramWeekBlocksSidebar({
                                             : "bg-gray-100 text-black"
                                       } ${isDragging ? "coach-program-sidebar-week--dragging" : ""}`}
                                     >
-                                    <div className="flex items-center gap-2 p-2">
+                                    <div className="relative flex items-center p-2">
                                         <button
                                           type="button"
                                           onClick={() =>
                                             goToProgram(block.id, item.id)
                                           }
-                                          className="flex-1 text-left text-sm font-semibold"
+                                          className="w-full text-center text-sm font-semibold"
                                         >
                                           {item.title}
                                         </button>
       
                                         {isCoachLikeRole(role) && (
-                                          <div className="flex gap-1 opacity-0 transition-opacity group-hover/week:opacity-100 focus-within:opacity-100">
+                                          <div className="pointer-events-none absolute right-2 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/week:pointer-events-auto group-hover/week:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
                                             <button
                                               type="button"
                                               onClick={(e) => {
@@ -677,7 +676,7 @@ export default function ProgramWeekBlocksSidebar({
                                                 e.stopPropagation();
                                                 deleteWeek(item);
                                               }}
-                                              className={DELETE_X_BTN}
+                                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
                                               title="Verwijderen"
                                             >
                                               ✕

@@ -6,7 +6,6 @@ import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
 import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { formatDate } from "@/lib/programWeek/dateFormatting";
-import { DELETE_X_BTN } from "@/lib/programWeek/constants";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
 import type { ProgramMacrocycle } from "@/lib/programMacrocycles";
 
@@ -339,11 +338,11 @@ export default function ProgramBlocksSidebar({
                           : "bg-app-surface-muted text-app-text"
                       }`}
                     >
-                      <div className="flex items-start justify-between gap-2">
+                      <div className="relative">
                         <button
                           type="button"
                           onClick={() => onToggleBlockOpen(block.id)}
-                          className="flex-1 text-left"
+                          className="w-full text-center"
                         >
                           <p
                             className={`text-[10px] mb-1 ${
@@ -359,7 +358,7 @@ export default function ProgramBlocksSidebar({
                         </button>
 
                         {isCoachLikeRole(role) && (
-                          <div className="flex gap-1 opacity-0 transition-opacity group-hover/block:opacity-100 focus-within:opacity-100">
+                          <div className="pointer-events-none absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
                             <button
                               type="button"
                               onClick={(e) => {
@@ -410,7 +409,7 @@ export default function ProgramBlocksSidebar({
                                 e.stopPropagation();
                                 onDeleteBlock(block);
                               }}
-                              className={DELETE_X_BTN}
+                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
                               title="Verwijderen"
                             >
                               ✕
@@ -438,17 +437,17 @@ export default function ProgramBlocksSidebar({
                                     : "bg-app-surface-hover text-app-text"
                               }`}
                             >
-                              <div className="flex items-center gap-2 p-2">
+                              <div className="relative flex items-center p-2">
                                 <button
                                   type="button"
                                   onClick={() => onGoToProgram(block.id, item.id)}
-                                  className="flex-1 text-left text-sm font-semibold"
+                                  className="w-full text-center text-sm font-semibold"
                                 >
                                   {item.title}
                                 </button>
 
                                 {isCoachLikeRole(role) && (
-                                  <div className="flex gap-1 opacity-0 transition-opacity group-hover/week:opacity-100 focus-within:opacity-100">
+                                  <div className="pointer-events-none absolute right-2 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/week:pointer-events-auto group-hover/week:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
                                     <button
                                       type="button"
                                       onClick={(e) => {
@@ -499,7 +498,7 @@ export default function ProgramBlocksSidebar({
                                         e.stopPropagation();
                                         onDeleteWeek(item);
                                       }}
-                                      className={DELETE_X_BTN}
+                                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
                                       title="Verwijderen"
                                     >
                                       ✕
