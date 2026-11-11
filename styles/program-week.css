@@ -394,20 +394,16 @@ html.dark .program-week-shell select {
     box-shadow 0.2s ease;
 }
 
-.program-nav-sidebar:hover,
-.program-nav-sidebar.is-pinned {
-  width: 252px;
-  min-width: 252px;
-}
-
 .program-nav-sidebar:hover .program-nav-sidebar-rail,
 .program-nav-sidebar.is-pinned .program-nav-sidebar-rail {
-  display: none;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .program-nav-sidebar:hover .program-nav-sidebar-flyout,
 .program-nav-sidebar.is-pinned .program-nav-sidebar-flyout {
   left: 0;
+  z-index: 50;
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
