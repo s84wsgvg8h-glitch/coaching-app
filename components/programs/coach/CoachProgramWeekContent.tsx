@@ -869,7 +869,7 @@ export default function CoachProgramWeekContent({
                                         onClick={() =>
                                           deleteExercise(exercise.id)
                                         }
-                                        className={`${COACH_CARD_DISMISS_BTN} opacity-0 group-hover/exercise:opacity-100`}
+                                        className={`${COACH_CARD_DISMISS_BTN} coach-program-exercise-dismiss opacity-0 group-hover/exercise:opacity-100`}
                                       >
                                         ✕
                                       </button>

@@ -2564,6 +2564,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.06);
   border-radius: var(--coach-program-radius);
   background: rgba(255, 255, 255, 0.025);
@@ -2768,6 +2769,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-shell .coach-exercise-block {
   position: relative;
+  overflow: visible;
   border: 1px solid rgba(255, 255, 255, 0.07);
   border-radius: var(--coach-program-radius);
   padding: 10px 10px 8px 14px;
@@ -2925,6 +2927,12 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   top: 8px;
   right: 8px;
   z-index: 10;
+}
+
+.coach-program-exercise-dismiss {
+  top: -0.5rem;
+  right: -0.5rem;
+  z-index: 20;
 }
 
 .coach-program-inline-notes {
