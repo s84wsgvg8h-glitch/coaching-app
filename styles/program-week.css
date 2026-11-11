@@ -2945,13 +2945,17 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-inline-notes {
   position: relative;
+  display: flex;
+  align-items: center;
   border: 1px solid rgba(245, 158, 11, 0.22);
   border-radius: var(--coach-program-radius);
   background: rgba(245, 158, 11, 0.08);
-  padding: 6px 8px;
+  padding: 8px 10px;
+  min-height: 2.25rem;
 }
 
 .coach-program-inline-notes:has(.coach-program-panel-label) {
+  align-items: stretch;
   padding-top: 26px;
 }
 
@@ -3070,13 +3074,14 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-inline-notes-input {
   width: 100%;
-  min-height: 28px;
+  min-height: 0;
   resize: none;
   border: none !important;
   border-radius: 0 !important;
   background: transparent !important;
   box-shadow: none !important;
-  padding: 2px 4px;
+  padding: 0;
+  margin: 0;
   font-size: 12px;
   line-height: 1.35;
   color: var(--app-text);
@@ -3099,6 +3104,8 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   background: transparent !important;
   border-color: transparent !important;
   box-shadow: none !important;
+  padding: 0 !important;
+  min-height: 0 !important;
 }
 
 .coach-program-exercise-fields {

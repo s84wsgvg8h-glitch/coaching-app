@@ -893,9 +893,27 @@
   }
 
   .dashboard-cockpit-main--search-only .dashboard-cockpit-col--center {
-    width: min(100%, 44rem);
-    max-width: 44rem;
+    width: min(100%, 62rem);
+    max-width: 62rem;
     padding-top: clamp(4.5rem, 16vh, 9rem);
+  }
+
+  .dashboard-cockpit-search-row {
+    display: flex;
+    width: 100%;
+    min-width: 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-cockpit-search-row {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: 1rem;
+    }
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
@@ -904,8 +922,42 @@
     width: min(100%, var(--dashboard-cockpit-search-width));
     max-width: var(--dashboard-cockpit-search-width);
     margin-top: 0;
-    margin-bottom: 0.75rem;
+    margin-bottom: 0;
     align-self: center;
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
+      align-self: flex-start;
+      flex: 1 1 auto;
+    }
+  }
+
+  .dashboard-next-week-programs-widget {
+    flex: 0 0 auto;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+    padding: 0.85rem 0.95rem;
+  }
+
+  @media (min-width: 1024px) {
+    .dashboard-next-week-programs-widget {
+      width: 17.5rem;
+      max-width: 17.5rem;
+    }
+  }
+
+  .dashboard-next-week-programs-icon {
+    display: flex;
+    height: 2rem;
+    width: 2rem;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.65rem;
+    background: rgba(245, 158, 11, 0.12);
+    color: #fbbf24;
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {

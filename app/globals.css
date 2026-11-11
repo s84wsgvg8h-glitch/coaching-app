@@ -1676,9 +1676,9 @@ html.dark .shadow-2xl {
   -webkit-backdrop-filter: blur(14px);
 }
 
-html.dark input:not([type="checkbox"]):not([type="radio"]),
+html.dark input:not([type="checkbox"]):not([type="radio"]):not(.app-search-input):not(.coach-program-inline-notes-input),
 html.dark select,
-html.dark textarea {
+html.dark textarea:not(.coach-program-inline-notes-input) {
   background: var(--glass-input-bg) !important;
   color: var(--app-text) !important;
   border: 1px solid var(--glass-input-border) !important;
@@ -1757,9 +1757,9 @@ html.dark textarea::placeholder {
 }
 
 .ui-input,
-input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(.app-search-input):not(.coach-program-inline-notes-input),
 select,
-textarea {
+textarea:not(.coach-program-inline-notes-input) {
   border-radius: var(--radius-md);
   border: 1px solid var(--glass-input-border);
   background: var(--glass-input-bg);
@@ -1769,9 +1769,9 @@ textarea {
 }
 
 .ui-input:focus,
-input:not([type="checkbox"]):not([type="radio"]):focus,
+input:not([type="checkbox"]):not([type="radio"]):not(.app-search-input):not(.coach-program-inline-notes-input):focus,
 select:focus,
-textarea:focus {
+textarea:not(.coach-program-inline-notes-input):focus {
   outline: none;
   border-color: var(--app-accent);
   box-shadow: 0 0 0 3px var(--app-accent-muted);

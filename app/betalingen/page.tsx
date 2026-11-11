@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, Loader2 } from "lucide-react";
@@ -655,16 +654,7 @@ function PaymentAthleteRow({
   return (
     <tr className="border-b border-app-border/70 last:border-b-0">
       <td className="px-4 py-3 align-middle">
-        {row.athleteId ? (
-          <Link
-            href={`/athletes/${row.athleteId}`}
-            className="font-medium text-app-text hover:text-brand-purple"
-          >
-            {row.athleteName}
-          </Link>
-        ) : (
-          <p className="font-medium text-app-text">{row.athleteName}</p>
-        )}
+        <p className="font-medium text-app-text">{row.athleteName}</p>
         {row.athleteEmail && row.athleteEmail !== "—" ? (
           <p className="mt-0.5 text-[12px] text-app-muted">{row.athleteEmail}</p>
         ) : null}
@@ -717,18 +707,9 @@ function PaymentAthleteCard({
     <article className="rounded-2xl border border-app-border bg-app-surface-muted/40 p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          {row.athleteId ? (
-            <Link
-              href={`/athletes/${row.athleteId}`}
-              className="block truncate text-[14px] font-semibold text-app-text"
-            >
-              {row.athleteName}
-            </Link>
-          ) : (
-            <p className="truncate text-[14px] font-semibold text-app-text">
-              {row.athleteName}
-            </p>
-          )}
+          <p className="truncate text-[14px] font-semibold text-app-text">
+            {row.athleteName}
+          </p>
           {row.athleteEmail && row.athleteEmail !== "—" ? (
             <p className="mt-0.5 truncate text-[12px] text-app-muted">
               {row.athleteEmail}

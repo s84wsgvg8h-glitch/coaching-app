@@ -25,6 +25,8 @@ export const queryKeys = {
     ["team-engagement", coachId, role] as const,
   teamFillScores: (coachId: string, isAdmin: boolean) =>
     ["team-fill-scores", coachId, isAdmin] as const,
+  nextWeekProgramsNeeded: (coachId: string, isAdmin: boolean) =>
+    ["next-week-programs-needed", coachId, isAdmin] as const,
   coachProgramAthletes: (coachId: string) =>
     ["coach-program-athletes", coachId] as const,
 } as const;

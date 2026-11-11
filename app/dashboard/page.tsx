@@ -28,6 +28,10 @@ const CoachAttentionWidget = dynamic(
   () => import("@/components/dashboard/CoachAttentionWidget"),
   { loading: widgetFallback, ssr: false },
 );
+const CoachNextWeekProgramsWidget = dynamic(
+  () => import("@/components/dashboard/CoachNextWeekProgramsWidget"),
+  { loading: widgetFallback, ssr: false },
+);
 const ClientNotesWidget = dynamic(
   () => import("@/components/dashboard/ClientNotesWidget"),
   { loading: widgetFallback, ssr: false },
@@ -149,7 +153,10 @@ export default function DashboardPage() {
 
       <div className="dashboard-cockpit-main dashboard-cockpit-main--search-only">
         <div className="dashboard-cockpit-col dashboard-cockpit-col--center">
-          <CoachMobileDashboardSearch variant="embedded" />
+          <div className="dashboard-cockpit-search-row">
+            <CoachMobileDashboardSearch variant="embedded" />
+            <CoachNextWeekProgramsWidget coachId={userId} role={role} />
+          </div>
           <div className="dashboard-cockpit-panel dashboard-cockpit-panel--alerts">
             <CoachAttentionWidget coachId={userId} role={role} compact />
             <CoachAlertsWidget coachId={userId} role={role} />
