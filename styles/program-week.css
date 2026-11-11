@@ -5549,7 +5549,7 @@ html:not(.dark) .coach-program-header-seg,
 html:not(.dark) .coach-program-editor-view-toggle {
   --raw-border: rgba(15, 23, 42, 0.1);
   --raw-toggle-bg: #f1f5f9;
-  --raw-toggle-active-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+  --raw-toggle-active-bg: linear-gradient(135deg, #2563eb, #1e40af);
   --raw-toggle-active-text: #ffffff;
 }
 
