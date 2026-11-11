@@ -16,14 +16,6 @@ const widgetFallback = () => (
   <div className="min-h-[8rem] animate-pulse rounded-2xl bg-app-surface" />
 );
 
-const TodayAgendaTimeline = dynamic(
-  () => import("@/components/dashboard/TodayAgendaTimeline"),
-  { loading: widgetFallback, ssr: false },
-);
-const TodaysFocusWidget = dynamic(
-  () => import("@/components/dashboard/TodaysFocusWidget"),
-  { loading: widgetFallback, ssr: false },
-);
 const CoachAiCopilotWidget = dynamic(
   () => import("@/components/dashboard/CoachAiCopilotWidget"),
   { loading: widgetFallback, ssr: false },
@@ -35,10 +27,6 @@ const CoachAlertsWidget = dynamic(
 const CoachAttentionWidget = dynamic(
   () => import("@/components/dashboard/CoachAttentionWidget"),
   { loading: widgetFallback, ssr: false },
-);
-const CoachMobileAgendaSheet = dynamic(
-  () => import("@/components/dashboard/CoachMobileAgendaSheet"),
-  { loading: () => null, ssr: false },
 );
 const ClientNotesWidget = dynamic(
   () => import("@/components/dashboard/ClientNotesWidget"),
@@ -159,21 +147,13 @@ export default function DashboardPage() {
         athleteCount={coachMetrics.athleteCount}
       />
 
-      <div className="dashboard-cockpit-main">
-        <div className="dashboard-cockpit-col dashboard-cockpit-col--focus">
-          <TodaysFocusWidget coachId={userId} role={role} athletes={athletes} />
-        </div>
-
+      <div className="dashboard-cockpit-main dashboard-cockpit-main--search-only">
         <div className="dashboard-cockpit-col dashboard-cockpit-col--center">
           <CoachMobileDashboardSearch variant="embedded" />
           <div className="dashboard-cockpit-panel dashboard-cockpit-panel--alerts">
             <CoachAttentionWidget coachId={userId} role={role} compact />
             <CoachAlertsWidget coachId={userId} role={role} />
           </div>
-        </div>
-
-        <div className="dashboard-cockpit-col dashboard-cockpit-col--agenda">
-          <TodayAgendaTimeline coachId={userId} variant="rail" />
         </div>
       </div>
 
@@ -196,8 +176,6 @@ export default function DashboardPage() {
           </div>
         </div>
       </div>
-
-      <CoachMobileAgendaSheet coachId={userId} />
     </div>
     </div>
   ) : null;

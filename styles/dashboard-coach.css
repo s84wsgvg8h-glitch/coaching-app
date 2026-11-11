@@ -816,6 +816,11 @@
     overflow: hidden;
   }
 
+  .dashboard-cockpit-main--search-only {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+  }
+
   .dashboard-cockpit-col {
     display: flex;
     min-height: 0;
@@ -882,13 +887,19 @@
     align-items: center;
   }
 
+  .dashboard-cockpit-main--search-only .dashboard-cockpit-col--center {
+    width: min(100%, 44rem);
+    max-width: 44rem;
+    padding-top: clamp(4.5rem, 16vh, 9rem);
+  }
+
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
     flex-shrink: 0;
     min-width: 0;
     width: min(100%, var(--dashboard-cockpit-search-width));
     max-width: var(--dashboard-cockpit-search-width);
-    margin-top: 1.15rem;
-    margin-bottom: 0.35rem;
+    margin-top: 0;
+    margin-bottom: 0.75rem;
     align-self: center;
   }
 

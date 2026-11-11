@@ -2145,6 +2145,8 @@ html:not(.dark) .coach-apply-all-weeks-badge {
   padding: 0 1.65rem 0 0.75rem;
   pointer-events: none;
   overflow: hidden;
+  color: var(--app-text);
+  background: transparent;
 }
 
 .coach-program-athlete-switcher-label {
@@ -2153,6 +2155,7 @@ html:not(.dark) .coach-apply-all-weeks-badge {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
+  color: var(--app-text);
 }
 
 .coach-program-athlete-switcher-chevron {
@@ -2163,11 +2166,8 @@ html:not(.dark) .coach-apply-all-weeks-badge {
   height: 0.85rem;
   transform: translateY(-50%);
   flex-shrink: 0;
+  color: var(--app-text-muted);
   opacity: 0.85;
-}
-
-.coach-program-athlete-switcher-face.is-active .coach-program-athlete-switcher-chevron {
-  color: #ffffff;
 }
 
 .coach-program-athlete-switcher-select {
