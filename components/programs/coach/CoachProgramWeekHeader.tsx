@@ -301,7 +301,7 @@ export default function CoachProgramWeekHeader({
               aria-label="Home"
               title="Home"
             >
-              <Home className="h-3.5 w-3.5" aria-hidden="true" />
+              <Home className="h-4 w-4" aria-hidden="true" />
             </Link>
 
             <h1 className="coach-program-breadcrumb min-w-0">

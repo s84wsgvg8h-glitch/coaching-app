@@ -1090,7 +1090,6 @@ export default function CoachProgramWeekContent({
                                         }}
                                         disabled={!isCoach}
                                         className="coach-program-field"
-                                        placeholder="8 of 80%"
                                       />
                                     </div>
 
@@ -1128,7 +1127,6 @@ export default function CoachProgramWeekContent({
                                         }}
                                         disabled={!isCoach}
                                         className="coach-program-field"
-                                        placeholder="kg"
                                       />
                                     </div>
                                   </div>

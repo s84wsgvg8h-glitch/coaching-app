@@ -2414,7 +2414,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 
 .coach-program-back-btn--icon {
   --coach-program-back-btn-size: calc(
-    var(--coach-program-header-control-height, 2.75rem) * 0.75
+    var(--coach-program-header-control-height, 2.75rem) * 0.875
   );
   box-sizing: border-box;
   width: var(--coach-program-back-btn-size);
