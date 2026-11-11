@@ -108,22 +108,30 @@ function EditorViewToggle({
   editorView: EditorView;
   onEditorViewChange: (view: EditorView) => void;
 }) {
+  const activeLabel =
+    EDITOR_VIEW_OPTIONS.find((option) => option.value === editorView)?.label ||
+    "Card View";
+
   return (
     <div
-      className="coach-program-editor-view-toggle hidden lg:inline-flex"
+      className="coach-program-editor-view-toggle coach-program-editor-view-toggle--hover-expand hidden lg:inline-flex"
       role="group"
-      aria-label="Editorweergave"
+      aria-label={`Editorweergave: ${activeLabel}`}
     >
-      {EDITOR_VIEW_OPTIONS.map((option) => (
-        <button
-          key={option.value}
-          type="button"
-          className={editorView === option.value ? "is-active" : ""}
-          onClick={() => onEditorViewChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
+      {EDITOR_VIEW_OPTIONS.map((option) => {
+        const isActive = editorView === option.value;
+        return (
+          <button
+            key={option.value}
+            type="button"
+            className={isActive ? "is-active" : ""}
+            aria-pressed={isActive}
+            onClick={() => onEditorViewChange(option.value)}
+          >
+            {option.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

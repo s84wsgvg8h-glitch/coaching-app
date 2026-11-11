@@ -5370,6 +5370,42 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
 }
 
+/* Collapsed by default: only the active view label shows. Hover/focus expands. */
+.coach-program-editor-view-toggle--hover-expand {
+  overflow: hidden;
+}
+
+.coach-program-editor-view-toggle--hover-expand button:not(.is-active) {
+  max-width: 0;
+  min-width: 0;
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+  pointer-events: none;
+  transition:
+    max-width 0.22s ease,
+    padding 0.22s ease,
+    opacity 0.16s ease,
+    background 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.coach-program-editor-view-toggle--hover-expand:hover button:not(.is-active),
+.coach-program-editor-view-toggle--hover-expand:focus-within button:not(.is-active) {
+  max-width: 8.5rem;
+  padding-left: 0.85rem;
+  padding-right: 0.85rem;
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.coach-program-editor-view-toggle--hover-expand button.is-active {
+  flex-shrink: 0;
+}
+
 .coach-program-editor-view-select {
   position: relative;
   display: inline-flex;
