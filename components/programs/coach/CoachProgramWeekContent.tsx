@@ -664,7 +664,7 @@ export default function CoachProgramWeekContent({
                                   e.stopPropagation();
                                   deleteDayField(day.id, "notes");
                                 }}
-                                className={`${COACH_CARD_DISMISS_BTN} opacity-70 hover:opacity-100`}
+                                className={`${COACH_CARD_DISMISS_BTN} opacity-0 group-hover/daynote:opacity-100`}
                                 aria-label="Notes verwijderen"
                               >
                                 ✕
@@ -698,6 +698,7 @@ export default function CoachProgramWeekContent({
                                 }
                               }}
                               placeholder="Schrijf notes..."
+                              rows={1}
                               className="coach-program-inline-notes-input"
                             />
                           </div>
@@ -1144,7 +1145,7 @@ export default function CoachProgramWeekContent({
                                               exercise.id,
                                             );
                                           }}
-                                          className={`${COACH_CARD_DISMISS_BTN} opacity-70 hover:opacity-100`}
+                                          className={`${COACH_CARD_DISMISS_BTN} opacity-0 group-hover/exnote:opacity-100`}
                                           aria-label="Notes verwijderen"
                                         >
                                           ✕
@@ -1161,6 +1162,7 @@ export default function CoachProgramWeekContent({
                                             e.target.value,
                                           )
                                         }
+                                        rows={1}
                                         onBlur={(e) => {
                                           void saveExerciseField(
                                             exercise.id,
