@@ -1381,63 +1381,6 @@ export default function CoachProgramWeekContent({
                   );
                 })}
 
-                {isCoach && !isCreatingDay && (
-                  <div className="coach-program-add-day-column">
-                    <button
-                      type="button"
-                      onClick={() => setIsCreatingDay(true)}
-                      className="coach-program-add-day"
-                    >
-                      <div className="coach-program-add-day-icon">+</div>
-                      <p className="coach-program-add-day-title">Nieuwe dag toevoegen</p>
-                      <p className="coach-program-add-day-subtitle">
-                        Plan een nieuwe trainingsdag in deze week.
-                      </p>
-                    </button>
-                  </div>
-                )}
-
-                {isCoach && isCreatingDay && (
-                  <div className="coach-program-add-day-column">
-                    <div className="coach-program-add-day-form">
-                    <h2>Nieuwe dag</h2>
-
-                    <input
-                      ref={newDayInputRef}
-                      value={newDayTitle}
-                      onChange={(e) => setNewDayTitle(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter") {
-                          createDay(days.length + 1);
-                        }
-                      }}
-                      placeholder="Bijvoorbeeld: Borst training"
-                      className="coach-program-inline-form-input coach-program-inline-form-input-name"
-                    />
-
-                    <div className="coach-program-inline-form-actions">
-                      <button
-                        type="button"
-                        onClick={() => createDay(days.length + 1)}
-                        className="app-btn-primary flex-1"
-                      >
-                        Opslaan
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setIsCreatingDay(false);
-                          setNewDayTitle("");
-                        }}
-                        className="app-btn-secondary flex-1"
-                      >
-                        Annuleer
-                      </button>
-                    </div>
-                    </div>
-                  </div>
-                )}
               </div>
 
       {!embeddedInChat && (

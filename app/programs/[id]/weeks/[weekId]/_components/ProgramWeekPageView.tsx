@@ -21,6 +21,10 @@ import { isDayPast, hasIncompleteSetField } from "@/lib/programDayValidation";
 import { isAthleteExtraExercise } from "@/lib/athleteExtraExercise";
 import { isAthleteChoiceExercise } from "@/lib/athleteExerciseVariation";
 import { normalizeExerciseName } from "@/lib/programWeek/exerciseUtils";
+import {
+  isApplyAllWeeksActive,
+  setApplyAllWeeks,
+} from "@/lib/programWeek/applyExerciseAcrossBlock";
 import { useMobilePullToRefresh } from "@/hooks/useMobilePullToRefresh";
 import type { ProgramWeekPageViewProps } from "./programWeekPageViewProps";
 
@@ -280,6 +284,17 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       }
     : {};
 
+  const applyAllWeeksEnabled =
+    isCoachView && (editorView === "card" || editorView === "raw");
+  const applyAllWeeksBlockId = applyAllWeeksEnabled ? blockId : "";
+
+  useEffect(() => {
+    if (!isCoachView || !blockId) return;
+    if (applyAllWeeksEnabled) return;
+    if (!isApplyAllWeeksActive(blockId)) return;
+    setApplyAllWeeks(blockId, false);
+  }, [applyAllWeeksEnabled, blockId, isCoachView]);
+
   const coachAlternateHeader = !embeddedInChat ? (
     <CoachProgramWeekHeader
       blockTitle={currentBlock?.title || "Block"}
@@ -291,7 +306,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       showCompareView={isCoachView}
       userId={userId}
       role={role}
-      applyAllWeeksBlockId={isCoachView ? blockId : ""}
+      applyAllWeeksBlockId={applyAllWeeksBlockId}
       compareCurrentDays={days}
       compareCurrentExercisesByDay={exercisesByDay}
       {...coachHeaderAthleteProps}
@@ -576,7 +591,7 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
               showEditorViewToggle={isCoachLikeRole(role)}
               {...coachHeaderAthleteProps}
               {...coachCompareProps}
-              applyAllWeeksBlockId={isCoachView ? blockId : ""}
+              applyAllWeeksBlockId={applyAllWeeksBlockId}
               days={days}
               exercisesByDay={exercisesByDay}
               creatingExerciseDayId={creatingExerciseDayId}

@@ -73,7 +73,7 @@ export function ApplyAllWeeksBadge({ blockId }: { blockId: string }) {
 
   return (
     <div className="coach-apply-all-weeks-badge" role="status">
-      Alle weken aangepast
+      Alle weken worden aangepast
     </div>
   );
 }

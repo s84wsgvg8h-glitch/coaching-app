@@ -1768,9 +1768,10 @@ html.dark .program-week-shell select {
   }
 
   .coach-program-field {
-    height: 13px;
-    font-size: 6px;
-    border-radius: 4px;
+    height: 36px;
+    min-height: 36px;
+    font-size: 12px;
+    border-radius: var(--coach-program-radius);
   }
 
   .coach-program-exercise-head {
@@ -3091,14 +3092,15 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-field {
-  height: 32px;
+  height: 40px;
+  min-height: 40px;
   width: 100%;
   border-radius: var(--coach-program-radius);
   border: 1px solid rgba(255, 255, 255, 0.08);
   background: rgba(0, 0, 0, 0.32);
   padding: 0 4px;
   text-align: center;
-  font-size: 12px;
+  font-size: 13px;
   font-weight: 600;
   color: var(--app-text);
   outline: none;
@@ -3502,7 +3504,8 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   }
 
   .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-field {
-    height: 13px;
+    height: 40px;
+    min-height: 40px;
   }
 
   .coach-program-shell:not(.coach-program-shell--raw-view) .coach-program-icon-btn {
