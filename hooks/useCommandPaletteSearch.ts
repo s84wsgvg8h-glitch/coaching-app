@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
+import { isCoachLikeRole } from "@/lib/authRoles";
 import {
   buildCommandItems,
   filterCommandItems,
@@ -10,6 +12,7 @@ import {
   type CommandItem,
   type CommandProgramRow,
 } from "@/lib/commandPaletteSearch";
+import { prefetchCoachAthleteProgramEntries } from "@/hooks/useAthleteProgramEntry";
 
 type UseCommandPaletteSearchOptions = {
   enabled?: boolean;
@@ -19,6 +22,7 @@ export function useCommandPaletteSearch({
   enabled = true,
 }: UseCommandPaletteSearchOptions = {}) {
   const { role, userId } = useAuth();
+  const queryClient = useQueryClient();
   const [athletes, setAthletes] = useState<
     Array<{ id: string; full_name: string | null }>
   >([]);
@@ -47,12 +51,21 @@ export function useCommandPaletteSearch({
       setPrograms(data.programs);
       setAthleteProgramHref(data.athleteProgramHref);
       setLoading(false);
+
+      if (isCoachLikeRole(role) && data.athletes.length > 0) {
+        void prefetchCoachAthleteProgramEntries(
+          queryClient,
+          userId,
+          data.athletes.map((athlete) => athlete.id),
+          data.athletes.length,
+        );
+      }
     });
 
     return () => {
       cancelled = true;
     };
-  }, [enabled, role, userId]);
+  }, [enabled, queryClient, role, userId]);
 
   const items = useMemo(
     () => buildCommandItems(role, athletes, programs, athleteProgramHref),

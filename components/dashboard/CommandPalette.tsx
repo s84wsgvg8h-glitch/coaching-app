@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import SearchInput from "@/components/ui/SearchInput";
 import { useRouter } from "next/navigation";
+import { useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/components/AuthProvider";
 import { trackEvent } from "@/lib/analytics";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
@@ -11,6 +12,12 @@ import {
   useFilteredCommandItems,
 } from "@/hooks/useCommandPaletteSearch";
 import type { CommandItem } from "@/lib/commandPaletteSearch";
+import {
+  programAthleteIdFromCommandItem,
+  resolveCoachAthleteProgramHref,
+} from "@/hooks/useAthleteProgramEntry";
+import { setCoachLastAthleteId } from "@/lib/coachLastAthlete";
+import { prefetchProgramWeekFromHref } from "@/lib/prefetchProgramWeekFromHref";
 
 type CommandPaletteProps = {
   open: boolean;
@@ -19,7 +26,8 @@ type CommandPaletteProps = {
 
 export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const router = useRouter();
-  const { role } = useAuth();
+  const queryClient = useQueryClient();
+  const { role, userId } = useAuth();
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const { items } = useCommandPaletteSearch({ enabled: open });
@@ -40,9 +48,32 @@ export default function CommandPalette({ open, onClose }: CommandPaletteProps) {
   const run = useCallback(
     (item: CommandItem) => {
       onClose();
+
+      const programAthleteId = programAthleteIdFromCommandItem(item);
+      if (programAthleteId && userId) {
+        void (async () => {
+          const href = await resolveCoachAthleteProgramHref(
+            queryClient,
+            programAthleteId,
+            userId,
+          );
+          if (!href) {
+            if (item.href) router.push(item.href);
+            return;
+          }
+          setCoachLastAthleteId(programAthleteId);
+          void prefetchProgramWeekFromHref(queryClient, href, {
+            userId,
+            role: role || "coach",
+          });
+          router.push(href);
+        })();
+        return;
+      }
+
       if (item.href) router.push(item.href);
     },
-    [onClose, router],
+    [onClose, queryClient, role, router, userId],
   );
 
   useEffect(() => {

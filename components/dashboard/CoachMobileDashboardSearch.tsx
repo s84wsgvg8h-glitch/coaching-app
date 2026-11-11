@@ -45,7 +45,15 @@ import {
 } from "@/lib/athletePayments";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 import { parseOptionalTextFieldInput } from "@/lib/optionalFieldDash";
+import { setCoachLastAthleteId } from "@/lib/coachLastAthlete";
 import { supabase } from "@/lib/supabaseClient";
+import { useAuth } from "@/components/AuthProvider";
+import { useQueryClient } from "@tanstack/react-query";
+import {
+  programAthleteIdFromCommandItem,
+  resolveCoachAthleteProgramHref,
+} from "@/hooks/useAthleteProgramEntry";
+import { prefetchProgramWeekFromHref } from "@/lib/prefetchProgramWeekFromHref";
 
 const DROPDOWN_GAP_PX = 6;
 const ATHLETE_PICKER_DROPDOWN_WIDTH_PX = 220;
@@ -106,6 +114,8 @@ export default function CoachMobileDashboardSearch({
 }) {
   const isEmbedded = variant === "embedded";
   const router = useRouter();
+  const queryClient = useQueryClient();
+  const { userId, role } = useAuth();
   const inputRef = useRef<HTMLInputElement>(null);
   const inputWrapRef = useRef<HTMLDivElement>(null);
   const dropdownRef = useRef<HTMLUListElement>(null);
@@ -299,9 +309,32 @@ export default function CoachMobileDashboardSearch({
       setSelected(0);
       setInfoPopup(null);
       setInfoEditing(false);
+
+      const programAthleteId = programAthleteIdFromCommandItem(item);
+      if (programAthleteId && userId) {
+        void (async () => {
+          const href = await resolveCoachAthleteProgramHref(
+            queryClient,
+            programAthleteId,
+            userId,
+          );
+          if (!href) {
+            if (item.href) router.push(item.href);
+            return;
+          }
+          setCoachLastAthleteId(programAthleteId);
+          void prefetchProgramWeekFromHref(queryClient, href, {
+            userId,
+            role: role || "coach",
+          });
+          router.push(href);
+        })();
+        return;
+      }
+
       if (item.href) router.push(item.href);
     },
-    [router],
+    [queryClient, role, router, userId],
   );
 
   const showAthleteInfo = useCallback(

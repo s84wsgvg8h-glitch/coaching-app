@@ -390,12 +390,13 @@ function ProgramsRedirectContent() {
     );
   }
 
+  // Keep the current shell visually quiet while we resolve the deep week URL.
   return (
-    <AppShell>
-      <PageContainer size="md">
-        <PageLoading label="Programma openen…" />
-      </PageContainer>
-    </AppShell>
+    <div
+      className="min-h-dvh bg-app-bg"
+      aria-busy="true"
+      aria-label="Programma openen"
+    />
   );
 }
 
@@ -403,11 +404,11 @@ export default function ProgramsPage() {
   return (
     <Suspense
       fallback={
-        <AppShell>
-          <PageContainer size="md">
-            <PageLoading label="Programma openen…" />
-          </PageContainer>
-        </AppShell>
+        <div
+          className="min-h-dvh bg-app-bg"
+          aria-busy="true"
+          aria-label="Programma openen"
+        />
       }
     >
       <ProgramsRedirectContent />

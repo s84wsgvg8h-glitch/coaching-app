@@ -118,5 +118,42 @@ export function getCachedAthleteProgramHref(
   const cached = queryClient.getQueryData<AthleteProgramEntryResult>(
     queryKeys.athleteProgramEntry(athleteId, actingUserId),
   );
-  return cached?.href ?? readAthleteProgramHrefSession();
+  if (cached?.hasProgram && cached.href && cached.href !== "/programs") {
+    return cached.href;
+  }
+  if (actingUserId === athleteId) {
+    return readAthleteProgramHrefSession();
+  }
+  return null;
+}
+
+/** Resolve a coach-facing deep program week href for an athlete (cached when possible). */
+export async function resolveCoachAthleteProgramHref(
+  queryClient: ReturnType<typeof useQueryClient>,
+  athleteId: string,
+  coachId: string,
+): Promise<string | null> {
+  const cached = getCachedAthleteProgramHref(queryClient, athleteId, coachId);
+  if (cached) return cached;
+
+  await prefetchAthleteProgramEntry(queryClient, athleteId, coachId);
+  return getCachedAthleteProgramHref(queryClient, athleteId, coachId);
+}
+
+export function programAthleteIdFromCommandItem(item: {
+  id: string;
+  href?: string;
+}): string | null {
+  if (item.id.startsWith("program-")) {
+    return item.id.slice("program-".length) || null;
+  }
+
+  if (!item.href) return null;
+  try {
+    const url = new URL(item.href, "https://limitless.local");
+    if (url.pathname !== "/programs") return null;
+    return url.searchParams.get("athlete");
+  } catch {
+    return null;
+  }
 }
