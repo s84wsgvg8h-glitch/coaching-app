@@ -394,8 +394,20 @@ html.dark .program-week-shell select {
     box-shadow 0.2s ease;
 }
 
+.program-nav-sidebar:hover,
+.program-nav-sidebar.is-pinned {
+  width: 252px;
+  min-width: 252px;
+}
+
+.program-nav-sidebar:hover .program-nav-sidebar-rail,
+.program-nav-sidebar.is-pinned .program-nav-sidebar-rail {
+  display: none;
+}
+
 .program-nav-sidebar:hover .program-nav-sidebar-flyout,
 .program-nav-sidebar.is-pinned .program-nav-sidebar-flyout {
+  left: 0;
   opacity: 1;
   transform: translateX(0);
   pointer-events: auto;
@@ -3064,9 +3076,10 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   width: 100%;
   min-height: 28px;
   resize: none;
-  border: none;
-  border-radius: 0;
-  background: transparent;
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
   padding: 2px 4px;
   font-size: 12px;
   line-height: 1.35;
@@ -3080,8 +3093,16 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-inline-notes-input:focus {
-  border: none;
-  box-shadow: none;
+  border: none !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+.coach-program-shell .coach-program-inline-notes-input,
+.coach-program-shell .coach-program-inline-notes-input:focus {
+  background: transparent !important;
+  border-color: transparent !important;
+  box-shadow: none !important;
 }
 
 .coach-program-exercise-fields {
