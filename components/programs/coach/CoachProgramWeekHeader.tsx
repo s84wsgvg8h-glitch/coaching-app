@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { ChevronDown, ChevronLeft } from "lucide-react";
+import { ChevronDown, Home } from "lucide-react";
 import CoachProgramWeekCompareView from "@/components/programs/coach/CoachProgramWeekCompareView";
 import {
   ApplyAllWeeksBadge,
@@ -255,7 +255,7 @@ function AthleteSwitcher({
 export default function CoachProgramWeekHeader({
   blockTitle,
   weekTitle,
-  backHref,
+  backHref: _backHref,
   editorView = "card",
   onEditorViewChange,
   showEditorViewToggle = false,
@@ -296,12 +296,12 @@ export default function CoachProgramWeekHeader({
         <div className="coach-program-week-header-bar">
           <div className="coach-program-week-header-leading hidden lg:flex">
             <Link
-              href={backHref}
+              href="/dashboard"
               className="coach-program-back-btn coach-program-back-btn--icon shrink-0"
-              aria-label="Terug"
-              title="Terug"
+              aria-label="Home"
+              title="Home"
             >
-              <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+              <Home className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
 
             <h1 className="coach-program-breadcrumb min-w-0">
