@@ -219,8 +219,11 @@ function AthleteSwitcher({
     "Atleet";
 
   return (
-    <div className="coach-program-athlete-switcher">
-      <div className="coach-program-athlete-switcher-face" aria-hidden="true">
+    <div className="coach-program-header-seg coach-program-athlete-switcher">
+      <div
+        className="coach-program-header-seg-btn is-active coach-program-athlete-switcher-face"
+        aria-hidden="true"
+      >
         <span className="coach-program-athlete-switcher-label">{selectedName}</span>
         <ChevronDown className="coach-program-athlete-switcher-chevron" />
       </div>

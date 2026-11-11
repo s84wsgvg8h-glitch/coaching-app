@@ -166,13 +166,17 @@ export default function CoachProgramWeekCompareView({
     >
       <button
         type="button"
-        className={`coach-program-compare-trigger${open ? " is-active" : ""}`}
+        className="coach-program-header-seg coach-program-compare-trigger"
         aria-expanded={open}
         aria-controls="coach-program-compare-panel"
         onClick={() => setOpen((value) => !value)}
       >
-        <Columns2 className="h-4 w-4 shrink-0" aria-hidden="true" />
-        <span className="coach-program-compare-trigger-label">Compare</span>
+        <span
+          className={`coach-program-header-seg-btn${open ? " is-active" : ""}`}
+        >
+          <Columns2 className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+          <span className="coach-program-compare-trigger-label">Compare</span>
+        </span>
       </button>
 
       {open ? (

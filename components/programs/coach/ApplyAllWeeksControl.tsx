@@ -47,11 +47,15 @@ export function ApplyAllWeeksButton({
       type="button"
       onClick={toggle}
       aria-pressed={active}
-      className={`coach-apply-all-weeks-btn ${active ? "is-active" : ""} ${
+      className={`coach-program-header-seg coach-apply-all-weeks-btn ${
         fullWidth ? "is-full" : ""
       }`}
     >
-      Alle weken aanpassen
+      <span
+        className={`coach-program-header-seg-btn${active ? " is-active" : ""}`}
+      >
+        Alle weken aanpassen
+      </span>
     </button>
   );
 }

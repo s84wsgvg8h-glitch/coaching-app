@@ -57,7 +57,7 @@ html.dark .premium-coach-ui {
   --dashboard-sidebar-width: 248px;
   --dashboard-kpi-min-height: 112px;
   --dashboard-agenda-rail-width: 300px;
-  --coach-shell-topbar-height: calc(2.85rem + env(safe-area-inset-top, 0px));
+  --coach-shell-topbar-height: calc(4rem + env(safe-area-inset-top, 0px));
 
   background: var(--dash-bg);
 }

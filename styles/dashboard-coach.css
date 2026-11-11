@@ -8,7 +8,7 @@
   --dashboard-sidebar-collapsed-width: 186px;
   --dashboard-sidebar-expanded-width: 186px;
   --dashboard-sidebar-width: var(--dashboard-sidebar-collapsed-width);
-  --coach-shell-topbar-height: calc(2.85rem + env(safe-area-inset-top, 0px));
+  --coach-shell-topbar-height: calc(4rem + env(safe-area-inset-top, 0px));
   --dashboard-kpi-min-height: 56px;
   --dashboard-focus-panel-min-height: 0;
   --dashboard-cockpit-gap: 0.4rem;
@@ -500,9 +500,10 @@
   }
 
   .shell-topbar-greeting-title {
-    font-size: 15px;
+    font-size: 17px;
     font-weight: 600;
     letter-spacing: -0.02em;
+    line-height: 1.2;
     color: var(--app-text);
     white-space: nowrap;
     overflow: hidden;
@@ -510,8 +511,8 @@
   }
 
   .shell-topbar-greeting-sub {
-    margin-top: 0.1rem;
-    font-size: 11px;
+    margin-top: 0.2rem;
+    font-size: 12px;
     font-weight: 500;
     color: var(--app-muted);
     white-space: nowrap;
@@ -1058,7 +1059,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    padding: 0.45rem 0;
+    min-height: calc(4rem - 1px);
+    padding: 0.85rem 0;
   }
 
   .dashboard-cockpit-panel {

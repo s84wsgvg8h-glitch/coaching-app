@@ -2082,41 +2082,25 @@ html.dark .program-week-shell select {
 }
 
 .coach-apply-all-weeks-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  min-height: var(--coach-program-header-control-height);
-  height: var(--coach-program-header-control-height);
-  padding: 0 0.85rem;
-  border-radius: var(--coach-program-radius);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--app-text-muted);
-  font-size: 0.8125rem;
-  font-weight: 650;
-  white-space: nowrap;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+  /* Shell matches editor view toggle; label is the segment. */
+  cursor: pointer;
+  appearance: none;
+  font: inherit;
+  color: inherit;
 }
 
 .coach-apply-all-weeks-btn.is-full {
   width: 100%;
   min-height: 44px;
   height: auto;
+  padding: 0.2rem;
 }
 
-.coach-apply-all-weeks-btn:hover {
-  border-color: rgba(59, 130, 246, 0.45);
-  color: var(--app-text);
-}
-
-.coach-apply-all-weeks-btn.is-active {
-  border-color: rgba(59, 130, 246, 0.55);
-  background: rgba(59, 130, 246, 0.18);
-  color: #bfdbfe;
+.coach-apply-all-weeks-btn.is-full .coach-program-header-seg-btn {
+  width: 100%;
+  min-height: calc(44px - 0.4rem);
+  height: auto;
+  padding: 0.55rem 0.85rem;
 }
 
 .coach-apply-all-weeks-badge {
@@ -2142,11 +2126,6 @@ html.dark .program-week-shell select {
   }
 }
 
-html:not(.dark) .coach-apply-all-weeks-btn.is-active {
-  color: #1d4ed8;
-  background: rgba(59, 130, 246, 0.14);
-}
-
 html:not(.dark) .coach-apply-all-weeks-badge {
   background: #ffffff;
   color: #0f172a;
@@ -2155,50 +2134,40 @@ html:not(.dark) .coach-apply-all-weeks-badge {
 
 .coach-program-athlete-switcher {
   position: relative;
-  display: inline-flex;
-  flex-shrink: 0;
   min-width: 9.5rem;
   max-width: 14rem;
-  height: var(--coach-program-header-control-height);
 }
 
 .coach-program-athlete-switcher-face {
-  box-sizing: border-box;
   position: relative;
-  display: block;
   width: 100%;
-  height: 100%;
-  padding: 0 1.75rem 0 0.75rem;
-  border-radius: var(--coach-program-radius);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
+  max-width: 100%;
+  padding: 0 1.65rem 0 0.75rem;
   pointer-events: none;
+  overflow: hidden;
 }
 
 .coach-program-athlete-switcher-label {
-  position: absolute;
-  left: 0.75rem;
-  right: 1.75rem;
-  top: 50%;
-  transform: translateY(-50%);
+  display: block;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
-  font-size: 0.8125rem;
-  font-weight: 600;
-  color: var(--app-text);
 }
 
 .coach-program-athlete-switcher-chevron {
   position: absolute;
-  right: 0.65rem;
+  right: 0.45rem;
   top: 50%;
-  width: 0.9rem;
-  height: 0.9rem;
+  width: 0.85rem;
+  height: 0.85rem;
   transform: translateY(-50%);
   flex-shrink: 0;
-  color: var(--app-text-muted);
+  opacity: 0.85;
+}
+
+.coach-program-athlete-switcher-face.is-active .coach-program-athlete-switcher-chevron {
+  color: #ffffff;
 }
 
 .coach-program-athlete-switcher-select {
@@ -2213,20 +2182,8 @@ html:not(.dark) .coach-apply-all-weeks-badge {
   appearance: none;
 }
 
-.coach-program-athlete-switcher:hover .coach-program-athlete-switcher-face {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.08);
-}
-
-.coach-program-athlete-switcher:has(.coach-program-athlete-switcher-select:focus-visible)
-  .coach-program-athlete-switcher-face {
-  border-color: rgba(59, 130, 246, 0.45);
+.coach-program-athlete-switcher:has(.coach-program-athlete-switcher-select:focus-visible) {
   box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15);
-}
-
-html:not(.dark) .coach-program-athlete-switcher-face {
-  border-color: var(--app-border-strong);
-  background-color: var(--app-surface-muted);
 }
 
 .coach-program-week-header-tools {
@@ -5348,6 +5305,8 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   background: rgba(239, 68, 68, 0.15);
 }
 
+/* Shared segmented header control UI (views + athlete / apply-all / compare) */
+.coach-program-header-seg,
 .coach-program-editor-view-toggle {
   --raw-border: rgba(255, 255, 255, 0.08);
   --raw-toggle-bg: rgba(255, 255, 255, 0.03);
@@ -5357,6 +5316,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   align-items: center;
   gap: 0;
   box-sizing: border-box;
+  flex-shrink: 0;
   min-height: var(--coach-program-header-control-height);
   height: var(--coach-program-header-control-height);
   padding: 0.2rem;
@@ -5368,6 +5328,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   scrollbar-width: none;
 }
 
+.coach-program-header-seg::-webkit-scrollbar,
 .coach-program-editor-view-toggle::-webkit-scrollbar {
   display: none;
 }
@@ -5378,10 +5339,13 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   }
 }
 
+.coach-program-header-seg-btn,
 .coach-program-editor-view-toggle button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  gap: 0.35rem;
+  box-sizing: border-box;
   min-height: calc(var(--coach-program-header-control-height) - 0.4rem);
   height: calc(var(--coach-program-header-control-height) - 0.4rem);
   padding: 0 0.85rem;
@@ -5399,6 +5363,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
     box-shadow 0.15s ease;
 }
 
+.coach-program-header-seg-btn.is-active,
 .coach-program-editor-view-toggle button.is-active {
   background: var(--raw-toggle-active-bg);
   color: var(--raw-toggle-active-text);
@@ -5522,6 +5487,7 @@ html:not(.dark) .coach-program-raw-context-menu button.is-danger:hover {
   background: rgba(239, 68, 68, 0.08);
 }
 
+html:not(.dark) .coach-program-header-seg,
 html:not(.dark) .coach-program-editor-view-toggle {
   --raw-border: rgba(15, 23, 42, 0.1);
   --raw-toggle-bg: #f1f5f9;
@@ -6054,32 +6020,10 @@ html:not(.dark) .coach-program-progression-load-athlete {
 }
 
 .coach-program-compare-trigger {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.4rem;
-  box-sizing: border-box;
-  min-width: var(--coach-program-header-control-height);
-  min-height: var(--coach-program-header-control-height);
-  height: var(--coach-program-header-control-height);
-  padding: 0 0.75rem;
-  border-radius: var(--coach-program-radius);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--app-text-muted);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
-}
-
-.coach-program-compare-trigger:hover,
-.coach-program-compare-trigger.is-active {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.12);
-  color: var(--app-text);
+  cursor: pointer;
+  appearance: none;
+  font: inherit;
+  color: inherit;
 }
 
 .coach-program-compare-trigger-label {
@@ -6336,11 +6280,6 @@ html:not(.dark) .coach-program-progression-load-athlete {
 .program-mobile-week-nav-compare .coach-program-compare-trigger {
   min-width: 2.75rem;
   padding: 0 0.55rem;
-}
-
-html:not(.dark) .coach-program-compare-trigger {
-  border-color: var(--app-border-strong);
-  background: var(--app-surface-muted);
 }
 
 html:not(.dark) .coach-program-compare-panel {

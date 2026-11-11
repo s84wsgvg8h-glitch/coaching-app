@@ -6,7 +6,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { useAthleteFillScore } from "@/hooks/useAthleteFillScore";
 import { useAthleteProgramEntry } from "@/hooks/useAthleteProgramEntry";
 import { useCoachDashboardData } from "@/hooks/useCoachDashboardData";
-import CoachInboxPanel from "@/components/dashboard/CoachInboxPanel";
 import CoachCockpitHeader from "@/components/dashboard/CoachCockpitHeader";
 import AthleteDashboard from "@/components/dashboard/AthleteDashboard";
 import CoachMobileDashboardSearch from "@/components/dashboard/CoachMobileDashboardSearch";
@@ -123,9 +122,7 @@ export default function DashboardPage() {
   }
 
   const openTodoCount = coachData?.openTodoCount ?? 0;
-  const pendingCount = coachData?.pendingCount ?? 0;
   const athletes = coachData?.athletes ?? [];
-  const inboxItems = coachData?.inboxItems ?? [];
   const coachMetrics: CoachDashboardMetrics = coachData?.dashboardMetrics ?? {
     athleteCount: athletes.length,
     openCheckIns: openTodoCount,
@@ -137,15 +134,6 @@ export default function DashboardPage() {
     activeAthletes: athletes.length,
     attentionAthletes: coachData?.attentionAthletes.length ?? 0,
   };
-
-  const coachMainProps = userId
-    ? {
-        userId,
-        metrics: coachMetrics,
-        inbox: inboxItems,
-        activity: coachData?.activityItems ?? [],
-      }
-    : null;
 
   const athleteContent = userId ? (
     <AthleteDashboard
@@ -163,7 +151,7 @@ export default function DashboardPage() {
     />
   ) : null;
 
-  const coachContent = userId && coachMainProps ? (
+  const coachContent = userId ? (
     <div className="coach-dashboard-desktop-only hidden w-full min-w-0 lg:block">
       <div className="dashboard-cockpit premium-coach-dashboard w-full min-w-0">
       <CoachCockpitHeader
@@ -178,9 +166,6 @@ export default function DashboardPage() {
 
         <div className="dashboard-cockpit-col dashboard-cockpit-col--center">
           <CoachMobileDashboardSearch variant="embedded" />
-          <div className="dashboard-cockpit-panel dashboard-cockpit-panel--inbox dashboard-cockpit-panel--inbox-desktop">
-            <CoachInboxPanel items={inboxItems} compact />
-          </div>
           <div className="dashboard-cockpit-panel dashboard-cockpit-panel--alerts">
             <CoachAttentionWidget coachId={userId} role={role} compact />
             <CoachAlertsWidget coachId={userId} role={role} />
@@ -194,7 +179,6 @@ export default function DashboardPage() {
 
       <div className="dashboard-cockpit-bottom">
         <div className="dashboard-cockpit-bottom-primary">
-          <CoachInboxPanel items={inboxItems} compact />
           <div className="dashboard-cockpit-retention min-h-0">
             <RetentionStatsWidget coachId={userId} role={role} />
           </div>
