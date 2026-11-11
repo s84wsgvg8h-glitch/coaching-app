@@ -342,7 +342,7 @@ export default function ProgramBlocksSidebar({
                         <button
                           type="button"
                           onClick={() => onToggleBlockOpen(block.id)}
-                          className="w-full text-center"
+                          className="w-full pl-2.5 text-left"
                         >
                           <p
                             className={`text-[10px] mb-1 ${
@@ -441,7 +441,7 @@ export default function ProgramBlocksSidebar({
                                 <button
                                   type="button"
                                   onClick={() => onGoToProgram(block.id, item.id)}
-                                  className="w-full text-center text-sm font-semibold"
+                                  className="w-full pl-2.5 pr-20 text-left text-sm font-semibold"
                                 >
                                   {item.title}
                                 </button>

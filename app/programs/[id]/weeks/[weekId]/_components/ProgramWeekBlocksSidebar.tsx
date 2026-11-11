@@ -444,7 +444,7 @@ export default function ProgramWeekBlocksSidebar({
                                       [block.id]: !current[block.id],
                                     }))
                                   }
-                                  className="w-full text-center"
+                                  className="w-full pl-2.5 text-left"
                                 >
                                   <p
                                     className={`mb-1 text-[10px] ${
@@ -618,7 +618,7 @@ export default function ProgramWeekBlocksSidebar({
                                           onClick={() =>
                                             goToProgram(block.id, item.id)
                                           }
-                                          className="w-full text-center text-sm font-semibold"
+                                          className="w-full pl-2.5 pr-20 text-left text-sm font-semibold"
                                         >
                                           {item.title}
                                         </button>
