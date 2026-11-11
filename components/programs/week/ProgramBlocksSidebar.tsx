@@ -144,8 +144,6 @@ export default function ProgramBlocksSidebar({
         <ProgramNavSidebarRail
           weeks={coachRailWeeks}
           onSelectWeek={(targetWeekId) => onGoToProgram(blockId, targetWeekId)}
-          showAddButton
-          onAddClick={onToggleProgramAddMenu}
         />
       ) : null}
 

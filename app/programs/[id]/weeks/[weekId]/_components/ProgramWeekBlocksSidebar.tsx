@@ -202,8 +202,6 @@ export default function ProgramWeekBlocksSidebar({
                     onSelectWeek={(targetWeekId) =>
                       goToProgram(blockId, targetWeekId)
                     }
-                    showAddButton
-                    onAddClick={() => setProgramAddMenuOpen((open) => !open)}
                   />
                 ) : null}
 
