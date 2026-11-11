@@ -1,6 +1,14 @@
 "use client";
 
-import { useRef, useState, type Dispatch, RefObject, SetStateAction } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type Dispatch,
+  RefObject,
+  SetStateAction,
+} from "react";
 import { normalizeExerciseName } from "@/lib/programWeek/exerciseUtils";
 import { setEmptyDragImage } from "@/lib/programWeek/constants";
 import {
@@ -84,6 +92,13 @@ export type UseProgramWeekCoachMutationsOptions = {
   loadDays: () => Promise<void>;
 };
 
+type CoachExerciseUndoEntry = {
+  exerciseId: string;
+  previous: Record<string, string | number | null>;
+};
+
+const MAX_COACH_UNDO_BATCHES = 50;
+
 export function useProgramWeekCoachMutations({
   blockId,
   weekId,
@@ -103,6 +118,33 @@ export function useProgramWeekCoachMutations({
   const [openDayNoteId, setOpenDayNoteId] = useState("");
   const [openDayWarmupId, setOpenDayWarmupId] = useState("");
   const [openExerciseNoteId, setOpenExerciseNoteId] = useState("");
+  const undoStackRef = useRef<CoachExerciseUndoEntry[][]>([]);
+  const isUndoingRef = useRef(false);
+  const exercisesByDayRef = useRef(exercisesByDay);
+
+  useEffect(() => {
+    exercisesByDayRef.current = exercisesByDay;
+  }, [exercisesByDay]);
+
+  useEffect(() => {
+    undoStackRef.current = [];
+  }, [weekId, blockId]);
+
+  const findExercise = useCallback((exerciseId: string) => {
+    for (const list of Object.values(exercisesByDayRef.current)) {
+      const found = (list || []).find((exercise) => exercise.id === exerciseId);
+      if (found) return found;
+    }
+    return null;
+  }, []);
+
+  const pushExerciseUndo = useCallback((entries: CoachExerciseUndoEntry[]) => {
+    if (isUndoingRef.current || entries.length === 0) return;
+    undoStackRef.current.push(entries);
+    if (undoStackRef.current.length > MAX_COACH_UNDO_BATCHES) {
+      undoStackRef.current.shift();
+    }
+  }, []);
 
   const [isCreatingDay, setIsCreatingDay] = useState(false);
   const [newDayTitle, setNewDayTitle] = useState("");
@@ -546,7 +588,23 @@ export function useProgramWeekCoachMutations({
     if (field === "superset_group") {
       cleanValue = value.trim() || null;
     }
-    const previousExercisesByDay = exercisesByDay;
+    const currentExercise = findExercise(exerciseId);
+    const previousValue = currentExercise
+      ? ((currentExercise[field] as string | number | null | undefined) ?? null)
+      : null;
+    if (
+      currentExercise &&
+      previousValue !== cleanValue &&
+      !isUndoingRef.current
+    ) {
+      pushExerciseUndo([
+        {
+          exerciseId,
+          previous: { [field]: previousValue },
+        },
+      ]);
+    }
+    const previousExercisesByDay = exercisesByDayRef.current;
 
     setExercisesByDay((current) => {
       const next = { ...current };
@@ -575,6 +633,9 @@ export function useProgramWeekCoachMutations({
         [field]: cleanValue as string | number | null,
       });
     } catch {
+      if (!isUndoingRef.current) {
+        undoStackRef.current.pop();
+      }
       setExercisesByDay(previousExercisesByDay);
       await loadDays();
       return;
@@ -589,9 +650,12 @@ export function useProgramWeekCoachMutations({
   async function saveExerciseFields(
     exerciseId: string,
     updates: Partial<
-      Pick<ProgramExercise, "name" | "sets" | "reps" | "load" | "rpe" | "notes">
+      Pick<
+        ProgramExercise,
+        "name" | "sets" | "reps" | "load" | "rpe" | "notes" | "priority"
+      >
     >,
-    options?: { reloadOnError?: boolean },
+    options?: { reloadOnError?: boolean; skipUndo?: boolean },
   ): Promise<boolean> {
     const cleanUpdates = Object.fromEntries(
       Object.entries(updates).map(([key, value]) => [
@@ -603,7 +667,29 @@ export function useProgramWeekCoachMutations({
           : value,
       ]),
     );
-    const previousExercisesByDay = exercisesByDay;
+    const currentExercise = findExercise(exerciseId);
+    if (currentExercise && !options?.skipUndo && !isUndoingRef.current) {
+      const previous: Record<string, string | number | null> = {};
+      let changed = false;
+      for (const key of Object.keys(cleanUpdates)) {
+        const field = key as keyof typeof cleanUpdates;
+        const prev =
+          (currentExercise[field as keyof ProgramExercise] as
+            | string
+            | number
+            | null
+            | undefined) ?? null;
+        const next = cleanUpdates[key] as string | number | null;
+        if (prev !== next) {
+          previous[key] = prev;
+          changed = true;
+        }
+      }
+      if (changed) {
+        pushExerciseUndo([{ exerciseId, previous }]);
+      }
+    }
+    const previousExercisesByDay = exercisesByDayRef.current;
 
     setExercisesByDay((current) => {
       const next = { ...current };
@@ -632,6 +718,9 @@ export function useProgramWeekCoachMutations({
       );
       return true;
     } catch {
+      if (!options?.skipUndo && !isUndoingRef.current) {
+        undoStackRef.current.pop();
+      }
       setExercisesByDay(previousExercisesByDay);
       if (options?.reloadOnError !== false) {
         await loadDays();
@@ -642,7 +731,20 @@ export function useProgramWeekCoachMutations({
 
 
   async function saveExercisePriority(exerciseId: string, priority: string) {
-    const previousExercisesByDay = exercisesByDay;
+    const currentExercise = findExercise(exerciseId);
+    if (
+      currentExercise &&
+      currentExercise.priority !== priority &&
+      !isUndoingRef.current
+    ) {
+      pushExerciseUndo([
+        {
+          exerciseId,
+          previous: { priority: currentExercise.priority ?? null },
+        },
+      ]);
+    }
+    const previousExercisesByDay = exercisesByDayRef.current;
 
     setExercisesByDay((current) => {
       const next = { ...current };
@@ -667,9 +769,36 @@ export function useProgramWeekCoachMutations({
       });
       await propagateExercisePatch(exerciseId, { priority });
     } catch {
+      if (!isUndoingRef.current) {
+        undoStackRef.current.pop();
+      }
       setExercisesByDay(previousExercisesByDay);
       await loadDays();
     }
+  }
+
+  async function undoLastCoachChange() {
+    const batch = undoStackRef.current.pop();
+    if (!batch?.length) return false;
+
+    isUndoingRef.current = true;
+    try {
+      for (const entry of [...batch].reverse()) {
+        await saveExerciseFields(entry.exerciseId, entry.previous as Partial<
+          Pick<
+            ProgramExercise,
+            "name" | "sets" | "reps" | "load" | "rpe" | "notes" | "priority"
+          >
+        >, { reloadOnError: true, skipUndo: true });
+      }
+      return true;
+    } finally {
+      isUndoingRef.current = false;
+    }
+  }
+
+  function canUndoCoachChange() {
+    return undoStackRef.current.length > 0;
   }
 
 
@@ -1606,6 +1735,8 @@ export function useProgramWeekCoachMutations({
     saveExerciseField,
     saveExerciseFields,
     saveExercisePriority,
+    undoLastCoachChange,
+    canUndoCoachChange,
     handleCoachExerciseEnter,
     deleteExerciseNote,
     updateIntensityType,

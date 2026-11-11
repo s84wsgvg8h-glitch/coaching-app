@@ -249,6 +249,10 @@ html.dark .premium-coach-ui .shell-topbar {
   padding: 0 1rem;
 }
 
+html.dark .premium-coach-ui .shell-topbar--coach-dashboard {
+  border-bottom: none;
+}
+
 html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-inner {
   display: grid;
   grid-template-columns: minmax(0, 1fr);

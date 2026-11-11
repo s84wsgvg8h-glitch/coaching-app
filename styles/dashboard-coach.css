@@ -492,11 +492,16 @@
 }
 
 @media (min-width: 1024px) {
+  .shell-topbar--coach-dashboard {
+    border-bottom: none;
+  }
+
   .shell-topbar-greeting {
     display: block;
     min-width: 0;
     flex: 1;
     padding-left: 0.25rem;
+    padding-top: 0.35rem;
   }
 
   .shell-topbar-greeting-title {
@@ -511,7 +516,7 @@
   }
 
   .shell-topbar-greeting-sub {
-    margin-top: 0.2rem;
+    margin-top: 0.25rem;
     font-size: 12px;
     font-weight: 500;
     color: var(--app-muted);
@@ -1098,8 +1103,8 @@
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    min-height: calc(4rem - 1px);
-    padding: 0.85rem 0;
+    min-height: calc(4.5rem - 1px);
+    padding: 1.15rem 0 0.85rem;
   }
 
   .dashboard-cockpit-panel {

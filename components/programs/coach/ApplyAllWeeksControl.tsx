@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Layers2 } from "lucide-react";
 import {
   APPLY_ALL_WEEKS_EVENT,
   readApplyAllWeeks,
@@ -41,20 +42,26 @@ export function ApplyAllWeeksButton({
   fullWidth?: boolean;
 }) {
   const { active, toggle } = useApplyAllWeeks(blockId);
+  const label = active ? "Alle weken aanpassen (aan)" : "Alle weken aanpassen";
 
   return (
     <button
       type="button"
       onClick={toggle}
       aria-pressed={active}
+      aria-label={label}
+      title={label}
       className={`coach-program-header-seg coach-apply-all-weeks-btn ${
         fullWidth ? "is-full" : ""
       }`}
     >
       <span
-        className={`coach-program-header-seg-btn${active ? " is-active" : ""}`}
+        className={`coach-program-header-seg-btn coach-apply-all-weeks-btn-icon${
+          active ? " is-active" : ""
+        }`}
       >
-        Alle weken aanpassen
+        <Layers2 className="h-4 w-4 shrink-0" aria-hidden="true" />
+        {fullWidth ? <span>Alle weken aanpassen</span> : null}
       </span>
     </button>
   );

@@ -260,6 +260,8 @@ export function buildProgramWeekPageViewProps(
     deleteExerciseNote: coachMutations.deleteExerciseNote,
     saveExercisePriority: coachMutations.saveExercisePriority,
     saveExerciseFields: coachMutations.saveExerciseFields,
+    undoLastCoachChange: coachMutations.undoLastCoachChange,
+    canUndoCoachChange: coachMutations.canUndoCoachChange,
     getAthleteExerciseNote: athleteLogging.getAthleteExerciseNote,
     createDay: coachMutations.createDay,
     setLinkingExercise: input.setLinkingExercise,

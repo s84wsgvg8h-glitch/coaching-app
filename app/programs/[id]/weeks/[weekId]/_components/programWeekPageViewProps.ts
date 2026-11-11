@@ -173,6 +173,8 @@ export type ProgramWeekPageViewProps = {
   deleteExerciseNote: ViewHandler;
   saveExercisePriority: ViewHandler;
   saveExerciseFields: ViewHandler;
+  undoLastCoachChange: () => Promise<boolean>;
+  canUndoCoachChange: () => boolean;
   getAthleteExerciseNote: ViewHandler;
   createDay: ViewHandler;
   setLinkingExercise: Dispatch<SetStateAction<ProgramExercise | null>>;

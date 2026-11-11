@@ -175,6 +175,8 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
     deleteExerciseNote,
     saveExercisePriority,
     saveExerciseFields,
+    undoLastCoachChange,
+    canUndoCoachChange,
     getAthleteExerciseNote,
     createDay,
     setLinkingExercise,
@@ -329,6 +331,13 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
 
   const rawEditorRef = useRef<RawProgramEditorHandle>(null);
   const progressionRef = useRef<CoachProgramProgressionPanelHandle>(null);
+  const undoLastCoachChangeRef = useRef(undoLastCoachChange);
+  const canUndoCoachChangeRef = useRef(canUndoCoachChange);
+
+  useEffect(() => {
+    undoLastCoachChangeRef.current = undoLastCoachChange;
+    canUndoCoachChangeRef.current = canUndoCoachChange;
+  }, [canUndoCoachChange, undoLastCoachChange]);
 
   useEffect(() => {
     if (!isCoachView) {
@@ -356,6 +365,41 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
       registerProgramEditFlush(null);
     };
   }, [editorView, isCoachView, registerProgramEditFlush]);
+
+  // Cmd/Ctrl+Z for card + athlete coach views (raw/progression handle their own).
+  useEffect(() => {
+    if (!isCoachView) return;
+    if (editorView === "raw" || editorView === "progression") return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (
+        !(event.metaKey || event.ctrlKey) ||
+        event.key.toLowerCase() !== "z" ||
+        event.shiftKey
+      ) {
+        return;
+      }
+
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        target.closest("input, textarea, select, [contenteditable='true']")
+      ) {
+        return;
+      }
+
+      if (!canUndoCoachChangeRef.current()) return;
+
+      event.preventDefault();
+      event.stopPropagation();
+      void undoLastCoachChangeRef.current();
+    };
+
+    window.addEventListener("keydown", onKeyDown, { capture: true });
+    return () => {
+      window.removeEventListener("keydown", onKeyDown, { capture: true });
+    };
+  }, [editorView, isCoachView]);
   const mainScrollRef = useRef<HTMLElement>(null);
   const isCoachRawView =
     isCoachView && editorView === "raw" && !embeddedInChat;

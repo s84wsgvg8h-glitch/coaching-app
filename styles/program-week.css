@@ -2089,6 +2089,12 @@ html.dark .program-week-shell select {
   color: inherit;
 }
 
+.coach-apply-all-weeks-btn-icon {
+  width: calc(var(--coach-program-header-control-height) - 0.4rem);
+  min-width: calc(var(--coach-program-header-control-height) - 0.4rem);
+  padding: 0;
+}
+
 .coach-apply-all-weeks-btn.is-full {
   width: 100%;
   min-height: 44px;
@@ -2098,8 +2104,10 @@ html.dark .program-week-shell select {
 
 .coach-apply-all-weeks-btn.is-full .coach-program-header-seg-btn {
   width: 100%;
+  min-width: 0;
   min-height: calc(44px - 0.4rem);
   height: auto;
+  gap: 0.45rem;
   padding: 0.55rem 0.85rem;
 }
 
@@ -5391,6 +5399,8 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
     background 0.15s ease,
     color 0.15s ease,
     box-shadow 0.15s ease;
+  /* Keep open briefly after mouse leaves so moving away doesn't snap shut. */
+  transition-delay: 0.4s;
 }
 
 .coach-program-editor-view-toggle--hover-expand:hover button:not(.is-active),
@@ -5400,6 +5410,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
   padding-right: 0.85rem;
   opacity: 1;
   pointer-events: auto;
+  transition-delay: 0s;
 }
 
 .coach-program-editor-view-toggle--hover-expand button.is-active {
