@@ -347,11 +347,27 @@ html.dark .premium-coach-ui .shell-topbar-action-avatar {
   width: 1.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, rgba(107, 140, 255, 0.35), rgba(107, 140, 255, 0.1));
+  border-radius: 0.55rem;
+  background: transparent;
   font-size: 11px;
   font-weight: 700;
-  color: #fff;
+  color: var(--app-text);
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--icon,
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--athlete-avatar {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 0.35rem;
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--athlete-avatar {
+  min-width: 40px;
+  width: 40px;
+  justify-content: center;
+}
+
+html.dark .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--athlete-avatar .shell-topbar-action-copy {
+  display: none;
 }
 
 html.dark .premium-coach-ui .shell-topbar-action-label {

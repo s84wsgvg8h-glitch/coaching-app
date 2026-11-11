@@ -328,11 +328,22 @@ html:not(.dark) .premium-coach-ui .shell-topbar-action-avatar {
   width: 1.75rem;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background: rgba(59, 130, 246, 0.12);
+  border-radius: 0.55rem;
+  background: transparent;
   font-size: 11px;
   font-weight: 700;
-  color: #1d4ed8;
+  color: #111827;
+}
+
+html:not(.dark) .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--athlete-avatar {
+  min-width: 40px;
+  width: 40px;
+  justify-content: center;
+  padding: 0.35rem;
+}
+
+html:not(.dark) .premium-coach-ui .shell-topbar-actions .shell-topbar-action-chip--athlete-avatar .shell-topbar-action-copy {
+  display: none;
 }
 
 html:not(.dark) .premium-coach-ui .shell-topbar-action-label {

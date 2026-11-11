@@ -997,19 +997,15 @@ html:not(.dark) .ui-icon-btn:hover {
   flex-shrink: 0;
   align-items: center;
   justify-content: center;
-  border-radius: 9999px;
-  background: linear-gradient(
-    135deg,
-    rgba(var(--app-accent-rgb), 0.35),
-    rgba(var(--app-accent-rgb), 0.1)
-  );
+  border-radius: 0.55rem;
+  background: transparent;
   font-size: 11px;
   font-weight: 700;
   color: var(--app-text);
 }
 
 .shell-topbar-action-avatar--icon {
-  background: var(--app-surface-hover);
+  background: transparent;
   color: var(--app-text-muted);
 }
 
