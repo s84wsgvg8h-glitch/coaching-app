@@ -888,26 +888,34 @@
     width: min(100%, var(--dashboard-cockpit-search-width));
     max-width: var(--dashboard-cockpit-search-width);
     margin-top: 1.15rem;
-    margin-bottom: 0.25rem;
+    margin-bottom: 0.35rem;
     align-self: center;
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {
-    border: none;
-    background: transparent;
-    padding: 0;
-    box-shadow: none;
     width: 100%;
     max-width: none;
+    margin: 0;
+    padding: 0.55rem 0.65rem 0.6rem;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.055) 0%,
+        rgba(255, 255, 255, 0.02) 100%
+      );
+    box-shadow:
+      0 10px 28px rgba(0, 0, 0, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.05);
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-input-wrap {
     min-width: 0;
-    background: transparent;
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcuts {
-    margin-top: 0.45rem;
+    margin-top: 0.5rem;
     justify-content: center;
   }
 
@@ -925,18 +933,20 @@
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field {
-    min-height: 40px;
-    border-radius: 12px;
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
-    padding: 0 0.65rem;
+    min-height: 44px;
+    border-radius: 11px;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+    background: rgba(0, 0, 0, 0.35) !important;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+    padding: 0 0.85rem;
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field:focus-within {
-    border: none !important;
-    background: transparent !important;
-    box-shadow: none !important;
+    border-color: rgba(59, 130, 246, 0.55) !important;
+    background: rgba(0, 0, 0, 0.42) !important;
+    box-shadow:
+      0 0 0 2px rgba(59, 130, 246, 0.18),
+      inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-input,
@@ -965,7 +975,7 @@
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field .app-search-field-icon {
-    color: var(--app-subtle);
+    color: var(--app-text-muted);
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcuts {
@@ -976,11 +986,29 @@
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-shortcut {
     min-height: 32px;
     border-radius: 9px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
     padding: 0.25rem 0.65rem;
     font-size: 11px;
     font-weight: 500;
+  }
+
+  html:not(.dark) .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {
+    border-color: rgba(15, 23, 42, 0.1);
+    background: #ffffff;
+    box-shadow: 0 10px 28px rgba(15, 23, 42, 0.08);
+  }
+
+  html:not(.dark) .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field {
+    border-color: rgba(15, 23, 42, 0.12) !important;
+    background: #f8fafc !important;
+    box-shadow: none !important;
+  }
+
+  html:not(.dark) .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field:focus-within {
+    border-color: rgba(59, 130, 246, 0.5) !important;
+    background: #ffffff !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
   }
 
   .coach-mobile-dashboard-search-dropdown--embedded {
