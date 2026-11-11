@@ -40,15 +40,12 @@ export default function CoachNextWeekProgramsWidget({
           <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
             Volgende week
           </p>
-          <p className="mt-0.5 text-[15px] font-semibold tabular-nums text-app-text">
+          <p className="mt-0.5 text-[15px] font-semibold text-app-text">
             {count === 0
               ? "Geen nieuwe programma’s nodig"
               : count === 1
-                ? "1 nieuw programma nodig"
-                : `${count} nieuwe programma’s nodig`}
-          </p>
-          <p className="mt-1 text-[11px] text-app-muted">
-            Blocks die deze week aflopen of zonder planning staan.
+                ? "Nieuw programma nodig"
+                : "Nieuwe programma’s nodig"}
           </p>
           {count > 0 ? (
             <ul className="mt-2 max-h-28 space-y-1 overflow-y-auto">

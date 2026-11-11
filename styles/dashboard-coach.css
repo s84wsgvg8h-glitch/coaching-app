@@ -906,13 +906,19 @@
     align-items: center;
   }
 
+  .dashboard-cockpit-main--search-only {
+    overflow: visible;
+  }
+
   .dashboard-cockpit-main--search-only .dashboard-cockpit-col--center {
-    width: min(100%, 62rem);
-    max-width: 62rem;
+    width: min(100%, var(--dashboard-cockpit-search-width));
+    max-width: var(--dashboard-cockpit-search-width);
     padding-top: clamp(4.5rem, 16vh, 9rem);
+    overflow: visible;
   }
 
   .dashboard-cockpit-search-row {
+    position: relative;
     display: flex;
     width: 100%;
     min-width: 0;
@@ -922,33 +928,17 @@
     margin-bottom: 0.75rem;
   }
 
-  @media (min-width: 1024px) {
-    .dashboard-cockpit-search-row {
-      flex-direction: row;
-      align-items: flex-start;
-      gap: 1rem;
-    }
-  }
-
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
     flex-shrink: 0;
     min-width: 0;
-    width: min(100%, var(--dashboard-cockpit-search-width));
-    max-width: var(--dashboard-cockpit-search-width);
+    width: 100%;
+    max-width: none;
     margin-top: 0;
     margin-bottom: 0;
-    align-self: center;
-  }
-
-  @media (min-width: 1024px) {
-    .dashboard-cockpit-col--center .coach-dashboard-search-embedded {
-      align-self: flex-start;
-      flex: 1 1 auto;
-    }
+    align-self: stretch;
   }
 
   .dashboard-next-week-programs-widget {
-    flex: 0 0 auto;
     width: 100%;
     min-width: 0;
     max-width: 100%;
@@ -957,8 +947,12 @@
 
   @media (min-width: 1024px) {
     .dashboard-next-week-programs-widget {
-      width: 17.5rem;
-      max-width: 17.5rem;
+      position: absolute;
+      left: calc(100% + 1rem);
+      top: 0;
+      z-index: 5;
+      width: 16.5rem;
+      max-width: 16.5rem;
     }
   }
 
