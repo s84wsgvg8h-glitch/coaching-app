@@ -1,14 +1,13 @@
 "use client";
 
-import { Bell, Search, X } from "lucide-react";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Bell } from "lucide-react";
+import { Suspense, useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/AuthProvider";
 import { useLocale } from "@/components/LocaleProvider";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { isProfileOpen } from "@/lib/athleteProfileNavigation";
 import PageBackButton from "@/components/ui/PageBackButton";
-import SearchInput from "@/components/ui/SearchInput";
 import {
   ShellHeaderActionAvatar,
   ShellHeaderActionButton,
@@ -32,7 +31,7 @@ type ShellTopBarProps = {
 };
 
 export default function ShellTopBar({
-  onSearchClick,
+  onSearchClick: _onSearchClick,
   onNotificationsClick,
   notificationCount = 0,
   className = "",
@@ -42,13 +41,8 @@ export default function ShellTopBar({
   const pathname = usePathname();
   const { profile, userId, role } = useAuth();
   const { t } = useLocale();
-  const showTopBarSearch = isCoachLikeRole(role) && pathname !== "/dashboard";
   const isCoachDashboard = pathname === "/dashboard" && isCoachLikeRole(role);
   const isAthleteDashboard = pathname === "/dashboard" && role === "atleet";
-  // Athletes don't use the search center — including it adds shell-topbar--dashboard
-  // which triggers a 1-column grid layout breaking the greeting + actions row.
-  // Coach dashboard search lives in the cockpit center column (desktop), not the topbar.
-  const showDashboardSearchCenter = false;
   const isMobileProfilePage = isProfileOpen(pathname);
   const fullName = profile?.full_name || "Profiel";
   const firstName = dashboardFirstName(fullName);
@@ -58,10 +52,11 @@ export default function ShellTopBar({
     .map((part) => part[0]?.toUpperCase() || "")
     .join("");
   const [unread, setUnread] = useState(notificationCount);
-  const [searchExpanded, setSearchExpanded] = useState(false);
-  const searchInputRef = useRef<HTMLInputElement>(null);
-  const searchWrapRef = useRef<HTMLDivElement>(null);
-  const { data: cachedUnread } = useNotificationCount(userId, role, Boolean(userId && role));
+  const { data: cachedUnread } = useNotificationCount(
+    userId,
+    role,
+    Boolean(userId && role),
+  );
 
   useEffect(() => {
     deferEffectUpdate(() => {
@@ -76,69 +71,13 @@ export default function ShellTopBar({
     });
   }, [cachedUnread]);
 
-  useEffect(() => {
-    if (!searchExpanded) return;
-
-    searchInputRef.current?.focus();
-
-    function handlePointerDown(event: MouseEvent) {
-      if (
-        searchWrapRef.current &&
-        !searchWrapRef.current.contains(event.target as Node)
-      ) {
-        setSearchExpanded(false);
-      }
-    }
-
-    document.addEventListener("mousedown", handlePointerDown);
-    return () => document.removeEventListener("mousedown", handlePointerDown);
-  }, [searchExpanded]);
-
-  const searchField = (
-    <SearchInput
-      ref={searchInputRef}
-      value=""
-      onChange={() => {}}
-      readOnly
-      onFocus={onSearchClick}
-      onClick={onSearchClick}
-      placeholder={t("shell.searchPages")}
-      variant="pill"
-      showClear={false}
-      className="w-full"
-      inputClassName="cursor-pointer"
-      trailing={
-        <>
-          <kbd className="shell-topbar-search-kbd hidden shrink-0 sm:inline">
-            ⌘K
-          </kbd>
-          {searchExpanded ? (
-            <button
-              type="button"
-              onClick={() => setSearchExpanded(false)}
-              className="ui-icon-btn shrink-0 app-focus-ring"
-              aria-label={t("shell.closeSearch")}
-            >
-              <X className="h-3.5 w-3.5" />
-            </button>
-          ) : null}
-        </>
-      }
-    />
-  );
-
-  const openSearch = () => {
-    setSearchExpanded(true);
-    window.requestAnimationFrame(() => onSearchClick());
-  };
-
   return (
     <header
-      className={`shell-topbar z-30 shrink-0 ${
-        showDashboardSearchCenter ? "shell-topbar--dashboard" : ""
-      }${isAthleteDashboard ? " shell-topbar--athlete-dashboard" : ""}${
-        isCoachDashboard ? " shell-topbar--coach-dashboard" : ""
-      }${className ? ` ${className}` : ""}`}
+      className={`shell-topbar z-30 shrink-0${
+        isAthleteDashboard ? " shell-topbar--athlete-dashboard" : ""
+      }${isCoachDashboard ? " shell-topbar--coach-dashboard" : ""}${
+        className ? ` ${className}` : ""
+      }`}
     >
       <div className="shell-topbar-inner">
         <div className="shell-topbar-leading flex min-w-0 items-center gap-1.5">
@@ -148,7 +87,9 @@ export default function ShellTopBar({
             </Suspense>
           ) : null}
           {isMobileProfilePage ? (
-            <h1 className="shell-topbar-athlete-title truncate">{t("profile.title")}</h1>
+            <h1 className="shell-topbar-athlete-title truncate">
+              {t("profile.title")}
+            </h1>
           ) : null}
           {isAthleteDashboard ? (
             <div className="shell-topbar-dashboard-greeting shell-topbar-athlete-greeting min-w-0">
@@ -174,34 +115,7 @@ export default function ShellTopBar({
           ) : null}
         </div>
 
-        {showDashboardSearchCenter ? (
-          <div className="shell-topbar-search-center">{searchField}</div>
-        ) : null}
-
         <div className="shell-topbar-actions">
-          {showTopBarSearch ? (
-            <div
-              ref={searchWrapRef}
-              className={`shell-topbar-search-mobile flex items-center transition-all duration-200 ease-out ${
-                searchExpanded ? "mr-auto w-[min(100vw-8rem,320px)] flex-1 lg:w-auto lg:flex-none" : ""
-              }`}
-            >
-              {searchExpanded ? (
-                searchField
-              ) : (
-                <ShellHeaderActionButton
-                  onClick={openSearch}
-                  className="shell-topbar-search-btn"
-                  aria-label={t("common.search")}
-                >
-                  <ShellHeaderActionAvatar icon>
-                    <Search className="h-4 w-4" aria-hidden="true" />
-                  </ShellHeaderActionAvatar>
-                </ShellHeaderActionButton>
-              )}
-            </div>
-          ) : null}
-
           <ShellHeaderActionButton
             onClick={onNotificationsClick}
             className="shell-topbar-notifications-btn"
@@ -212,7 +126,9 @@ export default function ShellTopBar({
             }
             badge={unread}
             badgeLabel={
-              unread > 0 ? t("shell.unreadNotifications", { count: unread }) : undefined
+              unread > 0
+                ? t("shell.unreadNotifications", { count: unread })
+                : undefined
             }
           >
             <ShellHeaderActionAvatar icon>
@@ -224,7 +140,9 @@ export default function ShellTopBar({
             <ShellHeaderActionButton
               onClick={onProfileToggle}
               aria-label={
-                mobileProfileOpen ? t("profile.closeProfile") : t("profile.openProfile")
+                mobileProfileOpen
+                  ? t("profile.closeProfile")
+                  : t("profile.openProfile")
               }
               aria-pressed={mobileProfileOpen}
               className={[
@@ -254,7 +172,11 @@ export default function ShellTopBar({
             <ShellHeaderActionLink
               href="/profile"
               aria-label={t("common.profile")}
-              className={isCoachDashboard ? "shell-topbar-action-chip--athlete-avatar" : undefined}
+              className={
+                isCoachDashboard
+                  ? "shell-topbar-action-chip--athlete-avatar"
+                  : undefined
+              }
             >
               <ShellHeaderActionAvatar>{initials || "LC"}</ShellHeaderActionAvatar>
               <span
