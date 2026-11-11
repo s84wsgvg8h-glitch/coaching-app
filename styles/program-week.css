@@ -2401,12 +2401,12 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   justify-content: center;
   gap: 6px;
   border-radius: var(--coach-program-radius);
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, #2563eb, #1e40af);
   padding: 10px 16px;
   font-size: 0.875rem;
   font-weight: 600;
   color: white;
-  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.28);
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.22);
   transition:
     opacity 0.15s ease,
     transform 0.15s ease;
@@ -5329,7 +5329,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
 .coach-program-editor-view-toggle {
   --raw-border: rgba(255, 255, 255, 0.08);
   --raw-toggle-bg: rgba(255, 255, 255, 0.03);
-  --raw-toggle-active-bg: linear-gradient(135deg, #3b82f6, #2563eb);
+  --raw-toggle-active-bg: linear-gradient(135deg, #2563eb, #1e40af);
   --raw-toggle-active-text: #ffffff;
   display: inline-flex;
   align-items: center;
@@ -5386,7 +5386,7 @@ html:not(.dark) .coach-program-shell .program-day-chip-uitleg-active {
 .coach-program-editor-view-toggle button.is-active {
   background: var(--raw-toggle-active-bg);
   color: var(--raw-toggle-active-text);
-  box-shadow: 0 2px 10px rgba(59, 130, 246, 0.35);
+  box-shadow: 0 1px 4px rgba(30, 64, 175, 0.2);
 }
 
 /* Collapsed by default: only the active view label shows. Hover/focus expands. */
