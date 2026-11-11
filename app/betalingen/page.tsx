@@ -406,8 +406,6 @@ function BetalingenPageContent() {
     [mergedRows, coverageFilter, search],
   );
 
-  const withSubscriptionCount = mergedRows.filter(hasLiveSubscription).length;
-  const withoutSubscriptionCount = mergedRows.filter((row) => !row.subscription).length;
 
   async function handleConnectStripe() {
     const preparedWindow = prepareExternalWindow();
@@ -560,10 +558,6 @@ function BetalingenPageContent() {
                   <h2 className="text-[15px] font-semibold text-app-text">
                     Atleten
                   </h2>
-                  <p className="mt-0.5 text-[12px] text-app-muted">
-                    {withSubscriptionCount} met abonnement · {withoutSubscriptionCount}{" "}
-                    zonder · {formatPaymentPrice(overview.totalMonthlyIncome)} / maand
-                  </p>
                 </div>
 
                 {visibleRows.length === 0 ? (
