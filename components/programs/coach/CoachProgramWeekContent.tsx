@@ -1390,9 +1390,6 @@ export default function CoachProgramWeekContent({
                     >
                       <div className="coach-program-add-day-icon">+</div>
                       <p className="coach-program-add-day-title">Nieuwe dag toevoegen</p>
-                      <p className="coach-program-add-day-subtitle">
-                        Plan een nieuwe trainingsdag in deze week.
-                      </p>
                     </button>
                   </div>
                 )}
