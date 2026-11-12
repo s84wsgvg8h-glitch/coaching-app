@@ -966,6 +966,9 @@
     border-radius: 0.65rem;
     background: rgba(245, 158, 11, 0.12);
     color: #fbbf24;
+    font-size: 0.875rem;
+    font-weight: 700;
+    line-height: 1;
   }
 
   .dashboard-cockpit-col--center .coach-dashboard-search-embedded .coach-mobile-dashboard-search-card {

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { CalendarPlus } from "lucide-react";
 import { SkeletonCard } from "@/components/ui/Skeleton";
 import { useNextWeekProgramsNeeded } from "@/hooks/useNextWeekProgramsNeeded";
 import { isAdminRole } from "@/lib/authRoles";
@@ -33,14 +32,14 @@ export default function CoachNextWeekProgramsWidget({
   return (
     <div className="dashboard-next-week-programs-widget ui-panel-compact">
       <div className="flex items-start gap-3">
-        <div className="dashboard-next-week-programs-icon" aria-hidden="true">
-          <CalendarPlus className="h-4 w-4" />
+        <div
+          className="dashboard-next-week-programs-icon"
+          aria-label={`${count} programma’s`}
+        >
+          <span className="tabular-nums">{count}</span>
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
-            Volgende week
-          </p>
-          <p className="mt-0.5 text-[15px] font-semibold text-app-text">
+          <p className="text-[15px] font-semibold text-app-text">
             {count === 0
               ? "Geen nieuwe programma’s nodig"
               : count === 1
@@ -70,11 +69,6 @@ export default function CoachNextWeekProgramsWidget({
             </ul>
           ) : null}
         </div>
-        {count > 0 ? (
-          <span className="shrink-0 rounded-full bg-amber-400/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300">
-            {count}
-          </span>
-        ) : null}
       </div>
     </div>
   );
