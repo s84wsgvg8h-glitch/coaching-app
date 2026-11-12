@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import "@/styles/dashboard-premium.css";
+import "@/styles/dashboard-coach-light.css";
 import DemoModeBanner from "@/components/DemoModeBanner";
 import DemoPagesPanel from "@/components/DemoPagesPanel";
 import CoachAppSidebar from "@/components/coach/CoachAppSidebar";
