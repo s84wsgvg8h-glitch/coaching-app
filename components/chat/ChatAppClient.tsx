@@ -17,6 +17,7 @@ import {
   Camera,
   Check,
   CheckCheck,
+  Home,
   MessageCircle,
   MoreVertical,
   Pin,
@@ -2970,9 +2971,19 @@ export default function ChatAppClient() {
           <div className="chat-list-header shrink-0 border-b border-app-border bg-app-surface px-3 pb-2.5 pt-[max(0.5rem,env(safe-area-inset-top))] md:px-4 md:pt-4">
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between gap-2 md:gap-3">
-                <h1 className="chat-list-header-title min-w-0 text-lg font-semibold tracking-tight text-app-text md:text-xl">
-                  Chats
-                </h1>
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <Link
+                    href="/dashboard"
+                    className="chat-home-btn app-focus-ring shrink-0"
+                    aria-label="Home"
+                    title="Home"
+                  >
+                    <Home className="h-4 w-4" aria-hidden="true" />
+                  </Link>
+                  <h1 className="chat-list-header-title min-w-0 text-lg font-semibold tracking-tight text-app-text md:text-xl">
+                    Chats
+                  </h1>
+                </div>
                 <div className="flex items-center gap-2">
                   {isCoachLikeRole(userRole) && (
                     <>

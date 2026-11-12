@@ -62,15 +62,26 @@
 }
 
 .app-search-field--collapsible {
-  width: 52px;
+  --app-search-collapse-size: 44px;
+  width: var(--app-search-collapse-size);
+  height: var(--app-search-collapse-size);
+  min-width: var(--app-search-collapse-size);
+  min-height: var(--app-search-collapse-size);
   overflow: hidden;
-  padding: 0 12px;
-  gap: 12px;
+  justify-content: center;
+  padding: 0;
+  gap: 0;
   transition:
     width 0.22s ease,
+    min-width 0.22s ease,
     padding 0.22s ease,
+    gap 0.22s ease,
     border-color 200ms ease,
     box-shadow 200ms ease;
+}
+
+.app-search-field--collapsible.app-search-field--compact {
+  --app-search-collapse-size: 40px;
 }
 
 .app-search-field--collapsible:not(.app-search-field--collapsible-expanded) {
@@ -79,7 +90,11 @@
 
 .app-search-field--collapsible-expanded {
   width: min(420px, 58vw);
+  min-width: min(420px, 58vw);
+  height: auto;
+  justify-content: flex-start;
   padding: 0 14px 0 12px;
+  gap: 12px;
 }
 
 .app-search-field--collapsible:not(.app-search-field--collapsible-expanded)

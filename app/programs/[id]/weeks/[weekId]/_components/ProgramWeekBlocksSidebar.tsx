@@ -4,7 +4,6 @@ import type { Dispatch, SetStateAction } from "react";
 import { useMemo } from "react";
 import ProgramNavSidebarRail from "@/components/programs/ProgramNavSidebarRail";
 import ProgramBlockOverlapWarning from "@/components/programs/ProgramBlockOverlapWarning";
-import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
 import ProgramWeekAddMenu from "./ProgramWeekAddMenu";
 import type { ProgramWeekAddMenuProps } from "./ProgramWeekAddMenu";
@@ -564,14 +563,6 @@ export default function ProgramWeekBlocksSidebar({
                                     )}
                                   </button>
 
-                                  <CreateTemplateButton
-                                    coachId={userId}
-                                    blockId={block.id}
-                                    actingUserId={userId}
-                                    actingRole={role}
-                                    compact
-                                    activeTone={activeBlock ? "dark" : "light"}
-                                  />
                                 </div>
                               )}
                             </div>
@@ -690,14 +681,6 @@ export default function ProgramWeekBlocksSidebar({
                                               ⧉
                                             </button>
 
-                                            <CreateTemplateButton
-                                              coachId={userId}
-                                              weekId={item.id}
-                                              actingUserId={userId}
-                                              actingRole={role}
-                                              compact
-                                              activeTone={activeWeek ? "dark" : "light"}
-                                            />
                                           </div>
                                         )}
                                       </div>

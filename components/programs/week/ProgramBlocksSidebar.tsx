@@ -3,7 +3,6 @@
 import type { ReactNode } from "react";
 import ProgramNavSidebarRail from "@/components/programs/ProgramNavSidebarRail";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
-import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { formatDate } from "@/lib/programWeek/dateFormatting";
 import type { ProgramBlock, ProgramWeek } from "@/lib/programWeek/types";
@@ -415,14 +414,6 @@ export default function ProgramBlocksSidebar({
                               ⧉
                             </button>
 
-                            <CreateTemplateButton
-                              coachId={userId}
-                              blockId={block.id}
-                              actingUserId={userId}
-                              actingRole={role}
-                              compact
-                              activeTone={activeBlock ? "dark" : "light"}
-                            />
                           </div>
                         )}
                       </div>
@@ -505,14 +496,6 @@ export default function ProgramBlocksSidebar({
                                       ⧉
                                     </button>
 
-                                    <CreateTemplateButton
-                                      coachId={userId}
-                                      weekId={item.id}
-                                      actingUserId={userId}
-                                      actingRole={role}
-                                      compact
-                                      activeTone={activeWeek ? "dark" : "light"}
-                                    />
                                   </div>
                                 )}
                               </div>

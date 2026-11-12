@@ -611,16 +611,7 @@ function BetalingenPageContent() {
           </div>
         ) : (
           <div className="min-w-0">
-              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <SearchInput
-                  value={search}
-                  onChange={setSearch}
-                  placeholder="Zoek op naam of e-mail…"
-                  collapsible
-                  compact
-                  className="shrink-0"
-                  aria-label="Zoek atleten"
-                />
+              <div className="mb-3 flex w-full justify-end sm:mb-4">
                 <button
                   type="button"
                   onClick={() => void handleConnectStripe()}
@@ -641,6 +632,17 @@ function BetalingenPageContent() {
               </div>
 
               <Panel className="overflow-hidden !border-0 !bg-transparent !p-0 !shadow-none">
+                <div className="mb-3 flex items-center md:hidden">
+                  <SearchInput
+                    value={search}
+                    onChange={setSearch}
+                    placeholder="Zoek op naam of e-mail…"
+                    collapsible
+                    compact
+                    className="shrink-0"
+                    aria-label="Zoek atleten"
+                  />
+                </div>
                 {visibleRows.length === 0 ? (
                   <p className="px-1 py-8 text-center text-[13px] text-app-muted">
                     {mergedRows.length === 0
@@ -653,12 +655,12 @@ function BetalingenPageContent() {
                       <table className="min-w-full text-center text-[11px]">
                         <thead>
                           <tr className="border-b border-app-border/60">
-                            {SORT_COLUMNS.map((column) => {
+                            {SORT_COLUMNS.map((column, index) => {
                               const active = sortKey === column.key;
                               return (
                                 <th
                                   key={column.key}
-                                  className="px-2 py-2.5 text-center sm:px-3"
+                                  className="px-2 py-2.5 text-center align-middle sm:px-3"
                                   aria-sort={
                                     active
                                       ? sortDirection === "asc"
@@ -667,30 +669,47 @@ function BetalingenPageContent() {
                                       : "none"
                                   }
                                 >
-                                  <button
-                                    type="button"
-                                    onClick={() => handleSort(column.key)}
-                                    className={`app-focus-ring inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1.5 text-[15px] font-semibold leading-none transition ${
-                                      active
-                                        ? "text-app-text"
-                                        : "text-app-muted hover:text-app-text"
+                                  <div
+                                    className={`inline-flex min-h-11 items-center justify-center gap-2 ${
+                                      index === 0 ? "w-full justify-start" : ""
                                     }`}
                                   >
-                                    {column.label}
-                                    {active ? (
-                                      sortDirection === "asc" ? (
-                                        <ArrowUp
-                                          className="h-3.5 w-3.5"
-                                          aria-hidden="true"
-                                        />
-                                      ) : (
-                                        <ArrowDown
-                                          className="h-3.5 w-3.5"
-                                          aria-hidden="true"
-                                        />
-                                      )
+                                    {index === 0 ? (
+                                      <SearchInput
+                                        value={search}
+                                        onChange={setSearch}
+                                        placeholder="Zoek op naam of e-mail…"
+                                        collapsible
+                                        compact
+                                        className="shrink-0"
+                                        aria-label="Zoek atleten"
+                                      />
                                     ) : null}
-                                  </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSort(column.key)}
+                                      className={`app-focus-ring inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1.5 text-[15px] font-semibold leading-none transition ${
+                                        active
+                                          ? "text-app-text"
+                                          : "text-app-muted hover:text-app-text"
+                                      }`}
+                                    >
+                                      {column.label}
+                                      {active ? (
+                                        sortDirection === "asc" ? (
+                                          <ArrowUp
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden="true"
+                                          />
+                                        ) : (
+                                          <ArrowDown
+                                            className="h-3.5 w-3.5"
+                                            aria-hidden="true"
+                                          />
+                                        )
+                                      ) : null}
+                                    </button>
+                                  </div>
                                 </th>
                               );
                             })}

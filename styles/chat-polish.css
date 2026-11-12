@@ -51,6 +51,27 @@ html:not(.dark) .chat-shell {
   }
 }
 
+/* Same home control as program week header */
+.chat-home-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 2.4rem;
+  height: 2.4rem;
+  min-width: 2.4rem;
+  min-height: 2.4rem;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #1e40af);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.22);
+  transition: opacity 0.15s ease;
+}
+
+.chat-home-btn:hover {
+  opacity: 0.92;
+}
+
 /* ─── Composition: sidebar vs conversation depth ─── */
 .chat-shell .chat-list-panel {
   border-color: var(--chat-border);

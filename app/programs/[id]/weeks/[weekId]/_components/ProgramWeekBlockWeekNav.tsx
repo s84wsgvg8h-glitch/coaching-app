@@ -5,7 +5,6 @@ import { useMemo, useRef } from "react";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
 import ProgramBlockOverlapWarning from "@/components/programs/ProgramBlockOverlapWarning";
 import ProgramMobileNavMenu from "@/components/programs/week/ProgramMobileNavMenu";
-import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import { getProgramBlockOverlapMap } from "@/lib/programBlockOverlap";
 import {
   CoachProgramEditorViewSelect,
@@ -389,15 +388,6 @@ export default function ProgramWeekBlockWeekNav({
                         )}
                       </button>
 
-                      <CreateTemplateButton
-                        coachId={userId}
-                        blockId={block.id}
-                        actingUserId={userId}
-                        actingRole={role}
-                        compact
-                        activeTone={isActive ? "dark" : "light"}
-                      />
-
                       <button
                         type="button"
                         disabled={Boolean(pendingBlockAction)}
@@ -517,15 +507,6 @@ export default function ProgramWeekBlockWeekNav({
                       >
                         ⧉
                       </button>
-
-                      <CreateTemplateButton
-                        coachId={userId}
-                        weekId={item.id}
-                        actingUserId={userId}
-                        actingRole={role}
-                        compact
-                        activeTone={isActive ? "dark" : "light"}
-                      />
 
                       <button
                         type="button"

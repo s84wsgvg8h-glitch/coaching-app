@@ -16,7 +16,6 @@ import CoachProgramWeekHeader, {
 } from "@/components/programs/coach/CoachProgramWeekHeader";
 import type { WeekStatsReport } from "@/lib/programWeek/weekStats";
 import { isPriorityExercise } from "@/lib/programWeek/exerciseUtils";
-import { CreateTemplateButton } from "@/components/programs/ProgramTemplateActions";
 import {
   COACH_CARD_DISMISS_BTN,
   DELETE_X_BTN,

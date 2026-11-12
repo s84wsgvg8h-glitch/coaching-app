@@ -4,6 +4,7 @@ import { createPortal } from "react-dom";
 import { useEffect, useState } from "react";
 import { X } from "lucide-react";
 import ProgramBlockDateField from "@/components/programs/ProgramBlockDateField";
+import { CreateTemplateModal } from "@/components/programs/ProgramTemplateActions";
 import {
   loadProgramPlanningNotes,
   saveProgramPlanningBlockNote,
@@ -20,6 +21,8 @@ type ProgramBlockEditModalProps = {
   blockId: string;
   athleteId: string;
   coachId: string;
+  actingUserId?: string;
+  actingRole?: string;
   saving?: boolean;
   onClose: () => void;
   onSave: (payload: {
@@ -39,6 +42,8 @@ export default function ProgramBlockEditModal({
   blockId,
   athleteId,
   coachId,
+  actingUserId,
+  actingRole = "coach",
   saving = false,
   onClose,
   onSave,
@@ -49,6 +54,8 @@ export default function ProgramBlockEditModal({
   const [draftNote, setDraftNote] = useState("");
   const [loadingNote, setLoadingNote] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [templateOpen, setTemplateOpen] = useState(false);
+  const templateActorId = actingUserId || coachId;
 
   useEffect(() => {
     deferEffectUpdate(() => {
@@ -170,7 +177,14 @@ export default function ProgramBlockEditModal({
           </label>
         </div>
 
-        <div className="program-edit-modal-actions">
+        <div className="program-edit-modal-actions flex-wrap">
+          <button
+            type="button"
+            onClick={() => setTemplateOpen(true)}
+            className="app-btn-secondary w-full sm:w-auto"
+          >
+            Template aanmaken
+          </button>
           <button type="button" onClick={onClose} className="app-btn-secondary flex-1">
             Annuleren
           </button>
@@ -190,6 +204,15 @@ export default function ProgramBlockEditModal({
             {saving ? "Opslaan..." : "Opslaan"}
           </button>
         </div>
+
+        <CreateTemplateModal
+          open={templateOpen}
+          onClose={() => setTemplateOpen(false)}
+          coachId={coachId}
+          blockId={blockId}
+          actingUserId={templateActorId}
+          actingRole={actingRole}
+        />
       </div>
     </div>,
     document.body,

@@ -258,6 +258,8 @@ export default function ProgramWeekOverlays({
         blockId={editingBlockId}
         athleteId={planningAthleteId}
         coachId={userId}
+        actingUserId={userId}
+        actingRole={role}
         onClose={onCloseBlockEdit}
         onSave={onSaveBlockEdit}
       />
@@ -268,6 +270,8 @@ export default function ProgramWeekOverlays({
         weekId={editingWeekId}
         athleteId={planningAthleteId}
         coachId={userId}
+        actingUserId={userId}
+        actingRole={role}
         onClose={onCloseWeekEdit}
         onSave={onSaveWeekEdit}
       />
