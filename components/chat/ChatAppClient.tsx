@@ -3228,15 +3228,20 @@ export default function ChatAppClient() {
           }`}
         >
           {!activeUserId && !activeGroupId ? (
-            <EmptyState
-              icon="chat"
-              title="Limitless Chat"
-              description={
-                userRole === "atleet"
-                  ? "Tik op je coach om te starten. Swipe of gebruik /programma, /bw en /ai in een chat."
-                  : "Selecteer een atleet of groep om te beginnen. Gebruik slash-commando's voor snelle coaching-tools."
-              }
-            />
+            <div className="flex min-h-0 flex-1 justify-center px-4 pt-[28%] md:pt-[32%]">
+              <div className="w-full max-w-[16.5rem]">
+                <EmptyState
+                  icon="chat"
+                  title="Limitless Chat"
+                  compact
+                  description={
+                    userRole === "atleet"
+                      ? "Tik op je coach om te starten."
+                      : "Selecteer een atleet of groep om te beginnen."
+                  }
+                />
+              </div>
+            </div>
           ) : showGroupInfo && activeGroupId ? (
             <GroupInfoPanel
               groupId={activeGroupId}
