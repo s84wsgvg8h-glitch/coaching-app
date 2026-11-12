@@ -514,9 +514,9 @@
     display: block;
     min-width: 0;
     flex: 1;
-    padding-left: 0.25rem;
-    padding-top: 1.15rem;
-    padding-bottom: 0.35rem;
+    padding-left: 1.25rem;
+    padding-top: 1.65rem;
+    padding-bottom: 0.15rem;
   }
 
   .shell-topbar-greeting-title {
@@ -1171,11 +1171,16 @@
 
   .premium-coach-ui .shell-topbar--coach-dashboard:not(.shell-topbar--dashboard) .shell-topbar-inner {
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: space-between;
     gap: 1rem;
     min-height: 5.75rem;
-    padding: 1.75rem 0 1.1rem;
+    padding: 0.85rem 0 1.1rem;
+  }
+
+  .premium-coach-ui .shell-topbar--coach-dashboard:not(.shell-topbar--dashboard) .shell-topbar-actions {
+    align-self: flex-start;
+    padding-top: 0.15rem;
   }
 
   .dashboard-cockpit-panel {
