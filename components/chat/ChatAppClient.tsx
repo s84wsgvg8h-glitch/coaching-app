@@ -2990,7 +2990,7 @@ export default function ChatAppClient() {
                       <button
                         type="button"
                         onClick={() => setBroadcastOpen(true)}
-                        className="app-focus-ring flex h-10 items-center rounded-full bg-brand-purple px-3 text-xs font-semibold text-white"
+                        className="app-focus-ring flex h-10 items-center rounded-full bg-app-accent px-3 text-xs font-semibold text-white"
                       >
                         Broadcast
                       </button>
