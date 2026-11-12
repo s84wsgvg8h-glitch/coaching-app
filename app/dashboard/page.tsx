@@ -146,13 +146,9 @@ export default function DashboardPage() {
   const coachContent = userId ? (
     <div className="coach-dashboard-desktop-only hidden w-full min-w-0 lg:block">
       <div className="dashboard-cockpit premium-coach-dashboard w-full min-w-0">
-      <CoachCockpitHeader
-        fullName={fullName}
-        athleteCount={coachMetrics.athleteCount}
-      />
-
       <div className="dashboard-cockpit-main dashboard-cockpit-main--search-only">
         <div className="dashboard-cockpit-col dashboard-cockpit-col--center">
+          <CoachCockpitHeader fullName={fullName} />
           <div className="dashboard-cockpit-search-row">
             <CoachMobileDashboardSearch variant="embedded" />
             <CoachNextWeekProgramsWidget coachId={userId} role={role} />

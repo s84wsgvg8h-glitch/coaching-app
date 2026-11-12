@@ -221,7 +221,7 @@ async function listAllCoachConnectSubscriptions(
       {
         status: "all",
         limit: 100,
-        expand: ["data.customer", "data.latest_invoice"],
+        expand: ["data.customer"],
         ...(startingAfter ? { starting_after: startingAfter } : {}),
       },
       requestOptions,

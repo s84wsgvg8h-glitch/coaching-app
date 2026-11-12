@@ -14,8 +14,13 @@ export default function BetalingenLoading() {
         ))}
       </div>
       <div className="overflow-hidden rounded-2xl border border-app-border">
-        <div className="border-b border-app-border px-4 py-3">
-          <div className="h-5 w-24 animate-pulse rounded bg-app-surface-muted" />
+        <div className="grid grid-cols-5 gap-3 border-b border-app-border px-4 py-3">
+          {Array.from({ length: 5 }).map((_, index) => (
+            <div
+              key={index}
+              className="h-5 animate-pulse rounded bg-app-surface-muted"
+            />
+          ))}
         </div>
         <div className="space-y-3 p-4">
           {Array.from({ length: 6 }).map((_, index) => (

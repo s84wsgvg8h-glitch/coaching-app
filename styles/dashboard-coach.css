@@ -499,46 +499,37 @@
   }
 }
 
-/* Shell topbar greeting on dashboard desktop */
-
-.shell-topbar-greeting {
-  display: none;
-}
+/* Shell topbar: no desktop greeting — centered above search instead */
 
 @media (min-width: 1024px) {
   .shell-topbar--coach-dashboard {
     border-bottom: none;
   }
+}
 
-  .shell-topbar-greeting {
-    display: block;
-    min-width: 0;
-    flex: 1;
-    padding-left: 1.25rem;
-    padding-top: 1.65rem;
-    padding-bottom: 0.15rem;
-  }
+.dashboard-search-greeting {
+  display: flex;
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  margin-bottom: 1.1rem;
+}
 
-  .shell-topbar-greeting-title {
-    font-size: 1.625rem;
-    font-weight: 650;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
-    color: var(--app-text);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.dashboard-search-greeting-title {
+  margin: 0;
+  font-size: 1.625rem;
+  font-weight: 650;
+  letter-spacing: -0.03em;
+  line-height: 1.15;
+  color: var(--app-text);
+}
 
-  .shell-topbar-greeting-sub {
-    margin-top: 0.4rem;
-    font-size: 0.9375rem;
-    font-weight: 500;
-    color: var(--app-muted);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
+.dashboard-search-greeting-sub {
+  margin: 0.4rem 0 0;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  color: var(--app-muted);
 }
 
 /* Phase 2 widgets */
@@ -914,7 +905,7 @@
   .dashboard-cockpit-main--search-only .dashboard-cockpit-col--center {
     width: min(100%, var(--dashboard-cockpit-search-width));
     max-width: var(--dashboard-cockpit-search-width);
-    padding-top: clamp(4.5rem, 16vh, 9rem);
+    padding-top: clamp(2.5rem, 10vh, 6rem);
     overflow: visible;
   }
 

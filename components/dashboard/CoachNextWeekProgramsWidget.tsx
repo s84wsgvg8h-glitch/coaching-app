@@ -40,10 +40,10 @@ export default function CoachNextWeekProgramsWidget({
         </div>
         <p className="min-w-0 flex-1 pt-0.5 text-[15px] font-semibold text-app-text">
           {count === 0
-            ? "Geen nieuwe programma’s nodig"
+            ? "Geen programma’s nodig"
             : count === 1
-              ? "Nieuw programma nodig"
-              : "Nieuwe programma’s nodig"}
+              ? "Programma nodig"
+              : "Programma’s nodig"}
         </p>
       </div>
       {count > 0 ? (

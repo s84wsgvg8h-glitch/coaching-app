@@ -15,7 +15,6 @@ import {
 } from "@/components/ui/ShellHeaderActionChip";
 import {
   dashboardFirstName,
-  formatDashboardDate,
   getDashboardGreeting,
 } from "@/lib/dashboardGreeting";
 import { getPageTitle } from "@/lib/navigation";
@@ -112,19 +111,11 @@ export default function ShellTopBar({
             </div>
           ) : null}
           {isCoachDashboard ? (
-            <>
-              <div className="shell-topbar-dashboard-greeting min-w-0 lg:hidden">
-                <p className="shell-topbar-dashboard-greeting-title">
-                  {getDashboardGreeting()}, {firstName} 👋
-                </p>
-              </div>
-              <div className="shell-topbar-greeting hidden lg:block">
-                <p className="shell-topbar-greeting-title">
-                  {getDashboardGreeting()}, {firstName} 👋
-                </p>
-                <p className="shell-topbar-greeting-sub">{formatDashboardDate()}</p>
-              </div>
-            </>
+            <div className="shell-topbar-dashboard-greeting min-w-0 lg:hidden">
+              <p className="shell-topbar-dashboard-greeting-title">
+                {getDashboardGreeting()}, {firstName} 👋
+              </p>
+            </div>
           ) : null}
         </div>
 

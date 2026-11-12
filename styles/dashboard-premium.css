@@ -269,15 +269,7 @@ html.dark .premium-coach-ui .shell-topbar--dashboard .shell-topbar-inner {
   }
 }
 
-html.dark .premium-coach-ui .shell-topbar-greeting-title {
-  font-size: 1.125rem;
-  font-weight: 600;
-  letter-spacing: -0.025em;
-}
-
-html.dark .premium-coach-ui .shell-topbar-greeting-sub {
-  margin-top: 0.2rem;
-  font-size: 12px;
+html.dark .premium-coach-ui .dashboard-search-greeting-sub {
   color: var(--dash-text-muted);
 }
 

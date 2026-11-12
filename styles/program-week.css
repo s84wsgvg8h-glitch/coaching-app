@@ -2151,25 +2151,24 @@ html:not(.dark) .coach-apply-all-weeks-badge {
 
 .coach-program-athlete-switcher {
   position: relative;
+  width: max-content;
   min-width: 9.5rem;
-  max-width: 14rem;
+  max-width: min(100%, 28rem);
 }
 
 .coach-program-athlete-switcher-face {
   position: relative;
-  width: 100%;
-  max-width: 100%;
+  width: max-content;
+  min-width: 100%;
   padding: 0 1.65rem 0 0.75rem;
   pointer-events: none;
-  overflow: hidden;
+  overflow: visible;
   color: var(--app-text);
   background: transparent;
 }
 
 .coach-program-athlete-switcher-label {
   display: block;
-  overflow: hidden;
-  text-overflow: ellipsis;
   white-space: nowrap;
   text-align: center;
   color: var(--app-text);

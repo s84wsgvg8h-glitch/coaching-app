@@ -4,6 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { useAuth } from "@/components/AuthProvider";
 import { Badge, PageContainer, Panel } from "@/components/ui/design-system";
 import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
@@ -199,6 +200,7 @@ export default function BetalingenPage() {
 
 function BetalingenPageContent() {
   const searchParams = useSearchParams();
+  const { userId, role, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [connecting, setConnecting] = useState(false);
   const [overview, setOverview] = useState<CoachPaymentOverview | null>(null);
@@ -282,48 +284,38 @@ function BetalingenPageContent() {
   }
 
   async function loadPage(options?: { silent?: boolean }) {
+    if (!userId || !isCoachLikeRole(role)) {
+      if (!authLoading && !userId) {
+        window.location.href = "/login";
+      } else if (!authLoading && userId) {
+        window.location.href = "/dashboard";
+      }
+      return;
+    }
+
     if (!options?.silent) {
       setLoading(true);
     }
 
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      window.location.href = "/login";
-      return;
-    }
-
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("role")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (!isCoachLikeRole(profile?.role)) {
-      window.location.href = "/dashboard";
-      return;
-    }
-
-    const [paymentOverview, session] = await Promise.all([
-      loadCoachPaymentOverview(user.id, profile?.role || "coach"),
-      isDemoMode()
-        ? Promise.resolve({ data: { session: { access_token: "demo" } } })
-        : supabase.auth.getSession(),
-    ]);
-
+    const paymentOverview = await loadCoachPaymentOverview(
+      userId,
+      role || "coach",
+    );
     setOverview(paymentOverview);
+    setLoading(false);
 
     if (isDemoMode()) {
       setStripeConnected(false);
       setStripeConfigured(true);
       setSubscriptions([]);
-      setLoading(false);
       return;
     }
 
-    const token = session.data.session?.access_token;
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
     if (token) {
       const [stripeStatusError, subscriptionError] = await Promise.all([
         refreshStripeStatus(token),
@@ -342,8 +334,6 @@ function BetalingenPageContent() {
         }
       }
     }
-
-    setLoading(false);
   }
 
   const reloadLiveRef = useRef<() => void>(() => {});
@@ -352,10 +342,11 @@ function BetalingenPageContent() {
   };
 
   useEffect(() => {
+    if (authLoading) return;
     void loadPage();
     // searchParams is read for the banner, not as a reload trigger.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, userId, role]);
 
   useEffect(() => {
     let lastFetchAt = Date.now();
@@ -363,17 +354,15 @@ function BetalingenPageContent() {
     const reloadIfDue = () => {
       if (document.visibilityState === "hidden") return;
       const now = Date.now();
-      if (now - lastFetchAt < 4000) return;
+      if (now - lastFetchAt < 30_000) return;
       lastFetchAt = now;
       reloadLiveRef.current();
     };
 
-    const interval = window.setInterval(reloadIfDue, 10000);
     document.addEventListener("visibilitychange", reloadIfDue);
     window.addEventListener("focus", reloadIfDue);
 
     return () => {
-      window.clearInterval(interval);
       document.removeEventListener("visibilitychange", reloadIfDue);
       window.removeEventListener("focus", reloadIfDue);
     };
@@ -512,8 +501,13 @@ function BetalingenPageContent() {
               ))}
             </div>
             <div className="overflow-hidden rounded-2xl border border-app-border">
-              <div className="border-b border-app-border px-4 py-3">
-                <div className="h-5 w-24 animate-pulse rounded bg-app-surface-muted" />
+              <div className="grid grid-cols-5 gap-3 border-b border-app-border px-4 py-3">
+                {Array.from({ length: 5 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-5 animate-pulse rounded bg-app-surface-muted"
+                  />
+                ))}
               </div>
               <div className="space-y-3 p-4">
                 {Array.from({ length: 6 }).map((_, index) => (
@@ -575,12 +569,6 @@ function BetalingenPageContent() {
               </div>
 
               <Panel className="overflow-hidden !p-0">
-                <div className="border-b border-app-border px-4 py-3">
-                  <h2 className="text-[15px] font-semibold text-app-text">
-                    Atleten
-                  </h2>
-                </div>
-
                 {visibleRows.length === 0 ? (
                   <p className="px-4 py-8 text-center text-[13px] text-app-muted">
                     {mergedRows.length === 0
@@ -591,14 +579,24 @@ function BetalingenPageContent() {
                   <>
                     <div className="hidden overflow-x-auto md:block">
                       <table className="min-w-full text-left text-[13px]">
-                        <thead className="border-b border-app-border bg-app-surface-muted/40 text-[11px] uppercase tracking-wide text-app-muted">
+                        <thead className="border-b border-app-border">
                           <tr>
-                            <th className="px-4 py-3 font-semibold">Atleet</th>
-                            <th className="px-4 py-3 font-semibold">Maandprijs</th>
-                            <th className="px-4 py-3 font-semibold">Betaaldag</th>
-                            <th className="px-4 py-3 font-semibold">Abonnement</th>
-                            <th className="px-4 py-3 font-semibold">Volgende</th>
-                            <th className="px-4 py-3 font-semibold" />
+                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                              Atleet
+                            </th>
+                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                              Maandprijs
+                            </th>
+                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                              Betaaldag
+                            </th>
+                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                              Abonnement
+                            </th>
+                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                              Volgende
+                            </th>
+                            <th className="px-4 py-3" />
                           </tr>
                         </thead>
                         <tbody>
