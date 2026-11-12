@@ -1055,6 +1055,25 @@ html:not(.dark) .ui-icon-btn:hover {
   color: var(--app-text);
 }
 
+.shell-topbar--page-title {
+  border-bottom: none;
+}
+
+.shell-topbar-page-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.15;
+  color: var(--app-text);
+}
+
+@media (min-width: 768px) {
+  .shell-topbar-page-title {
+    font-size: 1.5rem;
+  }
+}
+
 .shell-topbar--athlete-dashboard .shell-topbar-inner {
   align-items: center;
   padding-top: 0.375rem;

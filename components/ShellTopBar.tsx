@@ -18,6 +18,7 @@ import {
   formatDashboardDate,
   getDashboardGreeting,
 } from "@/lib/dashboardGreeting";
+import { getPageTitle } from "@/lib/navigation";
 import { useNotificationCount } from "@/hooks/useNotificationCount";
 import { deferEffectUpdate } from "@/lib/deferEffectUpdate";
 
@@ -44,6 +45,14 @@ export default function ShellTopBar({
   const isCoachDashboard = pathname === "/dashboard" && isCoachLikeRole(role);
   const isAthleteDashboard = pathname === "/dashboard" && role === "atleet";
   const isMobileProfilePage = isProfileOpen(pathname);
+  const showCoachPageTitle =
+    isCoachLikeRole(role) &&
+    !isCoachDashboard &&
+    !isAthleteDashboard &&
+    !isMobileProfilePage;
+  const pageTitle = showCoachPageTitle
+    ? getPageTitle(pathname, role || "coach")
+    : null;
   const fullName = profile?.full_name || "Profiel";
   const firstName = dashboardFirstName(fullName);
   const initials = fullName
@@ -76,12 +85,16 @@ export default function ShellTopBar({
       className={`shell-topbar z-30 shrink-0${
         isAthleteDashboard ? " shell-topbar--athlete-dashboard" : ""
       }${isCoachDashboard ? " shell-topbar--coach-dashboard" : ""}${
-        className ? ` ${className}` : ""
-      }`}
+        showCoachPageTitle ? " shell-topbar--page-title" : ""
+      }${className ? ` ${className}` : ""}`}
     >
       <div className="shell-topbar-inner">
         <div className="shell-topbar-leading flex min-w-0 items-center gap-1.5">
-          {!isCoachDashboard && !isAthleteDashboard && !isMobileProfilePage ? (
+          {showCoachPageTitle && pageTitle ? (
+            <h1 className="shell-topbar-page-title truncate">{pageTitle}</h1>
+          ) : !isCoachDashboard &&
+            !isAthleteDashboard &&
+            !isMobileProfilePage ? (
             <Suspense fallback={null}>
               <PageBackButton variant="topbar" />
             </Suspense>

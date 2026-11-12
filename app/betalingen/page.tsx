@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
-import { Badge, PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
+import { Badge, PageContainer, Panel } from "@/components/ui/design-system";
 import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -491,8 +491,6 @@ function BetalingenPageContent() {
   return (
     <AppShell>
       <PageContainer size="full">
-        <PageHeader title="Betalingen" />
-
         {message ? (
           <Panel className="mb-4 border-brand-purple/30 bg-brand-purple/10 text-[13px] text-app-text">
             {message}
@@ -500,10 +498,33 @@ function BetalingenPageContent() {
         ) : null}
 
         {loading || !overview ? (
-          <Panel className="flex min-h-[220px] items-center justify-center gap-2 text-[13px] text-app-muted">
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-            Betalingen laden…
-          </Panel>
+          <div className="min-w-0 space-y-4" aria-busy="true" aria-live="polite">
+            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="h-11 w-full max-w-xl animate-pulse rounded-full bg-app-surface-muted" />
+              <div className="h-11 w-full animate-pulse rounded-xl bg-app-surface-muted sm:ml-auto sm:w-36" />
+            </div>
+            <div className="flex gap-2">
+              {Array.from({ length: 4 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-11 w-28 shrink-0 animate-pulse rounded-full bg-app-surface-muted"
+                />
+              ))}
+            </div>
+            <div className="overflow-hidden rounded-2xl border border-app-border">
+              <div className="border-b border-app-border px-4 py-3">
+                <div className="h-5 w-24 animate-pulse rounded bg-app-surface-muted" />
+              </div>
+              <div className="space-y-3 p-4">
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <div
+                    key={index}
+                    className="h-10 animate-pulse rounded-xl bg-app-surface-muted"
+                  />
+                ))}
+              </div>
+            </div>
+          </div>
         ) : (
           <div className="min-w-0">
               <div className="mb-4 flex flex-col gap-3">
