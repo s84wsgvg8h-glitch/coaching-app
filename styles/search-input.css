@@ -88,6 +88,42 @@
   cursor: pointer;
 }
 
+/* Icon-only collapsed search (no pill/circle chrome) */
+.app-search-field--collapsible.app-search-field--ghost:not(
+    .app-search-field--collapsible-expanded
+  ) {
+  --app-search-collapse-size: 2.75rem;
+  width: var(--app-search-collapse-size);
+  height: var(--app-search-collapse-size);
+  min-width: var(--app-search-collapse-size);
+  min-height: var(--app-search-collapse-size);
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  padding: 0;
+}
+
+.app-search-field--collapsible.app-search-field--ghost.app-search-field--compact:not(
+    .app-search-field--collapsible-expanded
+  ) {
+  --app-search-collapse-size: 2.5rem;
+}
+
+.app-search-field--collapsible.app-search-field--ghost:not(
+    .app-search-field--collapsible-expanded
+  )
+  .app-search-field-icon {
+  height: 18px;
+  width: 18px;
+  color: var(--app-text-muted);
+}
+
+.app-search-field--collapsible.app-search-field--ghost.app-search-field--collapsible-expanded {
+  border: 1px solid var(--app-search-border);
+  background: var(--app-search-bg);
+  border-radius: 9999px;
+}
+
 .app-search-field--collapsible-expanded {
   width: min(420px, 58vw);
   min-width: min(420px, 58vw);

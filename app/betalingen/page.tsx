@@ -643,6 +643,7 @@ function BetalingenPageContent() {
                     placeholder="Zoek op naam of e-mail…"
                     collapsible
                     compact
+                    variant="ghost"
                     className="shrink-0"
                     aria-label="Zoek atleten"
                   />
@@ -659,7 +660,19 @@ function BetalingenPageContent() {
                       <table className="min-w-full text-center text-[11px]">
                         <thead>
                           <tr className="border-b border-app-border/60">
-                            {SORT_COLUMNS.map((column, index) => {
+                            <th className="w-11 px-1 py-2.5 text-center align-middle sm:px-2">
+                              <SearchInput
+                                value={search}
+                                onChange={setSearch}
+                                placeholder="Zoek op naam of e-mail…"
+                                collapsible
+                                compact
+                                variant="ghost"
+                                className="mx-auto shrink-0"
+                                aria-label="Zoek atleten"
+                              />
+                            </th>
+                            {SORT_COLUMNS.map((column) => {
                               const active = sortKey === column.key;
                               return (
                                 <th
@@ -673,51 +686,34 @@ function BetalingenPageContent() {
                                       : "none"
                                   }
                                 >
-                                  <div
-                                    className={`inline-flex min-h-11 items-center justify-center gap-2 ${
-                                      index === 0 ? "w-full justify-start" : ""
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSort(column.key)}
+                                    className={`app-focus-ring inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1.5 text-[15px] font-semibold leading-none transition ${
+                                      active
+                                        ? "text-app-text"
+                                        : "text-app-muted hover:text-app-text"
                                     }`}
                                   >
-                                    {index === 0 ? (
-                                      <SearchInput
-                                        value={search}
-                                        onChange={setSearch}
-                                        placeholder="Zoek op naam of e-mail…"
-                                        collapsible
-                                        compact
-                                        className="shrink-0"
-                                        aria-label="Zoek atleten"
-                                      />
+                                    {column.label}
+                                    {active ? (
+                                      sortDirection === "asc" ? (
+                                        <ArrowUp
+                                          className="h-3.5 w-3.5"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <ArrowDown
+                                          className="h-3.5 w-3.5"
+                                          aria-hidden="true"
+                                        />
+                                      )
                                     ) : null}
-                                    <button
-                                      type="button"
-                                      onClick={() => handleSort(column.key)}
-                                      className={`app-focus-ring inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1.5 text-[15px] font-semibold leading-none transition ${
-                                        active
-                                          ? "text-app-text"
-                                          : "text-app-muted hover:text-app-text"
-                                      }`}
-                                    >
-                                      {column.label}
-                                      {active ? (
-                                        sortDirection === "asc" ? (
-                                          <ArrowUp
-                                            className="h-3.5 w-3.5"
-                                            aria-hidden="true"
-                                          />
-                                        ) : (
-                                          <ArrowDown
-                                            className="h-3.5 w-3.5"
-                                            aria-hidden="true"
-                                          />
-                                        )
-                                      ) : null}
-                                    </button>
-                                  </div>
+                                  </button>
                                 </th>
                               );
                             })}
-                            <th className="px-2 py-2.5 text-center sm:px-3" />
+                            <th className="w-24 px-2 py-2.5 text-center sm:px-3" />
                           </tr>
                         </thead>
                         <tbody>
@@ -786,41 +782,50 @@ function PaymentAthleteRow({
   const isOpening = Boolean(subscriptionId && openingPortal === subscriptionId);
 
   return (
-    <tr className="border-b border-app-border/40 last:border-b-0">
-      <td className="px-2 py-3 text-center align-middle text-[11px] sm:px-3">
+    <tr className="h-14 border-b border-app-border/40 last:border-b-0">
+      <td className="w-11 px-1 py-0 align-middle sm:px-2" aria-hidden="true" />
+      <td className="px-2 py-0 text-center align-middle text-[11px] sm:px-3">
         <p className="font-medium text-app-text">{row.athleteName}</p>
       </td>
-      <td className="px-2 py-3 text-center align-middle text-[11px] text-app-text sm:px-3">
+      <td className="px-2 py-0 text-center align-middle text-[11px] text-app-text sm:px-3">
         {formatPaymentPrice(row.monthlyPrice)}
       </td>
-      <td className="px-2 py-3 text-center align-middle text-[11px] text-app-muted sm:px-3">
+      <td className="px-2 py-0 text-center align-middle text-[11px] text-app-muted sm:px-3">
         {row.paymentDay ?? "—"}
       </td>
-      <td className="px-2 py-3 text-center align-middle text-[11px] sm:px-3">
-        <SubscriptionStatus subscription={row.subscription} />
-        {row.subscription?.cancelAtPeriodEnd ? (
-          <p className="mt-0.5 text-[10px] text-amber-400/90">Stopt eind periode</p>
-        ) : null}
+      <td className="px-2 py-0 text-center align-middle text-[11px] sm:px-3">
+        <div className="flex min-h-11 flex-col items-center justify-center">
+          <SubscriptionStatus subscription={row.subscription} />
+          {row.subscription?.cancelAtPeriodEnd ? (
+            <p className="mt-0.5 text-[10px] text-amber-400/90">Stopt eind periode</p>
+          ) : null}
+        </div>
       </td>
-      <td className="px-2 py-3 text-center align-middle text-[11px] text-app-muted sm:px-3">
+      <td className="px-2 py-0 text-center align-middle text-[11px] text-app-muted sm:px-3">
         {nextPaymentLabel(row)}
       </td>
-      <td className="px-2 py-3 text-center align-middle sm:px-3">
-        {subscriptionId ? (
-          <button
-            type="button"
-            onClick={() => onOpenPortal(subscriptionId)}
-            disabled={Boolean(openingPortal)}
-            className="app-focus-ring inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
-          >
-            {isOpening ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
-            ) : (
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
-            )}
-            Beheer
-          </button>
-        ) : null}
+      <td className="w-24 px-2 py-0 text-center align-middle sm:px-3">
+        <div className="flex min-h-11 items-center justify-center">
+          {subscriptionId ? (
+            <button
+              type="button"
+              onClick={() => onOpenPortal(subscriptionId)}
+              disabled={Boolean(openingPortal)}
+              className="app-focus-ring inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-[11px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
+            >
+              {isOpening ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+              ) : (
+                <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+              )}
+              Beheer
+            </button>
+          ) : (
+            <span className="invisible inline-flex min-h-11 items-center px-2 text-[11px]">
+              Beheer
+            </span>
+          )}
+        </div>
       </td>
     </tr>
   );
