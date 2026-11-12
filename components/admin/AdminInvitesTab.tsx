@@ -417,7 +417,7 @@ export default function AdminInvitesTab({ adminId }: AdminInvitesTabProps) {
           ))}
         </div>
 
-        <div className="border-b border-white/6 px-3 py-3 sm:px-4">
+        <div className="border-b border-app-border px-3 py-3 sm:px-4">
           <div className="admin-filter-bar !border-0 !bg-transparent !p-0">
             <SearchInput
               value={query}

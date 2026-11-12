@@ -131,32 +131,32 @@ export default function VideoReviewFeedbackComposer({
           <button
             type="button"
             onClick={() => setMenuOpen((open) => !open)}
-            className="flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text hover:bg-app-surface-muted"
+            className="flex h-11 w-11 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-text transition hover:bg-app-surface-hover app-focus-ring"
             aria-label="Media toevoegen"
           >
             <Plus className="h-5 w-5" />
           </button>
 
           {menuOpen ? (
-            <div className="absolute bottom-full left-0 z-20 mb-2 w-52 rounded-xl border border-app-border bg-app-surface p-1 shadow-lg">
+            <div className="absolute bottom-full left-0 z-20 mb-2 w-52 rounded-xl border border-app-border bg-app-surface-elevated p-1 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
               <button
                 type="button"
                 onClick={() => videoCaptureRef.current?.click()}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-muted"
+                className="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm text-app-text transition hover:bg-app-surface-hover"
               >
                 Video maken
               </button>
               <button
                 type="button"
                 onClick={() => photoCaptureRef.current?.click()}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-muted"
+                className="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm text-app-text transition hover:bg-app-surface-hover"
               >
                 Foto maken
               </button>
               <button
                 type="button"
                 onClick={() => galleryRef.current?.click()}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-muted"
+                className="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm text-app-text transition hover:bg-app-surface-hover"
               >
                 Camera roll
               </button>
@@ -168,7 +168,7 @@ export default function VideoReviewFeedbackComposer({
                   );
                   setMenuOpen(false);
                 }}
-                className="block w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-muted"
+                className="block min-h-11 w-full rounded-lg px-3 py-2 text-left text-sm text-app-text transition hover:bg-app-surface-hover"
               >
                 /uitleg
               </button>
@@ -181,12 +181,12 @@ export default function VideoReviewFeedbackComposer({
           onChange={(event) => setText(event.target.value)}
           placeholder="Typ feedback... gebruik /uitleg voor uitlegvideo's"
           rows={3}
-          className="min-w-0 flex-1 rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+          className="min-w-0 flex-1 rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text placeholder:text-app-subtle md:text-sm app-focus-ring"
         />
       </div>
 
       {uitlegSuggestions.length > 0 ? (
-        <div className="rounded-xl border border-app-accent/20 bg-app-accent/5 p-2">
+        <div className="rounded-xl border border-app-border bg-app-accent/10 p-2">
           <p className="px-2 text-xs font-bold uppercase tracking-wide text-app-accent">
             Uitlegvideo&apos;s
           </p>
@@ -196,7 +196,7 @@ export default function VideoReviewFeedbackComposer({
                 key={item.id}
                 type="button"
                 onClick={() => addUitlegVideo(item)}
-                className="rounded-full border border-app-border bg-app-surface px-3 py-1 text-xs font-semibold text-app-text hover:bg-app-surface-hover"
+                className="app-focus-ring min-h-11 rounded-full border border-app-border bg-app-surface px-3 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover"
               >
                 {item.name}
               </button>
@@ -215,9 +215,12 @@ export default function VideoReviewFeedbackComposer({
               <button
                 type="button"
                 onClick={() => removeMedia(index)}
-                className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full bg-red-500 text-[10px] text-white"
+                className="absolute right-0 top-0 z-10 flex h-11 w-11 items-center justify-center"
+                aria-label="Verwijderen"
               >
-                <X className="h-3 w-3" />
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500 text-white">
+                  <X className="h-3 w-3" />
+                </span>
               </button>
               {item.type === "image" ? (
                 <img
@@ -233,7 +236,7 @@ export default function VideoReviewFeedbackComposer({
                 />
               )}
               {item.title ? (
-                <p className="max-w-[8rem] truncate bg-app-surface px-2 py-1 text-[10px] font-semibold text-app-text">
+                <p className="max-w-[8rem] truncate bg-app-surface-muted px-2 py-1 text-[10px] font-semibold text-app-text">
                   {item.title}
                 </p>
               ) : null}
@@ -246,7 +249,7 @@ export default function VideoReviewFeedbackComposer({
         type="button"
         disabled={saving || uploading}
         onClick={() => void handleSave()}
-        className="app-btn-primary disabled:opacity-50"
+        className="app-btn-primary app-focus-ring min-h-11 disabled:opacity-50"
       >
         {saving ? "Opslaan..." : "Feedback opslaan"}
       </button>

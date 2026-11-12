@@ -39,7 +39,7 @@ export default function CoachAlertsWidget({
 
   if (loading) {
     return (
-      <div className="app-card">
+      <div className="ui-panel">
         <p className="text-sm text-app-muted">Alerts laden...</p>
       </div>
     );
@@ -48,7 +48,7 @@ export default function CoachAlertsWidget({
   if (alerts.length === 0) return null;
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
         Periodisatie alerts
       </p>

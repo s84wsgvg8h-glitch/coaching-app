@@ -99,16 +99,16 @@ export default function ProfileAdvancedSettingsPanel({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-app-text">Geavanceerde instellingen</h2>
-        <p className="mt-1 text-sm text-app-muted">
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Geavanceerde instellingen</h2>
+        <p className="mt-1 text-[13px] text-app-muted">
           Atleet-specifieke voorkeuren en wedstrijd-checklist.
         </p>
       </div>
 
-      <div className="rounded-2xl border border-app-border bg-app-surface p-4">
+      <div className="rounded-2xl border border-app-border bg-app-surface-muted p-4">
         <div className="flex items-center justify-between gap-3">
           <div>
-            <p className="text-sm font-bold text-app-text">e1RM na elke set</p>
+            <p className="text-sm font-semibold text-app-text">e1RM na elke set</p>
             <p className="text-xs text-app-muted">
               Toon geschatte 1RM inline tijdens het loggen.
             </p>
@@ -117,10 +117,10 @@ export default function ProfileAdvancedSettingsPanel({
             type="button"
             disabled={savingE1rm}
             onClick={() => void toggleE1rmInline(!showE1rmInline)}
-            className={`rounded-full px-3 py-1 text-xs font-bold ${
+            className={`inline-flex min-h-[44px] min-w-[64px] shrink-0 items-center justify-center rounded-full px-4 text-xs font-semibold transition app-focus-ring disabled:opacity-60 md:min-h-[32px] ${
               showE1rmInline
-                ? "bg-emerald-600 text-white"
-                : "bg-gray-200 text-gray-700"
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
             }`}
           >
             {showE1rmInline ? "Aan" : "Uit"}
@@ -128,10 +128,10 @@ export default function ProfileAdvancedSettingsPanel({
         </div>
       </div>
 
-      <div className="rounded-2xl border border-app-border bg-app-surface">
+      <div className="rounded-2xl border border-app-border bg-app-surface-muted">
         <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3">
           <div>
-            <p className="text-sm font-bold text-app-text">Meet-checklist</p>
+            <p className="text-sm font-semibold text-app-text">Meet-checklist</p>
             <p className="text-xs text-app-muted">
               {checklistStatus === "saving" && "Opslaan..."}
               {checklistStatus === "saved" && "Opgeslagen"}
@@ -144,7 +144,7 @@ export default function ProfileAdvancedSettingsPanel({
               <button
                 type="button"
                 onClick={() => void resetToGlobal()}
-                className="rounded-xl border border-app-border px-3 py-1.5 text-xs font-semibold text-app-muted hover:bg-app-surface-hover"
+                className="inline-flex min-h-[44px] items-center rounded-xl border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-muted transition hover:bg-app-surface-hover app-focus-ring md:min-h-[36px]"
               >
                 Terug naar algemene checklist
               </button>

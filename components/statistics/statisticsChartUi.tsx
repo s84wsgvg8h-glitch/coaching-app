@@ -10,7 +10,7 @@ export const CHART_MARGIN_DUAL_AXIS = { top: 10, right: 44, left: 0, bottom: 0 }
 export const CHART_GRID = {
   horizontal: true,
   vertical: false,
-  stroke: "rgba(148, 163, 184, 0.18)",
+  stroke: "var(--app-border)",
   strokeWidth: 1,
 };
 
@@ -72,7 +72,7 @@ export function weekAxisProps(data: WeekAxisPoint[]) {
 
       return data[value]?.weekLabel ?? "";
     },
-    tick: { fontSize: 10, fill: "var(--app-muted, #9ca3af)" },
+    tick: { fontSize: 10, fill: "var(--app-text-muted)" },
     tickLine: false,
     axisLine: false,
     height: 24,
@@ -178,7 +178,7 @@ export function weightYAxisProps(domain: [number, number]) {
     domain,
     ticks: buildAxisTicks(domain),
     allowDecimals: false,
-    tick: { fontSize: 10, fill: "var(--app-muted, #9ca3af)" },
+    tick: { fontSize: 10, fill: "var(--app-text-muted)" },
     axisLine: false,
     tickLine: false,
   };
@@ -224,8 +224,8 @@ export function StatisticsChartTooltip({
     }));
 
   return (
-    <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 shadow-xl">
-      <p className="text-xs font-semibold text-white">
+    <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
+      <p className="text-xs font-semibold text-app-text">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>
       <div className="mt-1.5 space-y-1">
@@ -233,10 +233,10 @@ export function StatisticsChartTooltip({
           <div key={row.label} className="flex items-center gap-2 text-xs">
             <span
               className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: row.color || "#a78bfa" }}
+              style={{ backgroundColor: row.color || "var(--app-accent)" }}
             />
             <span className="text-app-muted">{row.label}</span>
-            <span className="ml-auto font-medium text-white">{row.value}</span>
+            <span className="ml-auto font-medium text-app-text">{row.value}</span>
           </div>
         ))}
       </div>
@@ -295,7 +295,7 @@ export function countYAxisProps(domain: [number, number]) {
     domain,
     ticks,
     allowDecimals: false,
-    tick: { fontSize: 10, fill: "var(--app-muted, #9ca3af)" },
+    tick: { fontSize: 10, fill: "var(--app-text-muted)" },
     axisLine: false,
     tickLine: false,
   };
@@ -373,7 +373,7 @@ export function bodyweightYAxisProps(domain: [number, number]) {
     domain,
     ticks,
     allowDecimals: step < 1,
-    tick: { fontSize: 10, fill: "var(--app-muted, #9ca3af)" },
+    tick: { fontSize: 10, fill: "var(--app-text-muted)" },
     axisLine: false,
     tickLine: false,
   };
@@ -385,7 +385,7 @@ export function scoreYAxisProps(domain: [number, number] = [0, 100]) {
     domain,
     ticks: [0, 25, 50, 75, 100],
     allowDecimals: false,
-    tick: { fontSize: 10, fill: "var(--app-muted, #9ca3af)" },
+    tick: { fontSize: 10, fill: "var(--app-text-muted)" },
     axisLine: false,
     tickLine: false,
   };

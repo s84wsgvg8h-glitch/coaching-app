@@ -21,6 +21,7 @@ import { adminFetch } from "@/lib/adminFetch";
 import type { PlatformStats } from "@/lib/adminAnalytics";
 import { loadAdminInviteOverview } from "@/lib/adminInvites";
 import AdminKpiCard from "@/components/admin/AdminKpiCard";
+import { AdminPageHeader } from "@/components/admin/AdminPageParts";
 import { AdminLoading, AdminRoleBadge } from "@/components/admin/AdminUi";
 import type { AdminUser } from "@/components/admin/AdminUsersTab";
 
@@ -366,33 +367,31 @@ export default function AdminOverviewTab({ users }: AdminOverviewTabProps) {
 
   return (
     <div className="admin-dashboard">
-      <header className="admin-dashboard-header">
-        <div className="min-w-0">
-          <h1 className="admin-dashboard-title">Dashboard</h1>
-          <p className="admin-dashboard-subtitle">
-            Overzicht van je platformprestaties en belangrijke activiteiten.
-          </p>
-        </div>
-        <div className="admin-dashboard-header-actions">
-          <select
-            value={rangeDays}
-            onChange={(event) => setRangeDays(Number(event.target.value))}
-            className="admin-select admin-dashboard-range"
-            aria-label="Periode"
-          >
-            <option value={7}>7 dagen</option>
-            <option value={14}>14 dagen</option>
-            <option value={30}>30 dagen</option>
-          </select>
-          <Link
-            href="/admin/create-coach"
-            className="admin-btn admin-btn--primary w-full sm:w-auto"
-          >
-            <Plus className="h-4 w-4" />
-            Coach aanmaken
-          </Link>
-        </div>
-      </header>
+      <AdminPageHeader
+        title="Dashboard"
+        subtitle="Overzicht van je platformprestaties en belangrijke activiteiten."
+        actions={
+          <div className="admin-dashboard-header-actions">
+            <select
+              value={rangeDays}
+              onChange={(event) => setRangeDays(Number(event.target.value))}
+              className="admin-select admin-dashboard-range"
+              aria-label="Periode"
+            >
+              <option value={7}>7 dagen</option>
+              <option value={14}>14 dagen</option>
+              <option value={30}>30 dagen</option>
+            </select>
+            <Link
+              href="/admin/create-coach"
+              className="admin-btn admin-btn--primary w-full sm:w-auto"
+            >
+              <Plus className="h-4 w-4" />
+              Coach aanmaken
+            </Link>
+          </div>
+        }
+      />
 
       <div className="admin-kpi-grid">
         <AdminKpiCard
@@ -400,7 +399,7 @@ export default function AdminOverviewTab({ users }: AdminOverviewTabProps) {
           value={counts.total}
           changePct={trends.users.change}
           sparkline={trends.users.spark}
-          sparkColor="#3b82f6"
+          sparkColor="var(--app-accent)"
           icon={Users}
         />
         <AdminKpiCard
@@ -416,7 +415,7 @@ export default function AdminOverviewTab({ users }: AdminOverviewTabProps) {
           value={counts.atleet || 0}
           changePct={trends.athletes.change}
           sparkline={trends.athletes.spark}
-          sparkColor="#8b5cf6"
+          sparkColor="var(--app-accent)"
           icon={Users}
         />
         <AdminKpiCard
@@ -440,7 +439,7 @@ export default function AdminOverviewTab({ users }: AdminOverviewTabProps) {
           value={platform?.chatGroups ?? "—"}
           changePct={0}
           sparkline={[1, 1, 1, 1, 1, 1, platform?.chatGroups || 0]}
-          sparkColor="#64748b"
+          sparkColor="var(--app-text-subtle)"
           icon={MessageSquare}
         />
         <AdminKpiCard
@@ -586,7 +585,7 @@ export default function AdminOverviewTab({ users }: AdminOverviewTabProps) {
                     Alles operationeel
                   </p>
                 ) : (
-                  <p className="mt-1 text-[13px] text-amber-300">
+                  <p className="mt-1 text-[13px] text-amber-400">
                     Aandacht vereist
                   </p>
                 )}

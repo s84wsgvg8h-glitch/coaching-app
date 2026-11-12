@@ -82,7 +82,7 @@ function BlockSpanFooter({ data }: { data: StatisticsAxisPoint[] }) {
 
 function MenuSection({ label }: { label: string }) {
   return (
-    <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+    <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
       {label}
     </p>
   );
@@ -134,24 +134,26 @@ export default function StatisticsChartFrame({
 
   return (
     <div
-      className="group relative rounded-2xl border border-app-border/80 bg-app-surface p-4 shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+      className="group relative min-w-0 rounded-2xl border border-app-border bg-app-surface p-4 transition-colors hover:border-app-border-strong"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
-      {onRemove && hovered ? (
+      {onRemove ? (
         <button
           type="button"
           onClick={onRemove}
-          className="absolute right-3 top-3 z-10 flex h-7 w-7 items-center justify-center rounded-lg border border-app-border bg-app-surface text-app-muted transition hover:bg-red-500/10 hover:text-red-400"
+          className={`app-focus-ring absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-muted transition hover:bg-red-500/15 hover:text-red-400 focus-visible:opacity-100 ${
+            hovered ? "opacity-100" : "opacity-100 md:opacity-0"
+          }`}
           aria-label={`Verwijder ${title}`}
         >
           <X className="h-4 w-4" />
         </button>
       ) : null}
 
-      <div className="mb-3 flex items-start justify-between gap-2 pr-8">
+      <div className="mb-3 flex flex-wrap items-start justify-between gap-2 pr-10">
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[15px] font-semibold text-app-text">{title}</h3>
+          <h3 className="truncate text-[15px] font-semibold tracking-tight text-app-text">{title}</h3>
           {subtitle ? (
             <p className="mt-1 text-xs text-app-muted">{subtitle}</p>
           ) : null}
@@ -165,7 +167,7 @@ export default function StatisticsChartFrame({
           ) : null}
         </div>
 
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex min-w-0 shrink-0 flex-wrap items-center gap-2">
           {controls}
           {showPeriodControl ? (
             <select
@@ -173,7 +175,7 @@ export default function StatisticsChartFrame({
               onChange={(event) =>
                 onFilterChange(event.target.value as ChartBlockFilterPreset)
               }
-              className="max-w-[132px] rounded-xl border border-app-border bg-app-surface px-2.5 py-2 text-xs text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+              className="app-focus-ring min-h-9 max-w-[132px] rounded-xl border border-app-border bg-app-surface px-2.5 py-2 text-base text-app-text outline-none md:text-xs"
               aria-label="Block filter"
             >
               {CHART_BLOCK_FILTER_OPTIONS.map((option) => (
@@ -188,13 +190,13 @@ export default function StatisticsChartFrame({
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-muted transition hover:text-app-text"
+              className="app-focus-ring flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
               aria-label="Grafiek opties"
             >
               <MoreVertical className="h-4 w-4" />
             </button>
             {menuOpen ? (
-              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface-elevated p-1 shadow-xl">
+              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface-elevated p-1 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
                 {onChartModeChange && chartMode ? (
                   <>
                     <MenuSection label="Weergave" />
@@ -204,7 +206,7 @@ export default function StatisticsChartFrame({
                         type="button"
                         className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-hover ${
                           chartMode === option.value
-                            ? "text-brand-purple"
+                            ? "text-app-accent"
                             : "text-app-text"
                         }`}
                         onClick={() => {

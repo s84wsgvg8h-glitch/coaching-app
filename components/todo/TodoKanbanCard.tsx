@@ -97,7 +97,7 @@ export default function TodoKanbanCard({
 
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-1.5">
-          <span className="text-[12px] font-medium text-white/90">{label}</span>
+          <span className="text-[12px] font-medium text-app-text">{label}</span>
           {isAuto ? <span className="todo-kanban-auto-badge">Auto</span> : null}
         </div>
         <p

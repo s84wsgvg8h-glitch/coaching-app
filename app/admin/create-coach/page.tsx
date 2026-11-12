@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { ArrowLeft } from "lucide-react";
 import AdminAppShell from "@/components/admin/AdminAppShell";
+import { AdminPageHeader } from "@/components/admin/AdminPageParts";
 import { AdminPanel } from "@/components/admin/AdminUi";
 import { PageContainer } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
@@ -101,15 +102,16 @@ export default function AdminCreateCoachPage() {
           Terug naar admin
         </Link>
 
-        <header className="admin-page-header">
-          <div>
-            <p className="admin-header-eyebrow">Platformbeheer</p>
-            <h1 className="admin-page-title">Coach aanmaken</h1>
-            <p className="admin-page-subtitle">
-              Maak direct een coach-account aan met e-mail en wachtwoord.
-            </p>
-          </div>
-        </header>
+        <div className="mb-4">
+          <AdminPageHeader
+            title="Coach aanmaken"
+            subtitle="Maak direct een coach-account aan met e-mail en wachtwoord."
+            breadcrumbs={[
+              { label: "Platformbeheer", href: "/admin?tab=overview" },
+              { label: "Coach aanmaken" },
+            ]}
+          />
+        </div>
 
         {loading ? (
           <p className="admin-muted text-[13px]">Laden…</p>

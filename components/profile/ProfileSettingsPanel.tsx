@@ -183,9 +183,9 @@ export default function ProfileSettingsPanel({
             {intakeFields.map((field, index) => (
               <div
                 key={field.key}
-                className="grid gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2 md:grid-cols-[120px_minmax(0,1fr)_auto]"
+                className="grid grid-cols-1 gap-2 rounded-xl border border-app-border bg-app-surface px-3 py-2 md:grid-cols-[120px_minmax(0,1fr)_auto] md:items-center"
               >
-                <span className="text-xs font-bold uppercase text-app-subtle">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   {field.key}
                 </span>
                 <input
@@ -202,9 +202,10 @@ export default function ProfileSettingsPanel({
                   }
                   className="profile-field-input !py-2"
                 />
-                <label className="flex items-center gap-2 text-xs font-semibold">
+                <label className="flex min-h-[44px] items-center gap-2 text-xs font-semibold text-app-muted md:min-h-0">
                   <input
                     type="checkbox"
+                    className="h-4 w-4 accent-[var(--app-accent)]"
                     checked={Boolean(field.required)}
                     onChange={(event) =>
                       setIntakeFields((current) =>
@@ -222,12 +223,12 @@ export default function ProfileSettingsPanel({
             ))}
           </div>
 
-          <div className="mt-4 flex items-center gap-3">
+          <div className="mt-4 flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => void handleSaveIntake()}
               disabled={intakeSaving}
-              className="rounded-xl bg-black px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="app-btn-primary min-h-[44px] text-sm app-focus-ring disabled:opacity-60"
             >
               {intakeSaving ? "Opslaan..." : "Intake opslaan"}
             </button>
@@ -245,7 +246,7 @@ export default function ProfileSettingsPanel({
           <button
             type="button"
             onClick={() => void handleLogout()}
-            className="app-btn-secondary mt-4 app-focus-ring"
+            className="app-btn-secondary mt-4 min-h-[44px] app-focus-ring"
           >
             Uitloggen
           </button>

@@ -33,7 +33,7 @@ export default function KpiCard({
   return (
     <div
       className={`rounded-2xl border border-app-border bg-app-surface p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_40px_rgba(0,0,0,0.22)] ${
-        onClick ? "cursor-pointer transition hover:border-white/20 hover:bg-[#10151f]" : ""
+        onClick ? "app-focus-ring cursor-pointer transition hover:border-app-border-strong hover:bg-app-surface-hover" : ""
       }`}
       onClick={onClick}
       onKeyDown={
@@ -49,7 +49,7 @@ export default function KpiCard({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-app-muted">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
         {label}
       </p>
       <p className="mt-3 text-[30px] font-semibold leading-none tracking-tight text-app-text">

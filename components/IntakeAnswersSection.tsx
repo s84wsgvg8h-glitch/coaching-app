@@ -63,11 +63,11 @@ export default function IntakeAnswersSection({
   }, [athleteId, coachId]);
 
   const header = (
-    <div className="flex items-start justify-between gap-4">
-      <div>
-        <h3 className="text-lg font-bold text-app-text">Intakeformulier</h3>
+    <div className="flex w-full min-w-0 items-start justify-between gap-4">
+      <div className="min-w-0">
+        <h3 className="text-[15px] font-semibold tracking-tight text-app-text">Intakeformulier</h3>
         {completedAt ? (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-[13px] text-app-muted">
             Ingevuld op{" "}
             {new Date(completedAt).toLocaleDateString("nl-NL", {
               day: "numeric",
@@ -76,7 +76,7 @@ export default function IntakeAnswersSection({
             })}
           </p>
         ) : (
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-[13px] text-app-muted">
             {loading
               ? "Antwoorden laden..."
               : "Het intakeformulier is nog niet ingevuld."}
@@ -84,7 +84,7 @@ export default function IntakeAnswersSection({
         )}
       </div>
       {collapsible ? (
-        <span className="shrink-0 text-sm text-gray-400">{open ? "−" : "+"}</span>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-app-border bg-app-surface text-sm text-app-muted">{open ? "−" : "+"}</span>
       ) : null}
     </div>
   );
@@ -96,7 +96,7 @@ export default function IntakeAnswersSection({
           <button
             type="button"
             onClick={() => setOpen((current) => !current)}
-            className="flex w-full items-start justify-between gap-4 text-left"
+            className="app-focus-ring flex min-h-[44px] w-full items-start justify-between gap-4 rounded-xl text-left"
           >
             {header}
           </button>
@@ -104,7 +104,7 @@ export default function IntakeAnswersSection({
           header
         )}
         {(!collapsible || open) && (
-          <p className="mt-4 text-sm text-gray-500">Intake-antwoorden laden...</p>
+          <p className="mt-4 text-sm text-app-muted">Intake-antwoorden laden...</p>
         )}
       </div>
     );
@@ -117,7 +117,7 @@ export default function IntakeAnswersSection({
           <button
             type="button"
             onClick={() => setOpen((current) => !current)}
-            className="flex w-full items-start justify-between gap-4 text-left"
+            className="app-focus-ring flex min-h-[44px] w-full items-start justify-between gap-4 rounded-xl text-left"
           >
             {header}
           </button>
@@ -134,7 +134,7 @@ export default function IntakeAnswersSection({
         <button
           type="button"
           onClick={() => setOpen((current) => !current)}
-          className="flex w-full items-start justify-between gap-4 text-left"
+          className="app-focus-ring flex min-h-[44px] w-full items-start justify-between gap-4 rounded-xl text-left"
         >
           {header}
         </button>
@@ -151,9 +151,9 @@ export default function IntakeAnswersSection({
             return (
               <div
                 key={field.key}
-                className="rounded-2xl border border-gray-200 px-4 py-3"
+                className="rounded-2xl border border-app-border bg-app-surface-muted px-4 py-3"
               >
-                <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   {field.label}
                 </p>
                 <p className="mt-1 whitespace-pre-wrap text-sm font-semibold text-app-text">

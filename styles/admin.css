@@ -1,6 +1,6 @@
 /* ─── Admin panel (dark, matches app shell) ─── */
 .admin-shell {
-  --admin-accent: #3b82f6;
+  --admin-accent: var(--app-accent);
   --admin-sidebar-width: 248px;
 }
 
@@ -133,7 +133,7 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  background: linear-gradient(135deg, var(--app-accent), #2563eb);
   font-size: 11px;
   font-weight: 700;
   color: white;
@@ -179,8 +179,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
+  background: rgba(var(--app-accent-rgb), 0.12);
+  color: var(--app-accent);
 }
 
 .admin-sidebar-logo-text {
@@ -236,8 +236,8 @@
 }
 
 .admin-sidebar-nav .admin-sidebar-link.is-active {
-  background: rgba(59, 130, 246, 0.18);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.18);
+  color: var(--app-accent);
   box-shadow: none;
 }
 
@@ -438,8 +438,8 @@
 }
 
 .admin-quick-card:hover {
-  border-color: rgba(59, 130, 246, 0.3);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(var(--app-accent-rgb), 0.3);
+  background: rgba(var(--app-accent-rgb), 0.08);
   transform: translateY(-1px);
 }
 
@@ -451,7 +451,7 @@
   justify-content: center;
   border-radius: 10px;
   background: var(--app-surface-hover);
-  color: #93c5fd;
+  color: var(--app-accent);
 }
 
 .admin-quick-card-label {
@@ -474,8 +474,8 @@
 }
 
 .admin-avatar--blue {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.2);
+  color: var(--app-accent);
 }
 
 .admin-avatar--green {
@@ -658,14 +658,14 @@
 
 .admin-sidebar-link.is-active {
   color: white;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.85));
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.2);
+  background: linear-gradient(135deg, rgba(var(--app-accent-rgb), 0.9), rgba(37, 99, 235, 0.85));
+  box-shadow: 0 4px 16px rgba(var(--app-accent-rgb), 0.2);
 }
 
 .admin-command-hero {
-  border-color: rgba(59, 130, 246, 0.25);
+  border-color: rgba(var(--app-accent-rgb), 0.25);
   background:
-    linear-gradient(135deg, rgba(59, 130, 246, 0.08), rgba(255, 255, 255, 0.02)),
+    linear-gradient(135deg, rgba(var(--app-accent-rgb), 0.08), rgba(255, 255, 255, 0.02)),
     rgba(255, 255, 255, 0.03);
 }
 
@@ -674,12 +674,12 @@
   align-items: center;
   gap: 0.45rem;
   border-radius: 9999px;
-  border: 1px solid rgba(59, 130, 246, 0.25);
-  background: rgba(59, 130, 246, 0.08);
+  border: 1px solid rgba(var(--app-accent-rgb), 0.25);
+  background: rgba(var(--app-accent-rgb), 0.08);
   padding: 0.45rem 0.75rem;
   font-size: 11px;
   font-weight: 600;
-  color: #93c5fd;
+  color: var(--app-accent);
 }
 
 .admin-quick-link--warning {
@@ -714,8 +714,8 @@
 }
 
 .admin-hierarchy-node--platform {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.2);
+  background: rgba(var(--app-accent-rgb), 0.1);
+  border: 1px solid rgba(var(--app-accent-rgb), 0.2);
 }
 
 .admin-hierarchy-node--admin {
@@ -815,8 +815,8 @@
 }
 
 .admin-mobile-tab.is-active {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
+  background: rgba(var(--app-accent-rgb), 0.15);
   color: white;
 }
 
@@ -881,8 +881,8 @@
 
 .admin-tab.is-active {
   color: white;
-  background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.85));
-  box-shadow: 0 4px 16px rgba(59, 130, 246, 0.25);
+  background: linear-gradient(135deg, rgba(var(--app-accent-rgb), 0.9), rgba(37, 99, 235, 0.85));
+  box-shadow: 0 4px 16px rgba(var(--app-accent-rgb), 0.25);
 }
 
 .admin-panel {
@@ -976,12 +976,12 @@
 }
 
 .admin-stat--blue {
-  border-color: rgba(59, 130, 246, 0.2);
-  background: rgba(59, 130, 246, 0.06);
+  border-color: rgba(var(--app-accent-rgb), 0.2);
+  background: rgba(var(--app-accent-rgb), 0.06);
 }
 
 .admin-stat--blue .admin-stat-icon {
-  color: #60a5fa;
+  color: var(--app-accent);
 }
 
 .admin-stat--green {
@@ -1008,7 +1008,7 @@
 }
 
 .admin-stat--violet .admin-stat-icon {
-  color: #a78bfa;
+  color: var(--app-accent);
 }
 
 .admin-card {
@@ -1039,7 +1039,7 @@
 .admin-input:focus,
 .admin-select:focus,
 .admin-textarea:focus {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
 }
 
 .admin-input::placeholder,
@@ -1073,8 +1073,8 @@
 }
 
 .admin-btn--primary {
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  background: linear-gradient(135deg, #3b82f6, #2563eb);
+  border: 1px solid rgba(var(--app-accent-rgb), 0.35);
+  background: linear-gradient(135deg, var(--app-accent), #2563eb);
   color: white;
 }
 
@@ -1142,8 +1142,8 @@
 }
 
 .admin-badge--athlete {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.15);
+  color: var(--app-accent);
 }
 
 .admin-badge--pending {
@@ -1211,7 +1211,7 @@
 .admin-progress-fill {
   height: 10px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, #3b82f6, #60a5fa);
+  background: linear-gradient(90deg, var(--app-accent), color-mix(in srgb, var(--app-accent) 70%, white));
 }
 
 .admin-loading {
@@ -1356,8 +1356,8 @@
 }
 
 .admin-quick-link:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.1);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
+  background: rgba(var(--app-accent-rgb), 0.1);
 }
 
 .admin-section-grid {
@@ -1396,8 +1396,8 @@
 }
 
 .admin-section-card:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
+  background: rgba(var(--app-accent-rgb), 0.08);
   transform: translateY(-1px);
 }
 
@@ -1482,8 +1482,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 12px;
-  background: rgba(59, 130, 246, 0.12);
-  color: #60a5fa;
+  background: rgba(var(--app-accent-rgb), 0.12);
+  color: var(--app-accent);
 }
 
 .admin-page-block-title {
@@ -1588,8 +1588,8 @@
 }
 
 .admin-summary-icon--blue {
-  background: rgba(59, 130, 246, 0.15);
-  color: #60a5fa;
+  background: rgba(var(--app-accent-rgb), 0.15);
+  color: var(--app-accent);
 }
 
 .admin-summary-icon--green {
@@ -1599,7 +1599,7 @@
 
 .admin-summary-icon--purple {
   background: rgba(139, 92, 246, 0.15);
-  color: #a78bfa;
+  color: var(--app-accent);
 }
 
 .admin-summary-icon--amber {
@@ -1659,8 +1659,8 @@
 }
 
 .admin-pagination-btn.is-active {
-  border-color: rgba(59, 130, 246, 0.45);
-  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
+  background: rgba(var(--app-accent-rgb), 0.15);
   color: white;
 }
 
@@ -1791,8 +1791,8 @@
 }
 
 .admin-org-avatar--blue {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.2);
+  color: var(--app-accent);
 }
 
 .admin-view-toggle {
@@ -1814,8 +1814,8 @@
 }
 
 .admin-view-toggle-btn.is-active {
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.2);
+  color: var(--app-accent);
 }
 
 /* Settings tabs */
@@ -1843,8 +1843,8 @@
 }
 
 .admin-settings-tab.is-active {
-  background: rgba(59, 130, 246, 0.15);
-  color: #93c5fd;
+  background: rgba(var(--app-accent-rgb), 0.15);
+  color: var(--app-accent);
 }
 
 .admin-toggle-row {
@@ -1868,7 +1868,7 @@
 }
 
 .admin-toggle.is-on {
-  background: #3b82f6;
+  background: var(--app-accent);
 }
 
 .admin-toggle-knob {
@@ -2016,7 +2016,7 @@
 }
 
 .admin-invite-tab.is-active {
-  border-bottom-color: #3b82f6;
+  border-bottom-color: var(--app-accent);
   color: var(--app-text);
 }
 

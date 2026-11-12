@@ -110,23 +110,23 @@ export default function CompetitionChecklistEditor({
   }
 
   const inputClass = compact
-    ? "w-full rounded-lg border border-gray-300 px-2 py-1 text-sm outline-none focus:ring-2 focus:ring-black"
-    : "w-full rounded-xl border border-gray-300 px-3 py-2 outline-none focus:ring-2 focus:ring-black";
+    ? "w-full min-h-[44px] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-sm text-app-text outline-none placeholder:text-app-subtle focus:border-app-accent/50 focus:ring-2 focus:ring-app-accent/20 md:min-h-[36px]"
+    : "w-full min-h-[44px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-app-text outline-none placeholder:text-app-subtle focus:border-app-accent/50 focus:ring-2 focus:ring-app-accent/20";
 
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-app-text">{title}</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">{title}</h2>
         {description ? (
-          <p className="mt-1 text-sm text-app-muted">{description}</p>
+          <p className="mt-1 text-[13px] text-app-muted">{description}</p>
         ) : null}
       </div>
 
       {sections.map((section, sectionIndex) => (
         <section
           key={section.id}
-          className={`rounded-2xl border border-app-border bg-app-surface ${
-            compact ? "p-3" : "p-5"
+          className={`rounded-2xl border border-app-border bg-app-surface-muted ${
+            compact ? "p-3" : "p-4 sm:p-5"
           }`}
         >
           <div className="mb-3 flex flex-wrap items-center gap-2">
@@ -135,13 +135,13 @@ export default function CompetitionChecklistEditor({
               onChange={(event) =>
                 updateSectionTitle(sectionIndex, event.target.value)
               }
-              className={`${inputClass} min-w-[180px] flex-1 font-semibold`}
+              className={`${inputClass} min-w-0 flex-1 font-semibold sm:min-w-[180px]`}
               placeholder="Sectienaam"
             />
             <button
               type="button"
               onClick={() => removeSection(sectionIndex)}
-              className="rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-700"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 app-focus-ring md:min-h-[36px]"
             >
               Sectie ×
             </button>
@@ -151,7 +151,7 @@ export default function CompetitionChecklistEditor({
             {section.items.map((item, itemIndex) => (
               <div
                 key={item.id}
-                className={`grid gap-2 rounded-xl border border-app-border bg-app-surface-muted ${
+                className={`grid gap-2 rounded-xl border border-app-border bg-app-surface ${
                   compact
                     ? "grid-cols-1 px-2 py-1.5 md:grid-cols-[minmax(0,1.4fr)_minmax(0,1fr)_auto_auto]"
                     : "grid-cols-1 p-3 md:grid-cols-2"
@@ -177,7 +177,7 @@ export default function CompetitionChecklistEditor({
                   placeholder="Notitie"
                   className={inputClass}
                 />
-                <label className="flex items-center gap-1.5 text-xs font-semibold whitespace-nowrap">
+                <label className="flex min-h-[44px] items-center gap-1.5 whitespace-nowrap text-xs font-semibold text-app-muted md:min-h-0">
                   <input
                     type="checkbox"
                     checked={Boolean(item.emphasis)}
@@ -186,13 +186,15 @@ export default function CompetitionChecklistEditor({
                         emphasis: event.target.checked,
                       })
                     }
+                    className="h-4 w-4 accent-[var(--app-accent)]"
                   />
                   Belangrijk
                 </label>
                 <button
                   type="button"
                   onClick={() => removeItem(sectionIndex, itemIndex)}
-                  className="rounded-lg border border-red-200 px-2 py-1 text-xs font-semibold text-red-700"
+                  className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-red-500/30 bg-red-500/15 px-2 py-1 text-xs font-semibold text-red-400 transition hover:bg-red-500/20 app-focus-ring md:min-h-[36px] md:min-w-[36px]"
+                  aria-label="Item verwijderen"
                 >
                   ×
                 </button>
@@ -203,7 +205,7 @@ export default function CompetitionChecklistEditor({
           <button
             type="button"
             onClick={() => addItem(sectionIndex)}
-            className="mt-2 rounded-lg border border-app-border px-3 py-1 text-xs font-semibold text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            className="mt-2 inline-flex min-h-[44px] items-center rounded-lg border border-app-border bg-app-surface px-3 py-1 text-xs font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring md:min-h-[32px]"
           >
             + Item
           </button>
@@ -213,7 +215,7 @@ export default function CompetitionChecklistEditor({
       <button
         type="button"
         onClick={addSection}
-        className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+        className="app-btn-secondary min-h-[44px] text-sm"
       >
         Sectie toevoegen
       </button>

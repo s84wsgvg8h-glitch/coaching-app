@@ -43,11 +43,11 @@ type AnalyticsPayload = {
   activeUsers30d: number;
 };
 
-const CHART_AXIS = { fill: "#94a3b8", fontSize: 11 };
-const CHART_GRID = "rgba(255,255,255,0.06)";
+const CHART_AXIS = { fill: "var(--app-text-muted)", fontSize: 11 };
+const CHART_GRID = "var(--app-border)";
 
-const DONUT_COLORS = ["#3b82f6", "rgba(255,255,255,0.08)"];
-const BUCKET_COLORS = ["#ef4444", "#f97316", "#3b82f6", "#10b981"];
+const DONUT_COLORS = ["var(--app-accent)", "var(--app-surface-muted)"];
+const BUCKET_COLORS = ["#ef4444", "#f59e0b", "var(--app-accent)", "#10b981"];
 
 function formatMonthLabel(month: string) {
   const [year, m] = month.split("-");
@@ -107,7 +107,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-white/10 bg-[#151921] px-3 py-2 text-[12px] shadow-xl">
+    <div className="rounded-lg border border-app-border bg-app-surface-elevated px-3 py-2 text-[12px] shadow-xl">
       {label ? <p className="mb-1 font-semibold text-app-text">{label}</p> : null}
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
@@ -225,7 +225,7 @@ export default function AdminAnalyticsTab() {
               ? signupSpark
               : [1, 2, 2, 3, 3, data.platform.totalUsers, data.platform.totalUsers]
           }
-          sparkColor="#3b82f6"
+          sparkColor="var(--app-accent)"
           icon={Users}
         />
         <AdminKpiCard
@@ -273,7 +273,7 @@ export default function AdminAnalyticsTab() {
           value={data.platform.athletesWithPrograms}
           changePct={0}
           sparkline={signupSpark.length > 0 ? signupSpark : [0, 1, 1, 2, 2, 3, data.platform.athletesWithPrograms]}
-          sparkColor="#8b5cf6"
+          sparkColor="var(--app-accent)"
           icon={UserCheck}
         />
       </div>
@@ -309,7 +309,7 @@ export default function AdminAnalyticsTab() {
                   </PieChart>
                 </ResponsiveContainer>
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-                  <span className="text-2xl font-bold text-app-text">
+                  <span className="text-[22px] font-semibold tracking-tight text-app-text">
                     {data.invulscore.average}%
                   </span>
                   <span className="text-[11px] text-app-muted">gemiddeld</span>
@@ -340,7 +340,7 @@ export default function AdminAnalyticsTab() {
                   <YAxis tick={CHART_AXIS} domain={[0, 100]} />
                   <Tooltip content={<ChartTooltip />} />
                   <Legend
-                    wrapperStyle={{ fontSize: 11, color: "#94a3b8" }}
+                    wrapperStyle={{ fontSize: 11, color: "var(--app-text-muted)" }}
                   />
                   <Line
                     type="monotone"
@@ -425,7 +425,7 @@ export default function AdminAnalyticsTab() {
                     <td className="admin-col-hide-sm min-w-[100px]">
                       <Sparkline
                         data={coachSparkline(row.avgInvulscore)}
-                        color="#3b82f6"
+                        color="var(--app-accent)"
                       />
                     </td>
                     <td className="admin-col-hide-sm admin-muted">—</td>
@@ -458,12 +458,12 @@ export default function AdminAnalyticsTab() {
                 tick={CHART_AXIS}
               />
               <Tooltip content={<ChartTooltip />} />
-              <Legend wrapperStyle={{ fontSize: 11, color: "#94a3b8" }} />
+              <Legend wrapperStyle={{ fontSize: 11, color: "var(--app-text-muted)" }} />
               <Bar
                 yAxisId="left"
                 dataKey="signups"
                 name="Aanmeldingen"
-                fill="#3b82f6"
+                fill="var(--app-accent)"
                 radius={[4, 4, 0, 0]}
                 maxBarSize={32}
               />

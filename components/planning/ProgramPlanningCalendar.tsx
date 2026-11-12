@@ -85,7 +85,7 @@ type ProgramPlanningCalendarProps = {
 const WEEK_COL_WIDTH = 64;
 const LABEL_COL_WIDTH = "5rem";
 const MEET_COLUMN_CLASS =
-  "bg-amber-500/15 text-amber-200 hover:bg-amber-500/25";
+  "bg-amber-500/15 text-amber-400 hover:bg-amber-500/25";
 const TODAY_LINE_CLASS = "bg-rose-500";
 
 const BLOCK_PALETTE = [
@@ -97,27 +97,27 @@ const BLOCK_PALETTE = [
   {
     bg: "bg-emerald-500/15",
     border: "border-emerald-400/35",
-    text: "text-emerald-300",
+    text: "text-emerald-400",
   },
   {
     bg: "bg-orange-500/15",
     border: "border-orange-400/35",
-    text: "text-orange-300",
+    text: "text-orange-400",
   },
   {
     bg: "bg-fuchsia-500/15",
     border: "border-fuchsia-400/35",
-    text: "text-fuchsia-300",
+    text: "text-fuchsia-400",
   },
   {
     bg: "bg-cyan-500/15",
     border: "border-cyan-400/35",
-    text: "text-cyan-300",
+    text: "text-cyan-400",
   },
   {
     bg: "bg-lime-500/15",
     border: "border-lime-400/35",
-    text: "text-lime-300",
+    text: "text-lime-400",
   },
 ] as const;
 
@@ -347,7 +347,7 @@ function buildMacroRows(columns: WeekColumn[]): SpanRow[] {
       start: index,
       end,
       macroId,
-      className: "border-violet-300 bg-violet-100 text-violet-950",
+      className: "border-app-accent/30 bg-app-accent/10 text-app-text",
     });
 
     index = end + 1;
@@ -796,8 +796,8 @@ export default function ProgramPlanningCalendar({
   if (columns.length === 0 && meets.length === 0) {
     return (
       <div className="space-y-2">
-        <h2 className="text-xl font-bold text-app-text">Planning — {athleteName}</h2>
-        <p className="text-sm text-app-muted">Nog geen programma of wedstrijden gepland.</p>
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Planning — {athleteName}</h2>
+        <p className="text-[13px] text-app-muted">Nog geen programma of wedstrijden gepland.</p>
       </div>
     );
   }
@@ -805,8 +805,8 @@ export default function ProgramPlanningCalendar({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-app-text">Planning — {athleteName}</h2>
-        <p className="mt-1 text-sm text-app-muted">
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Planning — {athleteName}</h2>
+        <p className="mt-1 text-[13px] text-app-muted">
           Elke kolom is één week. Boven: weken, daaronder blocks en macrocycles.
         </p>
       </div>
@@ -820,7 +820,11 @@ export default function ProgramPlanningCalendar({
               setAddingBlock(false);
               setAddingWeekBlockId("");
             }}
-            className="rounded-xl border border-violet-300 bg-violet-50 px-3 py-1.5 text-xs font-semibold text-violet-900"
+            className={`app-focus-ring min-h-[44px] rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+              addingMacro
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            }`}
           >
             + Macrocycle
           </button>
@@ -837,7 +841,11 @@ export default function ProgramPlanningCalendar({
               setAddingMacro(false);
               setAddingWeekBlockId("");
             }}
-            className="rounded-xl border border-blue-300 bg-blue-50 px-3 py-1.5 text-xs font-semibold text-blue-900"
+            className={`app-focus-ring min-h-[44px] rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors ${
+              addingBlock
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            }`}
           >
             + Block
           </button>
@@ -849,7 +857,11 @@ export default function ProgramPlanningCalendar({
               setAddingBlock(false);
             }}
             disabled={allBlocks.length === 0}
-            className="rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-semibold text-emerald-900 disabled:opacity-40"
+            className={`app-focus-ring min-h-[44px] rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+              addingWeekBlockId
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            }`}
           >
             + Week
           </button>
@@ -857,18 +869,18 @@ export default function ProgramPlanningCalendar({
       ) : null}
 
       {addingMacro ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-violet-200 bg-violet-50 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-app-border bg-app-surface-muted p-3">
           <input
             value={newMacroTitle}
             onChange={(event) => setNewMacroTitle(event.target.value)}
             placeholder="Naam macrocycle"
-            className="min-w-[180px] flex-1 rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 flex-1 basis-[180px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           />
           <button
             type="button"
             disabled={creating}
             onClick={() => void handleCreateMacrocycle()}
-            className="rounded-xl bg-violet-700 px-3 py-2 text-xs font-semibold text-white"
+            className="app-btn-primary app-focus-ring min-h-[44px] disabled:opacity-60"
           >
             Opslaan
           </button>
@@ -876,23 +888,23 @@ export default function ProgramPlanningCalendar({
       ) : null}
 
       {addingBlock ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-blue-200 bg-blue-50 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-app-border bg-app-surface-muted p-3">
           <input
             value={newBlockTitle}
             onChange={(event) => setNewBlockTitle(event.target.value)}
             placeholder="Blocknaam"
-            className="min-w-[140px] rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 flex-1 basis-[140px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           />
           <input
             type="date"
             value={newBlockStartDate}
             onChange={(event) => setNewBlockStartDate(event.target.value)}
-            className="rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           />
           <select
             value={newBlockMacroId}
             onChange={(event) => setNewBlockMacroId(event.target.value)}
-            className="rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           >
             <option value="">Geen macrocycle</option>
             {macrocycles.map((macro) => (
@@ -905,7 +917,7 @@ export default function ProgramPlanningCalendar({
             type="button"
             disabled={creating}
             onClick={() => void handleCreateBlock()}
-            className="rounded-xl bg-blue-700 px-3 py-2 text-xs font-semibold text-white"
+            className="app-btn-primary app-focus-ring min-h-[44px] disabled:opacity-60"
           >
             Opslaan
           </button>
@@ -913,11 +925,11 @@ export default function ProgramPlanningCalendar({
       ) : null}
 
       {addingWeekBlockId ? (
-        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 p-3">
+        <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-app-border bg-app-surface-muted p-3">
           <select
             value={addingWeekBlockId}
             onChange={(event) => setAddingWeekBlockId(event.target.value)}
-            className="rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           >
             {allBlocks.map((block) => (
               <option key={block.id} value={block.id}>
@@ -929,13 +941,13 @@ export default function ProgramPlanningCalendar({
             value={newWeekTitle}
             onChange={(event) => setNewWeekTitle(event.target.value)}
             placeholder="Weeknaam"
-            className="min-w-[140px] rounded-xl border px-3 py-2 text-sm"
+            className="min-h-[44px] min-w-0 flex-1 basis-[140px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text app-focus-ring md:text-sm"
           />
           <button
             type="button"
             disabled={creating}
             onClick={() => void handleCreateWeek()}
-            className="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white"
+            className="app-btn-primary app-focus-ring min-h-[44px] disabled:opacity-60"
           >
             Opslaan
           </button>
@@ -1017,7 +1029,7 @@ export default function ProgramPlanningCalendar({
             })}
 
             <div
-              className="flex items-center border-b border-r border-app-border px-2 py-2 text-[10px] font-bold uppercase text-blue-400"
+              className="flex items-center border-b border-r border-app-border px-2 py-2 text-[10px] font-bold uppercase text-app-muted"
               style={{ gridRow: 2, gridColumn: 1 }}
             >
               Blocks
@@ -1081,7 +1093,7 @@ export default function ProgramPlanningCalendar({
               const isMeetColumn = meetColumnIndices.has(index);
               const primary = getPrimaryEntry(column);
               const macroClassName = primary?.macroId
-                ? "border-violet-300 bg-violet-100"
+                ? "border-app-accent/30 bg-app-accent/10"
                 : "border-dashed border-app-border bg-app-surface-muted text-app-muted";
 
               return (
@@ -1099,7 +1111,7 @@ export default function ProgramPlanningCalendar({
             {macroRows.map((row) => (
               <div
                 key={row.key}
-                className="pointer-events-none z-10 flex h-10 items-center justify-center overflow-hidden px-2 text-center text-[11px] font-semibold text-violet-950"
+                className="pointer-events-none z-10 flex h-10 items-center justify-center overflow-hidden px-2 text-center text-[11px] font-semibold text-app-text"
                 style={{
                   gridRow: 3,
                   gridColumn: weekGridColumn(row.start, row.end),

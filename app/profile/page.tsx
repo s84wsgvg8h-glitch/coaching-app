@@ -297,14 +297,14 @@ function ProfilePageContent() {
 
   if (!userId) {
     return (
-      <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6 lg:px-8">
+      <AppShell contentClassName="app-page-content flex-1 px-2 pb-6 md:px-3 lg:px-4">
         <AthleteProfileSkeleton />
       </AppShell>
     );
   }
 
   return (
-    <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6 lg:px-8">
+    <AppShell contentClassName="app-page-content flex-1 px-2 pb-6 md:px-3 lg:px-4">
       {!profileLoaded ? (
         <AthleteProfileSkeleton />
       ) : (
@@ -493,7 +493,7 @@ export default function ProfilePage() {
   return (
     <Suspense
       fallback={
-        <AppShell contentClassName="app-page-content flex-1 px-2 pt-0 md:p-6">
+        <AppShell contentClassName="app-page-content flex-1 px-2 pb-6 md:px-3 lg:px-4">
           <AthleteProfileSkeleton />
         </AppShell>
       }

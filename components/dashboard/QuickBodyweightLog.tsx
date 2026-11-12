@@ -170,7 +170,7 @@ export default function QuickBodyweightLog({
       className={
         compact
           ? "rounded-xl border border-app-border bg-app-surface p-3"
-          : "app-card"
+          : "ui-panel"
       }
     >
       <p className="text-sm font-bold text-app-text">Snelle BW-log</p>

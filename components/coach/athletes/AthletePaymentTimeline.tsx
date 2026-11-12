@@ -26,21 +26,21 @@ function cardStyles(status: MonthlyPaymentStatus) {
     case "paid":
       return {
         className:
-          "athletes-payment-card athletes-payment-card--paid border-emerald-500/35 bg-emerald-500/[0.08] text-emerald-200",
+          "athletes-payment-card athletes-payment-card--paid border-emerald-500/30 bg-emerald-500/15 text-emerald-400",
         icon: Check,
         iconClass: "text-emerald-400",
       };
     case "overdue":
       return {
         className:
-          "athletes-payment-card athletes-payment-card--overdue border-rose-500/40 bg-rose-500/[0.1] text-rose-200",
+          "athletes-payment-card athletes-payment-card--overdue border-red-500/30 bg-red-500/15 text-red-400",
         icon: AlertCircle,
-        iconClass: "text-rose-400",
+        iconClass: "text-red-400",
       };
     default:
       return {
         className:
-          "athletes-payment-card athletes-payment-card--planned border-app-border/60 bg-app-surface/40 text-app-muted",
+          "athletes-payment-card athletes-payment-card--planned border-app-border bg-app-surface-muted text-app-muted",
         icon: Clock,
         iconClass: "text-app-subtle",
       };
@@ -73,7 +73,7 @@ export default function AthletePaymentTimeline({
             className={`flex shrink-0 items-center gap-1.5 rounded-lg border px-2 py-1.5 ${styles.className}`}
           >
             <span
-              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-black/20 ${styles.iconClass}`}
+              className={`flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-app-bg/40 ${styles.iconClass}`}
             >
               <Icon className="h-3 w-3" />
             </span>

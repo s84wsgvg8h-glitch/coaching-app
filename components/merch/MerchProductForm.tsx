@@ -234,8 +234,8 @@ export default function MerchProductForm({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex flex-col bg-[#09090b]/95 backdrop-blur-sm">
-      <div className="flex items-center justify-between border-b border-app-border/60 px-4 py-3 md:px-6">
+    <div className="fixed inset-0 z-50 flex flex-col bg-app-bg/95 pt-[env(safe-area-inset-top)] backdrop-blur-sm">
+      <div className="flex items-center justify-between border-b border-app-border px-4 py-3 md:px-6">
         <div>
           <h2 className="text-lg font-semibold text-app-text">
             {isEdit ? "Product bewerken" : "Product toevoegen"}
@@ -250,7 +250,7 @@ export default function MerchProductForm({
         <button
           type="button"
           onClick={onCancel}
-          className="rounded-xl border border-app-border p-2 text-app-muted hover:bg-app-surface-muted hover:text-app-text"
+          className="app-focus-ring flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-app-border text-app-muted hover:bg-app-surface-hover hover:text-app-text"
           aria-label="Sluiten"
         >
           <X className="h-5 w-5" />
@@ -258,10 +258,10 @@ export default function MerchProductForm({
       </div>
 
       <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto grid max-w-[1400px] gap-6 p-4 md:p-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-          <div className="space-y-5">
+        <div className="mx-auto grid max-w-[1400px] grid-cols-1 gap-6 p-4 md:p-6 xl:grid-cols-[minmax(0,1fr)_360px]">
+          <div className="min-w-0 space-y-5">
             {isEdit && stats ? (
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
                 <StatChip label="Verkocht" value={String(sold)} />
                 <StatChip
                   label="Omzet"
@@ -326,7 +326,7 @@ export default function MerchProductForm({
                 {normalizeSizes(sizes).map((size) => (
                   <div
                     key={size}
-                    className="inline-flex items-center gap-2 rounded-xl border border-app-border/70 bg-app-surface-muted/30 px-2 py-1.5"
+                    className="inline-flex items-center gap-2 rounded-xl border border-app-border bg-app-surface-muted px-2 py-1.5"
                   >
                     <span className="text-[12px] font-medium text-app-text">
                       {size}
@@ -373,7 +373,7 @@ export default function MerchProductForm({
                     );
                     setCustomSize("");
                   }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-app-border px-3 py-2 text-[12px] text-app-text hover:bg-app-surface-muted"
+                  className="app-btn-secondary app-focus-ring min-h-[44px] text-[12px]"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Maat toevoegen
@@ -412,8 +412,8 @@ export default function MerchProductForm({
                 onClick={() => fileInputRef.current?.click()}
                 className={`cursor-pointer rounded-2xl border border-dashed p-8 text-center transition ${
                   dragOver
-                    ? "border-sky-500/60 bg-sky-500/5"
-                    : "border-app-border/70 bg-app-surface-muted/20 hover:border-sky-500/40"
+                    ? "border-app-accent/60 bg-app-accent/10"
+                    : "border-app-border bg-app-surface-muted hover:border-app-accent/40"
                 }`}
               >
                 <Upload className="mx-auto h-8 w-8 text-app-muted" />
@@ -424,7 +424,7 @@ export default function MerchProductForm({
                   Max 6 afbeeldingen · eerste is hoofdafbeelding
                 </p>
                 {uploading ? (
-                  <p className="mt-2 text-[12px] text-sky-400">Uploaden...</p>
+                  <p className="mt-2 text-[12px] text-app-accent">Uploaden...</p>
                 ) : null}
               </div>
               {imageUrls.length > 0 ? (
@@ -435,7 +435,7 @@ export default function MerchProductForm({
                         src={url}
                         alt=""
                         className={`h-20 w-20 rounded-xl object-cover ${
-                          index === 0 ? "ring-2 ring-sky-500/50" : ""
+                          index === 0 ? "ring-2 ring-app-accent/50" : ""
                         }`}
                       />
                       <button
@@ -456,7 +456,7 @@ export default function MerchProductForm({
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
-                      className="flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-app-border text-app-muted hover:border-sky-500/40"
+                      className="app-focus-ring flex h-20 w-20 items-center justify-center rounded-xl border border-dashed border-app-border text-app-muted hover:border-app-accent/40"
                     >
                       <ImagePlus className="h-5 w-5" />
                     </button>
@@ -520,10 +520,10 @@ export default function MerchProductForm({
                       key={option.value}
                       type="button"
                       onClick={() => setStatus(option.value)}
-                      className={`rounded-xl border px-3 py-3 text-left transition ${
+                      className={`app-focus-ring rounded-xl border px-3 py-3 text-left transition ${
                         active
-                          ? "border-sky-500/50 bg-sky-500/10 ring-1 ring-sky-500/30"
-                          : "border-app-border/70 bg-app-surface-muted/20 hover:border-app-border"
+                          ? "border-app-accent/50 bg-app-accent/10 ring-1 ring-app-accent/30"
+                          : "border-app-border bg-app-surface-muted hover:border-app-border-strong"
                       }`}
                     >
                       <span className="block text-[13px] font-semibold text-app-text">
@@ -558,7 +558,7 @@ export default function MerchProductForm({
                     className="inline-flex items-center gap-2 rounded-full border border-app-border px-2.5 py-1 text-[11px] text-app-muted"
                   >
                     <span
-                      className="h-3.5 w-3.5 rounded-full border border-white/20"
+                      className="h-3.5 w-3.5 rounded-full border border-app-border-strong"
                       style={{ backgroundColor: color.value }}
                     />
                     {color.name}
@@ -605,7 +605,7 @@ export default function MerchProductForm({
                     ]);
                     setCustomColorName("");
                   }}
-                  className="inline-flex items-center gap-1 rounded-xl border border-app-border px-3 py-2 text-[12px] text-app-text hover:bg-app-surface-muted"
+                  className="app-btn-secondary app-focus-ring min-h-[44px] text-[12px]"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   Kleur toevoegen
@@ -676,12 +676,12 @@ export default function MerchProductForm({
         </div>
       </div>
 
-      <div className="border-t border-app-border/60 bg-[#11161D]/95 px-4 py-3 md:px-6">
+      <div className="border-t border-app-border bg-app-surface/95 px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] md:px-6">
         <div className="mx-auto flex max-w-[1400px] flex-wrap items-center justify-between gap-2">
           <button
             type="button"
             onClick={onCancel}
-            className="app-btn-secondary"
+            className="app-btn-secondary app-focus-ring min-h-[44px]"
           >
             Annuleren
           </button>
@@ -691,7 +691,7 @@ export default function MerchProductForm({
                 <button
                   type="button"
                   onClick={() => void handleDuplicate()}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-app-border px-4 py-2.5 text-[13px] text-app-text hover:bg-app-surface-muted"
+                  className="app-btn-secondary app-focus-ring min-h-[44px]"
                 >
                   <Copy className="h-4 w-4" />
                   Dupliceren
@@ -700,7 +700,7 @@ export default function MerchProductForm({
                   <button
                     type="button"
                     onClick={() => onDelete(item.id)}
-                    className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/30 px-4 py-2.5 text-[13px] text-red-400 hover:bg-red-500/10"
+                    className="app-focus-ring inline-flex min-h-[44px] items-center gap-1.5 rounded-full border border-red-500/30 px-4 py-2 text-[13px] font-medium text-red-400 hover:bg-red-500/15"
                   >
                     <Trash2 className="h-4 w-4" />
                     Verwijderen
@@ -712,7 +712,7 @@ export default function MerchProductForm({
               type="button"
               disabled={saving || uploading}
               onClick={() => void handleSave("concept")}
-              className="app-btn-secondary disabled:opacity-60"
+              className="app-btn-secondary app-focus-ring min-h-[44px] disabled:opacity-60"
             >
               Opslaan als concept
             </button>
@@ -720,7 +720,7 @@ export default function MerchProductForm({
               type="button"
               disabled={saving || uploading || !title.trim()}
               onClick={() => void handleSave()}
-              className="app-btn-primary disabled:opacity-60"
+              className="app-btn-primary app-focus-ring min-h-[44px] disabled:opacity-60"
             >
               {saving
                 ? "Opslaan..."
@@ -743,7 +743,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-app-border/70 bg-[#161B22]/60 p-4 md:p-5">
+    <section className="rounded-2xl border border-app-border bg-app-surface p-4 md:p-5">
       <h3 className="mb-3 text-[13px] font-semibold uppercase tracking-wide text-app-muted">
         {title}
       </h3>
@@ -784,10 +784,10 @@ function ToggleCard({
     <button
       type="button"
       onClick={() => onChange(!checked)}
-      className={`rounded-2xl border p-4 text-left transition ${
+      className={`app-focus-ring rounded-2xl border p-4 text-left transition ${
         checked
-          ? "border-sky-500/40 bg-sky-500/10 ring-1 ring-sky-500/20"
-          : "border-app-border/70 bg-app-surface-muted/20 hover:border-app-border"
+          ? "border-app-accent/40 bg-app-accent/10 ring-1 ring-app-accent/20"
+          : "border-app-border bg-app-surface-muted hover:border-app-border-strong"
       }`}
     >
       <span className="block text-[13px] font-semibold text-app-text">
@@ -802,7 +802,7 @@ function ToggleCard({
 
 function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-app-border/60 bg-app-surface-muted/30 p-3">
+    <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
       <p className="text-[10px] uppercase tracking-wide text-app-subtle">
         {label}
       </p>

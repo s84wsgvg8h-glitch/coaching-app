@@ -28,7 +28,7 @@ export default function MerchAthleteShop({
   const [selectedItem, setSelectedItem] = useState<MerchItem | null>(null);
 
   return (
-    <div className="mx-auto w-full max-w-[1100px]">
+    <div className="w-full min-w-0">
       <PageHeader
         title="Merch shop"
         description="Teamkleding en merchandise bestellen bij je coach."
@@ -44,10 +44,10 @@ export default function MerchAthleteShop({
             key={entry.id}
             type="button"
             onClick={() => setTab(entry.id)}
-            className={`shrink-0 rounded-full px-4 py-2.5 text-[13px] font-medium transition min-h-[44px] ${
+            className={`app-focus-ring min-h-[44px] shrink-0 rounded-full px-4 py-2.5 text-[13px] font-medium transition ${
               tab === entry.id
-                ? "bg-app-accent/15 text-app-accent ring-1 ring-app-accent/30"
-                : "text-app-muted hover:text-app-text"
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
             }`}
           >
             {entry.label}

@@ -44,8 +44,8 @@ export default function CoachAthleteNotesSection({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-app-text">Coach notities</h2>
-        <p className="mt-1 text-sm text-app-muted">
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Coach notities</h2>
+        <p className="mt-1 text-[13px] text-app-muted">
           Privé notities — alleen zichtbaar voor coaches, niet voor de atleet.
         </p>
       </div>
@@ -59,14 +59,14 @@ export default function CoachAthleteNotesSection({
             onChange={(e) => setNotes(e.target.value)}
             rows={8}
             placeholder="Observaties, aandachtspunten, follow-ups..."
-            className="w-full rounded-xl border border-app-border bg-app-input-bg px-4 py-3 text-sm outline-none app-focus-ring"
+            className="w-full rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-sm text-app-text outline-none placeholder:text-app-subtle app-focus-ring"
           />
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <button
               type="button"
               onClick={() => void handleSave()}
               disabled={saving}
-              className="app-btn-primary disabled:opacity-60"
+              className="app-btn-primary min-h-[44px] disabled:opacity-60"
             >
               {saving ? "Opslaan..." : "Notities opslaan"}
             </button>

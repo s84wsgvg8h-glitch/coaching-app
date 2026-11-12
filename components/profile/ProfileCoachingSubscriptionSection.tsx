@@ -194,13 +194,13 @@ export default function ProfileCoachingSubscriptionSection({
 
   return (
     <div className="space-y-4 pb-[calc(var(--mobile-nav-total-height)+1.5rem)] lg:pb-0">
-      <div className="rounded-2xl border border-app-border/70 bg-app-surface/80 p-4 sm:p-5">
+      <div className="rounded-2xl border border-app-border bg-app-surface-muted p-4 sm:p-5">
         <div className="flex items-start gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-app-border/70 bg-app-bg/70">
-            <CreditCard className="h-5 w-5 text-app-text" aria-hidden="true" />
+          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-accent/15">
+            <CreditCard className="h-5 w-5 text-app-accent" aria-hidden="true" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-app-text">Coachingabonnement</p>
+            <p className="text-[15px] font-semibold tracking-tight text-app-text">Coachingabonnement</p>
             <p className="mt-1 text-xs leading-relaxed text-app-muted">
               Beheer je maandelijkse coaching via Stripe. Betalingen worden veilig
               buiten de app afgehandeld.
@@ -216,8 +216,8 @@ export default function ProfileCoachingSubscriptionSection({
         ) : (
           <div className="mt-5 space-y-4">
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <div className="rounded-xl border border-app-border/60 bg-app-bg/50 px-3 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
+              <div className="rounded-xl border border-app-border bg-app-surface px-3 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Abonnement
                 </p>
                 <p className="mt-1 text-sm font-semibold text-app-text">
@@ -228,16 +228,16 @@ export default function ProfileCoachingSubscriptionSection({
                       : "Coaching abonnement"}
                 </p>
               </div>
-              <div className="rounded-xl border border-app-border/60 bg-app-bg/50 px-3 py-3">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
+              <div className="rounded-xl border border-app-border bg-app-surface px-3 py-3">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Status
                 </p>
                 <p
                   className={`mt-1 text-sm font-semibold ${
                     statusTone === "success"
-                      ? "text-emerald-500"
+                      ? "text-emerald-400"
                       : statusTone === "warning"
-                        ? "text-amber-500"
+                        ? "text-amber-400"
                         : "text-app-text"
                   }`}
                 >
@@ -246,8 +246,8 @@ export default function ProfileCoachingSubscriptionSection({
                     : "Geen actief abonnement"}
                 </p>
               </div>
-              <div className="rounded-xl border border-app-border/60 bg-app-bg/50 px-3 py-3 sm:col-span-2">
-                <p className="text-[11px] font-semibold uppercase tracking-wide text-app-muted">
+              <div className="rounded-xl border border-app-border bg-app-surface px-3 py-3 sm:col-span-2">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Volgende betaaldatum
                 </p>
                 <p className="mt-1 text-sm font-semibold text-app-text">
@@ -256,7 +256,7 @@ export default function ProfileCoachingSubscriptionSection({
                     : "—"}
                 </p>
                 {subscription?.cancel_at_period_end ? (
-                  <p className="mt-1 text-xs text-amber-500">
+                  <p className="mt-1 text-xs text-amber-400">
                     Loopt af aan het einde van de huidige periode.
                   </p>
                 ) : null}
@@ -264,13 +264,13 @@ export default function ProfileCoachingSubscriptionSection({
             </div>
 
             {checkoutFeedback.success ? (
-              <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-xs font-medium text-emerald-600 dark:text-emerald-300">
+              <p className="rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-xs font-medium text-emerald-400">
                 {checkoutFeedback.success}
               </p>
             ) : null}
 
             {displayError ? (
-              <p className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs font-medium text-red-600 dark:text-red-300">
+              <p className="rounded-xl border border-red-500/30 bg-red-500/15 px-3 py-2 text-xs font-medium text-red-400">
                 {displayError}
               </p>
             ) : null}
@@ -281,7 +281,7 @@ export default function ProfileCoachingSubscriptionSection({
                   type="button"
                   onClick={() => void startCheckout()}
                   disabled={actionLoading !== null}
-                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-app-text px-4 py-2.5 text-sm font-semibold text-app-bg transition hover:opacity-90 disabled:opacity-60 sm:w-auto"
+                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-app-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
                 >
                   {actionLoading === "checkout" ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
@@ -297,7 +297,7 @@ export default function ProfileCoachingSubscriptionSection({
                   type="button"
                   onClick={() => void openPortal()}
                   disabled={actionLoading !== null}
-                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border/70 bg-app-bg/60 px-4 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-bg sm:w-auto"
+                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover sm:w-auto"
                 >
                   {actionLoading === "portal" ? (
                     <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />

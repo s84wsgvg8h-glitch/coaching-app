@@ -218,7 +218,7 @@ export default function ChatAiPanel({
         className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain px-4 py-4 mobile-scroll"
       >
         {turns.length === 0 ? (
-          <div className="rounded-2xl border border-dashed border-app-accent/25 bg-app-accent-muted p-4 text-sm text-purple-900">
+          <div className="rounded-2xl border border-dashed border-app-accent/25 bg-app-accent/15 p-4 text-sm text-app-text">
             <p className="font-semibold">Stel een vraag over training of de app</p>
             <p className="mt-2 text-app-accent">
               {userRole === "atleet" ? (
@@ -264,7 +264,7 @@ export default function ChatAiPanel({
                 <button
                   type="button"
                   onClick={() => void onShareToChat(turn.question, turn.answer)}
-                  className="mt-3 inline-flex items-center gap-2 rounded-xl border border-app-accent/25 bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-accent hover:bg-app-accent-muted"
+                  className="mt-3 inline-flex items-center gap-2 rounded-xl border border-app-accent/25 bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-accent hover:bg-app-accent/15"
                 >
                   <Share2 className="h-3.5 w-3.5" />
                   Deel in chat

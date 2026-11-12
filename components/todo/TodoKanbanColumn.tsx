@@ -62,10 +62,10 @@ export default function TodoKanbanColumn({
               <div className="todo-kanban-doing-glow-ring todo-kanban-doing-glow-ring-outer" />
               <div className="todo-kanban-doing-glow-ring todo-kanban-doing-glow-ring-inner" />
               <div className="todo-kanban-doing-glow-icon">
-                <Footprints className="h-7 w-7 text-sky-300" />
+                <Footprints className="h-7 w-7 text-app-accent" />
               </div>
             </div>
-            <p className="mt-4 text-[14px] font-semibold text-white">Goed bezig!</p>
+            <p className="mt-4 text-[14px] font-semibold text-app-text">Goed bezig!</p>
             <p className="mt-1 max-w-[200px] text-center text-[12px] leading-relaxed text-app-muted">
               Taken die je gaat doen, verschijnen hier.
             </p>

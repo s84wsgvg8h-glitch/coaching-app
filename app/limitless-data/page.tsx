@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { Pencil, X } from "lucide-react";
 import { supabase } from "@/lib/supabaseClient";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { limitlessAthletesSeed } from "@/lib/limitlessAthletesSeed";
 
 type LimitlessAthlete = {
@@ -241,10 +242,10 @@ export default function LimitlessDataPage() {
   function StatusBadge({ value }: { value: string }) {
     return (
       <span
-        className={`px-3 py-1 rounded-full text-xs font-bold ${
+        className={`rounded-full px-2.5 py-1 text-xs font-semibold capitalize ${
           value === "groen"
-            ? "bg-green-100 text-green-700"
-            : "bg-red-100 text-red-700"
+            ? "bg-emerald-500/15 text-emerald-400"
+            : "bg-red-500/15 text-red-400"
         }`}
       >
         {value}
@@ -254,48 +255,45 @@ export default function LimitlessDataPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto w-full max-w-none">
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold">Limitless Data</h1>
+      <PageContainer size="full" className="space-y-4">
+        <PageHeader
+          eyebrow="Ledenadministratie"
+          title="Limitless Data"
+          description="Voeg atleten toe en beheer lidgegevens."
+          actions={
+            <button
+              onClick={handleImportSeed}
+              disabled={importingSeed}
+              className="app-btn-secondary app-focus-ring min-h-11 w-full disabled:opacity-50 sm:w-auto"
+            >
+              {importingSeed ? "Importeren..." : "Ledenlijst importeren"}
+            </button>
+          }
+        />
 
-            <p className="text-gray-500">
-              Voeg atleten toe en beheer lidgegevens.
-            </p>
-          </div>
+        <Panel>
+          <h2 className="mb-4 text-[15px] font-semibold tracking-tight text-app-text">Atleet toevoegen</h2>
 
-          <button
-            onClick={handleImportSeed}
-            disabled={importingSeed}
-            className="border border-app-border bg-app-surface-muted text-app-text hover:bg-app-surface-hover disabled:opacity-50 px-5 py-3 rounded-xl font-semibold"
-          >
-            {importingSeed ? "Importeren..." : "Ledenlijst importeren"}
-          </button>
-        </div>
-
-        <div className="app-card p-6 mb-6">
-          <h2 className="text-xl font-bold mb-4">Atleet toevoegen</h2>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3">
             <input
               value={fullName}
               onChange={(e) => setFullName(e.target.value)}
               placeholder="Volledige naam"
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             />
 
             <input
               type="date"
               value={birthDate}
               onChange={(e) => setBirthDate(e.target.value)}
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             />
 
             <input
               value={memberNumber}
               onChange={(e) => setMemberNumber(e.target.value)}
               placeholder="Lidnummer"
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             />
 
             <select
@@ -303,7 +301,7 @@ export default function LimitlessDataPage() {
               onChange={(e) =>
                 setCompetitionMemberStatus(e.target.value)
               }
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             >
               <option value="groen">Wedstrijdlid: Groen</option>
               <option value="rood">Wedstrijdlid: Rood</option>
@@ -312,7 +310,7 @@ export default function LimitlessDataPage() {
             <select
               value={studentStatus}
               onChange={(e) => setStudentStatus(e.target.value)}
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             >
               <option value="groen">Studentenstatus: Groen</option>
               <option value="rood">Studentenstatus: Rood</option>
@@ -321,7 +319,7 @@ export default function LimitlessDataPage() {
             <select
               value={membershipType}
               onChange={(e) => setMembershipType(e.target.value)}
-              className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+              className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
             >
               <option value="wedstrijd lid">Wedstrijd lid</option>
               <option value="beginnerslid">Beginnerslid</option>
@@ -330,30 +328,31 @@ export default function LimitlessDataPage() {
 
           <button
             onClick={addAthlete}
-            className="app-btn-primary mt-4"
+            className="app-btn-primary app-focus-ring mt-4 min-h-11 w-full sm:w-auto"
           >
             Atleet toevoegen
           </button>
-        </div>
+        </Panel>
 
-        <div className="app-card p-6 overflow-x-auto">
-          <h2 className="text-xl font-bold mb-4">Atleten</h2>
+        <Panel className="min-w-0">
+          <h2 className="mb-4 text-[15px] font-semibold tracking-tight text-app-text">Atleten</h2>
 
           {athletes.length === 0 ? (
-            <p className="text-gray-500">
+            <p className="py-6 text-center text-sm text-app-muted">
               Er zijn nog geen atleten toegevoegd.
             </p>
           ) : (
-            <table className="w-full min-w-[1000px] border-collapse">
+            <div className="table-compact-wrap -mx-1 overflow-x-auto px-1">
+            <table className="w-full min-w-[1000px] border-collapse text-sm">
               <thead>
-                <tr className="border-b border-app-border text-left text-app-muted">
-                  <th className="py-3 px-4">Naam</th>
-                  <th className="py-3 px-4">Geboortedatum</th>
-                  <th className="py-3 px-4">Lidnummer</th>
-                  <th className="py-3 px-4">Wedstrijdlid</th>
-                  <th className="py-3 px-4">Studentenstatus</th>
-                  <th className="py-3 px-4">Type lid</th>
-                  <th className="py-3 px-4">Actie</th>
+                <tr className="border-b border-app-border text-left">
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Naam</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Geboortedatum</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Lidnummer</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Wedstrijdlid</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Studentenstatus</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Type lid</th>
+                  <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Actie</th>
                 </tr>
               </thead>
 
@@ -361,42 +360,42 @@ export default function LimitlessDataPage() {
                 {athletes.map((athlete) => (
                   <tr
                     key={athlete.id}
-                    className="border-b border-app-border hover:bg-app-surface-hover"
+                    className="border-b border-app-border transition-colors last:border-b-0 hover:bg-app-surface-hover"
                   >
-                    <td className="py-4 px-4 font-semibold">
+                    <td className="px-4 py-3 font-medium text-app-text">
                       {athlete.full_name}
                     </td>
 
-                    <td className="py-4 px-4 text-app-muted">
+                    <td className="px-4 py-3 text-app-muted">
                       {formatDate(athlete.birth_date)}
                     </td>
 
-                    <td className="py-4 px-4 text-app-muted">
+                    <td className="px-4 py-3 text-app-muted">
                       {athlete.member_number}
                     </td>
 
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-3">
                       <StatusBadge
                         value={athlete.competition_member_status}
                       />
                     </td>
 
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-3">
                       <StatusBadge value={athlete.student_status} />
                     </td>
 
-                    <td className="py-4 px-4">
-                      <span className="px-3 py-1 rounded-full text-xs font-bold bg-app-surface-hover text-app-muted">
+                    <td className="px-4 py-3">
+                      <span className="rounded-full bg-app-surface-muted px-2.5 py-1 text-xs font-semibold text-app-text">
                         {athlete.membership_type}
                       </span>
                     </td>
 
-                    <td className="py-4 px-4">
+                    <td className="px-4 py-3">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
                           onClick={() => openEditModal(athlete)}
-                          className="inline-flex items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-sm font-medium text-app-text hover:bg-app-surface-hover"
+                          className="app-focus-ring inline-flex min-h-9 items-center gap-1.5 rounded-xl border border-app-border bg-app-surface px-3 text-sm font-medium text-app-text transition hover:bg-app-surface-hover"
                           title="Bewerken"
                         >
                           <Pencil className="h-3.5 w-3.5" />
@@ -406,7 +405,7 @@ export default function LimitlessDataPage() {
                         <button
                           type="button"
                           onClick={() => deleteAthlete(athlete.id)}
-                          className="inline-flex h-7 w-7 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 hover:bg-red-100"
+                          className="app-focus-ring inline-flex h-9 w-9 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/15 text-red-400 transition hover:bg-red-500/25"
                           title="Verwijderen"
                         >
                           <X className="h-3.5 w-3.5" />
@@ -417,16 +416,17 @@ export default function LimitlessDataPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
-        </div>
-      </div>
+        </Panel>
+      </PageContainer>
 
       {editingAthlete && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-2xl rounded-2xl border border-app-border bg-app-surface p-6 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="max-h-[90dvh] w-full max-w-2xl overflow-y-auto rounded-t-2xl border border-app-border bg-app-surface p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] shadow-[0_24px_64px_rgba(0,0,0,0.45)] sm:rounded-2xl sm:p-6">
             <div className="mb-4 flex items-start justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold">Atleet bewerken</h2>
+                <h2 className="text-[17px] font-semibold tracking-tight text-app-text">Atleet bewerken</h2>
                 <p className="text-sm text-app-muted">
                   Pas de gegevens van {editingAthlete.full_name} aan.
                 </p>
@@ -435,7 +435,7 @@ export default function LimitlessDataPage() {
               <button
                 type="button"
                 onClick={closeEditModal}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-app-muted hover:bg-app-surface-hover"
+                className="app-focus-ring inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
                 title="Sluiten"
               >
                 <X className="h-4 w-4" />
@@ -447,21 +447,21 @@ export default function LimitlessDataPage() {
                 value={editFullName}
                 onChange={(e) => setEditFullName(e.target.value)}
                 placeholder="Volledige naam"
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none md:col-span-2"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:col-span-2 md:text-sm"
               />
 
               <input
                 type="date"
                 value={editBirthDate}
                 onChange={(e) => setEditBirthDate(e.target.value)}
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
               />
 
               <input
                 value={editMemberNumber}
                 onChange={(e) => setEditMemberNumber(e.target.value)}
                 placeholder="Lidnummer"
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
               />
 
               <select
@@ -469,7 +469,7 @@ export default function LimitlessDataPage() {
                 onChange={(e) =>
                   setEditCompetitionMemberStatus(e.target.value)
                 }
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
               >
                 <option value="groen">Wedstrijdlid: Groen</option>
                 <option value="rood">Wedstrijdlid: Rood</option>
@@ -478,7 +478,7 @@ export default function LimitlessDataPage() {
               <select
                 value={editStudentStatus}
                 onChange={(e) => setEditStudentStatus(e.target.value)}
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
               >
                 <option value="groen">Studentenstatus: Groen</option>
                 <option value="rood">Studentenstatus: Rood</option>
@@ -487,18 +487,18 @@ export default function LimitlessDataPage() {
               <select
                 value={editMembershipType}
                 onChange={(e) => setEditMembershipType(e.target.value)}
-                className="rounded-xl border border-app-border bg-app-surface-muted px-4 py-3 text-app-text outline-none md:col-span-2"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2.5 text-base text-app-text outline-none placeholder:text-app-subtle md:col-span-2 md:text-sm"
               >
                 <option value="wedstrijd lid">Wedstrijd lid</option>
                 <option value="beginnerslid">Beginnerslid</option>
               </select>
             </div>
 
-            <div className="mt-6 flex justify-end gap-3">
+            <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={closeEditModal}
-                className="rounded-xl px-4 py-2 font-medium text-gray-600 hover:bg-app-surface-hover"
+                className="app-btn-secondary app-focus-ring min-h-11"
               >
                 Annuleren
               </button>
@@ -507,7 +507,7 @@ export default function LimitlessDataPage() {
                 type="button"
                 onClick={saveAthleteEdit}
                 disabled={savingEdit}
-                className="rounded-xl bg-black px-5 py-2 font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+                className="app-btn-primary app-focus-ring min-h-11 disabled:opacity-50"
               >
                 {savingEdit ? "Opslaan..." : "Opslaan"}
               </button>

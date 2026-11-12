@@ -635,7 +635,7 @@ export default function AthleteProfileSection({
   return (
     <div className={`profile-section-stack ${className}`}>
       {blockIntakeWizard?.completed_at && !blockIntakeWizard.coach_reviewed_at ? (
-        <div className="profile-callout profile-callout--violet">
+        <div className="profile-callout !border-app-accent/30 !bg-app-accent/10 text-app-text">
           <p className="profile-callout-title">Block-intake (review)</p>
           <ul className="mt-2 space-y-1 text-sm text-app-muted">
             {Object.entries(blockIntakeWizard.answers || {}).map(([key, value]) => (
@@ -648,7 +648,7 @@ export default function AthleteProfileSection({
             <button
               type="button"
               onClick={() => void markBlockIntakeReviewed(blockIntakeWizard.id)}
-              className="mt-3 rounded-xl border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover"
+              className="mt-3 inline-flex min-h-[44px] items-center rounded-xl border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover app-focus-ring md:min-h-[36px]"
             >
               Markeer als bekeken
             </button>
@@ -688,13 +688,13 @@ export default function AthleteProfileSection({
                               type="checkbox"
                               checked
                               onChange={() => toggleCompetition(competition.id)}
-                              className="mt-1 h-4 w-4 shrink-0 rounded border-app-border"
+                              className="mt-1 h-4 w-4 shrink-0 rounded border-app-border accent-[var(--app-accent)]"
                             />
                             <div className="min-w-0 flex-1">
                               <button
                                 type="button"
                                 onClick={() => toggleMeetExpanded(competition.id)}
-                                className="flex w-full items-start justify-between gap-3 text-left"
+                                className="app-focus-ring flex min-h-[44px] w-full items-start justify-between gap-3 rounded-lg text-left"
                               >
                                 <span>
                                   <span className="profile-competition-name">
@@ -905,7 +905,7 @@ export default function AthleteProfileSection({
                               type="checkbox"
                               checked={false}
                               onChange={() => toggleCompetition(competition.id)}
-                              className="mt-1 h-4 w-4 rounded border-app-border"
+                              className="mt-1 h-4 w-4 rounded border-app-border accent-[var(--app-accent)]"
                             />
                             <span>
                               <span className="profile-competition-name block">
@@ -952,7 +952,7 @@ export default function AthleteProfileSection({
                   <button
                     type="button"
                     onClick={() => toggleMeetExpanded(competition.id)}
-                    className="flex w-full items-start justify-between gap-3 text-left"
+                    className="app-focus-ring flex min-h-[44px] w-full items-start justify-between gap-3 rounded-lg text-left"
                   >
                     <span>
                       <p className="profile-competition-name">{competition.naam}</p>
@@ -1206,7 +1206,7 @@ export default function AthleteProfileSection({
                   );
                 }
               }}
-              className="mt-1 h-4 w-4 rounded border-app-border"
+              className="mt-1 h-4 w-4 rounded border-app-border accent-[var(--app-accent)]"
             />
             <span>
               Stuur trainingsvideo&apos;s naar{" "}

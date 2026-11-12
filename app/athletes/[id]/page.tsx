@@ -9,10 +9,8 @@ import CoachAthleteSwitcher from "@/components/coach/CoachAthleteSwitcher";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { loadAthleteFillScore } from "@/lib/coachAthleteOverview";
-import {
-  formatFillScorePercentage,
-  getFillScoreColorClass,
-} from "@/lib/athleteFillScore";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
+import { formatFillScorePercentage } from "@/lib/athleteFillScore";
 import {
   applyAthleteScope,
   loadCoachOrgContext,
@@ -131,60 +129,70 @@ function CoachAthleteHubContent() {
   }, [athleteId, router]);
 
   if (loading) {
-    return (
-      <AppShell contentClassName="flex-1 p-8">
-        <p className="text-sm text-app-muted">Atleet laden...</p>
-      </AppShell>
-    );
+    return <HubLoading />;
   }
 
   return (
-    <AppShell contentClassName="flex-1 p-8">
-      <div className="mx-auto max-w-5xl">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <h1 className="text-3xl font-bold text-app-text">{athleteName}</h1>
-            {fillScore !== null ? (
-              <p className="mt-3 text-sm text-app-muted">
-                Invulscore afgelopen 30 dagen:{" "}
-                <span
-                  className={`font-bold tabular-nums ${getFillScoreColorClass(fillScore)}`}
-                >
-                  {formatFillScorePercentage(fillScore)}
-                </span>
-              </p>
-            ) : null}
-          </div>
-          <CoachAthleteSwitcher
-            athletes={athletes}
-            currentAthleteId={athleteId}
-          />
-        </div>
+    <AppShell contentClassName={HUB_CONTENT_CLASS}>
+      <PageContainer size="full">
+        <PageHeader
+          eyebrow="Atleet hub"
+          title={athleteName}
+          actions={
+            <CoachAthleteSwitcher
+              athletes={athletes}
+              currentAthleteId={athleteId}
+            />
+          }
+        />
 
-        <div className="mt-6">
-          <CoachAthleteHubPanel
-            athleteId={athleteId}
-            programHref={programHref}
-          />
-        </div>
+        {fillScore !== null ? (
+          <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-app-border bg-app-surface px-3 py-1.5 text-[12px] text-app-muted">
+            Invulscore afgelopen 30 dagen
+            <span
+              className={`rounded-full px-2 py-0.5 font-semibold tabular-nums ${fillScoreChipClass(fillScore)}`}
+            >
+              {formatFillScorePercentage(fillScore)}
+            </span>
+          </div>
+        ) : null}
+
+        <CoachAthleteHubPanel
+          athleteId={athleteId}
+          programHref={programHref}
+        />
 
         {coachId ? (
           <CoachAthleteDashboardTodos athleteId={athleteId} coachId={coachId} />
         ) : null}
-      </div>
+      </PageContainer>
+    </AppShell>
+  );
+}
+
+const HUB_CONTENT_CLASS =
+  "app-page-content flex-1 px-2 pb-6 md:px-3 lg:px-4";
+
+function fillScoreChipClass(percentage: number) {
+  if (percentage >= 90) return "bg-emerald-500/15 text-emerald-400";
+  if (percentage >= 70) return "bg-amber-500/15 text-amber-400";
+  return "bg-red-500/15 text-red-400";
+}
+
+function HubLoading() {
+  return (
+    <AppShell contentClassName={HUB_CONTENT_CLASS}>
+      <PageContainer size="full">
+        <div className="h-8 w-48 animate-pulse rounded-lg bg-app-surface" />
+        <p className="mt-3 text-sm text-app-muted">Atleet laden...</p>
+      </PageContainer>
     </AppShell>
   );
 }
 
 export default function CoachAthleteHubPage() {
   return (
-    <Suspense
-      fallback={
-        <AppShell contentClassName="flex-1 p-8">
-          <p className="text-sm text-app-muted">Atleet laden...</p>
-        </AppShell>
-      }
-    >
+    <Suspense fallback={<HubLoading />}>
       <CoachAthleteHubContent />
     </Suspense>
   );

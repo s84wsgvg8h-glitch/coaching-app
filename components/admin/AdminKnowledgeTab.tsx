@@ -343,8 +343,8 @@ export default function AdminKnowledgeTab() {
                 <h3 className="admin-label mb-2 font-semibold text-app-text">
                   Inhoud
                 </h3>
-                <div className="overflow-hidden rounded-xl border border-white/10 bg-black/25">
-                  <div className="flex flex-wrap gap-1 border-b border-white/8 px-2 py-2">
+                <div className="overflow-hidden rounded-xl border border-app-border bg-app-surface-muted">
+                  <div className="flex flex-wrap gap-1 border-b border-app-border px-2 py-2">
                     {["**vet**", "*cursief*", "`code`", "## Kop", "- Lijst"].map(
                       (label) => (
                         <span
@@ -388,7 +388,7 @@ export default function AdminKnowledgeTab() {
                 </label>
               </section>
 
-              <div className="flex flex-col gap-4 border-t border-white/8 pt-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex flex-col gap-4 border-t border-app-border pt-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="admin-toggle-row">
                   <div>
                     <p className="admin-strong text-[13px]">
@@ -509,7 +509,7 @@ export default function AdminKnowledgeTab() {
                       return (
                         <tr
                           key={chunk.id}
-                          className={`cursor-pointer ${isSelected ? "bg-blue-500/10" : ""}`}
+                          className={`cursor-pointer ${isSelected ? "bg-app-accent/10" : ""}`}
                           onClick={() => selectRow(chunk)}
                           onDoubleClick={() => startEdit(chunk)}
                         >

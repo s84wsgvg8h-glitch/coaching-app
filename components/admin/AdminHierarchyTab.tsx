@@ -439,7 +439,7 @@ export default function AdminHierarchyTab({ users }: AdminHierarchyTabProps) {
       {(hierarchy.stats.unassignedAthletes > 0 ||
         hierarchy.stats.pendingCoaches > 0) && (
         <AdminPanel className="admin-alert-banner !py-3">
-          <p className="text-[13px] text-amber-100/90">
+          <p className="text-[13px] text-amber-400">
             {hierarchy.stats.unassignedAthletes > 0 ? (
               <>
                 <Link

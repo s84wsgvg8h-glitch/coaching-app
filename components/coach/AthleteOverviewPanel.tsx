@@ -469,7 +469,7 @@ export default function AthleteOverviewPanel({
           <button
             type="button"
             onClick={() => void removeSelectedAthletes()}
-            className="inline-flex min-h-[44px] items-center rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2 text-[12px] font-semibold text-red-300 transition hover:bg-red-500/15 app-focus-ring"
+            className="inline-flex min-h-[44px] items-center rounded-lg border border-red-500/30 bg-red-500/15 px-3 py-2 text-[12px] font-semibold text-red-400 transition hover:bg-red-500/20 app-focus-ring"
           >
             Verwijder {selectedAthleteIds.length} geselecteerd
           </button>
@@ -494,7 +494,7 @@ export default function AthleteOverviewPanel({
         >
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3.5">
             <div className="flex min-w-0 items-center gap-3">
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
                 <Clock className="h-4 w-4" />
               </span>
               <p className="truncate text-[14px] font-medium text-app-text">
@@ -511,14 +511,14 @@ export default function AthleteOverviewPanel({
               <button
                 type="button"
                 onClick={() => void acceptPending(primaryPending.id)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-1.5 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/15 app-focus-ring"
+                className="inline-flex items-center gap-1.5 min-h-[44px] rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-1.5 text-[12px] font-semibold text-emerald-400 transition hover:bg-emerald-500/20 md:min-h-[36px] app-focus-ring"
               >
                 Goedkeuren
               </button>
               <button
                 type="button"
                 onClick={() => void rejectPending(primaryPending.id)}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-[12px] font-semibold text-app-muted transition hover:bg-app-surface-hover app-focus-ring"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-app-border bg-app-surface px-3 py-1.5 text-[12px] font-semibold text-app-muted transition hover:bg-app-surface-hover app-focus-ring md:min-h-[36px]"
               >
                 Afwijzen
               </button>
@@ -526,15 +526,15 @@ export default function AthleteOverviewPanel({
           </div>
 
           {pendingProfiles.length > 1 ? (
-            <details className="border-t border-amber-500/20 bg-app-surface/40">
-              <summary className="cursor-pointer px-4 py-2 text-[12px] font-medium text-app-muted hover:text-app-text">
+            <details className="border-t border-amber-500/20 bg-app-surface-muted">
+              <summary className="flex min-h-[44px] cursor-pointer items-center px-4 py-2 text-[12px] font-medium text-app-muted hover:text-app-text">
                 Alle aanmeldingen in afwachting ({pendingProfiles.length})
               </summary>
               <ul>
                 {pendingProfiles.slice(1).map((profile) => (
                   <li
                     key={profile.id}
-                    className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border/50 px-4 py-2.5"
+                    className="flex flex-wrap items-center justify-between gap-3 border-t border-app-border px-4 py-2.5"
                   >
                     <div className="flex items-center gap-2">
                       <input
@@ -547,7 +547,7 @@ export default function AthleteOverviewPanel({
                               : current.filter((id) => id !== profile.id),
                           )
                         }
-                        className="rounded border-app-border accent-brand-purple"
+                        className="rounded border-app-border accent-[var(--app-accent)]"
                       />
                       <span className="text-[13px] font-medium text-app-text">
                         {profile.fullName}
@@ -557,14 +557,14 @@ export default function AthleteOverviewPanel({
                       <button
                         type="button"
                         onClick={() => void acceptPending(profile.id)}
-                        className="app-btn-primary !px-2.5 !py-1 text-[11px]"
+                        className="app-btn-primary min-h-[44px] !px-3 !py-1 text-[11px] md:min-h-[32px]"
                       >
                         Goedkeuren
                       </button>
                       <button
                         type="button"
                         onClick={() => void rejectPending(profile.id)}
-                        className="app-btn-secondary !px-2.5 !py-1 text-[11px] !text-app-destructive"
+                        className="app-btn-secondary min-h-[44px] !px-3 !py-1 text-[11px] !text-red-400 md:min-h-[32px]"
                       >
                         Afwijzen
                       </button>
@@ -644,7 +644,7 @@ export default function AthleteOverviewPanel({
               </table>
             </div>
 
-            <div className="divide-y divide-app-border/70 lg:hidden">
+            <div className="divide-y divide-app-border lg:hidden">
               {filtered.map((row) => {
                 const displayName = titleCaseName(row.fullName);
                 const rowStatus = getRowStatus(row);
@@ -698,12 +698,12 @@ export default function AthleteOverviewPanel({
       {archivedRows.length > 0 ? (
         <details className={`${athletesGlassCard} mt-5 overflow-hidden`}>
           <summary className="flex cursor-pointer list-none items-center gap-3 px-4 py-3.5 text-[14px] font-medium text-app-text marker:content-none [&::-webkit-details-marker]:hidden">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-surface-raised text-app-muted">
+            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-app-surface-muted text-app-muted">
               <Archive className="h-4 w-4" />
             </span>
             Gearchiveerde atleten ({archivedRows.length})
           </summary>
-          <ul className="divide-y divide-app-border/70 border-t border-app-border/70">
+          <ul className="divide-y divide-app-border border-t border-app-border">
             {archivedRows.map((row) => (
               <li
                 key={row.id}
@@ -738,7 +738,7 @@ export default function AthleteOverviewPanel({
                   <button
                     type="button"
                     onClick={() => void restoreAthlete(row.id, row.fullName)}
-                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-[12px] font-semibold text-emerald-300 transition hover:bg-emerald-500/15 app-focus-ring"
+                    className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/15 px-3 py-2 text-[12px] font-semibold text-emerald-400 transition hover:bg-emerald-500/20 app-focus-ring"
                   >
                     <RotateCcw className="h-3.5 w-3.5" />
                     Terugzetten

@@ -472,7 +472,7 @@ export default function LeaderboardPage() {
           <div className="glass-accent-card ui-panel mb-4 p-4">
             <div className="mb-2 h-1.5 overflow-hidden rounded-full bg-app-surface-muted">
               <div
-                className="h-full rounded-full bg-brand-purple transition-all duration-300"
+                className="h-full rounded-full bg-app-accent transition-all duration-300"
                 style={{ width: `${Math.max(progressPercent, 8)}%` }}
               />
             </div>
@@ -483,10 +483,10 @@ export default function LeaderboardPage() {
         )}
 
         {!loading && (
-          <div className="glass-accent-card ui-panel mb-6 p-3 md:p-4">
-            <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+          <div className="glass-accent-card ui-panel mb-4 p-3 md:p-4">
+            <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2 xl:grid-cols-4">
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Sorteer op
                 </span>
                 <select
@@ -494,7 +494,7 @@ export default function LeaderboardPage() {
                   onChange={(e) =>
                     setSortMetric(e.target.value as LeaderboardSortMetric)
                   }
-                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                  className="app-focus-ring min-h-11 w-full min-w-0 rounded-xl border border-app-border bg-app-surface px-3 text-base text-app-text outline-none md:text-sm"
                 >
                   {sortOptions.map((option) => (
                     <option key={option.value} value={option.value}>
@@ -505,7 +505,7 @@ export default function LeaderboardPage() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Geslacht
                 </span>
                 <select
@@ -513,7 +513,7 @@ export default function LeaderboardPage() {
                   onChange={(e) =>
                     updateFilter("sex", e.target.value as LeaderboardFilters["sex"])
                   }
-                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                  className="app-focus-ring min-h-11 w-full min-w-0 rounded-xl border border-app-border bg-app-surface px-3 text-base text-app-text outline-none md:text-sm"
                 >
                   <option value="all">Alle</option>
                   <option value="M">Mannen</option>
@@ -522,13 +522,13 @@ export default function LeaderboardPage() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Leeftijdsklasse
                 </span>
                 <select
                   value={filters.division}
                   onChange={(e) => updateFilter("division", e.target.value)}
-                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                  className="app-focus-ring min-h-11 w-full min-w-0 rounded-xl border border-app-border bg-app-surface px-3 text-base text-app-text outline-none md:text-sm"
                 >
                   <option value="all">Alle</option>
                   {filterOptions.divisions.map((division) => (
@@ -540,13 +540,13 @@ export default function LeaderboardPage() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Gewichtsklasse
                 </span>
                 <select
                   value={filters.weightClassKg}
                   onChange={(e) => updateFilter("weightClassKg", e.target.value)}
-                  className="rounded-lg border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                  className="app-focus-ring min-h-11 w-full min-w-0 rounded-xl border border-app-border bg-app-surface px-3 text-base text-app-text outline-none md:text-sm"
                 >
                   <option value="all">Alle</option>
                   {filterOptions.weightClasses.map((weightClass) => (
@@ -561,8 +561,8 @@ export default function LeaderboardPage() {
         )}
 
         {loading && (
-          <div className="glass-accent-card ui-panel p-8">
-            <p className="text-app-muted">Atleten laden...</p>
+          <div className="glass-accent-card ui-panel p-6">
+            <p className="text-sm text-app-muted">Atleten laden…</p>
           </div>
         )}
 
@@ -585,13 +585,13 @@ export default function LeaderboardPage() {
                   <div
                     className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-bold ${
                       rank === 1
-                        ? "bg-yellow-400/90 text-yellow-900"
+                        ? "bg-amber-500/15 text-amber-400"
                         : rank === 2
                           ? "bg-app-surface-muted text-app-text"
                           : rank === 3
-                            ? "bg-orange-500/80 text-white"
+                            ? "bg-orange-500/15 text-orange-400"
                             : rank
-                              ? "bg-brand-purple/90 text-white"
+                              ? "bg-app-accent/15 text-app-accent"
                               : "bg-app-surface-muted text-app-muted"
                     }`}
                   >
@@ -619,10 +619,10 @@ export default function LeaderboardPage() {
                   </div>
 
                   <div className="shrink-0 text-right">
-                    <p className="text-lg font-bold tabular-nums text-app-text">
+                    <p className="text-lg font-semibold tabular-nums tracking-tight text-app-text">
                       {formatMetricValue(sortMetric, row)}
                     </p>
-                    <p className="text-[10px] uppercase tracking-wide text-app-muted">
+                    <p className="text-[10px] uppercase tracking-wide text-app-subtle">
                       {activeLabel}
                     </p>
                   </div>
@@ -631,8 +631,8 @@ export default function LeaderboardPage() {
             })}
 
             {displayRows.length === 0 && (
-              <div className="p-8">
-                <p className="text-app-muted">
+              <div className="px-4 py-10 text-center">
+                <p className="text-sm text-app-muted">
                   Geen atleten gevonden voor deze filters.
                 </p>
               </div>
@@ -644,7 +644,7 @@ export default function LeaderboardPage() {
           <div className="glass-accent-card ui-panel hidden overflow-x-auto p-0 md:block">
             <div className="min-w-[920px]">
               <div
-                className={`${tableGridClass} border-b border-app-border px-4 py-3 text-[10px] font-semibold uppercase tracking-wide text-app-muted`}
+                className={`${tableGridClass} border-b border-app-border px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle`}
               >
                 <div className="text-center">#</div>
                 <div>Atleet</div>
@@ -664,19 +664,19 @@ export default function LeaderboardPage() {
                 return (
                   <div
                     key={row.athlete_id}
-                    className={`${tableGridClass} border-b border-app-border px-4 py-3 transition hover:bg-app-surface-muted/40 last:border-b-0`}
+                    className={`${tableGridClass} border-b border-app-border px-4 py-3 transition hover:bg-app-surface-hover last:border-b-0`}
                   >
                     <div className="flex justify-center">
                       <div
                         className={`flex h-9 w-9 items-center justify-center rounded-xl text-sm font-bold ${
                           rank === 1
-                            ? "bg-yellow-400/90 text-yellow-900"
+                            ? "bg-amber-500/15 text-amber-400"
                             : rank === 2
                               ? "bg-app-surface-muted text-app-text"
                               : rank === 3
-                                ? "bg-orange-500/80 text-white"
+                                ? "bg-orange-500/15 text-orange-400"
                                 : rank
-                                  ? "bg-brand-purple/90 text-white"
+                                  ? "bg-app-accent/15 text-app-accent"
                                   : "bg-app-surface-muted text-app-muted"
                         }`}
                       >
@@ -707,7 +707,7 @@ export default function LeaderboardPage() {
                           key={column.key}
                           className={`rounded-lg px-2 py-1.5 text-right text-sm ${
                             active
-                              ? "bg-brand-purple text-white font-medium"
+                              ? "bg-app-accent/15 font-semibold text-app-accent"
                               : row.openipf_pending
                                 ? "font-normal text-app-muted"
                                 : "font-normal text-app-text"
@@ -724,8 +724,8 @@ export default function LeaderboardPage() {
               })}
 
               {displayRows.length === 0 && (
-                <div className="p-8">
-                  <p className="text-app-muted">
+                <div className="px-4 py-10 text-center">
+                  <p className="text-sm text-app-muted">
                     Geen atleten gevonden voor deze filters.
                   </p>
                 </div>

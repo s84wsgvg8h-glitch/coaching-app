@@ -57,21 +57,21 @@ export function formatMerchCombinedStatus(status: MerchCombinedOrderStatus): str
 export function merchCombinedStatusBadgeClass(status: MerchCombinedOrderStatus): string {
   switch (status) {
     case "pending":
-      return "bg-amber-500/15 text-amber-300 ring-amber-500/30";
+      return "bg-amber-500/15 text-amber-400 ring-amber-500/30";
     case "paid":
-      return "bg-sky-500/15 text-sky-300 ring-sky-500/30";
+      return "bg-app-accent/15 text-app-accent ring-app-accent/30";
     case "processing":
-      return "bg-violet-500/15 text-violet-300 ring-violet-500/30";
+      return "bg-app-accent/10 text-app-accent ring-app-accent/20";
     case "shipped":
-      return "bg-indigo-500/15 text-indigo-300 ring-indigo-500/30";
+      return "bg-app-accent/20 text-app-text ring-app-accent/40";
     case "delivered":
-      return "bg-emerald-500/15 text-emerald-300 ring-emerald-500/30";
+      return "bg-emerald-500/15 text-emerald-400 ring-emerald-500/30";
     case "cancelled":
       return "bg-app-surface-muted text-app-muted ring-app-border/60";
     case "failed":
-      return "bg-rose-500/15 text-rose-300 ring-rose-500/30";
+      return "bg-red-500/15 text-red-400 ring-red-500/30";
     case "refunded":
-      return "bg-orange-500/15 text-orange-300 ring-orange-500/30";
+      return "bg-amber-500/10 text-amber-400 ring-amber-500/20";
     default:
       return "bg-app-surface-muted text-app-muted ring-app-border/60";
   }

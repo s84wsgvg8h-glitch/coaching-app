@@ -32,7 +32,7 @@ export default function ChatInjuriesPanel({
         </button>
       </div>
 
-      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-[#eceff3] p-4">
+      <div className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain bg-app-bg p-4">
         <InjuriesSection athleteId={athleteId} canEdit compact />
       </div>
     </aside>

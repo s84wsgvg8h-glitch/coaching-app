@@ -157,25 +157,26 @@ export default function MerchProductDetailModal({
         aria-label="Sluiten"
         onClick={onClose}
       />
-      <div className="relative flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-app-border bg-[#11161D] shadow-2xl sm:rounded-3xl">
-        <div className="flex items-center justify-between border-b border-app-border/60 px-5 py-4">
+      <div className="relative flex max-h-[90dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-3xl border border-app-border bg-app-surface-elevated shadow-2xl sm:rounded-3xl">
+        <div className="flex items-center justify-between border-b border-app-border px-5 py-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-app-subtle">
               Product
             </p>
-            <h2 className="text-xl font-bold text-app-text">{item.title}</h2>
+            <h2 className="text-xl font-semibold tracking-tight text-app-text">{item.title}</h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-app-border p-2 text-app-muted hover:bg-app-surface-muted"
+            className="app-focus-ring flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-app-border text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
         <div className="flex-1 overflow-y-auto">
-          <div className="grid gap-5 p-5 md:grid-cols-2">
+          <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
             <div>
               {activeImage ? (
                 <img
@@ -211,12 +212,12 @@ export default function MerchProductDetailModal({
             <div>
               <p className="text-2xl font-bold text-app-text">{finalPriceLabel}</p>
               {item.preorder ? (
-                <p className="mt-1 text-[12px] font-medium text-amber-300">
+                <p className="mt-1 text-[12px] font-medium text-amber-400">
                   Pre-order — wordt verwerkt na sluiting
                 </p>
               ) : null}
               {lowStock ? (
-                <p className="mt-1 text-[12px] font-medium text-orange-300">{lowStock}</p>
+                <p className="mt-1 text-[12px] font-medium text-amber-400">{lowStock}</p>
               ) : null}
 
               {item.description ? (
@@ -226,7 +227,7 @@ export default function MerchProductDetailModal({
               ) : null}
 
               {item.material_info ? (
-                <div className="mt-4 rounded-xl border border-app-border/60 bg-app-surface/40 p-3">
+                <div className="mt-4 rounded-xl border border-app-border bg-app-surface-muted p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-app-subtle">
                     Materiaal
                   </p>
@@ -250,10 +251,10 @@ export default function MerchProductDetailModal({
                         type="button"
                         disabled={disabled}
                         onClick={() => setSelectedSize(size)}
-                        className={`rounded-xl border px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${
+                        className={`app-focus-ring min-h-[44px] rounded-xl border px-4 py-2 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-40 ${
                           selectedSize === size
                             ? "border-app-accent bg-app-accent text-white"
-                            : "border-app-border text-app-text hover:bg-app-surface-muted"
+                            : "border-app-border bg-app-surface text-app-text hover:bg-app-surface-hover"
                         }`}
                       >
                         {size}
@@ -279,14 +280,14 @@ export default function MerchProductDetailModal({
                         key={`${color.name}-${color.value}`}
                         type="button"
                         onClick={() => setSelectedColor(color.name)}
-                        className={`inline-flex items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${
+                        className={`app-focus-ring inline-flex min-h-[44px] items-center gap-2 rounded-xl border px-3 py-2 text-sm font-semibold ${
                           selectedColor === color.name
-                            ? "border-app-accent text-app-text"
-                            : "border-app-border text-app-muted"
+                            ? "border-app-accent bg-app-accent/15 text-app-text"
+                            : "border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                         }`}
                       >
                         <span
-                          className="h-4 w-4 rounded-full border border-white/20"
+                          className="h-4 w-4 rounded-full border border-app-border-strong"
                           style={{ backgroundColor: color.value }}
                         />
                         {color.name}
@@ -297,7 +298,7 @@ export default function MerchProductDetailModal({
               ) : null}
 
               {item.size_guide_text ? (
-                <div className="mt-4 rounded-xl border border-app-border/60 bg-app-surface/40 p-3">
+                <div className="mt-4 rounded-xl border border-app-border bg-app-surface-muted p-3">
                   <p className="text-[11px] font-semibold uppercase tracking-wide text-app-subtle">
                     Maattabel / advies
                   </p>
@@ -362,7 +363,7 @@ export default function MerchProductDetailModal({
               ) : null}
 
               {!orderable ? (
-                <p className="mt-4 rounded-xl bg-rose-500/10 px-3 py-2 text-sm text-rose-300">
+                <p className="mt-4 rounded-xl bg-red-500/15 px-3 py-2 text-sm text-red-400">
                   Dit product is momenteel niet bestelbaar.
                 </p>
               ) : null}
@@ -370,12 +371,12 @@ export default function MerchProductDetailModal({
           </div>
         </div>
 
-        <div className="sticky bottom-0 border-t border-app-border/60 bg-[#11161D]/95 p-4 backdrop-blur-md">
+        <div className="sticky bottom-0 border-t border-app-border bg-app-surface-elevated/95 p-4 pb-[max(1rem,env(safe-area-inset-bottom))] backdrop-blur-md">
           <div className="flex gap-2">
             <button
               type="button"
               onClick={onClose}
-              className="hidden flex-1 rounded-xl border border-app-border px-4 py-3 text-sm font-semibold text-app-text sm:inline-flex sm:items-center sm:justify-center"
+              className="app-focus-ring hidden min-h-[44px] flex-1 rounded-xl border border-app-border bg-app-surface px-4 py-3 text-sm font-semibold text-app-text hover:bg-app-surface-hover sm:inline-flex sm:items-center sm:justify-center"
             >
               Sluiten
             </button>
@@ -383,7 +384,7 @@ export default function MerchProductDetailModal({
               type="button"
               onClick={() => void handleOrder()}
               disabled={loading || !orderable}
-              className="flex-1 rounded-xl bg-app-accent px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
+              className="app-focus-ring min-h-[44px] flex-1 rounded-xl bg-app-accent px-4 py-3 text-sm font-semibold text-white disabled:opacity-60"
             >
               {loading ? "Bezig..." : "Bestellen & betalen"}
             </button>

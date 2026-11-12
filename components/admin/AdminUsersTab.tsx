@@ -167,7 +167,7 @@ function UserRowMenu({
             <button
               type="button"
               onClick={() => onApprovePending(user.id, user.pending_kind)}
-              className="admin-row-menu-item !text-emerald-300"
+              className="admin-row-menu-item !text-emerald-400"
             >
               Goedkeuren
             </button>
@@ -554,7 +554,7 @@ export default function AdminUsersTab({
       </div>
 
       {unassignedCount > 0 ? (
-        <p className="text-[13px] text-amber-200/90">
+        <p className="text-[13px] text-amber-400">
           {unassignedCount} atleet{unassignedCount === 1 ? "" : "en"} zonder
           coach —{" "}
           <Link
@@ -745,7 +745,7 @@ export default function AdminUsersTab({
                     </td>
                     <td>
                       {user.role === "pending" ? (
-                        <span className="admin-status-pill admin-status-pill--active !bg-amber-500/15 !text-amber-200">
+                        <span className="admin-status-pill admin-status-pill--active !bg-amber-500/15 !text-amber-400">
                           In afwachting
                         </span>
                       ) : (

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { CheckSquare, List, Search, UserPlus } from "lucide-react";
 import SearchInput from "@/components/ui/SearchInput";
+import { PageHeader } from "@/components/ui/design-system";
 import { athletesPillBtnPrimary } from "@/components/coach/athletes/athletesCrmClasses";
 
 const athletesIconBtnBase =
@@ -59,72 +60,70 @@ export default function AthletesHeader({
   const showSearchField = Boolean(onSearchChange) && searchOpen;
 
   return (
-    <header className="mb-4 lg:mb-7">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div className="min-w-0">
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-[28px] font-bold tracking-tight text-app-text md:text-[34px] md:leading-none">
-              Atleten
-            </h1>
+    <div className="mb-1 lg:mb-3">
+      <PageHeader
+        eyebrow="Coach"
+        title="Atleten"
+        actions={
+          <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
             {pendingCount > 0 ? (
-              <span className="athletes-status-badge athletes-status-badge--muted">
+              <span className="athletes-status-badge athletes-status-badge--warning">
                 {pendingCount} in afwachting
               </span>
             ) : null}
-          </div>
-        </div>
-
-        <div className="flex shrink-0 items-center gap-2">
-          {onSearchChange ? (
+            {onSearchChange ? (
+              <button
+                type="button"
+                onClick={toggleSearch}
+                className={`${athletesIconBtnBase} ${
+                  showSearchField
+                    ? "border-app-accent bg-app-accent text-white"
+                    : "border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+                }`}
+                aria-label="Atleten zoeken"
+                title="Zoeken"
+              >
+                <Search className="h-4 w-4" />
+              </button>
+            ) : null}
             <button
               type="button"
-              onClick={toggleSearch}
+              onClick={onToggleSelection}
               className={`${athletesIconBtnBase} ${
-                showSearchField
-                  ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
-                  : "border-app-border/80 bg-app-surface/40 text-app-muted hover:border-app-border hover:text-app-text"
+                selectionMode
+                  ? "border-app-accent bg-app-accent text-white"
+                  : "border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
               }`}
-              aria-label="Atleten zoeken"
-              title="Zoeken"
+              aria-label={
+                selectionMode ? "Selectie afronden" : "Atleten selecteren"
+              }
+              title={selectionMode ? "Klaar" : "Selecteren"}
             >
-              <Search className="h-4 w-4" />
+              {selectionMode ? (
+                <CheckSquare className="h-4 w-4" />
+              ) : (
+                <List className="h-4 w-4" />
+              )}
             </button>
-          ) : null}
-          <button
-            type="button"
-            onClick={onToggleSelection}
-            className={`${athletesIconBtnBase} ${
-              selectionMode
-                ? "border-app-accent/40 bg-app-accent/10 text-app-accent"
-                : "border-app-border/80 bg-app-surface/40 text-app-muted hover:border-app-border hover:text-app-text"
-            }`}
-            aria-label={selectionMode ? "Selectie afronden" : "Atleten selecteren"}
-            title={selectionMode ? "Klaar" : "Selecteren"}
-          >
-            {selectionMode ? (
-              <CheckSquare className="h-4 w-4" />
-            ) : (
-              <List className="h-4 w-4" />
-            )}
-          </button>
-          {selectionMode && selectedCount > 0 ? (
-            <span className="rounded-full border border-app-border/70 bg-app-surface/60 px-3 py-1.5 text-[12px] text-app-muted">
-              {selectedCount} geselecteerd
-            </span>
-          ) : null}
-          {onInvite ? (
-            <button
-              type="button"
-              onClick={onInvite}
-              className={`${athletesIconBtnBase} ${athletesPillBtnPrimary}`}
-              aria-label="Atleet uitnodigen"
-              title="Uitnodigen"
-            >
-              <UserPlus className="h-4 w-4" />
-            </button>
-          ) : null}
-        </div>
-      </div>
+            {selectionMode && selectedCount > 0 ? (
+              <span className="rounded-full border border-app-border bg-app-surface px-3 py-1.5 text-[12px] text-app-muted">
+                {selectedCount} geselecteerd
+              </span>
+            ) : null}
+            {onInvite ? (
+              <button
+                type="button"
+                onClick={onInvite}
+                className={`${athletesIconBtnBase} ${athletesPillBtnPrimary}`}
+                aria-label="Atleet uitnodigen"
+                title="Uitnodigen"
+              >
+                <UserPlus className="h-4 w-4" />
+              </button>
+            ) : null}
+          </div>
+        }
+      />
 
       {showSearchField && onSearchChange ? (
         <div className="mt-3">
@@ -140,6 +139,6 @@ export default function AthletesHeader({
           />
         </div>
       ) : null}
-    </header>
+    </div>
   );
 }

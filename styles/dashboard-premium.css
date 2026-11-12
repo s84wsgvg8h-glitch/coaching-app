@@ -44,6 +44,9 @@ html.dark .premium-coach-ui {
   --app-text-muted: var(--dash-text-muted);
   --app-text-subtle: var(--dash-text-subtle);
   --app-accent: var(--dash-accent);
+  --app-accent-rgb: 61, 139, 255;
+  --app-accent-cyan: var(--dash-accent);
+  --brand-purple: var(--dash-accent);
   --app-accent-muted: var(--dash-accent-soft);
   --app-accent-glow: var(--dash-accent-glow);
   --glass-surface-border: var(--dash-border);

@@ -2,9 +2,9 @@
 
 .dashboard-kpi-card--v2 {
   --kpi-accent: var(--app-accent);
-  --kpi-accent-soft: rgba(79, 140, 255, 0.12);
-  --kpi-accent-border: rgba(79, 140, 255, 0.28);
-  --kpi-accent-glow: rgba(79, 140, 255, 0.55);
+  --kpi-accent-soft: rgba(var(--app-accent-rgb), 0.12);
+  --kpi-accent-border: rgba(var(--app-accent-rgb), 0.28);
+  --kpi-accent-glow: rgba(var(--app-accent-rgb), 0.55);
   --kpi-card-bg: var(--app-surface);
   --kpi-value-color: var(--app-text);
   --kpi-label-color: var(--app-text-subtle);

@@ -104,7 +104,7 @@ function ChatReportForm({
       </p>
 
       {error ? (
-        <p className="text-xs font-medium text-red-600 dark:text-red-300">{error}</p>
+        <p className="text-xs font-medium text-red-400">{error}</p>
       ) : null}
 
       <button
@@ -146,7 +146,7 @@ export default function ChatReportSheet({
       <button
         type="button"
         aria-label="Melding sluiten"
-        className="absolute inset-0 bg-app-overlay"
+        className="absolute inset-0 bg-[var(--app-overlay)]"
         onClick={onClose}
       />
       <div

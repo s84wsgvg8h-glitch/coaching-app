@@ -1,13 +1,13 @@
 /* ─── Chat premium polish (layout-preserving) ─── */
 .chat-shell {
-  --chat-border: var(--app-border, rgba(255, 255, 255, 0.06));
-  --chat-border-strong: var(--app-border-strong, rgba(255, 255, 255, 0.1));
-  --chat-compose-divider: rgba(255, 255, 255, 0.035);
-  --chat-compose-input-border: rgba(255, 255, 255, 0.045);
-  --chat-surface-raised: rgba(255, 255, 255, 0.025);
-  --chat-surface-hover: var(--app-surface-hover, rgba(255, 255, 255, 0.04));
-  --chat-accent-soft: var(--app-accent-muted, rgba(61, 139, 255, 0.14));
-  --chat-accent-ring: var(--app-accent-glow, rgba(61, 139, 255, 0.22));
+  --chat-border: var(--app-border);
+  --chat-border-strong: var(--app-border-strong);
+  --chat-compose-divider: var(--app-border);
+  --chat-compose-input-border: var(--app-border);
+  --chat-surface-raised: var(--app-surface);
+  --chat-surface-hover: var(--app-surface-hover);
+  --chat-accent-soft: var(--app-accent-muted);
+  --chat-accent-ring: var(--app-accent-glow);
 }
 
 html:not(.dark) .chat-shell {
@@ -17,8 +17,8 @@ html:not(.dark) .chat-shell {
   --chat-compose-input-border: rgba(15, 23, 42, 0.08);
   --chat-surface-raised: rgba(15, 23, 42, 0.03);
   --chat-surface-hover: rgba(15, 23, 42, 0.05);
-  --chat-accent-soft: rgba(59, 130, 246, 0.1);
-  --chat-accent-ring: rgba(59, 130, 246, 0.18);
+  --chat-accent-soft: var(--app-accent-muted);
+  --chat-accent-ring: var(--app-accent-glow);
 }
 
 @media (max-width: 767px) {
@@ -62,9 +62,9 @@ html:not(.dark) .chat-shell {
   min-width: 2.4rem;
   min-height: 2.4rem;
   border-radius: 12px;
-  background: var(--app-accent, #3d8bff);
+  background: var(--app-accent);
   color: #ffffff;
-  box-shadow: 0 2px 8px var(--app-accent-glow, rgba(61, 139, 255, 0.22));
+  box-shadow: 0 2px 8px var(--app-accent-glow);
   transition: opacity 0.15s ease;
 }
 
@@ -83,7 +83,7 @@ html:not(.dark) .chat-shell {
   background:
     radial-gradient(
       ellipse 90% 55% at 50% -8%,
-      var(--app-accent-muted, rgba(61, 139, 255, 0.08)),
+      var(--app-accent-muted),
       transparent 58%
     ),
     var(--app-bg);
@@ -112,9 +112,9 @@ html:not(.dark) .chat-shell {
 
 /* Chat sidebar search — token overrides only; wrapper is the single visible field */
 .chat-shell .chat-list-header .app-search-field {
-  --app-search-border: var(--chat-border, rgba(255, 255, 255, 0.1));
-  --app-search-border-hover: var(--chat-border-strong, rgba(255, 255, 255, 0.14));
-  --app-search-bg: rgba(255, 255, 255, 0.02);
+  --app-search-border: var(--chat-border);
+  --app-search-border-hover: var(--chat-border-strong);
+  --app-search-bg: var(--app-surface);
   min-height: 44px;
   padding: 0 12px;
   gap: 10px;
@@ -150,17 +150,13 @@ html.dark .chat-shell .app-search-field .app-search-input:focus-visible {
   height: 2.5rem;
   align-items: center;
   border-radius: 9999px;
-  border: 1px solid rgba(79, 140, 255, 0.32);
-  background: linear-gradient(
-    180deg,
-    rgba(79, 140, 255, 0.78) 0%,
-    rgba(59, 110, 220, 0.84) 100%
-  );
+  border: 1px solid var(--app-accent);
+  background: var(--app-accent);
   padding: 0 0.85rem;
   font-size: 0.75rem;
   font-weight: 600;
   color: #fff;
-  box-shadow: 0 2px 10px rgba(79, 140, 255, 0.16);
+  box-shadow: 0 2px 10px var(--app-accent-glow);
   transition:
     filter 200ms ease,
     transform 200ms ease,
@@ -170,7 +166,7 @@ html.dark .chat-shell .app-search-field .app-search-input:focus-visible {
 .chat-broadcast-btn:hover {
   filter: brightness(1.04);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(79, 140, 255, 0.22);
+  box-shadow: 0 4px 14px var(--app-accent-glow);
 }
 
 .chat-broadcast-btn svg {
@@ -186,8 +182,8 @@ html.dark .chat-shell .app-search-field .app-search-input:focus-visible {
   padding: 0.38rem 0.95rem;
   font-size: 0.75rem;
   font-weight: 600;
-  color: var(--app-muted);
-  background: rgba(255, 255, 255, 0.02);
+  color: var(--app-text-muted);
+  background: var(--app-surface);
   transition:
     background 200ms ease,
     border-color 200ms ease,
@@ -201,15 +197,10 @@ html.dark .chat-shell .app-search-field .app-search-input:focus-visible {
 }
 
 .chat-filter-tab--active {
-  border-color: rgba(79, 140, 255, 0.38);
-  background: var(--chat-accent-soft);
-  color: var(--app-text);
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: #ffffff;
   box-shadow: none;
-}
-
-html:not(.dark) .chat-filter-tab--active {
-  color: var(--app-accent);
-  background: var(--app-accent-muted);
 }
 
 /* ─── List rows ─── */
@@ -228,7 +219,7 @@ html:not(.dark) .chat-filter-tab--active {
 
 .chat-list-row-active {
   background: var(--chat-accent-soft);
-  box-shadow: inset 2px 0 0 0 rgba(79, 140, 255, 0.72);
+  box-shadow: inset 2px 0 0 0 var(--app-accent);
 }
 
 .chat-list-name {
@@ -244,22 +235,22 @@ html:not(.dark) .chat-filter-tab--active {
 .chat-list-preview {
   font-size: 13px;
   line-height: 1.35;
-  color: rgba(255, 255, 255, 0.48);
+  color: var(--app-text-muted);
 }
 
 .chat-list-preview-unread {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.78);
+  color: var(--app-text);
 }
 
 .chat-list-time {
   font-size: 10px;
-  color: rgba(255, 255, 255, 0.3);
+  color: var(--app-text-subtle);
 }
 
 .chat-list-time-unread {
   font-weight: 600;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--app-accent);
 }
 
 .chat-unread-dot {
@@ -267,7 +258,7 @@ html:not(.dark) .chat-filter-tab--active {
   width: 7px;
   border-radius: 9999px;
   background: var(--app-accent);
-  box-shadow: 0 0 8px rgba(79, 140, 255, 0.32);
+  box-shadow: 0 0 8px var(--app-accent-glow);
 }
 
 /* ─── Conversation header ─── */
@@ -329,7 +320,7 @@ html:not(.dark) .chat-filter-tab--active {
   margin-top: 1px;
   font-size: 0.625rem;
   line-height: 1.2;
-  color: rgba(255, 255, 255, 0.38);
+  color: var(--app-text-subtle);
 }
 
 @media (min-width: 768px) {
@@ -339,7 +330,7 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 .chat-conversation-subtitle-muted {
-  color: rgba(255, 255, 255, 0.32);
+  color: var(--app-text-subtle);
 }
 
 /* ─── Icon buttons in chat shell ─── */
@@ -361,8 +352,8 @@ html:not(.dark) .chat-filter-tab--active {
 .chat-ai-btn {
   height: 2.25rem;
   width: 2.25rem;
-  border-color: rgba(79, 140, 255, 0.22);
-  background: rgba(79, 140, 255, 0.08);
+  border-color: color-mix(in srgb, var(--app-accent) 28%, transparent);
+  background: var(--app-accent-muted);
   box-shadow: none;
   transition:
     background 200ms ease,
@@ -371,31 +362,31 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 .chat-ai-btn:hover {
-  border-color: rgba(79, 140, 255, 0.32);
-  background: rgba(79, 140, 255, 0.12);
-  box-shadow: 0 0 12px rgba(79, 140, 255, 0.1);
+  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
+  background: color-mix(in srgb, var(--app-accent) 20%, transparent);
+  box-shadow: 0 0 12px var(--app-accent-muted);
 }
 
 /* ─── Date dividers ─── */
 .chat-date-divider {
   border-radius: 9999px;
   border: none;
-  background: rgba(255, 255, 255, 0.05);
+  background: var(--app-surface);
   padding: 0.2rem 0.7rem;
   font-size: 10px;
   font-weight: 600;
   letter-spacing: 0.03em;
-  color: rgba(255, 255, 255, 0.38);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  color: var(--app-text-subtle);
+  box-shadow: inset 0 0 0 1px var(--chat-border);
 }
 
 /* ─── Message bubbles (Telegram-style) ─── */
 .chat-shell .chat-bubble-own {
-  --chat-bubble-tail-color: var(--app-accent, #3d8bff);
+  --chat-bubble-tail-color: var(--app-accent);
   --chat-bubble-radius-lg: 17px;
   --chat-bubble-radius-sm: 5px;
   border: none;
-  background: var(--app-accent, #3d8bff);
+  background: var(--app-accent);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -403,15 +394,15 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 .chat-shell .chat-bubble-other {
-  --chat-bubble-tail-color: var(--app-surface, #161b22);
+  --chat-bubble-tail-color: var(--app-surface);
   --chat-bubble-radius-lg: 17px;
   --chat-bubble-radius-sm: 5px;
   border: none;
-  background: var(--app-surface, #161b22);
+  background: var(--app-surface);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--app-text);
 }
 
 .chat-shell .chat-bubble-own,
@@ -625,11 +616,11 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 .chat-bubble-meta--other {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--app-text-muted);
 }
 
 .chat-bubble-meta--other .chat-message-time {
-  color: rgba(255, 255, 255, 0.45);
+  color: var(--app-text-muted);
 }
 
 .chat-bubble-meta-check {
@@ -640,8 +631,8 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 html:not(.dark) .chat-shell .chat-bubble-other {
-  --chat-bubble-tail-color: #ffffff;
-  background: #ffffff;
+  --chat-bubble-tail-color: var(--app-surface);
+  background: var(--app-surface);
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.06);
   color: var(--app-text);
 }
@@ -672,8 +663,8 @@ html:not(.dark) .chat-shell .chat-bubble-other .chat-bubble-text {
 }
 
 .chat-reply-quote--other {
-  border-left-color: rgba(79, 140, 255, 0.45);
-  background: rgba(255, 255, 255, 0.03);
+  border-left-color: var(--app-accent);
+  background: var(--app-accent-muted);
 }
 
 .chat-reply-quote-name {
@@ -689,14 +680,14 @@ html:not(.dark) .chat-shell .chat-bubble-other .chat-bubble-text {
 /* ─── Reply compose bar ─── */
 .chat-reply-bar {
   border-color: var(--chat-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--app-surface);
 }
 
 /* ─── Media / video cards ─── */
 .chat-media-card {
   overflow: hidden;
   border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--chat-border);
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22);
   transition:
     border-color 200ms ease,
@@ -704,7 +695,7 @@ html:not(.dark) .chat-shell .chat-bubble-other .chat-bubble-text {
 }
 
 .chat-media-card:hover {
-  border-color: rgba(255, 255, 255, 0.12);
+  border-color: var(--chat-border-strong);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.26);
 }
 
@@ -942,13 +933,9 @@ html:not(.dark) .chat-shell .chat-bubble-other .chat-bubble-text {
   align-items: center;
   min-height: 36px;
   border-radius: 9999px;
-  border: 1px solid var(--chat-compose-input-border, rgba(255, 255, 255, 0.045));
+  border: 1px solid var(--chat-compose-input-border);
   padding: 0 12px;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.015) 100%
-  );
+  background: var(--app-surface);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
@@ -958,9 +945,9 @@ html:not(.dark) .chat-shell .chat-bubble-other .chat-bubble-text {
 }
 
 .chat-input-bar:focus-within {
-  border-color: rgba(79, 140, 255, 0.22);
+  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
   box-shadow:
-    0 0 0 1px rgba(79, 140, 255, 0.08),
+    0 0 0 3px var(--app-accent-muted),
     inset 0 1px 0 rgba(255, 255, 255, 0.02);
 }
 
@@ -996,7 +983,7 @@ html.dark .chat-shell .chat-input-bar .chat-message-input:focus-visible {
 }
 
 .chat-message-input::placeholder {
-  color: rgba(255, 255, 255, 0.42);
+  color: var(--app-text-subtle);
 }
 
 .chat-compose-icon-btn {
@@ -1020,7 +1007,7 @@ html.dark .chat-shell .chat-input-bar .chat-message-input:focus-visible {
 }
 
 .chat-send-btn {
-  box-shadow: 0 2px 10px rgba(79, 140, 255, 0.2);
+  box-shadow: 0 2px 10px var(--app-accent-glow);
   transition:
     opacity 200ms ease,
     transform 200ms ease,
@@ -1030,5 +1017,5 @@ html.dark .chat-shell .chat-input-bar .chat-message-input:focus-visible {
 .chat-send-btn:hover:not(:disabled) {
   opacity: 1;
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(79, 140, 255, 0.26);
+  box-shadow: 0 4px 14px var(--app-accent-glow);
 }

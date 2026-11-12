@@ -459,7 +459,7 @@ export default function AdminOrganizationsTab({
                               onClick={() =>
                                 setExpandedOrgId(isExpanded ? null : org.id)
                               }
-                              className="inline-flex min-h-[36px] items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-[#93c5fd] hover:bg-app-surface-hover"
+                              className="app-focus-ring inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-[13px] font-semibold text-app-accent hover:bg-app-surface-hover"
                             >
                               <UserCheck className="h-3.5 w-3.5" />
                               {orgCoaches.length}
@@ -542,7 +542,7 @@ export default function AdminOrganizationsTab({
                         </tr>
                         {isExpanded ? (
                           <tr key={`${org.id}-coaches`}>
-                            <td colSpan={6} className="!bg-black/20">
+                            <td colSpan={6} className="!bg-app-surface-muted">
                               <div className="py-2">
                                 <p className="mb-2 text-[11px] font-bold uppercase tracking-wide text-app-subtle">
                                   Coaches in {org.name}

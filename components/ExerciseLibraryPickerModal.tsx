@@ -136,7 +136,7 @@ export default function ExerciseLibraryPickerModal({
             <>
               {filteredSuggestions.length > 0 && (
                 <div className="mb-2">
-                  <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-purple-600">
+                  <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-app-accent">
                     Voorgesteld
                   </p>
                   {filteredSuggestions.map((item) => (
@@ -152,7 +152,7 @@ export default function ExerciseLibraryPickerModal({
               {filteredRemainingItems.length > 0 && (
                 <div>
                   {filteredSuggestions.length > 0 && (
-                    <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-gray-400">
+                    <p className="px-3 py-2 text-xs font-bold uppercase tracking-wide text-app-subtle">
                       Alle oefeningen
                     </p>
                   )}
@@ -173,7 +173,7 @@ export default function ExerciseLibraryPickerModal({
           <button
             type="button"
             onClick={onClose}
-            className="w-full rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold hover:bg-app-surface-hover"
+            className="w-full rounded-xl border border-app-border px-4 py-2 text-sm font-semibold hover:bg-app-surface-hover"
           >
             Annuleren
           </button>

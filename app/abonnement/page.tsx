@@ -58,14 +58,14 @@ export default function AbonnementPage() {
           <p className="mt-6 text-sm text-app-muted">Laden…</p>
         )}
 
-        <div className="mt-6 flex flex-col gap-2 border-t border-app-border/60 pt-4">
-          <Link href="/dashboard" className="app-btn-primary min-h-11 w-full text-center">
+        <div className="mt-6 flex flex-col gap-2 border-t border-app-border pt-4">
+          <Link href="/dashboard" className="app-btn-primary app-focus-ring min-h-11 w-full text-center">
             Naar dashboard
           </Link>
           <button
             type="button"
             onClick={() => void logout()}
-            className="app-btn-secondary min-h-11 w-full"
+            className="app-btn-secondary app-focus-ring min-h-11 w-full"
           >
             Uitloggen
           </button>

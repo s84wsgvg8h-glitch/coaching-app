@@ -64,7 +64,7 @@ export default function PollDetailsPanel({
         type="button"
         aria-label="Sluit poll details"
         onClick={onClose}
-        className="absolute inset-0 bg-app-overlay"
+        className="absolute inset-0 bg-[var(--app-overlay)]"
       />
 
       <aside className="chat-panel absolute right-0 top-0 w-full max-w-md shadow-2xl">

@@ -108,15 +108,15 @@ export default function StatisticsChartPicker({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="inline-flex items-center gap-1.5 rounded-xl border border-dashed border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-muted transition hover:border-brand-purple/40 hover:text-app-text"
+        className="app-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-xl border border-dashed border-app-border bg-app-surface px-4 text-sm font-semibold text-app-muted transition hover:border-app-accent/40 hover:bg-app-surface-hover hover:text-app-text"
       >
         <Plus className="h-4 w-4" />
         Grafiek toevoegen
       </button>
 
       {open && (
-        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-4 sm:items-center">
-          <div className="max-h-[85vh] w-full max-w-3xl overflow-y-auto rounded-2xl border border-app-border bg-app-surface p-4 shadow-xl">
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 p-0 backdrop-blur-sm sm:items-center sm:p-4">
+          <div className="max-h-[90dvh] w-full max-w-3xl overflow-y-auto rounded-t-2xl border border-app-border bg-app-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] shadow-[0_24px_64px_rgba(0,0,0,0.45)] sm:rounded-2xl">
             <div className="mb-3 flex items-center justify-between gap-3">
               <div>
                 <p className="text-sm font-semibold text-app-text">Grafiek toevoegen</p>
@@ -130,7 +130,7 @@ export default function StatisticsChartPicker({
                   setOpen(false);
                   resetPending();
                 }}
-                className="rounded-lg border border-app-border px-3 py-1.5 text-xs font-medium text-app-muted transition hover:bg-app-surface-muted"
+                className="app-focus-ring min-h-11 rounded-xl border border-app-border px-4 text-xs font-medium text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
               >
                 Sluiten
               </button>
@@ -147,7 +147,7 @@ export default function StatisticsChartPicker({
                 <select
                   value={pendingExercise}
                   onChange={(event) => setPendingExercise(event.target.value)}
-                  className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                  className="min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text md:text-sm outline-none app-focus-ring"
                 >
                   {exerciseOptionsForPending.map((name) => (
                     <option key={name} value={name}>
@@ -159,7 +159,7 @@ export default function StatisticsChartPicker({
                   <button
                     type="button"
                     onClick={resetPending}
-                    className="app-btn-secondary flex-1"
+                    className="app-btn-secondary app-focus-ring min-h-11 flex-1"
                   >
                     Terug
                   </button>
@@ -167,17 +167,17 @@ export default function StatisticsChartPicker({
                     type="button"
                     onClick={confirmExerciseChart}
                     disabled={!pendingExercise}
-                    className="app-btn-primary flex-1 disabled:opacity-50"
+                    className="app-btn-primary app-focus-ring min-h-11 flex-1 disabled:opacity-50"
                   >
                     Toevoegen
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 {groupedCatalog.map(([category, entries]) => (
                   <div key={category}>
-                    <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-app-muted">
+                    <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                       {CATEGORY_LABELS[category]}
                     </p>
                     <div className="space-y-2">
@@ -186,7 +186,7 @@ export default function StatisticsChartPicker({
                           key={entry.id}
                           type="button"
                           onClick={() => handleSelectChart(entry.id)}
-                          className="w-full rounded-xl border border-app-border bg-app-surface-muted/40 px-3 py-2.5 text-left transition hover:bg-app-surface-muted"
+                          className="app-focus-ring w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2.5 text-left transition hover:border-app-border-strong hover:bg-app-surface-hover"
                         >
                           <p className="text-sm font-medium text-app-text">{entry.label}</p>
                           <p className="mt-0.5 text-xs text-app-muted">{entry.description}</p>

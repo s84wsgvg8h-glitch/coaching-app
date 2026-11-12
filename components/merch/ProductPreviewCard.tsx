@@ -63,7 +63,7 @@ export default function ProductPreviewCard({
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-app-muted">
         Live preview
       </p>
-      <article className="overflow-hidden rounded-2xl border border-app-border/80 bg-[#161B22]/90 shadow-[0_0_32px_rgba(59,130,246,0.08)]">
+      <article className="overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-[0_8px_24px_rgba(0,0,0,0.18)]">
         <div className="relative">
           {primaryImage ? (
             <img
@@ -72,8 +72,8 @@ export default function ProductPreviewCard({
               className="aspect-[4/3] w-full object-cover"
             />
           ) : (
-            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 bg-gradient-to-br from-[#1a1f2e] to-[#111827] text-app-muted">
-              <div className="h-16 w-16 rounded-2xl border border-dashed border-app-border/60" />
+            <div className="flex aspect-[4/3] flex-col items-center justify-center gap-2 bg-app-surface-muted text-app-muted">
+              <div className="h-16 w-16 rounded-2xl border border-dashed border-app-border-strong" />
               <span className="text-[12px]">Productafbeelding</span>
             </div>
           )}
@@ -84,13 +84,13 @@ export default function ProductPreviewCard({
                   ? "bg-emerald-500 text-white"
                   : status === "concept"
                     ? "bg-amber-500 text-white"
-                    : "bg-slate-500 text-white"
+                    : "bg-app-surface-elevated text-app-muted"
               }`}
             >
               {badgeLabel}
             </span>
             {limited ? (
-              <span className="rounded-md bg-fuchsia-500 px-2 py-0.5 text-[10px] font-bold text-white">
+              <span className="rounded-md bg-app-accent px-2 py-0.5 text-[10px] font-bold text-white">
                 Limited
               </span>
             ) : null}
@@ -110,14 +110,14 @@ export default function ProductPreviewCard({
         </div>
 
         {imageUrls.length > 1 ? (
-          <div className="flex gap-1 border-t border-app-border/60 p-2">
+          <div className="flex gap-1 border-t border-app-border p-2">
             {imageUrls.slice(0, 6).map((url, index) => (
               <div
                 key={`${url}-${index}`}
                 className={`h-10 w-10 overflow-hidden rounded-lg border ${
                   url === primaryImage
-                    ? "border-sky-500 ring-1 ring-sky-500/40"
-                    : "border-app-border/60"
+                    ? "border-app-accent ring-1 ring-app-accent/40"
+                    : "border-app-border"
                 }`}
               >
                 <img src={url} alt="" className="h-full w-full object-cover" />
@@ -148,7 +148,7 @@ export default function ProductPreviewCard({
                 {displaySizes.map((size) => (
                   <span
                     key={size}
-                    className="rounded-md border border-app-border/60 bg-app-surface-muted/50 px-2 py-0.5 text-[11px] text-app-muted"
+                    className="rounded-md border border-app-border bg-app-surface-muted px-2 py-0.5 text-[11px] text-app-muted"
                   >
                     {size}
                   </span>
@@ -167,7 +167,7 @@ export default function ProductPreviewCard({
                     className="inline-flex items-center gap-1.5 text-[11px] text-app-muted"
                   >
                     <span
-                      className="h-4 w-4 rounded-full border border-white/20"
+                      className="h-4 w-4 rounded-full border border-app-border-strong"
                       style={{ backgroundColor: color.value }}
                     />
                     {color.name.toLowerCase()}

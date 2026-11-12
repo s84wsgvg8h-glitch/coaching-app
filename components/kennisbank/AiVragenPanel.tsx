@@ -98,14 +98,14 @@ export default function AiVragenPanel() {
         antwoorden om ontbrekende kennis te vinden.
       </p>
 
-      <div className="flex flex-wrap gap-2">
+      <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
         <button
           type="button"
           onClick={() => setFilter("unknown")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+          className={`app-focus-ring min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${
             filter === "unknown"
               ? "bg-app-accent text-white"
-              : "border border-app-border bg-app-surface text-app-text"
+              : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
           }`}
         >
           Onbekend ({unknownCount})
@@ -113,10 +113,10 @@ export default function AiVragenPanel() {
         <button
           type="button"
           onClick={() => setFilter("errors")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+          className={`app-focus-ring min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${
             filter === "errors"
               ? "bg-app-accent text-white"
-              : "border border-app-border bg-app-surface text-app-text"
+              : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
           }`}
         >
           Fouten ({errorCount})
@@ -124,10 +124,10 @@ export default function AiVragenPanel() {
         <button
           type="button"
           onClick={() => setFilter("all")}
-          className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
+          className={`app-focus-ring min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${
             filter === "all"
               ? "bg-app-accent text-white"
-              : "border border-app-border bg-app-surface text-app-text"
+              : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
           }`}
         >
           Alles ({logs.length})
@@ -135,7 +135,7 @@ export default function AiVragenPanel() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-app-muted">Laden...</p>
+        <p className="text-sm text-app-muted">Laden…</p>
       ) : filteredLogs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-app-border bg-app-surface-muted p-6 text-sm text-app-muted">
           Geen AI-vragen gevonden voor dit filter.
@@ -145,7 +145,7 @@ export default function AiVragenPanel() {
           {filteredLogs.map((log) => (
             <li
               key={log.id}
-              className="rounded-2xl border border-app-border bg-app-surface p-4"
+              className="rounded-2xl border border-app-border bg-app-surface-muted p-4"
             >
               <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-app-muted">
                 <span className="font-semibold text-app-text">
@@ -184,7 +184,7 @@ export default function AiVragenPanel() {
               <button
                 type="button"
                 onClick={() => addToKnowledge(log)}
-                className="mt-3 inline-flex items-center gap-1 rounded-lg border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text hover:bg-app-surface-hover"
+                className="app-btn-secondary app-focus-ring mt-3 inline-flex min-h-11 items-center gap-1.5 text-xs"
               >
                 <BookPlus className="h-3.5 w-3.5" />
                 Maak concept-chunk

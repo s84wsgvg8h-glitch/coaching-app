@@ -11,7 +11,7 @@ export default function PrivacyPage() {
   return (
     <LegalPageShell title="Privacybeleid" updated="22 juni 2026">
       <section>
-        <h2 className="text-lg font-semibold">1. Wie zijn wij</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">1. Wie zijn wij</h2>
         <p className="mt-2 text-app-muted">
           Limitless Coaching biedt een online coachingplatform voor powerlifting
           coaches en atleten. Wij verwerken persoonsgegevens om de app te laten
@@ -21,7 +21,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">2. Welke gegevens verwerken wij</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">2. Welke gegevens verwerken wij</h2>
         <ul className="mt-2 list-disc space-y-2 pl-5 text-app-muted">
           <li>Accountgegevens: naam, e-mailadres, rol (coach/atleet/admin)</li>
           <li>Trainingsgegevens: programma&apos;s, logs, RPE, video&apos;s, check-ins</li>
@@ -32,7 +32,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">3. Doeleinden</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">3. Doeleinden</h2>
         <p className="mt-2 text-app-muted">
           Wij gebruiken gegevens om accounts te beheren, coachingdiensten te
           leveren, communicatie mogelijk te maken, betalingen te verwerken (merch),
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">4. Bewaartermijn</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">4. Bewaartermijn</h2>
         <p className="mt-2 text-app-muted">
           Gegevens worden bewaard zolang je account actief is of zolang nodig voor
           coaching, wettelijke verplichtingen of geschillen. Na accountverwijdering
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">5. Delen met derden</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">5. Delen met derden</h2>
         <p className="mt-2 text-app-muted">
           Wij delen gegevens alleen met verwerkers die nodig zijn voor de dienst:
           Supabase (database/auth), Vercel (hosting), Stripe (betalingen), Resend
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">6. Jouw rechten</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">6. Jouw rechten</h2>
         <p className="mt-2 text-app-muted">
           Je hebt recht op inzage, rectificatie, verwijdering, beperking,
           dataportabiliteit en bezwaar. Je kunt je account zelf verwijderen via
@@ -72,7 +72,7 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">7. Beveiliging</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">7. Beveiliging</h2>
         <p className="mt-2 text-app-muted">
           Wij nemen passende technische maatregelen, waaronder versleutelde
           verbindingen (HTTPS), row-level security in de database en
@@ -81,14 +81,14 @@ export default function PrivacyPage() {
       </section>
 
       <section>
-        <h2 className="text-lg font-semibold">8. Contact</h2>
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">8. Contact</h2>
         <p className="mt-2 text-app-muted">
           Vragen over privacy? Neem contact op via{" "}
-          <a href={getSupportMailto()} className="font-medium text-app-text underline">
+          <a href={getSupportMailto()} className="font-medium text-app-accent hover:underline">
             {getSupportEmail()}
           </a>{" "}
           of onze{" "}
-          <a href="/support" className="font-medium text-app-text underline">
+          <a href="/support" className="font-medium text-app-accent hover:underline">
             supportpagina
           </a>
           .

@@ -87,14 +87,18 @@ export function AdminPageHeader({
         <div className="min-w-0">
           <div className="flex items-center gap-2.5">
             {Icon ? (
-              <span className="admin-page-block-icon">
+              <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-accent/15 text-app-accent">
                 <Icon className="h-5 w-5" />
               </span>
             ) : null}
-            <h1 className="admin-page-block-title">{title}</h1>
+            <h1 className="text-[20px] font-semibold tracking-tight text-app-text md:text-[24px] md:leading-[1.1]">
+              {title}
+            </h1>
           </div>
           {subtitle ? (
-            <p className="admin-page-block-subtitle">{subtitle}</p>
+            <p className="mt-1 max-w-2xl text-[12px] font-normal leading-relaxed text-app-muted md:text-[13px]">
+              {subtitle}
+            </p>
           ) : null}
         </div>
         {actions ? (

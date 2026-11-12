@@ -2,6 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import AthleteProgressTabs from "@/components/data/AthleteProgressTabs";
 import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
 import SearchInput from "@/components/ui/SearchInput";
@@ -100,7 +101,11 @@ export default function VideoGalleryPage() {
     <Suspense
       fallback={
         <AppShell>
-          <div className="app-card">Video&apos;s laden...</div>
+          <PageContainer size="full">
+            <Panel>
+              <p className="text-sm text-app-muted">Video&apos;s laden…</p>
+            </Panel>
+          </PageContainer>
         </AppShell>
       }
     >
@@ -824,8 +829,8 @@ function VideoGalleryPageInner() {
           setLoadedVideoIds((current) => ({ ...current, [video.id]: true }));
           setFullscreenVideo(video);
         }}
-        className={`relative overflow-hidden rounded-2xl bg-black shadow text-left transition ${
-          options?.selected ? "ring-4 ring-black" : "hover:scale-[1.01]"
+        className={`app-focus-ring relative overflow-hidden rounded-2xl border border-app-border bg-black text-left transition ${
+          options?.selected ? "ring-2 ring-app-accent" : "hover:border-app-border-strong hover:scale-[1.01]"
         }`}
       >
         <div className={`${compact ? "aspect-video" : "aspect-[16/27]"} bg-black relative`}>
@@ -881,14 +886,13 @@ function VideoGalleryPageInner() {
     const transform = selectedVideo ? getVideoTransform(selectedVideo.id) : defaultTransform;
 
     return (
-      <div className="min-w-0 rounded-3xl border border-app-border bg-app-surface p-2 shadow-xl">
+      <div className="min-w-0 rounded-2xl border border-app-border bg-app-surface p-2">
         <div className="relative mb-3">
           <SearchInput
             value={query}
             onChange={(next) => updateCompareSearch(slot, next)}
             placeholder="Zoek: squat, rpe 7, 5 reps, 120 kg, b1w1"
             variant="rounded"
-            tone="light"
             className="w-full"
           />
         </div>
@@ -905,7 +909,7 @@ function VideoGalleryPageInner() {
         </div>
 
         <div
-          className={`relative h-[78vh] max-h-[860px] min-h-[620px] overflow-hidden rounded-2xl bg-black ${
+          className={`relative h-[70dvh] max-h-[860px] min-h-[420px] overflow-hidden rounded-2xl bg-black md:h-[78vh] md:min-h-[620px] ${
             moveEnabledSlots[slot] ? "touch-none cursor-move" : "cursor-default"
           }`}
           onWheel={(e) => {
@@ -976,10 +980,10 @@ function VideoGalleryPageInner() {
                     [slot]: !current[slot],
                   }));
                 }}
-                className={`absolute right-12 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold shadow ${
+                className={`app-focus-ring absolute right-14 top-2 z-30 flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold transition ${
                   moveEnabledSlots[slot]
-                    ? "bg-white text-black"
-                    : "bg-black/70 text-white"
+                    ? "bg-app-accent text-white"
+                    : "bg-black/70 text-white hover:bg-black/80"
                 }`}
                 title={moveEnabledSlots[slot] ? "Video vastzetten" : "Video aanpassen"}
               >
@@ -999,7 +1003,7 @@ function VideoGalleryPageInner() {
                     [slot]: false,
                   }));
                 }}
-                className="absolute right-2 top-2 z-30 flex h-8 w-8 items-center justify-center rounded-full bg-black/70 text-lg font-bold text-white shadow"
+                className="app-focus-ring absolute right-2 top-2 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-black/70 text-lg font-bold text-white transition hover:bg-black/80"
                 title="Compare vak legen"
               >
                 ×
@@ -1017,7 +1021,7 @@ function VideoGalleryPageInner() {
                       e.stopPropagation();
                       toggleCompareVideoPlay(selectedVideo.id);
                     }}
-                    className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-sm font-bold text-black"
+                    className="app-focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-app-accent text-sm font-bold text-white"
                   >
                     {comparePlayingByVideoId[selectedVideo.id] ? "Ⅱ" : "▶"}
                   </button>
@@ -1029,7 +1033,7 @@ function VideoGalleryPageInner() {
                     step="0.01"
                     value={compareProgressByVideoId[selectedVideo.id] || 0}
                     onChange={(e) => handleCompareSeek(selectedVideo.id, e.target.value)}
-                    className="w-full accent-white"
+                    className="w-full accent-app-accent"
                   />
                 </div>
               </div>
@@ -1045,17 +1049,17 @@ function VideoGalleryPageInner() {
   }
 
   const galleryInner = (
-    <div className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
+    <div className="flex min-h-0 min-w-0 flex-1 gap-0 overflow-hidden rounded-2xl border border-app-border bg-app-surface">
         {!compareMode && (
           <CollapsibleFilterSidebar title="Weeks">
             <div className="mb-2 flex items-center justify-between px-1">
-              <span className="text-[10px] font-bold uppercase text-app-muted">
+              <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                 Block / week
               </span>
               <button
                 type="button"
                 onClick={toggleAllWeeks}
-                className="rounded bg-app-surface-muted px-2 py-1 text-[10px] font-bold"
+                className="app-focus-ring rounded-lg bg-app-surface-muted px-2 py-1 text-[11px] font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
               >
                 {selectedWeekKeys.length === weekFilters.length
                   ? "Uit"
@@ -1065,13 +1069,13 @@ function VideoGalleryPageInner() {
             {weekFilters.map((filter) => (
               <label
                 key={filter.key}
-                className="mb-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-semibold hover:bg-app-surface-muted"
+                className="mb-1 flex cursor-pointer items-center gap-2 rounded-lg px-2 py-1.5 text-xs font-medium text-app-text transition-colors hover:bg-app-surface-hover"
               >
                 <input
                   type="checkbox"
                   checked={selectedWeekKeys.includes(filter.key)}
                   onChange={() => toggleWeek(filter.key)}
-                  className="h-3.5 w-3.5 accent-brand-purple"
+                  className="h-3.5 w-3.5 accent-app-accent"
                 />
                 <span className="truncate">{filter.label}</span>
               </label>
@@ -1079,26 +1083,22 @@ function VideoGalleryPageInner() {
           </CollapsibleFilterSidebar>
         )}
 
-        <section className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
+        <section className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 mobile-scroll md:p-5">
           {!isAthleteViewer && (
-            <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-app-text md:text-3xl">
-                  Video galerij
-                </h1>
-                <p className="mt-1 text-sm text-app-muted">
-                  {visibleVideos.length} video&apos;s
-                  {selectedAthleteId
-                    ? ` · ${athletes.find((a) => a.id === selectedAthleteId)?.full_name || "Atleet"}`
-                    : ""}
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
+            <PageHeader
+              eyebrow="Video's"
+              title="Video galerij"
+              description={`${visibleVideos.length} video's${
+                selectedAthleteId
+                  ? ` · ${athletes.find((a) => a.id === selectedAthleteId)?.full_name || "Atleet"}`
+                  : ""
+              }`}
+              actions={
+              <>
                 <select
                   value={selectedAthleteId}
                   onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="min-w-[180px] rounded-xl border border-app-border bg-app-surface px-3 py-2.5 text-sm outline-none app-focus-ring"
+                  className="min-h-11 w-full min-w-0 rounded-xl border border-app-border bg-app-surface px-3 text-base text-app-text outline-none app-focus-ring sm:w-auto sm:min-w-[180px] md:text-sm"
                 >
                   {athletes.map((athlete) => (
                     <option key={athlete.id} value={athlete.id}>
@@ -1110,22 +1110,22 @@ function VideoGalleryPageInner() {
                 <button
                   type="button"
                   onClick={() => setCompareMode(!compareMode)}
-                  className="app-btn-primary text-sm"
+                  className="app-btn-primary app-focus-ring min-h-11"
                 >
                   {compareMode ? "Galerij" : "Vergelijken"}
                 </button>
 
                 {compareMode ? (
-                  <div className="flex rounded-xl bg-app-surface-muted p-1">
+                  <div className="flex rounded-xl border border-app-border bg-app-surface-muted p-1">
                     {[2, 3, 4].map((count) => (
                       <button
                         key={count}
                         type="button"
                         onClick={() => setCompareCount(count as 2 | 3 | 4)}
-                        className={`rounded-lg px-3 py-1.5 text-xs font-bold ${
+                        className={`app-focus-ring min-h-9 flex-1 rounded-lg px-4 text-xs font-semibold transition sm:flex-none ${
                           compareCount === count
-                            ? "bg-brand-purple text-white"
-                            : "text-app-text"
+                            ? "bg-app-accent text-white"
+                            : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                         }`}
                       >
                         {count}
@@ -1133,12 +1133,13 @@ function VideoGalleryPageInner() {
                     ))}
                   </div>
                 ) : null}
-              </div>
-            </div>
+              </>
+              }
+            />
           )}
 
             {!compareMode && (
-              <div className="app-card mb-5 space-y-4 p-4">
+              <Panel className="mb-4 space-y-4">
                 <SearchInput
                   value={search}
                   onChange={setSearch}
@@ -1147,7 +1148,7 @@ function VideoGalleryPageInner() {
                   className="w-full"
                 />
 
-                <div className="flex flex-wrap gap-2">
+                <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
                   {[
                     { id: "primary", label: "Primary" },
                     { id: "secondary", label: "Secondary" },
@@ -1156,10 +1157,10 @@ function VideoGalleryPageInner() {
                       key={filter.id}
                       type="button"
                       onClick={() => togglePriorityFilter(filter.id)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                      className={`app-focus-ring min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
                         priorityFilters.includes(filter.id)
-                          ? "bg-brand-purple text-white"
-                          : "bg-app-surface-muted text-app-text"
+                          ? "bg-app-accent text-white"
+                          : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                       }`}
                     >
                       {filter.label}
@@ -1174,27 +1175,27 @@ function VideoGalleryPageInner() {
                       key={filter.id}
                       type="button"
                       onClick={() => toggleLiftFilter(filter.id)}
-                      className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+                      className={`app-focus-ring min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
                         liftFilters.includes(filter.id)
-                          ? "bg-brand-purple text-white"
-                          : "bg-app-surface-muted text-app-text"
+                          ? "bg-app-accent text-white"
+                          : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                       }`}
                     >
                       {filter.label}
                     </button>
                   ))}
                 </div>
-              </div>
+              </Panel>
             )}
 
           {loading ? (
-            <div className="app-card p-8 text-center text-app-muted">Laden...</div>
+            <Panel className="py-10 text-center text-sm text-app-muted">Laden…</Panel>
           ) : loadingVideos ? (
-            <div className="app-card p-8 text-center text-app-muted">Video&apos;s laden...</div>
+            <Panel className="py-10 text-center text-sm text-app-muted">Video&apos;s laden…</Panel>
           ) : compareMode ? (
             <div
-              className={`grid gap-2 overflow-x-auto ${
-                compareCount === 4 ? "grid-cols-4" : compareCount === 3 ? "grid-cols-3" : "grid-cols-2"
+              className={`grid grid-cols-1 gap-2 sm:grid-cols-2 ${
+                compareCount === 4 ? "lg:grid-cols-4" : compareCount === 3 ? "lg:grid-cols-3" : ""
               }`}
             >
               {renderComparePane(0)}
@@ -1203,9 +1204,9 @@ function VideoGalleryPageInner() {
               {compareCount >= 4 && renderComparePane(3)}
             </div>
           ) : visibleVideos.length === 0 ? (
-            <div className="app-card p-8 text-center text-app-muted">Geen video&apos;s gevonden.</div>
+            <Panel className="py-10 text-center text-sm text-app-muted">Geen video&apos;s gevonden.</Panel>
           ) : (
-            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 xl:grid-cols-6">
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-6">
               {visibleVideos.map((video) => renderVideoCard(video))}
             </div>
           )}
@@ -1215,24 +1216,27 @@ function VideoGalleryPageInner() {
 
   return (
     <>
-      <AppShell contentClassName="flex min-h-0 flex-1 flex-col p-4 pb-24 md:p-6 lg:pb-6">
-        {isAthleteViewer ? (
-          <div className="mx-auto mb-4 w-full max-w-6xl">
-            <h1 className="text-3xl font-bold text-app-text">Voortgang & video&apos;s</h1>
-            <p className="mt-2 text-app-muted">
-              Bekijk je statistieken en trainingsvideo&apos;s.
-            </p>
-            <AthleteProgressTabs active="video" />
-          </div>
-        ) : null}
-        {galleryInner}
+      <AppShell contentClassName="app-page-content flex min-h-0 flex-1 flex-col px-2 pb-24 md:px-3 lg:px-4 lg:pb-6">
+        <PageContainer size="full" className="flex min-h-0 flex-1 flex-col">
+          {isAthleteViewer ? (
+            <div className="mb-4">
+              <PageHeader
+                eyebrow="Voortgang"
+                title="Voortgang & video's"
+                description="Bekijk je statistieken en trainingsvideo's."
+              />
+              <AthleteProgressTabs active="video" />
+            </div>
+          ) : null}
+          {galleryInner}
+        </PageContainer>
       </AppShell>
 
       {fullscreenVideo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4">
           <button
             onClick={() => setFullscreenVideo(null)}
-            className="absolute right-5 top-5 rounded-full bg-white/10 px-4 py-2 font-bold text-white"
+            className="app-focus-ring absolute right-[max(1.25rem,env(safe-area-inset-right))] top-[max(1.25rem,env(safe-area-inset-top))] min-h-11 rounded-full bg-white/10 px-4 font-semibold text-white transition hover:bg-white/20"
           >
             Sluiten
           </button>
@@ -1249,10 +1253,10 @@ function VideoGalleryPageInner() {
             />
 
             <div className="mt-4 text-white">
-              <div className="flex items-center gap-3">
-                <h2 className="text-2xl font-bold">{fullscreenVideo.exercise_name}</h2>
+              <div className="flex flex-wrap items-center gap-3">
+                <h2 className="text-lg font-semibold tracking-tight md:text-xl">{fullscreenVideo.exercise_name}</h2>
 
-                <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-bold">
+                <span className="rounded-full bg-white/10 px-3 py-1 text-sm font-semibold">
                   {fullscreenVideo.block_week_display}
                 </span>
               </div>

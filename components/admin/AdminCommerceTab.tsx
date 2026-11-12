@@ -69,12 +69,12 @@ const STATUS_COLORS: Record<string, string> = {
   paid: "#10b981",
   pending: "#f59e0b",
   failed: "#ef4444",
-  refunded: "#8b5cf6",
+  refunded: "var(--app-accent)",
 };
 
 const FULFILLMENT_COLORS: Record<string, string> = {
-  pending: "#64748b",
-  processing: "#3b82f6",
+  pending: "var(--app-text-subtle)",
+  processing: "var(--app-accent)",
   shipped: "#f59e0b",
   delivered: "#10b981",
   cancelled: "#ef4444",
@@ -102,7 +102,7 @@ function ChartTooltip({
 }) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-white/10 bg-[#151921] px-3 py-2 text-[12px] shadow-xl">
+    <div className="rounded-lg border border-app-border bg-app-surface-elevated px-3 py-2 text-[12px] shadow-xl">
       {label ? <p className="mb-1 font-semibold text-app-text">{label}</p> : null}
       {payload.map((entry) => (
         <p key={entry.name} style={{ color: entry.color }}>
@@ -148,7 +148,7 @@ export default function AdminCommerceTab() {
     return Object.entries(data.statusCounts).map(([status, count]) => ({
       name: STATUS_LABELS[status] || status,
       value: count,
-      color: STATUS_COLORS[status] || "#64748b",
+      color: STATUS_COLORS[status] || "var(--app-text-subtle)",
     }));
   }, [data]);
 
@@ -157,7 +157,7 @@ export default function AdminCommerceTab() {
     return Object.entries(data.fulfillmentCounts).map(([status, count]) => ({
       name: FULFILLMENT_LABELS[status] || status,
       value: count,
-      color: FULFILLMENT_COLORS[status] || "#64748b",
+      color: FULFILLMENT_COLORS[status] || "var(--app-text-subtle)",
     }));
   }, [data]);
 
@@ -243,8 +243,8 @@ export default function AdminCommerceTab() {
             <div className="h-56 p-4 pt-0">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={revenueSeries}>
-                  <XAxis dataKey="date" tick={{ fill: "#94a3b8", fontSize: 11 }} />
-                  <YAxis tick={{ fill: "#94a3b8", fontSize: 11 }} />
+                  <XAxis dataKey="date" tick={{ fill: "var(--app-text-muted)", fontSize: 11 }} />
+                  <YAxis tick={{ fill: "var(--app-text-muted)", fontSize: 11 }} />
                   <Tooltip content={<ChartTooltip />} />
                   <Line
                     type="monotone"

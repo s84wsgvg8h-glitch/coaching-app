@@ -87,7 +87,7 @@ export default function AdminProductionPanel() {
           const liveOk =
             item.key === "CRON_SECRET" ? health?.cronSecretPresent : undefined;
           return (
-          <div key={item.key} className="flex items-center gap-2 rounded-lg border border-white/8 px-3 py-2">
+          <div key={item.key} className="flex items-center gap-2 rounded-lg border border-app-border bg-app-surface-muted px-3 py-2">
             {liveOk === true ? (
               <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
             ) : liveOk === false ? (
@@ -106,13 +106,13 @@ export default function AdminProductionPanel() {
         })}
       </div>
 
-      <div className="mt-6 space-y-4 rounded-xl border border-white/8 bg-black/20 p-4">
+      <div className="mt-6 space-y-4 rounded-xl border border-app-border bg-app-surface-muted p-4">
         <div>
           <p className="text-[12px] font-semibold uppercase tracking-wide text-app-subtle">
             Site URL (Supabase Auth)
           </p>
           <div className="mt-2 flex flex-wrap items-center gap-2">
-            <code className="break-all rounded-lg bg-black/30 px-2 py-1 text-[13px] text-sky-200">
+            <code className="break-all rounded-lg bg-app-surface-elevated px-2 py-1 text-[13px] text-app-accent">
               {appUrl}
             </code>
             <button

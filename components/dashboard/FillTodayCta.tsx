@@ -185,7 +185,7 @@ export default function FillTodayCta({
 
   if (programLoading) {
     return (
-      <div className="app-card animate-pulse">
+      <div className="ui-panel animate-pulse">
         <div className="h-12 rounded-xl bg-app-surface-hover" />
       </div>
     );
@@ -194,10 +194,10 @@ export default function FillTodayCta({
   return (
     <Link
       href={programHref || "/dashboard"}
-      className="app-focus-ring app-card flex items-center justify-between gap-4 border-2 border-brand-purple bg-gradient-to-r from-brand-purple/10 to-transparent transition hover:from-brand-purple/15"
+      className="app-focus-ring ui-panel flex items-center justify-between gap-4 border-2 border-app-accent bg-gradient-to-r from-app-accent/10 to-transparent transition hover:from-app-accent/15"
     >
       <div>
-        <p className="text-xs font-bold uppercase tracking-wide text-brand-purple">
+        <p className="text-xs font-bold uppercase tracking-wide text-app-accent">
           Vandaag invullen
         </p>
         <p className="mt-1 text-lg font-bold text-app-text">

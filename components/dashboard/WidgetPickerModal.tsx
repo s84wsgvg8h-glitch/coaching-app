@@ -64,7 +64,7 @@ export default function WidgetPickerModal({
                 className={`rounded-xl border p-4 text-left transition app-focus-ring ${
                   used
                     ? "cursor-not-allowed border-app-border bg-app-surface-muted opacity-50"
-                    : "border-app-border hover:border-brand-purple hover:bg-brand-purple/5"
+                    : "border-app-border hover:border-app-accent hover:bg-app-accent/5"
                 }`}
               >
                 <span className="text-2xl">{meta.icon}</span>

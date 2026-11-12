@@ -201,12 +201,12 @@ function mapAppointmentToCalendarEvent(appointment: CoachCalendarEvent): Calenda
     subtitle: appointment.location || appointment.notes || undefined,
     color:
       appointment.event_type === "reminder"
-        ? "bg-amber-100 text-amber-900"
-        : "bg-emerald-100 text-emerald-900",
+        ? "bg-amber-500/15 text-amber-400"
+        : "bg-app-accent/15 text-app-accent",
     pillClass:
       appointment.event_type === "reminder"
-        ? "bg-amber-50 text-amber-900 border border-amber-200"
-        : "bg-emerald-50 text-emerald-900 border border-emerald-200",
+        ? "bg-amber-500/15 text-amber-400 border border-amber-500/25"
+        : "bg-app-accent/15 text-app-accent border border-app-accent/25",
     icon: appointment.event_type === "reminder" ? "⏰" : "📌",
   };
 }
@@ -505,8 +505,8 @@ export default function CoachWeekCalendar({
           competition.start_date,
           competition.end_date,
         ),
-        color: "bg-purple-100 text-purple-800",
-        pillClass: "bg-purple-50 text-purple-800 border border-purple-200",
+        color: "bg-emerald-500/15 text-emerald-400",
+        pillClass: "bg-emerald-500/15 text-emerald-400 border border-emerald-500/25",
         icon: "📅",
         allDay: true,
         href: `/profile/${athleteId}`,
@@ -525,8 +525,8 @@ export default function CoachWeekCalendar({
           competition.start_date,
           competition.end_date,
         ),
-        color: "bg-violet-100 text-violet-800",
-        pillClass: "bg-violet-50 text-violet-800 border border-violet-200",
+        color: "bg-app-surface-hover text-app-text",
+        pillClass: "bg-app-surface-hover text-app-text border border-app-border-strong",
         icon: "🏆",
         allDay: true,
         href: "/wedstrijd-kalender",
@@ -1106,7 +1106,7 @@ export default function CoachWeekCalendar({
                   {event.title}
                 </span>
                 {event.startAt && !event.allDay ? (
-                  <span className="text-[8px] font-normal text-emerald-100">
+                  <span className="text-[8px] font-normal text-white/75">
                     {new Date(event.startAt).toLocaleTimeString("nl-NL", {
                       hour: "2-digit",
                       minute: "2-digit",
@@ -1185,9 +1185,9 @@ export default function CoachWeekCalendar({
         key={block.id}
         className={`absolute touch-none overflow-hidden rounded-lg px-1.5 py-1 text-[11px] font-medium ${block.color} ${
           isMoving
-            ? "z-40 scale-[1.02] opacity-95 shadow-lg ring-2 ring-white/80 transition-none"
+            ? "z-40 scale-[1.02] opacity-95 shadow-lg ring-2 ring-app-accent transition-none"
             : isHighlighted
-              ? "z-30 shadow-lg ring-2 ring-yellow-300 ring-offset-2 ring-offset-app-bg animate-pulse"
+              ? "z-30 shadow-lg ring-2 ring-app-accent ring-offset-2 ring-offset-app-bg animate-pulse"
               : "z-20 cursor-grab active:cursor-grabbing"
         }`}
         style={{
@@ -1270,7 +1270,7 @@ export default function CoachWeekCalendar({
 
         {dragCreate && dragCreateMoved && (
           <div
-            className="pointer-events-none absolute z-30 overflow-hidden rounded-md border-2 border-blue-500 bg-blue-400/30"
+            className="pointer-events-none absolute z-30 overflow-hidden rounded-md border-2 border-app-accent bg-app-accent/20"
             style={{
               ...getDayColumnStyle(dragCreate.dayIndex, dayCount),
               top: dragCreate.startHour * HOUR_HEIGHT,

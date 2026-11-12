@@ -103,7 +103,7 @@ function OverlayTooltip({
 
   return (
     <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2.5 shadow-2xl">
-      <p className="text-xs font-semibold text-white">
+      <p className="text-xs font-semibold text-app-text">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>
       {point.date ? (
@@ -125,10 +125,10 @@ function OverlayTooltip({
             <div key={name} className="flex items-center gap-2 text-xs">
               <span
                 className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: entry.color || "#a78bfa" }}
+                style={{ backgroundColor: entry.color || "var(--app-accent)" }}
               />
               <span className="text-app-muted">{name}</span>
-              <span className="ml-auto font-medium text-white">
+              <span className="ml-auto font-medium text-app-text">
                 {entry.value}
                 {suffix}
               </span>
@@ -293,7 +293,7 @@ export function E1rmLiftChart({
                     <g>
                       <circle cx={cx} cy={cy} r={4} fill={color} />
                       <foreignObject x={cx - 42} y={cy - 38} width={84} height={28}>
-                        <div className="flex items-center justify-center gap-1 rounded-full border border-app-border bg-app-surface-elevated px-2 py-1 text-[10px] font-semibold text-white shadow-lg">
+                        <div className="flex items-center justify-center gap-1 rounded-full border border-app-border bg-app-surface-elevated px-2 py-1 text-[10px] font-semibold text-app-text shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
                           <Star className="h-3 w-3" style={{ color }} fill={color} />
                           <span>PR {value} kg</span>
                         </div>
@@ -340,7 +340,7 @@ export function GlPointsSbdChart({ data }: { data: E1rmChartPoint[] }) {
         <XAxis {...weekAxisProps(data)} />
         <YAxis
           domain={domain}
-          tick={{ fill: "#94a3b8", fontSize: 11 }}
+          tick={{ fill: "var(--app-text-muted)", fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           width={44}
@@ -385,7 +385,7 @@ export function GlPointsTotalChart({ data }: { data: E1rmChartPoint[] }) {
         <XAxis {...weekAxisProps(data)} />
         <YAxis
           domain={domain}
-          tick={{ fill: "#94a3b8", fontSize: 11 }}
+          tick={{ fill: "var(--app-text-muted)", fontSize: 11 }}
           tickLine={false}
           axisLine={false}
           width={44}

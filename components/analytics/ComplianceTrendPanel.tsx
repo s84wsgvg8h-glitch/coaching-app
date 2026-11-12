@@ -40,19 +40,19 @@ export default function ComplianceTrendPanel({
   }, [athleteId]);
 
   if (loading) {
-    return <div className="app-card text-sm text-app-muted">Compliance laden...</div>;
+    return <div className="ui-panel text-sm text-app-muted">Compliance laden...</div>;
   }
 
   if (points.length === 0) {
     return (
-      <div className="app-card text-sm text-app-muted">
+      <div className="ui-panel text-sm text-app-muted">
         Nog geen invulscore-trend beschikbaar.
       </div>
     );
   }
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <h3 className="font-bold text-app-text">Compliance-trend (gelogde sets/week)</h3>
       <div className="mt-4 h-56">
         <ResponsiveContainer width="100%" height="100%">

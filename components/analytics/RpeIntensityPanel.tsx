@@ -88,12 +88,12 @@ export default function RpeIntensityPanel({ athleteId }: RpeIntensityPanelProps)
   );
 
   if (loading) {
-    return <div className="app-card text-sm text-app-muted">RPE data laden...</div>;
+    return <div className="ui-panel text-sm text-app-muted">RPE data laden...</div>;
   }
 
   if (totalSets === 0) {
     return (
-      <div className="app-card text-sm text-app-muted">
+      <div className="ui-panel text-sm text-app-muted">
         Nog geen RPE-data gelogd voor deze atleet.
       </div>
     );
@@ -101,7 +101,7 @@ export default function RpeIntensityPanel({ athleteId }: RpeIntensityPanelProps)
 
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <div className="app-card">
+      <div className="ui-panel">
         <h3 className="font-bold text-app-text">Intensiteitsverdeling (RPE)</h3>
         <div className="mt-4 h-56">
           <ResponsiveContainer width="100%" height="100%">
@@ -116,7 +116,7 @@ export default function RpeIntensityPanel({ athleteId }: RpeIntensityPanelProps)
         </div>
       </div>
 
-      <div className="app-card">
+      <div className="ui-panel">
         <h3 className="font-bold text-app-text">Gemiddelde RPE per week</h3>
         <div className="mt-4 h-56">
           <ResponsiveContainer width="100%" height="100%">

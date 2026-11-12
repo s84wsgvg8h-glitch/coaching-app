@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import CoachAppointmentModal from "@/components/CoachAppointmentModal";
 import CoachWeekCalendar from "@/components/CoachWeekCalendar";
-import { PageHeader } from "@/components/ui/design-system";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { createDefaultAppointmentDraft } from "@/lib/coachCalendarEvents";
@@ -61,15 +61,17 @@ export default function AgendaPage() {
 
   if (loading || !coachId) {
     return (
-      <AppShell contentClassName="flex min-h-0 flex-1 flex-col px-2 pb-6 pt-3 md:px-3 lg:px-4">
-        <p className="text-sm text-app-muted">Agenda laden...</p>
+      <AppShell>
+        <PageContainer size="full">
+          <p className="text-sm text-app-muted">Agenda laden...</p>
+        </PageContainer>
       </AppShell>
     );
   }
 
   return (
-    <AppShell contentClassName="flex min-h-0 flex-1 flex-col px-2 pb-6 pt-3 md:px-3 lg:px-4">
-      <div className="agenda-page-shell">
+    <AppShell>
+      <PageContainer size="full" className="agenda-page-shell">
         <PageHeader
           title="Agenda"
           description="Weekoverzicht en planning."
@@ -90,7 +92,7 @@ export default function AgendaPage() {
           forceExpanded
           fullPage
         />
-      </div>
+      </PageContainer>
 
       <CoachAppointmentModal
         open={appointmentModalOpen}

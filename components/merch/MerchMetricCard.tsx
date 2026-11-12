@@ -18,17 +18,17 @@ export default function MerchMetricCard({
   sub,
   subUp,
   icon: Icon,
-  tone = "text-sky-400",
-  bg = "bg-sky-500/10",
+  tone = "text-app-accent",
+  bg = "bg-app-accent/10",
 }: MerchMetricCardProps) {
   return (
     <article
-      className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4 backdrop-blur-sm"
+      className="rounded-2xl border border-app-border bg-app-surface p-4"
     >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[12px] text-app-muted">{label}</p>
-          <p className="mt-1 text-[26px] font-bold leading-none text-app-text">
+          <p className="mt-1 text-[22px] font-semibold leading-none tracking-tight text-app-text md:text-[24px]">
             {value}
           </p>
           {sub ? (

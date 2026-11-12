@@ -88,13 +88,13 @@ function formatBirthDateShort(dateStr: string | null) {
 function fillScoreTone(score: number) {
   if (score >= 80) return "text-emerald-400";
   if (score >= 50) return "text-amber-400";
-  return "text-rose-400";
+  return "text-red-400";
 }
 
 function fillScoreSparkTone(score: number) {
   if (score >= 80) return "text-emerald-400";
   if (score >= 50) return "text-amber-400";
-  return "text-rose-400";
+  return "text-red-400";
 }
 
 function shortPaymentMonth(isoDate: string) {
@@ -119,17 +119,17 @@ function paymentPillStyles(status: MonthlyPaymentStatus) {
   switch (status) {
     case "paid":
       return {
-        className: "border-emerald-500/40 bg-emerald-500/10 text-emerald-300",
+        className: "border-emerald-500/30 bg-emerald-500/15 text-emerald-400",
         icon: Check,
       };
     case "overdue":
       return {
-        className: "border-rose-500/40 bg-rose-500/10 text-rose-300",
+        className: "border-red-500/30 bg-red-500/15 text-red-400",
         icon: AlertCircle,
       };
     default:
       return {
-        className: "border-app-border/80 bg-app-surface/60 text-app-subtle",
+        className: "border-app-border bg-app-surface-muted text-app-subtle",
         icon: Clock,
       };
   }
@@ -229,7 +229,7 @@ function ExpandedTrackingPanel({
       : "text-app-accent";
 
   return (
-    <div className="border-t border-app-border/40 bg-app-surface-raised/15 px-4 py-2">
+    <div className="border-t border-app-border bg-app-surface-muted px-3 py-2 sm:px-4">
       {scoresLoading || !tracking ? (
         <p className="text-[12px] text-app-muted">…</p>
       ) : (
@@ -238,7 +238,7 @@ function ExpandedTrackingPanel({
             {label} — {monthLabel}
           </p>
           {trendValues.length >= 2 ? (
-            <div className="mb-3 rounded-lg border border-white/6 bg-black/20 px-3 py-2.5">
+            <div className="mb-3 rounded-lg border border-app-border bg-app-surface px-3 py-2.5">
               <p className="mb-2 text-[9px] font-semibold uppercase tracking-wide text-app-subtle">
                 Trend — laatste 30 dagen
               </p>
@@ -298,7 +298,7 @@ export function AthleteOverviewTableHead({
 }) {
   return (
     <thead className={TABLE_HEAD}>
-      <tr className="border-b border-white/[0.08] bg-black/10">
+      <tr className="border-b border-app-border bg-app-surface-muted">
         {selectionMode ? <th className="athletes-th-select" aria-hidden /> : null}
         <th className="athletes-th-athlete">Atleet</th>
         <th className="athletes-th-numeric athletes-th-center">Prijs</th>
@@ -365,7 +365,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
     TABLE_ROW,
     "athletes-table-row--clickable",
     expanded ? "athletes-table-row--expanded" : "",
-    highlightRow ? "bg-amber-500/[0.04]" : "",
+    highlightRow ? "bg-amber-500/5" : "",
   ]
     .filter(Boolean)
     .join(" ");
@@ -404,7 +404,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
               checked={selected}
               onChange={(event) => onToggleSelect(event.target.checked)}
               onClick={stopRowNav}
-              className="athletes-select-checkbox rounded border-app-border accent-brand-purple"
+              className="athletes-select-checkbox rounded border-app-border accent-[var(--app-accent)]"
               aria-label={`${displayName} selecteren`}
             />
           </td>
@@ -419,7 +419,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
             />
             <span className="min-w-0">
               <span className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                <span className="truncate text-[14px] font-bold text-app-text">
+                <span className="truncate text-[14px] font-semibold text-app-text">
                   {displayName}
                 </span>
                 <AthleteActivityBadge daysAgo={daysAgo} />
@@ -546,7 +546,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
       </tr>
 
       {expanded === "payments" ? (
-        <tr className="border-b border-app-border/40 bg-black/15" onClick={stopRowNav}>
+        <tr className="border-b border-app-border bg-app-surface-muted" onClick={stopRowNav}>
           <td colSpan={columnCount} className="!h-auto px-3 py-1">
             <AthletePaymentTimeline entries={paymentHistory} />
           </td>
@@ -554,7 +554,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
       ) : null}
 
       {expanded === "fillScore" ? (
-        <tr className="border-b border-app-border/50">
+        <tr className="border-b border-app-border">
           <td colSpan={columnCount} className="p-0">
             <ExpandedTrackingPanel
               label="Invulscore"
@@ -570,7 +570,7 @@ export function AthleteOverviewDesktopRow(props: AthleteOverviewRowProps) {
       ) : null}
 
       {expanded === "bodyweight" ? (
-        <tr className="border-b border-app-border/50">
+        <tr className="border-b border-app-border">
           <td colSpan={columnCount} className="p-0">
             <ExpandedTrackingPanel
               label="Bodyweight"
@@ -649,8 +649,8 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
     <article
       className={[
         "athletes-mobile-card px-3 py-2 transition",
-        highlightRow ? "bg-amber-500/[0.05]" : "",
-        expanded ? "bg-app-surface-raised/10" : "",
+        highlightRow ? "bg-amber-500/5" : "",
+        expanded ? "bg-app-surface-hover" : "",
         detailsOpen ? "athletes-mobile-card--details-open" : "",
         selectionMode ? "athletes-mobile-card--selection" : "",
       ]
@@ -676,7 +676,7 @@ export function AthleteOverviewMobileCard(props: AthleteOverviewRowProps) {
             checked={selected}
             onChange={(event) => onToggleSelect(event.target.checked)}
             onClick={stopRowNav}
-            className="athletes-select-checkbox mt-2 rounded border-app-border accent-brand-purple"
+            className="athletes-select-checkbox mt-2 rounded border-app-border accent-[var(--app-accent)]"
           />
         ) : null}
         <div className="min-w-0 flex-1">

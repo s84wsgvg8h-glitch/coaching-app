@@ -4,12 +4,17 @@
   align-items: center;
   gap: 10px;
   border-radius: 16px;
-  border: 1px solid rgba(59, 130, 246, 0.35);
-  background: var(--app-panel-bg);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
   padding: 10px 12px;
-  box-shadow:
-    0 0 0 1px rgba(59, 130, 246, 0.08),
-    0 0 28px rgba(59, 130, 246, 0.1);
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.todo-composer:focus-within {
+  border-color: color-mix(in srgb, var(--app-accent) 45%, transparent);
+  box-shadow: 0 0 0 3px var(--app-accent-muted);
 }
 
 .todo-composer-plus {
@@ -20,13 +25,13 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: #3b82f6;
+  background: var(--app-accent);
   color: white;
-  transition: background 0.15s ease;
+  transition: filter 0.15s ease;
 }
 
 .todo-composer-plus:hover {
-  background: #2563eb;
+  filter: brightness(1.08);
 }
 
 .todo-composer-input {
@@ -49,16 +54,17 @@
   align-items: center;
   gap: 6px;
   border-radius: 12px;
-  background: #3b82f6;
+  background: var(--app-accent);
+  min-height: 40px;
   padding: 9px 14px;
   font-size: 13px;
   font-weight: 600;
   color: white;
-  transition: background 0.15s ease, opacity 0.15s ease;
+  transition: filter 0.15s ease, opacity 0.15s ease;
 }
 
 .todo-composer-submit:hover:not(:disabled) {
-  background: #2563eb;
+  filter: brightness(1.08);
 }
 
 .todo-composer-submit:disabled {
@@ -80,7 +86,7 @@
   overflow: hidden;
   border-radius: 18px;
   border: 1px solid var(--app-border);
-  background: var(--app-panel-bg);
+  background: var(--app-surface);
 }
 
 .todo-kanban-column-header {
@@ -154,7 +160,7 @@
 }
 
 .todo-kanban-card:hover {
-  border-color: rgba(59, 130, 246, 0.22);
+  border-color: var(--app-border-strong);
   background: var(--app-surface-hover);
 }
 
@@ -166,21 +172,21 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(59, 130, 246, 0.18);
+  background: var(--app-accent-muted);
   font-size: 11px;
   font-weight: 700;
-  color: #93c5fd;
+  color: var(--app-accent);
 }
 
 .todo-kanban-auto-badge {
   display: inline-flex;
   align-items: center;
   border-radius: 6px;
-  background: rgba(245, 158, 11, 0.14);
+  background: rgba(245, 158, 11, 0.15);
   padding: 1px 6px;
   font-size: 10px;
   font-weight: 600;
-  color: #fbbf24;
+  color: var(--color-amber-400, #fbbf24);
 }
 
 .todo-kanban-checkbox {
@@ -195,12 +201,12 @@
 }
 
 .todo-kanban-checkbox:hover {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: color-mix(in srgb, var(--app-accent) 50%, transparent);
 }
 
 .todo-kanban-checkbox.is-checked {
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: var(--app-accent);
+  background: var(--app-accent);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='white'%3E%3Cpath d='M12.2 4.2 6.8 10.2 3.8 7.2l-1 1.1 4 4 6.5-7.1z'/%3E%3C/svg%3E");
   background-size: 12px;
   background-position: center;
@@ -227,12 +233,12 @@
 }
 
 .task-complete-checkbox:hover:not(:disabled) {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: color-mix(in srgb, var(--app-accent) 50%, transparent);
 }
 
 .task-complete-checkbox.is-checked {
-  border-color: #3b82f6;
-  background: #3b82f6;
+  border-color: var(--app-accent);
+  background: var(--app-accent);
 }
 
 .task-complete-checkbox.is-animating.is-checked {
@@ -257,7 +263,7 @@
 
 .todo-kanban-card.is-completing {
   pointer-events: none;
-  border-color: rgba(59, 130, 246, 0.32);
+  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
   animation:
     todo-card-complete 0.42s cubic-bezier(0.34, 1.2, 0.64, 1),
     todo-card-glow-pulse 0.42s ease;
@@ -285,8 +291,8 @@
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(59, 130, 246, 0.22),
-      0 0 18px rgba(59, 130, 246, 0.14);
+      0 0 0 1px color-mix(in srgb, var(--app-accent) 30%, transparent),
+      0 0 18px var(--app-accent-glow);
   }
 }
 
@@ -373,18 +379,18 @@
 .todo-kanban-doing-glow-ring {
   position: absolute;
   border-radius: 9999px;
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 20%, transparent);
 }
 
 .todo-kanban-doing-glow-ring-outer {
   inset: 0;
-  box-shadow: 0 0 40px rgba(56, 189, 248, 0.12);
+  box-shadow: 0 0 40px var(--app-accent-muted);
 }
 
 .todo-kanban-doing-glow-ring-inner {
   inset: 18px;
-  border-color: rgba(56, 189, 248, 0.28);
-  box-shadow: inset 0 0 24px rgba(56, 189, 248, 0.08);
+  border-color: color-mix(in srgb, var(--app-accent) 30%, transparent);
+  box-shadow: inset 0 0 24px var(--app-accent-muted);
 }
 
 .todo-kanban-doing-glow-icon {
@@ -396,8 +402,8 @@
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  background: rgba(14, 165, 233, 0.12);
-  box-shadow: 0 0 24px rgba(56, 189, 248, 0.2);
+  background: var(--app-accent-muted);
+  box-shadow: 0 0 24px var(--app-accent-glow);
 }
 
 @media (min-width: 1024px) {
@@ -417,7 +423,8 @@
   margin-top: 16px;
   padding: 4px;
   border-radius: 14px;
-  background: var(--app-panel-inset, var(--app-surface-muted));
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
 }
 
 .todo-kanban-mobile-tab {
@@ -426,6 +433,7 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
+  min-height: 44px;
   border-radius: 10px;
   border: none;
   background: transparent;
@@ -438,9 +446,8 @@
 }
 
 .todo-kanban-mobile-tab.is-active {
-  background: var(--app-surface);
-  color: var(--app-text);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+  background: var(--app-accent);
+  color: #ffffff;
 }
 
 .todo-kanban-mobile-tab-count {
@@ -457,8 +464,8 @@
 }
 
 .todo-kanban-mobile-tab.is-active .todo-kanban-mobile-tab-count {
-  background: var(--app-accent-muted);
-  color: var(--app-accent);
+  background: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
 }
 
 @media (max-width: 767px) {

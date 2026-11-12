@@ -154,7 +154,7 @@ export function LiftE1rmChart({
                     <g>
                       <circle cx={cx} cy={cy} r={4} fill={color} />
                       <foreignObject x={cx - 42} y={cy - 38} width={84} height={28}>
-                        <div className="flex items-center justify-center gap-1 rounded-full border border-app-border bg-app-surface-elevated px-2 py-1 text-[10px] font-semibold text-white shadow-lg">
+                        <div className="flex items-center justify-center gap-1 rounded-full border border-app-border bg-app-surface-elevated px-2 py-1 text-[10px] font-semibold text-app-text shadow-[0_8px_24px_rgba(0,0,0,0.3)]">
                           <Star className="h-3 w-3" style={{ color }} fill={color} />
                           <span>PR {value} kg</span>
                         </div>
@@ -252,7 +252,7 @@ export function OverviewMetricCard({
       </p>
       <div className="mt-2 flex items-end justify-between gap-3">
         <div>
-          <p className="text-2xl font-semibold tracking-tight text-app-text">{value}</p>
+          <p className="text-[22px] font-semibold leading-none tracking-tight text-app-text">{value}</p>
           <p className={`mt-1 text-xs font-medium ${toneClass}`}>{change}</p>
         </div>
       </div>

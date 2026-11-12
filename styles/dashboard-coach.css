@@ -296,7 +296,7 @@
 
 .coach-app-sidebar-profile:hover,
 .coach-app-sidebar-plan:hover {
-  border-color: rgba(79, 140, 255, 0.32);
+  border-color: rgba(var(--app-accent-rgb), 0.32);
   background: var(--glass-hover-bg);
 }
 
@@ -463,7 +463,7 @@
 }
 
 .dashboard-quick-action-btn:hover {
-  border-color: rgba(79, 140, 255, 0.32);
+  border-color: rgba(var(--app-accent-rgb), 0.32);
   background: var(--glass-hover-bg);
   color: var(--app-text);
 }
@@ -568,14 +568,14 @@
   border-radius: 0.45rem 0.45rem 0.15rem 0.15rem;
   background: linear-gradient(
     180deg,
-    rgba(79, 140, 255, 0.85) 0%,
-    rgba(79, 140, 255, 0.35) 100%
+    rgba(var(--app-accent-rgb), 0.85) 0%,
+    rgba(var(--app-accent-rgb), 0.35) 100%
   );
   transition: height 0.25s ease;
 }
 
 .dashboard-sessions-chart-bar.is-today {
-  box-shadow: 0 0 0 1px rgba(79, 140, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(var(--app-accent-rgb), 0.45);
 }
 
 .dashboard-sessions-chart-label {
@@ -656,7 +656,7 @@
 }
 
 .dashboard-client-note-row:hover {
-  border-color: rgba(79, 140, 255, 0.32);
+  border-color: rgba(var(--app-accent-rgb), 0.32);
   background: var(--glass-hover-bg);
 }
 
@@ -1020,10 +1020,10 @@
   }
 
   .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field:focus-within {
-    border-color: rgba(59, 130, 246, 0.55) !important;
+    border-color: rgba(var(--app-accent-rgb), 0.55) !important;
     background: rgba(0, 0, 0, 0.42) !important;
     box-shadow:
-      0 0 0 2px rgba(59, 130, 246, 0.18),
+      0 0 0 2px rgba(var(--app-accent-rgb), 0.18),
       inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
   }
 
@@ -1084,9 +1084,9 @@
   }
 
   html:not(.dark) .coach-dashboard-search-embedded .coach-mobile-dashboard-search-field.app-search-field:focus-within {
-    border-color: rgba(59, 130, 246, 0.5) !important;
+    border-color: rgba(var(--app-accent-rgb), 0.5) !important;
     background: #ffffff !important;
-    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.15) !important;
+    box-shadow: 0 0 0 2px rgba(var(--app-accent-rgb), 0.15) !important;
   }
 
   .coach-mobile-dashboard-search-dropdown--embedded {
@@ -1235,13 +1235,13 @@
     font-size: 10px;
     padding: 0.2rem 0.45rem;
     border-radius: 9999px;
-    border: 1px solid rgba(79, 140, 255, 0.22);
-    background: rgba(79, 140, 255, 0.08);
+    border: 1px solid rgba(var(--app-accent-rgb), 0.22);
+    background: rgba(var(--app-accent-rgb), 0.08);
     text-decoration: none;
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-timeline-header a:hover {
-    background: rgba(79, 140, 255, 0.14);
+    background: rgba(var(--app-accent-rgb), 0.14);
     text-decoration: none;
   }
 
@@ -1294,12 +1294,12 @@
     height: 2px;
     background: linear-gradient(
       90deg,
-      rgba(79, 140, 255, 0.15) 0%,
-      rgba(79, 140, 255, 0.95) 12%,
-      rgba(79, 140, 255, 0.95) 88%,
-      rgba(79, 140, 255, 0.15) 100%
+      rgba(var(--app-accent-rgb), 0.15) 0%,
+      rgba(var(--app-accent-rgb), 0.95) 12%,
+      rgba(var(--app-accent-rgb), 0.95) 88%,
+      rgba(var(--app-accent-rgb), 0.15) 100%
     );
-    box-shadow: 0 0 12px rgba(79, 140, 255, 0.45);
+    box-shadow: 0 0 12px rgba(var(--app-accent-rgb), 0.45);
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-now-badge {
@@ -1308,9 +1308,9 @@
     font-weight: 700;
     padding: 0.12rem 0.4rem;
     border-radius: 9999px;
-    border: 1px solid rgba(79, 140, 255, 0.35);
+    border: 1px solid rgba(var(--app-accent-rgb), 0.35);
     background: rgba(15, 20, 32, 0.95);
-    box-shadow: 0 0 10px rgba(79, 140, 255, 0.25);
+    box-shadow: 0 0 10px rgba(var(--app-accent-rgb), 0.25);
   }
 
   .dashboard-cockpit-col--agenda .today-agenda-block {

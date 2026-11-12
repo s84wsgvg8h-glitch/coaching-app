@@ -18,8 +18,8 @@ export default function ProfileLanguageToggle() {
             key={option}
             type="button"
             onClick={() => setLocale(option)}
-            className={`profile-language-toggle-btn app-focus-ring${
-              active ? " is-active" : ""
+            className={`profile-language-toggle-btn app-focus-ring !min-h-[44px]${
+              active ? " is-active !bg-app-accent !text-white" : " hover:!bg-app-surface-hover hover:!text-app-text"
             }`}
             aria-pressed={active}
           >

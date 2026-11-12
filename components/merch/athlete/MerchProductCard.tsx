@@ -23,7 +23,7 @@ function ProductBadges({ item }: { item: MerchItem }) {
         </span>
       ) : null}
       {item.limited ? (
-        <span className="rounded-full bg-violet-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+        <span className="rounded-full bg-app-accent px-2 py-0.5 text-[10px] font-semibold text-white">
           Limited
         </span>
       ) : null}
@@ -33,11 +33,11 @@ function ProductBadges({ item }: { item: MerchItem }) {
         </span>
       ) : null}
       {item.status === "soldout" || lowStock === "Uitverkocht" ? (
-        <span className="rounded-full bg-rose-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+        <span className="rounded-full bg-red-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
           Uitverkocht
         </span>
       ) : lowStock ? (
-        <span className="rounded-full bg-orange-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
+        <span className="rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-semibold text-white">
           {lowStock}
         </span>
       ) : null}
@@ -59,7 +59,7 @@ export default function MerchProductCard({ item, onOpen }: MerchProductCardProps
           onOpen();
         }
       }}
-      className="merch-product-card group cursor-pointer overflow-hidden rounded-2xl border border-app-border/70 bg-app-surface/40 transition hover:border-app-accent/40 hover:shadow-[0_0_24px_rgba(59,130,246,0.12)]"
+      className="merch-product-card app-focus-ring group cursor-pointer overflow-hidden rounded-2xl border border-app-border bg-app-surface transition hover:border-app-border-strong hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
     >
       <div className="relative">
         <ProductBadges item={item} />

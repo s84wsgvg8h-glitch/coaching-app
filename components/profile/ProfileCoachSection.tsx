@@ -100,32 +100,32 @@ export default function ProfileCoachSection({
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-xl font-bold text-app-text">Coach beheren</h2>
-        <p className="mt-1 text-sm text-app-muted">
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Coach beheren</h2>
+        <p className="mt-1 text-[13px] text-app-muted">
           Je gekoppelde coach voor online coaching.
         </p>
       </div>
 
       {coachId && coachName ? (
-        <div className="rounded-2xl border border-app-border bg-app-surface p-5">
-          <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+        <div className="rounded-2xl border border-app-border bg-app-surface-muted p-4 sm:p-5">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             Huidige coach
           </p>
-          <p className="mt-2 text-2xl font-bold text-app-text">{coachName}</p>
+          <p className="mt-1 text-[20px] font-semibold tracking-tight text-app-text">{coachName}</p>
 
           {canRemoveCoach ? (
             <button
               type="button"
               onClick={() => void removeCoach()}
               disabled={removing}
-              className="mt-4 rounded-xl border border-app-destructive/30 bg-app-surface px-4 py-2 text-sm font-semibold text-app-destructive hover:bg-app-destructive/10 disabled:opacity-60"
+              className="mt-4 inline-flex min-h-[44px] items-center rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 app-focus-ring disabled:opacity-60"
             >
               {removing ? "Verwijderen..." : "Coach verwijderen"}
             </button>
           ) : null}
         </div>
       ) : (
-        <div className="rounded-2xl border border-dashed border-gray-300 p-5 text-sm text-app-muted">
+        <div className="rounded-2xl border border-dashed border-app-border-strong p-5 text-sm text-app-muted">
           Je hebt momenteel geen coach gekoppeld.
         </div>
       )}

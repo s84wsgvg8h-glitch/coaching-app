@@ -20,7 +20,7 @@ export default function ProfileLogoutButton() {
       type="button"
       onClick={() => void handleLogout()}
       disabled={loading}
-      className="app-focus-ring inline-flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-500/15 disabled:opacity-60 dark:text-red-300 sm:w-auto"
+      className="app-focus-ring inline-flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20 disabled:opacity-60 sm:w-auto"
     >
       <LogOut className="h-4 w-4" aria-hidden="true" />
       {loading ? "Uitloggen..." : "Uitloggen"}

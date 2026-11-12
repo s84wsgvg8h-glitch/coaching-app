@@ -45,7 +45,7 @@ export default function TodoComposer({
           className="todo-composer-input"
         />
         {suggestions.length > 0 ? (
-          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-xl border border-white/10 bg-[#111827] shadow-xl">
+          <div className="absolute left-0 right-0 top-[calc(100%+6px)] z-20 overflow-hidden rounded-xl border border-app-border bg-app-surface-elevated shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
             {suggestions.map((suggestion) => (
               <button
                 key={suggestion}
@@ -54,7 +54,7 @@ export default function TodoComposer({
                   onChange(suggestion);
                   inputRef.current?.focus();
                 }}
-                className="block w-full px-3 py-2 text-left text-[13px] text-app-text hover:bg-app-surface-hover"
+                className="block min-h-[44px] w-full px-3 py-2 text-left text-[13px] text-app-text transition-colors hover:bg-app-surface-hover"
               >
                 {suggestion}
               </button>

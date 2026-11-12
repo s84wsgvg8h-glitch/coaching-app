@@ -73,19 +73,19 @@ export default function PrHistoryPanel({ athleteId }: PrHistoryPanelProps) {
   }, [athleteId]);
 
   if (loading) {
-    return <div className="app-card text-sm text-app-muted">PR-geschiedenis laden...</div>;
+    return <div className="ui-panel text-sm text-app-muted">PR-geschiedenis laden...</div>;
   }
 
   if (rows.length === 0) {
     return (
-      <div className="app-card text-sm text-app-muted">
+      <div className="ui-panel text-sm text-app-muted">
         Nog geen PR&apos;s uit gelogde sets.
       </div>
     );
   }
 
   return (
-    <div className="app-card overflow-x-auto">
+    <div className="ui-panel overflow-x-auto">
       <h3 className="font-bold text-app-text">PR-geschiedenis (e1RM uit logs)</h3>
       <table className="mt-4 w-full min-w-[520px] text-sm">
         <thead>

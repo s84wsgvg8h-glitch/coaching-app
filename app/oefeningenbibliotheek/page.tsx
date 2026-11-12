@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import AppShell from "@/components/AppShell";
 import CollapsibleFilterSidebar from "@/components/ui/CollapsibleFilterSidebar";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { isAthleteRole, isCoachLikeRole } from "@/lib/authRoles";
 import {
@@ -60,7 +61,7 @@ function setCompactDragImage(event: React.DragEvent, label: string) {
   const ghost = document.createElement("div");
   ghost.textContent = label;
   ghost.style.cssText =
-    "position:fixed;top:-1000px;left:-1000px;padding:4px 8px;border-radius:8px;background:#4f8cff;color:#fff;font:600 11px/1.2 system-ui,sans-serif;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;";
+    "position:fixed;top:-1000px;left:-1000px;padding:4px 8px;border-radius:8px;background:var(--app-accent);color:#fff;font:600 11px/1.2 system-ui,sans-serif;max-width:96px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;box-shadow:0 4px 14px rgba(0,0,0,.35);pointer-events:none;";
   document.body.appendChild(ghost);
   event.dataTransfer.setDragImage(ghost, 10, 10);
   window.setTimeout(() => ghost.remove(), 0);
@@ -395,7 +396,7 @@ export default function ExerciseLibraryPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex w-full max-w-none min-h-0 flex-1 gap-0 overflow-hidden rounded-2xl border border-app-border bg-app-surface">
+      <PageContainer size="full" className="flex min-h-0 flex-1 gap-0 overflow-hidden rounded-2xl border border-app-border bg-app-surface">
         <CollapsibleFilterSidebar title="Categorie" collapsible={false}>
           <ExerciseLibraryCategoryNav
             customCategories={customCategories}
@@ -411,36 +412,33 @@ export default function ExerciseLibraryPage() {
           />
         </CollapsibleFilterSidebar>
 
-        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
-        <div className="mb-6">
-          <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
-            Oefeningenbibliotheek
-          </p>
-          <h1 className="mt-0.5 text-[20px] font-semibold tracking-tight text-app-text md:text-[24px] md:leading-[1.1]">
-            {categoryFilterLabel(categoryFilter)}
-          </h1>
-        </div>
-
-        {isCoach && !showCreateForm && (
-          <button
-            type="button"
-            onClick={() => setShowCreateForm(true)}
-            className="app-btn-primary app-focus-ring mb-6"
-          >
-            Nieuwe oefening aanmaken
-          </button>
-        )}
+        <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-3 mobile-scroll md:p-5">
+        <PageHeader
+          eyebrow="Oefeningenbibliotheek"
+          title={categoryFilterLabel(categoryFilter)}
+          actions={
+            isCoach && !showCreateForm ? (
+              <button
+                type="button"
+                onClick={() => setShowCreateForm(true)}
+                className="app-btn-primary app-focus-ring min-h-11 w-full sm:w-auto"
+              >
+                Nieuwe oefening aanmaken
+              </button>
+            ) : null
+          }
+        />
 
         {isCoach && showCreateForm && (
           <form
             onSubmit={handleSubmit}
-            className="app-card mb-6 p-5"
+            className="ui-panel mb-4"
           >
-            <h2 className="mb-4 text-lg font-bold text-app-text">
+            <h2 className="mb-4 text-[15px] font-semibold tracking-tight text-app-text">
               {editingId ? "Oefening bewerken" : "Nieuwe oefening"}
             </h2>
 
-            <div className="grid gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
               <input
                 value={draft.name}
                 onChange={(event) =>
@@ -450,7 +448,7 @@ export default function ExerciseLibraryPage() {
                   }))
                 }
                 placeholder="Oefeningnaam"
-                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
                 required
               />
 
@@ -463,7 +461,7 @@ export default function ExerciseLibraryPage() {
                     subcategory: "",
                   }))
                 }
-                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text outline-none md:text-sm"
               >
                 {categoryOptions.map((category) => (
                   <option key={category} value={category}>
@@ -482,7 +480,7 @@ export default function ExerciseLibraryPage() {
                   }))
                 }
                 placeholder="Subcategorie (optioneel), bijv. arch"
-                className="app-focus-ring rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
+                className="app-focus-ring min-h-11 min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text outline-none placeholder:text-app-subtle md:text-sm"
               />
               <datalist id="exercise-subcategories">
                 {subcategoryOptions.map((subcategory) => (
@@ -500,7 +498,7 @@ export default function ExerciseLibraryPage() {
                 }
                 placeholder="Uitleg over de oefening"
                 rows={3}
-                className="app-focus-ring md:col-span-2 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
+                className="app-focus-ring min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text outline-none placeholder:text-app-subtle md:col-span-2 md:text-sm"
               />
 
               <textarea
@@ -513,7 +511,7 @@ export default function ExerciseLibraryPage() {
                 }
                 placeholder="Coaching cues (bijv. brace, knieën uit, etc.)"
                 rows={3}
-                className="app-focus-ring md:col-span-2 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-app-text outline-none placeholder:text-app-muted/50"
+                className="app-focus-ring min-w-0 rounded-xl border border-app-border bg-app-surface-muted px-4 py-2 text-base text-app-text outline-none placeholder:text-app-subtle md:col-span-2 md:text-sm"
               />
 
               <div className="md:col-span-2">
@@ -536,10 +534,10 @@ export default function ExerciseLibraryPage() {
                         <img
                           src={draft.thumbnail_url}
                           alt=""
-                          className="h-24 w-40 rounded-xl object-cover"
+                          className="h-24 w-full rounded-xl object-cover sm:w-40"
                         />
                       ) : (
-                        <div className="flex h-24 w-40 items-center justify-center rounded-xl bg-app-surface text-sm text-app-muted">
+                        <div className="flex h-24 w-full items-center justify-center rounded-xl bg-app-surface text-sm text-app-muted sm:w-40">
                           Video klaar
                         </div>
                       )}
@@ -556,28 +554,28 @@ export default function ExerciseLibraryPage() {
                       <button
                         type="button"
                         onClick={() => fileInputRef.current?.click()}
-                        className="app-btn-secondary text-sm"
+                        className="app-btn-secondary app-focus-ring min-h-11"
                       >
                         Haal uit filmrol
                       </button>
                       <button
                         type="button"
                         onClick={() => setRecorderOpen(true)}
-                        className="app-btn-primary text-sm"
+                        className="app-btn-primary app-focus-ring min-h-11"
                       >
                         Maak video
                       </button>
                     </div>
                   </div>
                 ) : (
-                  <div className="grid gap-2 sm:grid-cols-2">
+                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => fileInputRef.current?.click()}
                       disabled={uploadingVideo}
                       className="app-focus-ring rounded-2xl border-2 border-dashed border-app-border bg-app-surface-muted p-5 text-center transition hover:border-app-accent/40 hover:bg-app-surface-hover disabled:opacity-60"
                     >
-                      <span className="text-3xl">▣</span>
+                      <span className="text-2xl text-app-muted">▣</span>
                       <p className="mt-2 text-sm font-semibold text-app-text">
                         Haal uit filmrol
                       </p>
@@ -591,7 +589,7 @@ export default function ExerciseLibraryPage() {
                       disabled={uploadingVideo}
                       className="app-focus-ring rounded-2xl border-2 border-dashed border-app-border bg-app-surface-muted p-5 text-center transition hover:border-app-accent/40 hover:bg-app-surface-hover disabled:opacity-60"
                     >
-                      <span className="text-3xl">🎥</span>
+                      <span className="text-2xl">🎥</span>
                       <p className="mt-2 text-sm font-semibold text-app-text">
                         Maak video
                       </p>
@@ -607,7 +605,7 @@ export default function ExerciseLibraryPage() {
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm font-semibold text-app-text">
+              <label className="flex min-h-11 cursor-pointer items-center gap-2 text-sm font-medium text-app-text">
                 <input
                   type="checkbox"
                   checked={draft.active}
@@ -617,16 +615,17 @@ export default function ExerciseLibraryPage() {
                       active: event.target.checked,
                     }))
                   }
+                  className="h-4 w-4 accent-app-accent"
                 />
                 Zichtbaar voor atleten
               </label>
             </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
               <button
                 type="submit"
                 disabled={saving || uploadingVideo}
-                className="app-btn-primary disabled:opacity-60"
+                className="app-btn-primary app-focus-ring min-h-11 disabled:opacity-60"
               >
                 {saving
                   ? "Opslaan..."
@@ -637,28 +636,28 @@ export default function ExerciseLibraryPage() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="app-btn-secondary"
+                className="app-btn-secondary app-focus-ring min-h-11"
               >
                 Annuleren
               </button>
             </div>
 
             {message && (
-              <p className="mt-3 text-sm font-semibold text-app-muted">{message}</p>
+              <p className="mt-3 text-sm font-medium text-app-muted">{message}</p>
             )}
           </form>
         )}
 
-        <div className="mb-4 flex flex-wrap gap-2 lg:hidden">
+        <div className="-mx-1 mb-4 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] lg:hidden">
           {["Alle", ...EXERCISE_LIBRARY_CATEGORIES].map((category) => (
             <button
               key={category}
               type="button"
               onClick={() => setCategoryFilter(category)}
-              className={`app-focus-ring rounded-full px-3 py-1.5 text-xs font-semibold transition ${
+              className={`app-focus-ring min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition ${
                 categoryFilter === category
                   ? "bg-app-accent text-white"
-                  : "border border-app-border text-app-muted hover:bg-app-surface-hover"
+                  : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
               }`}
             >
               {category}
@@ -667,10 +666,12 @@ export default function ExerciseLibraryPage() {
         </div>
 
         {loading ? (
-          <p className="text-sm text-app-muted">Laden...</p>
+          <Panel>
+            <p className="text-sm text-app-muted">Laden…</p>
+          </Panel>
         ) : filteredItems.length === 0 ? (
-          <div className="app-card p-8 text-center">
-            <p className="text-app-muted">
+          <Panel className="py-10 text-center">
+            <p className="text-sm text-app-muted">
               {isCoach
                 ? emptyCategoryMessage(categoryFilter)
                 : categoryFilter === "Alle"
@@ -680,9 +681,9 @@ export default function ExerciseLibraryPage() {
                       "Geen oefeningen",
                     )}
             </p>
-          </div>
+          </Panel>
         ) : (
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {filteredItems.map((item) => (
               <article
                 key={item.id}
@@ -695,14 +696,14 @@ export default function ExerciseLibraryPage() {
                 }}
                 onDragEnd={() => setDraggingItemId(null)}
                 className={`group relative overflow-hidden rounded-2xl border border-app-border bg-app-surface transition ${
-                  draggingItemId === item.id ? "opacity-40" : "hover:border-app-accent/30 hover:shadow-lg"
+                  draggingItemId === item.id ? "opacity-40" : "hover:border-app-border-strong hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)]"
                 } ${isCoach ? "cursor-grab active:cursor-grabbing" : ""}`}
               >
                 <button
                   type="button"
                   draggable={false}
                   onClick={() => setSelectedItem(item)}
-                  className="relative block w-full text-left"
+                  className="app-focus-ring relative block w-full text-left"
                 >
                   {item.thumbnail_url ? (
                     <img
@@ -711,28 +712,28 @@ export default function ExerciseLibraryPage() {
                       className="aspect-video w-full object-cover"
                     />
                   ) : (
-                    <div className="flex aspect-video items-center justify-center bg-app-surface-muted text-4xl">
+                    <div className="flex aspect-video items-center justify-center bg-app-surface-muted text-3xl">
                       🎥
                     </div>
                   )}
                   {!item.active && isCoach && (
-                    <span className="absolute left-3 top-3 z-20 rounded-full bg-amber-500/90 px-2 py-0.5 text-[10px] font-bold uppercase text-white">
+                    <span className="absolute left-3 top-3 z-20 rounded-full bg-app-bg/80 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-amber-400 ring-1 ring-amber-500/30 backdrop-blur-sm">
                       Verborgen
                     </span>
                   )}
                 </button>
 
                 <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 opacity-0 transition duration-200 group-hover:bg-black/60 group-hover:opacity-100">
-                  <span className="rounded-lg bg-white/10 px-3 py-1.5 text-sm font-semibold text-white shadow-lg backdrop-blur-sm">
+                  <span className="rounded-full bg-white/10 px-3 py-1.5 text-sm font-semibold text-white backdrop-blur-sm">
                     Bekijk uitleg
                   </span>
                 </div>
 
                 <div className="relative z-0 p-4">
-                  <p className="text-[10px] font-bold uppercase tracking-wider text-app-muted">
+                  <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                     {item.category}
                   </p>
-                  <h3 className="mt-1 text-base font-bold text-app-text">{item.name}</h3>
+                  <h3 className="mt-1 text-[15px] font-semibold tracking-tight text-app-text">{item.name}</h3>
                   {item.description && (
                     <p className="mt-1.5 line-clamp-2 text-sm text-app-muted">
                       {item.description}
@@ -744,14 +745,14 @@ export default function ExerciseLibraryPage() {
                       <button
                         type="button"
                         onClick={() => startEdit(item)}
-                        className="app-focus-ring rounded-lg border border-app-border px-3 py-1.5 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover"
+                        className="app-focus-ring min-h-11 flex-1 rounded-xl border border-app-border bg-app-surface px-3 text-xs font-semibold text-app-text transition hover:bg-app-surface-hover sm:min-h-9 sm:flex-none"
                       >
                         Bewerken
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleDelete(item)}
-                        className="app-focus-ring rounded-lg border border-app-destructive/30 px-3 py-1.5 text-xs font-semibold text-app-destructive transition hover:bg-app-destructive/10"
+                        className="app-focus-ring min-h-11 flex-1 rounded-xl border border-red-500/30 px-3 text-xs font-semibold text-red-400 transition hover:bg-red-500/15 sm:min-h-9 sm:flex-none"
                       >
                         Verwijderen
                       </button>
@@ -763,7 +764,7 @@ export default function ExerciseLibraryPage() {
           </div>
         )}
         </div>
-      </div>
+      </PageContainer>
 
       <ExerciseLibraryVideoModal
         item={selectedItem}

@@ -80,7 +80,7 @@
 }
 
 .profile-settings-mobile-pill.is-active {
-  border-color: rgba(79, 140, 255, 0.35);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
   background: var(--app-accent-muted);
   color: var(--app-text);
 }
@@ -132,7 +132,7 @@
 .profile-settings-nav-btn.is-active {
   background: var(--app-accent-muted);
   color: var(--app-text);
-  box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.22);
+  box-shadow: inset 0 0 0 1px rgba(var(--app-accent-rgb), 0.22);
 }
 
 .profile-settings-main {
@@ -202,8 +202,8 @@
 }
 
 .profile-dashboard-link:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
+  background: rgba(var(--app-accent-rgb), 0.08);
 }
 
 .profile-account-hero {
@@ -257,8 +257,8 @@
 }
 
 .profile-field-input:focus {
-  border-color: rgba(79, 140, 255, 0.45);
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
+  box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
 }
 
 .profile-field-input::placeholder {
@@ -367,8 +367,8 @@
 }
 
 .profile-back-link:hover {
-  border-color: rgba(59, 130, 246, 0.35);
-  background: rgba(59, 130, 246, 0.08);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
+  background: rgba(var(--app-accent-rgb), 0.08);
 }
 
 .profile-section-stack {
@@ -425,8 +425,8 @@
 }
 
 .profile-field-textarea:focus {
-  border-color: rgba(79, 140, 255, 0.45);
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
+  box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.12);
 }
 
 .profile-field-textarea::placeholder {
@@ -585,5 +585,5 @@
 .profile-language-toggle-btn.is-active {
   background: var(--app-surface);
   color: var(--app-text);
-  box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(var(--app-accent-rgb), 0.18);
 }

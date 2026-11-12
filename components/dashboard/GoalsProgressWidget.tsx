@@ -97,16 +97,16 @@ export default function GoalsProgressWidget({
   }
 
   if (loading) {
-    return <div className="app-card text-sm text-app-muted">Doelen laden...</div>;
+    return <div className="ui-panel text-sm text-app-muted">Doelen laden...</div>;
   }
 
   if (!goalsText.trim()) {
     return (
-      <div className="app-card">
+      <div className="ui-panel">
         <h3 className="font-bold text-app-text">Jouw doelen</h3>
         <p className="mt-2 text-sm text-app-muted">
           Nog geen doelen ingesteld.{" "}
-          <Link href="/doelen" className="font-semibold text-brand-purple">
+          <Link href="/doelen" className="font-semibold text-app-accent">
             Stel doelen in
           </Link>
         </p>
@@ -115,10 +115,10 @@ export default function GoalsProgressWidget({
   }
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <div className="flex items-center justify-between gap-2">
         <h3 className="font-bold text-app-text">Jouw doelen</h3>
-        <Link href="/doelen" className="text-xs font-semibold text-brand-purple">
+        <Link href="/doelen" className="text-xs font-semibold text-app-accent">
           Bewerken
         </Link>
       </div>

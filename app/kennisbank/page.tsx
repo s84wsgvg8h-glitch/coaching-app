@@ -125,76 +125,73 @@ function KennisbankPageInner() {
 
   return (
     <AppShell>
-      <PageContainer size="full" className="space-y-6">
-        <Panel className="!p-5 md:!p-6">
-          <PageHeader
-            eyebrow={
-              scope === "athlete" ? "Atleten kennisbank" : "Coach kennisbank"
-            }
-            title="Kennisbank & AI-vragen"
-            description="Coachingkennis en antwoorden voor atleten-AI op één plek."
-            actions={
-              canViewAiVragen ? (
-                <div className="flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => switchTab("chunks")}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
-                      activeTab === "chunks"
-                        ? "bg-app-accent text-white"
-                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
-                    }`}
-                  >
-                    Kennisbank
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => switchTab("vragen")}
-                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
-                      activeTab === "vragen"
-                        ? "bg-app-accent text-white"
-                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
-                    }`}
-                  >
-                    AI-vragen
-                  </button>
-                </div>
-              ) : null
-            }
-          />
-
-          {stats && activeTab === "chunks" ? (
-            <div className="mt-5 flex flex-wrap items-center gap-3">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-app-border bg-app-surface px-3 py-1.5 text-xs font-semibold text-app-muted">
-                <span className="h-1.5 w-1.5 rounded-full bg-app-accent"></span>
-                {stats.curatedCount} kennisblokken
-              </span>
-            </div>
-          ) : null}
-        </Panel>
+      <PageContainer size="full" className="space-y-4">
+        <PageHeader
+          eyebrow={
+            scope === "athlete" ? "Atleten kennisbank" : "Coach kennisbank"
+          }
+          title="Kennisbank & AI-vragen"
+          description="Coachingkennis en antwoorden voor atleten-AI op één plek."
+          actions={
+            canViewAiVragen ? (
+              <div className="flex w-full gap-2 sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => switchTab("chunks")}
+                  className={`min-h-11 flex-1 rounded-xl px-4 text-sm font-semibold transition app-focus-ring sm:flex-none ${
+                    activeTab === "chunks"
+                      ? "bg-app-accent text-white"
+                      : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
+                  }`}
+                >
+                  Kennisbank
+                </button>
+                <button
+                  type="button"
+                  onClick={() => switchTab("vragen")}
+                  className={`min-h-11 flex-1 rounded-xl px-4 text-sm font-semibold transition app-focus-ring sm:flex-none ${
+                    activeTab === "vragen"
+                      ? "bg-app-accent text-white"
+                      : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
+                  }`}
+                >
+                  AI-vragen
+                </button>
+              </div>
+            ) : null
+          }
+        />
 
         {activeTab === "vragen" && canViewAiVragen ? (
-          <Panel className="!p-4 md:!p-6">
+          <Panel>
             <AiVragenPanel />
           </Panel>
         ) : (
           <>
-            <Panel className="!p-4 md:!p-6">
-              <SearchInput
-                value={query}
-                onChange={setQuery}
-                placeholder="Zoek titel, categorie, keywords of inhoud..."
-                variant="rounded"
-                className="w-full"
-              />
+            <Panel>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <SearchInput
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Zoek titel, categorie, keywords of inhoud..."
+                  variant="rounded"
+                  className="w-full min-w-0 flex-1"
+                />
+                {stats ? (
+                  <span className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-app-border bg-app-surface-muted px-3 py-1.5 text-xs font-semibold text-app-muted sm:self-auto">
+                    <span className="h-1.5 w-1.5 rounded-full bg-app-accent"></span>
+                    {stats.curatedCount} kennisblokken
+                  </span>
+                ) : null}
+              </div>
 
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="-mx-2 mt-4 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
                 {["Alle", ...categories].map((option) => (
                   <button
                     key={option}
                     type="button"
                     onClick={() => setCategory(option)}
-                    className={`rounded-full px-4 py-2 text-sm font-semibold transition app-focus-ring ${
+                    className={`min-h-11 shrink-0 rounded-full px-4 text-sm font-semibold transition app-focus-ring ${
                       category === option
                         ? "bg-app-accent text-white"
                         : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
@@ -207,11 +204,11 @@ function KennisbankPageInner() {
             </Panel>
 
             {loading ? (
-              <Panel className="!p-8">
+              <Panel>
                 <PageLoading label="Kennisbank laden…" />
               </Panel>
             ) : grouped.length === 0 ? (
-              <Panel className="!p-8 text-center">
+              <Panel className="py-10 text-center">
                 <p className="text-sm text-app-muted">
                   Geen resultaten voor deze zoekopdracht.
                 </p>
@@ -220,10 +217,10 @@ function KennisbankPageInner() {
               grouped.map((group) => (
                 <section key={group.category} className="space-y-3">
                   <div className="flex items-center justify-between px-1">
-                    <h2 className="text-lg font-semibold text-app-text">
+                    <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
                       {group.category}
                     </h2>
-                    <span className="text-sm text-app-subtle">{group.items.length}</span>
+                    <span className="rounded-full bg-app-surface-muted px-2 py-0.5 text-xs font-semibold text-app-muted">{group.items.length}</span>
                   </div>
 
                   <div className="space-y-3">
@@ -233,7 +230,7 @@ function KennisbankPageInner() {
                       return (
                         <article
                           key={chunk.id}
-                          className="ui-panel p-5"
+                          className="ui-panel transition-colors hover:border-app-border-strong"
                         >
                           <button
                             type="button"
@@ -296,8 +293,10 @@ export default function KennisbankPage() {
   return (
     <Suspense
       fallback={
-        <AppShell contentClassName="flex-1 p-8">
-          <PageLoading label="Kennisbank laden…" />
+        <AppShell>
+          <PageContainer size="full">
+            <PageLoading label="Kennisbank laden…" />
+          </PageContainer>
         </AppShell>
       }
     >

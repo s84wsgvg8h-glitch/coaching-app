@@ -42,7 +42,7 @@ export default function CoachInvitePanel({
   }
 
   return (
-    <div className={compact ? "space-y-3" : "app-card space-y-4"}>
+    <div className={compact ? "space-y-3" : "ui-panel space-y-4"}>
       {!compact ? (
         <div>
           <h2 className="text-lg font-bold text-app-text">Atleten uitnodigen</h2>

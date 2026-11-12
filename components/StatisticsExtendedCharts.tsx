@@ -91,7 +91,7 @@ export default function StatisticsExtendedCharts({
 
   return (
     <div className="space-y-6">
-      <div className="app-card">
+      <div className="ui-panel">
         <h2 className="text-lg font-bold text-app-text">Wilks / DOTS trend</h2>
         <p className="mt-1 text-sm text-app-muted">
           Gebaseerd op current maxes en lichaamsgewicht per week.
@@ -129,7 +129,7 @@ export default function StatisticsExtendedCharts({
         )}
       </div>
 
-      <div className="app-card">
+      <div className="ui-panel">
         <h2 className="text-lg font-bold text-app-text">Volume per lift</h2>
         <p className="mt-1 text-sm text-app-muted">
           Tonnage per week, uitgesplitst naar squat, bench en deadlift.

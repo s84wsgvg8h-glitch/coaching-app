@@ -224,7 +224,7 @@ export default function ChatBwPanel({
               className={`text-xs font-black ${
                 periodDelta !== null
                   ? periodDelta >= 0
-                    ? "text-green-600"
+                    ? "text-emerald-400"
                     : "text-app-destructive"
                   : "text-app-subtle"
               }`}
@@ -302,15 +302,15 @@ export default function ChatBwPanel({
                   type="monotone"
                   dataKey="value"
                   stroke="none"
-                  fill="#dbeafe"
-                  fillOpacity={0.55}
+                  fill="var(--app-accent)"
+                  fillOpacity={0.14}
                   isAnimationActive={false}
                 />
                 <Line
                   type="linear"
                   dataKey="value"
                   name="BW"
-                  stroke="#111827"
+                  stroke="var(--app-accent)"
                   strokeWidth={2}
                   dot={{ r: 3 }}
                   connectNulls

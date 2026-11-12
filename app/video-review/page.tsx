@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { PageContainer, PageHeader } from "@/components/ui/design-system";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import VideoAnnotator from "@/components/video-review/VideoAnnotator";
 import VideoReviewFeedbackComposer, {
   type FeedbackMediaItem,
@@ -219,7 +219,7 @@ function VideoReviewContent() {
           }
         />
 
-        <div className="mb-4 flex flex-wrap gap-2">
+        <div className="-mx-2 mb-4 flex gap-2 overflow-x-auto px-2 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0">
           {(
             [
               { id: "all", label: "Alles" },
@@ -231,10 +231,10 @@ function VideoReviewContent() {
               key={item.id}
               type="button"
               onClick={() => setStatusFilter(item.id)}
-              className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
+              className={`app-focus-ring min-h-11 shrink-0 rounded-xl px-4 text-sm font-semibold transition ${
                 statusFilter === item.id
                   ? "bg-app-accent text-white"
-                  : "bg-app-surface-muted text-app-text"
+                  : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
               }`}
             >
               {item.label}
@@ -243,26 +243,26 @@ function VideoReviewContent() {
         </div>
 
         {loading ? (
-          <div className="app-card mt-6">
-            <p className="text-sm text-app-muted">Laden...</p>
-          </div>
+          <Panel>
+            <p className="text-sm text-app-muted">Laden…</p>
+          </Panel>
         ) : filteredReviews.length === 0 ? (
-          <div className="app-card mt-6">
+          <Panel className="py-10 text-center">
             <p className="text-sm text-app-muted">Geen video reviews gevonden.</p>
-          </div>
+          </Panel>
         ) : (
-          <ul className="mt-6 space-y-4">
+          <ul className="space-y-4">
             {filteredReviews.map((review) => {
               const isEditing =
                 review.status === "pending" || editingReviewId === review.id;
               const media = review.feedback_media || [];
 
               return (
-                <li key={review.id} className="app-card">
-                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                <li key={review.id} className="ui-panel min-w-0">
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-app-muted">
                     <Link
                       href={`/athletes/${review.athlete_id}`}
-                      className="font-semibold text-app-text hover:text-brand-purple"
+                      className="app-focus-ring rounded font-semibold text-app-text transition-colors hover:text-app-accent"
                     >
                       {review.athlete_name}
                     </Link>
@@ -312,7 +312,7 @@ function VideoReviewContent() {
                   ) : (
                     <div className="mt-3 space-y-3">
                       {review.coach_feedback ? (
-                        <p className="text-sm text-app-text whitespace-pre-wrap">
+                        <p className="whitespace-pre-wrap text-sm text-app-text">
                           {review.coach_feedback}
                         </p>
                       ) : null}
@@ -340,8 +340,8 @@ function VideoReviewContent() {
                       ) : null}
 
                       {review.reference_video_url ? (
-                        <div className="rounded-xl border border-app-border p-3">
-                          <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
+                        <div className="rounded-xl border border-app-border bg-app-surface-muted p-3">
+                          <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                             Uitlegvideo
                           </p>
                           <p className="mt-1 text-sm font-semibold text-app-text">
@@ -358,7 +358,7 @@ function VideoReviewContent() {
                       <button
                         type="button"
                         onClick={() => setEditingReviewId(review.id)}
-                        className="app-btn-secondary text-sm"
+                        className="app-btn-secondary app-focus-ring min-h-11"
                       >
                         Feedback aanpassen
                       </button>
@@ -379,9 +379,11 @@ export default function VideoReviewPage() {
     <Suspense
       fallback={
         <AppShell>
-          <div className="app-card mt-6">
-            <p className="text-sm text-app-muted">Video review laden...</p>
-          </div>
+          <PageContainer size="full">
+            <Panel>
+              <p className="text-sm text-app-muted">Video review laden…</p>
+            </Panel>
+          </PageContainer>
         </AppShell>
       }
     >

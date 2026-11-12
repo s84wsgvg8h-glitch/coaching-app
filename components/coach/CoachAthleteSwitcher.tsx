@@ -16,12 +16,12 @@ export default function CoachAthleteSwitcher({
   if (athletes.length <= 1) return null;
 
   return (
-    <label className="text-sm font-semibold text-app-text">
+    <label className="block w-full text-sm font-semibold text-app-text sm:w-auto">
       <span className="sr-only">Wissel atleet</span>
       <select
         value={currentAthleteId}
         onChange={(event) => router.push(`/athletes/${event.target.value}`)}
-        className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold app-focus-ring"
+        className="min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover app-focus-ring sm:w-auto"
       >
         {athletes.map((athlete) => (
           <option key={athlete.id} value={athlete.id}>

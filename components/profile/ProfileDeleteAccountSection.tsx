@@ -67,7 +67,7 @@ export default function ProfileDeleteAccountSection() {
     <div className="rounded-2xl border border-red-500/25 bg-red-500/5 p-4 sm:p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
-          <p className="text-sm font-bold text-app-text">Account verwijderen</p>
+          <p className="text-sm font-semibold text-app-text">Account verwijderen</p>
           <p className="mt-1 text-xs leading-relaxed text-app-muted">
             Verwijder je account en alle bijbehorende gegevens permanent. Zie ook
             ons{" "}
@@ -80,7 +80,7 @@ export default function ProfileDeleteAccountSection() {
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="app-focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-2.5 text-sm font-semibold text-red-600 transition hover:bg-red-500/15 dark:text-red-300"
+          className="app-focus-ring inline-flex min-h-11 shrink-0 items-center justify-center rounded-xl border border-red-500/30 bg-red-500/15 px-4 py-2.5 text-sm font-semibold text-red-400 transition hover:bg-red-500/20"
         >
           {expanded ? "Annuleren" : "Account verwijderen"}
         </button>
@@ -108,7 +108,7 @@ export default function ProfileDeleteAccountSection() {
             />
           </label>
           {error ? (
-            <p className="text-xs font-medium text-red-600 dark:text-red-300">{error}</p>
+            <p className="text-xs font-medium text-red-400">{error}</p>
           ) : null}
           <button
             type="button"

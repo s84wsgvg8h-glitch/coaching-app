@@ -206,7 +206,7 @@ export default function IntakePage() {
           <button
             type="button"
             onClick={() => void logout()}
-            className="app-btn-secondary shrink-0 !px-3 !py-2 text-[12px]"
+            className="app-btn-secondary app-focus-ring min-h-[44px] shrink-0 text-[12px]"
           >
             Uitloggen
           </button>

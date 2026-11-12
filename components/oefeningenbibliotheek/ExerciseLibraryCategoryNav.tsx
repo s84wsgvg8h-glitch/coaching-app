@@ -233,10 +233,10 @@ export default function ExerciseLibraryCategoryNav({
           onDrop={(event) => handleDrop(event, key)}
           className={`group relative mb-0.5 flex items-center rounded-lg pr-1 transition ${
             isDropTarget
-              ? "bg-brand-purple/20 ring-1 ring-brand-purple/60"
+              ? "bg-app-accent/15 ring-1 ring-app-accent/60"
               : isActive
-                ? "bg-brand-purple text-white"
-                : "text-app-text hover:bg-app-surface-muted"
+                ? "bg-app-accent text-white"
+                : "text-app-text hover:bg-app-surface-hover"
           }`}
           style={{ paddingLeft: `${8 + depth * 12}px` }}
         >
@@ -260,7 +260,7 @@ export default function ExerciseLibraryCategoryNav({
           </button>
 
           {isCoach ? (
-            <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-hover:opacity-100">
+            <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100">
               <button
                 type="button"
                 title="Subcategorie toevoegen"
@@ -330,7 +330,7 @@ export default function ExerciseLibraryCategoryNav({
                 }
               }}
               placeholder="Naam"
-              className="min-w-0 flex-1 rounded-lg border border-app-border bg-app-surface px-2 py-1 text-[11px] text-app-text outline-none focus:ring-1 focus:ring-brand-purple"
+              className="min-w-0 flex-1 rounded-lg border border-app-border bg-app-surface px-2 py-1 text-[11px] text-app-text outline-none focus:ring-1 focus:ring-app-accent"
             />
             <button
               type="button"
@@ -342,7 +342,7 @@ export default function ExerciseLibraryCategoryNav({
                   addingFor.parentFilterKey,
                 )
               }
-              className="rounded-lg bg-brand-purple px-2 py-1 text-[11px] font-semibold text-white"
+              className="app-focus-ring rounded-lg bg-app-accent px-2 py-1 text-[11px] font-semibold text-white"
             >
               OK
             </button>
@@ -376,12 +376,12 @@ export default function ExerciseLibraryCategoryNav({
                   }
                 }}
                 placeholder="Nieuwe categorie"
-                className="min-w-0 flex-1 rounded-lg border border-app-border bg-app-surface px-2 py-1 text-[11px] text-app-text outline-none focus:ring-1 focus:ring-brand-purple"
+                className="min-w-0 flex-1 rounded-lg border border-app-border bg-app-surface px-2 py-1 text-[11px] text-app-text outline-none focus:ring-1 focus:ring-app-accent"
               />
               <button
                 type="button"
                 onClick={() => void submitNewCategory(null)}
-                className="rounded-lg bg-brand-purple px-2 py-1 text-[11px] font-semibold text-white"
+                className="app-focus-ring rounded-lg bg-app-accent px-2 py-1 text-[11px] font-semibold text-white"
               >
                 OK
               </button>
@@ -394,7 +394,7 @@ export default function ExerciseLibraryCategoryNav({
                 setAddingFor("root");
                 setNewName("");
               }}
-              className="px-1 text-lg font-normal leading-none text-app-muted transition hover:text-brand-purple"
+              className="app-focus-ring rounded px-1 text-lg font-normal leading-none text-app-muted transition hover:text-app-accent"
             >
               +
             </button>
@@ -417,12 +417,12 @@ export default function ExerciseLibraryCategoryNav({
         <button
           type="button"
           onClick={() => onFilterChange("Alle")}
-          className={`mb-1 block w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold ${
+          className={`app-focus-ring mb-1 block w-full rounded-lg px-2 py-1.5 text-left text-xs font-semibold transition ${
             dragOverKey === "Alle" && draggingItemId
-              ? "bg-brand-purple/20 ring-1 ring-brand-purple/60"
+              ? "bg-app-accent/15 ring-1 ring-app-accent/60"
               : categoryFilter === "Alle"
-                ? "bg-brand-purple text-white"
-                : "text-app-text hover:bg-app-surface-muted"
+                ? "bg-app-accent text-white"
+                : "text-app-text hover:bg-app-surface-hover"
           }`}
         >
           Alle

@@ -3,7 +3,7 @@ export const athletesCrmMain =
   "athletes-crm-main relative min-w-0 flex-1 pb-6 lg:pb-8";
 
 export const athletesCrmInner =
-  "mx-auto w-full max-w-none px-3 py-4 sm:px-5 sm:py-6 lg:px-6 lg:py-7 xl:px-8";
+  "athletes-crm-inner px-2 pb-4 pt-3 md:px-3 md:pt-4 lg:px-4";
 
 export const athletesGlassCard = "athletes-glass-card";
 

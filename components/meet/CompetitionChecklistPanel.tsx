@@ -114,7 +114,7 @@ export default function CompetitionChecklistPanel({
                   type="checkbox"
                   checked={Boolean(checkedItems[item.id])}
                   onChange={() => toggleItem(item.id)}
-                  className="h-4 w-4 accent-brand-purple"
+                  className="h-4 w-4 accent-app-accent"
                 />
                 <span className="text-sm text-app-text">{item.label}</span>
               </label>

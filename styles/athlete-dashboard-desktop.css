@@ -264,7 +264,7 @@
   }
 
   .athlete-inbox-open-btn:hover {
-    border-color: rgba(59, 130, 246, 0.35);
+    border-color: rgba(var(--app-accent-rgb), 0.35);
     background: var(--app-accent-muted);
   }
 
@@ -307,7 +307,7 @@
   }
 
   .athlete-dashboard-app-pill:hover {
-    border-color: rgba(59, 130, 246, 0.28);
+    border-color: rgba(var(--app-accent-rgb), 0.28);
     background: var(--app-accent-muted);
   }
 

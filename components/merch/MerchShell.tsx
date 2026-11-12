@@ -20,7 +20,7 @@ export default function MerchShell({
   children,
 }: MerchShellProps) {
   return (
-    <div className="merch-shop mx-auto w-full max-w-[1660px]">
+    <div className="merch-shop w-full min-w-0">
       <div className="flex flex-col gap-4 lg:flex-row lg:gap-6">
         <MerchSidebar
           activeTab={activeTab}

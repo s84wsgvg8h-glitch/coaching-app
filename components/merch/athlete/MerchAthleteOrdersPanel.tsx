@@ -20,7 +20,7 @@ export default function MerchAthleteOrdersPanel({
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className="h-28 animate-pulse rounded-2xl border border-app-border/60 bg-app-surface/40"
+            className="h-28 animate-pulse rounded-2xl border border-app-border bg-app-surface"
           />
         ))}
       </div>
@@ -41,7 +41,7 @@ export default function MerchAthleteOrdersPanel({
       {orders.map((order) => (
         <article
           key={order.id}
-          className="flex gap-4 rounded-2xl border border-app-border/70 bg-app-surface/40 p-4"
+          className="flex gap-4 rounded-2xl border border-app-border bg-app-surface p-4"
         >
           {order.item_image_url ? (
             <img

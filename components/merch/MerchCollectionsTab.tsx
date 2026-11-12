@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { Archive, Pencil, Plus } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/design-system";
 import { formatMerchPrice, type MerchItem } from "@/lib/merch";
 import {
   createMerchCollectionId,
@@ -130,31 +131,27 @@ export default function MerchCollectionsTab({
 
   return (
     <>
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-app-text">
-            Collecties
-          </h1>
-          <p className="mt-1 text-[14px] text-app-muted">
-            Organiseer producten in thematische collecties.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#3B82F6] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#2563EB]"
-        >
-          <Plus className="h-4 w-4" />
-          Collectie maken
-        </button>
-      </header>
+      <PageHeader
+        title="Collecties"
+        description="Organiseer producten in thematische collecties."
+        actions={
+          <button
+            type="button"
+            onClick={openCreate}
+            className="app-btn-primary app-focus-ring min-h-[44px] w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Collectie maken
+          </button>
+        }
+      />
 
       {loading ? (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {[1, 2, 3].map((key) => (
             <div
               key={key}
-              className="h-48 animate-pulse rounded-2xl border border-app-border/50 bg-[#161B22]/50"
+              className="h-48 animate-pulse rounded-2xl border border-app-border bg-app-surface"
             />
           ))}
         </div>
@@ -169,7 +166,7 @@ export default function MerchCollectionsTab({
           }
         />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {collections.map((collection) => {
             const metrics = collectionStats[collection.name] || {
               productCount: 0,
@@ -178,9 +175,9 @@ export default function MerchCollectionsTab({
             return (
               <article
                 key={collection.id}
-                className="overflow-hidden rounded-2xl border border-app-border/80 bg-[#161B22]/80"
+                className="overflow-hidden rounded-2xl border border-app-border bg-app-surface"
               >
-                <div className="flex aspect-[16/7] items-center justify-center bg-gradient-to-br from-[#1a1f2e] to-[#111827]">
+                <div className="flex aspect-[16/7] items-center justify-center bg-app-surface-muted">
                   {collection.coverUrl ? (
                     <img
                       src={collection.coverUrl}
@@ -204,7 +201,7 @@ export default function MerchCollectionsTab({
                     <span
                       className={`rounded-full px-2 py-0.5 text-[10px] font-semibold ${
                         collection.visible
-                          ? "bg-emerald-500/15 text-emerald-300"
+                          ? "bg-emerald-500/15 text-emerald-400"
                           : "bg-app-surface-muted text-app-muted"
                       }`}
                     >
@@ -220,7 +217,7 @@ export default function MerchCollectionsTab({
                   <button
                     type="button"
                     onClick={() => openEdit(collection)}
-                    className="mt-3 inline-flex items-center gap-1.5 rounded-xl border border-app-border px-3 py-2 text-[12px] text-app-text hover:bg-app-surface-muted"
+                    className="app-btn-secondary app-focus-ring mt-3 min-h-[44px] text-[12px]"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                     Bewerken
@@ -233,8 +230,8 @@ export default function MerchCollectionsTab({
       )}
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-[#11161D] p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-app-border bg-app-surface-elevated p-5 shadow-2xl">
             <h2 className="text-lg font-semibold text-app-text">
               {editing ? "Collectie bewerken" : "Collectie maken"}
             </h2>
@@ -284,6 +281,7 @@ export default function MerchCollectionsTab({
               <label className="flex items-center gap-2 text-[13px] text-app-text">
                 <input
                   type="checkbox"
+                  className="h-4 w-4 accent-app-accent"
                   checked={draft.visible}
                   onChange={(e) =>
                     setDraft((current) => ({
@@ -295,15 +293,15 @@ export default function MerchCollectionsTab({
                 Zichtbaar voor atleten
               </label>
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="app-btn-secondary"
+                className="app-btn-secondary app-focus-ring min-h-[44px]"
               >
                 Annuleren
               </button>
-              <button type="button" onClick={handleSave} className="app-btn-primary">
+              <button type="button" onClick={handleSave} className="app-btn-primary app-focus-ring min-h-[44px]">
                 Opslaan
               </button>
             </div>

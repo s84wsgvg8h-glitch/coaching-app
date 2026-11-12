@@ -79,7 +79,7 @@ function statusTextClass(status: string | null | undefined) {
       return "text-emerald-400";
     case "past_due":
     case "unpaid":
-      return "text-rose-400";
+      return "text-red-400";
     case "canceled":
     case "incomplete":
     case "paused":
@@ -579,7 +579,7 @@ function BetalingenPageContent() {
     <AppShell>
       <PageContainer size="full">
         {message ? (
-          <Panel className="mb-4 border-brand-purple/30 bg-brand-purple/10 text-[13px] text-app-text">
+          <Panel className="mb-4 border-app-accent/30 bg-app-accent/10 text-[13px] text-app-text">
             {message}
           </Panel>
         ) : null}
@@ -655,7 +655,7 @@ function BetalingenPageContent() {
                     <div className="table-compact-wrap hidden overflow-x-auto md:block">
                       <table className="min-w-full text-center text-[11px]">
                         <thead>
-                          <tr className="border-b border-app-border/60">
+                          <tr className="border-b border-app-border">
                             <th className="w-11 px-1 py-2.5 text-center align-middle sm:px-2">
                               <SearchInput
                                 value={search}
@@ -778,7 +778,7 @@ function PaymentAthleteRow({
   const isOpening = Boolean(subscriptionId && openingPortal === subscriptionId);
 
   return (
-    <tr className="h-14 border-b border-app-border/40 last:border-b-0">
+    <tr className="h-14 border-b border-app-border last:border-b-0">
       <td className="w-11 px-1 py-0 align-middle sm:px-2" aria-hidden="true" />
       <td className="px-2 py-0 text-center align-middle text-[11px] sm:px-3">
         <p className="font-medium text-app-text">{row.athleteName}</p>
@@ -840,7 +840,7 @@ function PaymentAthleteCard({
   const isOpening = Boolean(subscriptionId && openingPortal === subscriptionId);
 
   return (
-    <article className="border-b border-app-border/50 py-3.5 last:border-b-0">
+    <article className="border-b border-app-border py-3.5 last:border-b-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[14px] font-semibold text-app-text">

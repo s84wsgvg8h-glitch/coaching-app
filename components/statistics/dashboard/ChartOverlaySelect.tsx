@@ -22,7 +22,7 @@ export default function ChartOverlaySelect({
     <select
       value={value}
       onChange={(event) => onChange(event.target.value as ChartOverlayMetric)}
-      className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+      className="app-focus-ring min-h-11 min-w-0 max-w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:min-h-9 md:text-sm"
       aria-label="Overlay grafiek"
     >
       {options.map((option) => (

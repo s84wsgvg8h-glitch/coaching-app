@@ -218,7 +218,7 @@ export default function OrganisationAthletesPanel({
           </div>
         </div>
         <div className="organisatie-stat-card">
-          <div className="organisatie-stat-icon organisatie-stat-icon--purple">
+          <div className="organisatie-stat-icon bg-emerald-500/15 text-emerald-400">
             <Building2 className="h-4 w-4" strokeWidth={1.75} />
           </div>
           <div>
@@ -244,7 +244,7 @@ export default function OrganisationAthletesPanel({
         </div>
       </div>
 
-      <section className="organisatie-panel premium-card glass-accent-card overflow-hidden">
+      <section className="organisatie-panel ui-panel overflow-hidden !p-0">
         <div className="organisatie-toolbar">
           <div className="min-w-0 flex-1 sm:max-w-sm">
             <SearchInput
@@ -258,7 +258,7 @@ export default function OrganisationAthletesPanel({
           <button
             type="button"
             onClick={() => setShowAddForm((open) => !open)}
-            className="organisatie-add-btn app-focus-ring"
+            className={`${showAddForm ? "app-btn-secondary" : "app-btn-primary"} app-focus-ring min-h-[44px] w-full sm:w-auto`}
           >
             {showAddForm ? (
               <>
@@ -348,7 +348,7 @@ export default function OrganisationAthletesPanel({
               <button
                 type="submit"
                 disabled={creating || !newMember.fullName.trim()}
-                className="organisatie-add-btn organisatie-add-btn--submit disabled:opacity-50"
+                className="app-btn-primary app-focus-ring organisatie-add-btn--submit min-h-[44px] disabled:opacity-50"
               >
                 {creating ? (
                   <>
@@ -400,11 +400,11 @@ export default function OrganisationAthletesPanel({
                             aria-label={`Naam ${row.fullName}`}
                           />
                           {row.isAppAthlete ? (
-                            <span className="organisatie-tag organisatie-tag--app">
+                            <span className="organisatie-tag border border-app-accent/25 bg-app-accent/15 text-app-accent">
                               Coaching-atleet
                             </span>
                           ) : (
-                            <span className="organisatie-tag organisatie-tag--club">
+                            <span className="organisatie-tag border border-emerald-500/25 bg-emerald-500/15 text-emerald-400">
                               Vereniging
                             </span>
                           )}
@@ -431,8 +431,8 @@ export default function OrganisationAthletesPanel({
                           }
                           onBlur={() => handleBlur(row)}
                           className="organisatie-input organisatie-input--cell min-w-[120px]"
-                  placeholder="-"
-                  aria-label={`Lidnummer ${row.fullName}`}
+                          placeholder="-"
+                          aria-label={`Lidnummer ${row.fullName}`}
                         />
                       </td>
                       <td className="text-right">

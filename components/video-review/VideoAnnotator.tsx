@@ -88,15 +88,20 @@ export default function VideoAnnotator({ videoUrl, className = "" }: VideoAnnota
             key={c}
             type="button"
             onClick={() => setColor(c)}
-            className={`h-7 w-7 rounded-full border-2 ${color === c ? "border-black" : "border-transparent"}`}
-            style={{ backgroundColor: c }}
+            className="app-focus-ring flex h-11 w-11 items-center justify-center rounded-full"
+            aria-pressed={color === c}
             aria-label={`Kleur ${c}`}
-          />
+          >
+            <span
+              className={`h-7 w-7 rounded-full border-2 ${color === c ? "border-app-text ring-2 ring-app-accent/40" : "border-transparent"}`}
+              style={{ backgroundColor: c }}
+            />
+          </button>
         ))}
         <button
           type="button"
           onClick={clearCanvas}
-          className="rounded-lg border border-app-border px-3 py-1 text-xs font-semibold"
+          className="app-focus-ring min-h-11 rounded-xl border border-app-border bg-app-surface px-4 text-xs font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
         >
           Tekening wissen
         </button>

@@ -141,7 +141,7 @@ export default function AvatarCropModal({
 
   return (
     <div className="fixed inset-0 z-[80] flex items-center justify-center bg-app-overlay p-4">
-      <div className="app-card w-full max-w-md p-6">
+      <div className="ui-panel w-full max-w-md p-6">
         <h2 className="text-lg font-bold text-app-text">Profielfoto bijsnijden</h2>
         <p className="mt-1 text-sm text-app-muted">
           Sleep en zoom om je foto te positioneren.

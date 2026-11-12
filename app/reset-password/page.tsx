@@ -52,7 +52,7 @@ export default function ResetPasswordRequestPage() {
         footer={
           <Link
             href="/login"
-            className="block text-center text-[14px] font-medium text-app-accent hover:underline"
+            className="app-focus-ring flex min-h-[44px] items-center justify-center rounded-xl text-[14px] font-medium text-app-accent hover:underline"
           >
             Terug naar inloggen
           </Link>
@@ -72,7 +72,7 @@ export default function ResetPasswordRequestPage() {
       footer={
         <Link
           href="/login"
-          className="block text-center text-[14px] font-medium text-app-accent hover:underline"
+          className="app-focus-ring flex min-h-[44px] items-center justify-center rounded-xl text-[14px] font-medium text-app-accent hover:underline"
         >
           Terug naar inloggen
         </Link>
@@ -97,7 +97,7 @@ export default function ResetPasswordRequestPage() {
       ) : null}
       <button
         type="button"
-        className="app-btn-primary min-h-[44px] w-full"
+        className="app-btn-primary app-focus-ring min-h-[44px] w-full"
         disabled={loading}
         onClick={() => void handleSubmit()}
       >

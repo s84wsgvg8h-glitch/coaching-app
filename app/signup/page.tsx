@@ -238,7 +238,7 @@ function SignupForm() {
         type="button"
         onClick={() => void signUp()}
         disabled={loading}
-        className="app-btn-primary w-full py-3 disabled:opacity-60"
+        className="app-btn-primary app-focus-ring min-h-[44px] w-full disabled:opacity-60"
       >
         {loading
           ? "Bezig..."

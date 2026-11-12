@@ -38,15 +38,15 @@ export default function StatsFilterBar({
 }: StatsFilterBarProps) {
   if (compact) {
     return (
-      <div className="flex flex-wrap items-end justify-end gap-3">
-        <div className="min-w-[160px]">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">
+      <div className="grid w-full grid-cols-1 gap-2 min-[400px]:grid-cols-2 sm:flex sm:w-auto sm:flex-wrap sm:items-end sm:justify-end sm:gap-3">
+        <div className="min-w-0 sm:min-w-[160px]">
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             Atleet
           </p>
           <select
             value={selectedAthleteId}
             onChange={(event) => onAthleteChange(event.target.value)}
-            className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+            className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:text-sm"
           >
             {athleteOptions.map((athlete) => (
               <option key={athlete.id} value={athlete.id}>
@@ -56,8 +56,8 @@ export default function StatsFilterBar({
           </select>
         </div>
 
-        <div className="min-w-[160px]">
-          <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">
+        <div className="min-w-0 sm:min-w-[160px]">
+          <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             Periode
           </p>
           <select
@@ -68,7 +68,7 @@ export default function StatsFilterBar({
                 preset: event.target.value as StatisticsPeriodFilter["preset"],
               })
             }
-            className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+            className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:text-sm"
           >
             {CHART_BLOCK_FILTER_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -82,8 +82,8 @@ export default function StatsFilterBar({
 
         {period.preset === "custom" ? (
           <>
-            <div className="min-w-[140px]">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">
+            <div className="min-w-0 sm:min-w-[140px]">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                 Van block
               </p>
               <select
@@ -91,7 +91,7 @@ export default function StatsFilterBar({
                 onChange={(event) =>
                   onPeriodChange({ ...period, fromBlockId: event.target.value })
                 }
-                className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:text-sm"
               >
                 {blockMetas.map((block) => (
                   <option key={block.blockId} value={block.blockId}>
@@ -100,8 +100,8 @@ export default function StatsFilterBar({
                 ))}
               </select>
             </div>
-            <div className="min-w-[140px]">
-              <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-app-muted">
+            <div className="min-w-0 sm:min-w-[140px]">
+              <p className="mb-1 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                 Tot block
               </p>
               <select
@@ -109,7 +109,7 @@ export default function StatsFilterBar({
                 onChange={(event) =>
                   onPeriodChange({ ...period, toBlockId: event.target.value })
                 }
-                className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:text-sm"
               >
                 {blockMetas.map((block) => (
                   <option key={block.blockId} value={block.blockId}>
@@ -125,7 +125,7 @@ export default function StatsFilterBar({
   }
 
   return (
-    <div className="mb-6 flex justify-end">
+    <div className="mb-4 flex justify-end">
       <StatisticsChartPicker
         instances={chartInstances}
         exerciseNames={exerciseNames}

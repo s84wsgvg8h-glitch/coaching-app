@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { createPortal } from "react-dom";
-import AppSidebar from "@/components/AppSidebar";
+import AppShell from "@/components/AppShell";
+import { PageContainer } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { loadProgramHierarchy } from "@/lib/programData";
 import { loadAthleteSbdVolumeData, type WeeklyVolumeRow } from "@/lib/chatVolumeData";
@@ -365,7 +366,7 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
       {loading ? (
         <div className="flex min-h-[50vh] items-center justify-center">
           <div
-            className="h-8 w-8 animate-spin rounded-full border-2 border-brand-purple border-t-transparent"
+            className="h-8 w-8 animate-spin rounded-full border-2 border-app-accent border-t-transparent"
             role="status"
             aria-label="Statistieken laden"
           />
@@ -394,7 +395,7 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
               {extraChartInstances.length > 0 ? (
                 <div className="space-y-4">
                   <div>
-                    <h2 className="text-[15px] font-semibold text-app-text">
+                    <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
                       Extra grafieken
                     </h2>
                     <p className="mt-1 text-sm text-app-muted">
@@ -425,9 +426,8 @@ export default function StatisticsView({ embedded = false }: { embedded?: boolea
   }
 
   return (
-    <main className="min-h-[100dvh] bg-app-bg">
-      <section className="flex-1 p-8 pb-24">{content}</section>
-      <AppSidebar />
-    </main>
+    <AppShell>
+      <PageContainer size="full">{content}</PageContainer>
+    </AppShell>
   );
 }

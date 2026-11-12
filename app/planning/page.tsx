@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import { PageContainer, PageHeader } from "@/components/ui/design-system";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import ProgramPlanningCalendar from "@/components/planning/ProgramPlanningCalendar";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -86,52 +86,54 @@ function PlanningPageContent() {
         <PageHeader
           title="Planning"
           description="Kalender met programmablokken, weken en wedstrijden."
+          actions={
+            !loading && isCoachLikeRole(role) ? (
+              <label className="flex w-full flex-col gap-1 sm:w-64">
+                <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
+                  Atleet
+                </span>
+                <select
+                  value={selectedAthleteId}
+                  onChange={(event) => setSelectedAthleteId(event.target.value)}
+                  className="min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
+                >
+                  {athletes.length === 0 ? (
+                    <option value="">Geen atleten</option>
+                  ) : (
+                    athletes.map((athlete) => (
+                      <option key={athlete.id} value={athlete.id}>
+                        {athlete.full_name || "Atleet"}
+                      </option>
+                    ))
+                  )}
+                </select>
+              </label>
+            ) : undefined
+          }
         />
 
         {loading ? (
-          <div className="app-card mt-6">
+          <Panel>
             <p className="text-sm text-app-muted">Laden...</p>
-          </div>
+          </Panel>
         ) : (
           <>
-            {isCoachLikeRole(role) ? (
-              <div className="app-card mt-6">
-                <label className="text-sm font-semibold text-app-text">
-                  Atleet
-                  <select
-                    value={selectedAthleteId}
-                    onChange={(event) => setSelectedAthleteId(event.target.value)}
-                    className="mt-2 w-full max-w-md rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
-                  >
-                    {athletes.length === 0 ? (
-                      <option value="">Geen atleten</option>
-                    ) : (
-                      athletes.map((athlete) => (
-                        <option key={athlete.id} value={athlete.id}>
-                          {athlete.full_name || "Atleet"}
-                        </option>
-                      ))
-                    )}
-                  </select>
-                </label>
-              </div>
-            ) : null}
 
             {selectedAthleteId ? (
-              <div className="app-card mt-6">
+              <Panel className="min-w-0">
                 <ProgramPlanningCalendar
                   athleteId={selectedAthleteId}
                   athleteName={athleteName}
                   canEditNotes={isCoachLikeRole(role)}
                   coachId={isCoachLikeRole(role) ? userId : undefined}
                 />
-              </div>
+              </Panel>
             ) : (
-              <div className="app-card mt-6">
+              <Panel>
                 <p className="text-sm text-app-muted">
                   Selecteer een atleet om de planning te bekijken.
                 </p>
-              </div>
+              </Panel>
             )}
           </>
         )}
@@ -145,9 +147,11 @@ export default function PlanningPage() {
     <Suspense
       fallback={
         <AppShell>
-          <div className="app-card mt-6">
-            <p className="text-sm text-app-muted">Planning laden...</p>
-          </div>
+          <PageContainer size="full">
+            <Panel>
+              <p className="text-sm text-app-muted">Planning laden...</p>
+            </Panel>
+          </PageContainer>
         </AppShell>
       }
     >

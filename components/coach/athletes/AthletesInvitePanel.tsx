@@ -81,26 +81,26 @@ export default function AthletesInvitePanel({
     <>
       <button
         type="button"
-        className="fixed inset-0 z-40 bg-black/70 backdrop-blur-sm"
+        className="fixed inset-0 z-40 bg-app-bg/80 backdrop-blur-sm"
         aria-label="Sluiten"
         onClick={onClose}
       />
       <div
         ref={panelRef}
-        className="athletes-invite-modal fixed left-1/2 top-[10%] z-50 flex max-h-[min(82dvh,760px)] w-[min(calc(100vw-1.5rem),560px)] -translate-x-1/2 flex-col overflow-hidden"
+        className="athletes-invite-modal fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-50 flex max-h-[min(90dvh,760px)] sm:top-[10%] sm:max-h-[min(82dvh,760px)] w-[min(calc(100vw-1.5rem),560px)] -translate-x-1/2 flex-col overflow-hidden"
         role="dialog"
         aria-modal="true"
         aria-labelledby="athletes-invite-title"
         onClick={stopRowNav}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-white/10 px-5 py-4">
+        <div className="flex items-start justify-between gap-3 border-b border-app-border px-4 py-4 sm:px-5">
           <div className="min-w-0">
             <div className="flex flex-wrap items-center gap-2">
               <h2 id="athletes-invite-title" className="text-[19px] font-semibold text-app-text">
                 Atleten uitnodigen
               </h2>
               {pendingProfiles.length > 0 ? (
-                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-300 ring-1 ring-amber-500/30">
+                <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-400">
                   {pendingProfiles.length} wachtend
                 </span>
               ) : null}
@@ -112,21 +112,21 @@ export default function AthletesInvitePanel({
           <button
             type="button"
             onClick={onClose}
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-surface text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring"
+            className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-app-border bg-app-surface text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring"
             aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
 
-        <div className="overflow-y-auto px-5 py-5">
+        <div className="overflow-y-auto overscroll-contain px-4 pb-[calc(1.25rem+env(safe-area-inset-bottom))] pt-5 sm:px-5">
           {primaryUrl ? (
-            <div className="mb-5 rounded-2xl border border-app-accent/30 bg-app-accent/[0.08] p-4 ring-1 ring-app-accent/20">
+            <div className="mb-5 rounded-2xl border border-app-accent/30 bg-app-accent/10 p-4">
               <div className="mb-3 flex items-center gap-2 text-app-accent">
                 <Link2 className="h-4 w-4 shrink-0" />
                 <p className="text-[12px] font-semibold uppercase tracking-wide">Actieve link</p>
               </div>
-              <p className="break-all rounded-xl border border-white/10 bg-black/30 px-3 py-2.5 font-mono text-[12px] leading-relaxed text-app-text">
+              <p className="break-all rounded-xl border border-app-border bg-app-surface-muted px-3 py-2.5 font-mono text-[12px] leading-relaxed text-app-text">
                 {primaryUrl}
               </p>
               {primaryLink ? (
@@ -138,7 +138,7 @@ export default function AthletesInvitePanel({
                 <button
                   type="button"
                   onClick={() => primaryLink && onCopyLink(primaryLink.token)}
-                  className="athletes-pill-btn-primary inline-flex items-center gap-2 !px-4 !py-2 text-[13px]"
+                  className="athletes-pill-btn-primary inline-flex min-h-[44px] items-center gap-2 rounded-full !px-4 !py-2 text-[13px] font-semibold text-white app-focus-ring"
                 >
                   <Copy className="h-4 w-4" />
                   {primaryLink && copiedToken === primaryLink.token ? "Gekopieerd!" : "Kopieer link"}
@@ -146,7 +146,7 @@ export default function AthletesInvitePanel({
                 <button
                   type="button"
                   onClick={() => shareWhatsApp(primaryUrl)}
-                  className="inline-flex items-center gap-2 rounded-full border border-emerald-500/35 bg-emerald-500/10 px-4 py-2 text-[13px] font-medium text-emerald-300 transition hover:bg-emerald-500/15 app-focus-ring"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-500/15 px-4 py-2 text-[13px] font-medium text-emerald-400 transition hover:bg-emerald-500/20 app-focus-ring"
                 >
                   <MessageCircle className="h-4 w-4" />
                   WhatsApp
@@ -154,17 +154,17 @@ export default function AthletesInvitePanel({
               </div>
             </div>
           ) : (
-            <div className="mb-5 rounded-2xl border border-dashed border-app-accent/35 bg-app-accent/[0.06] p-5 text-center">
+            <div className="mb-5 rounded-2xl border border-dashed border-app-accent/35 bg-app-accent/5 p-5 text-center">
               <p className="text-[14px] font-medium text-app-text">Nog geen uitnodigingslink</p>
               <p className="mt-1 text-[13px] text-app-muted">
                 Maak een link om atleten direct te laten aanmelden.
               </p>
-              <label className="mt-4 flex cursor-pointer items-center justify-center gap-2.5 text-left text-[13px] text-app-text">
+              <label className="mt-4 flex min-h-[44px] cursor-pointer items-center justify-center gap-2.5 text-left text-[13px] text-app-text">
                 <input
                   type="checkbox"
                   checked={requiresIntake}
                   onChange={(event) => setRequiresIntake(event.target.checked)}
-                  className="h-4 w-4 rounded border-white/20 bg-transparent accent-[var(--app-accent)]"
+                  className="h-4 w-4 rounded border-app-border bg-transparent accent-[var(--app-accent)]"
                 />
                 <span>Atleet moet eerst het intakeformulier invullen</span>
               </label>
@@ -172,7 +172,7 @@ export default function AthletesInvitePanel({
                 type="button"
                 onClick={() => onCreateLink(requiresIntake)}
                 disabled={creatingLink}
-                className="athletes-pill-btn-primary mt-4 inline-flex items-center gap-2 disabled:opacity-60"
+                className="athletes-pill-btn-primary mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-full px-4 py-2 text-[13px] font-semibold text-white app-focus-ring disabled:opacity-60"
               >
                 <Plus className="h-4 w-4" />
                 {creatingLink ? "Link maken…" : "Maak uitnodigingslink"}
@@ -180,7 +180,7 @@ export default function AthletesInvitePanel({
             </div>
           )}
 
-          <div className="mb-5 grid gap-2 sm:grid-cols-3">
+          <div className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {[
               { icon: Link2, text: "Deel de link met je atleet" },
               { icon: ShieldCheck, text: "Atleet vult intake in" },
@@ -217,14 +217,14 @@ export default function AthletesInvitePanel({
                         <button
                           type="button"
                           onClick={() => onCopyLink(link.token)}
-                          className="app-btn-secondary !rounded-full !px-3 !py-1 text-[11px]"
+                          className="app-btn-secondary min-h-[44px] !rounded-full !px-4 !py-1 text-[12px] md:min-h-[32px]"
                         >
                           {copiedToken === link.token ? "Gekopieerd" : "Kopieer"}
                         </button>
                         <button
                           type="button"
                           onClick={() => onRemoveLink(link.id)}
-                          className="app-btn-secondary !rounded-full !px-3 !py-1 text-[11px] !text-app-destructive"
+                          className="app-btn-secondary min-h-[44px] !rounded-full !px-4 !py-1 text-[12px] !text-red-400 md:min-h-[32px]"
                         >
                           Deactiveer
                         </button>
@@ -243,7 +243,7 @@ export default function AthletesInvitePanel({
                   type="checkbox"
                   checked={requiresIntake}
                   onChange={(event) => setRequiresIntake(event.target.checked)}
-                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-transparent accent-[var(--app-accent)]"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-app-border bg-transparent accent-[var(--app-accent)]"
                 />
                 <span>
                   Intakeformulier verplicht voor nieuwe atleten via een nieuwe link
@@ -253,7 +253,7 @@ export default function AthletesInvitePanel({
                 type="button"
                 onClick={() => onCreateLink(requiresIntake)}
                 disabled={creatingLink}
-                className="inline-flex items-center gap-1.5 text-[12px] font-medium text-app-accent transition hover:text-app-text disabled:opacity-50 app-focus-ring"
+                className="inline-flex min-h-[44px] items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-app-accent transition hover:text-app-text disabled:opacity-50 app-focus-ring"
               >
                 <Plus className="h-3.5 w-3.5" />
                 {creatingLink ? "Bezig…" : "Nieuwe link aanmaken"}
@@ -262,7 +262,7 @@ export default function AthletesInvitePanel({
           ) : null}
 
           {pendingProfiles.length > 0 ? (
-            <section className="overflow-hidden rounded-2xl border border-amber-500/25 bg-amber-500/[0.04]">
+            <section className="overflow-hidden rounded-2xl border border-amber-500/25 bg-amber-500/5">
               <div className="border-b border-amber-500/20 px-4 py-3">
                 <h3 className="text-[14px] font-semibold text-app-text">
                   Openstaande aanmeldingen
@@ -279,14 +279,14 @@ export default function AthletesInvitePanel({
                     <button
                       type="button"
                       onClick={() => onAcceptPending(profile.id)}
-                      className="app-btn-primary !rounded-full !px-3 !py-1.5 text-[12px]"
+                      className="app-btn-primary min-h-[44px] !rounded-full !px-4 !py-1.5 text-[12px] md:min-h-[36px]"
                     >
                       Accepteren
                     </button>
                     <button
                       type="button"
                       onClick={() => onRejectPending(profile.id)}
-                      className="app-btn-secondary !rounded-full !px-3 !py-1.5 text-[12px] !text-app-destructive"
+                      className="app-btn-secondary min-h-[44px] !rounded-full !px-4 !py-1.5 text-[12px] !text-red-400 md:min-h-[36px]"
                     >
                       Afwijzen
                     </button>

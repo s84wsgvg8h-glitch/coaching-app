@@ -172,7 +172,7 @@ function AthleteAgenda({
           </div>
           <Link
             href="/meet-week"
-            className="text-[13px] font-medium text-[#3b82f6] hover:underline"
+            className="app-focus-ring inline-flex min-h-[44px] items-center text-[13px] font-medium text-app-accent hover:underline"
           >
             Kalender
           </Link>
@@ -228,7 +228,7 @@ function AthleteAgenda({
         <h2 className="text-[15px] font-semibold text-app-text">Agenda</h2>
         <Link
           href="/wedstrijd-kalender"
-          className="text-[13px] font-medium text-app-accent hover:underline"
+          className="app-focus-ring inline-flex min-h-[44px] items-center text-[13px] font-medium text-app-accent hover:underline"
         >
           Kalender
         </Link>

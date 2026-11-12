@@ -80,8 +80,8 @@ export default function OrderDetailDrawer({
         aria-label="Drawer sluiten"
         onClick={onClose}
       />
-      <aside className="flex h-full w-full max-w-md flex-col border-l border-app-border bg-[#11161D] shadow-2xl">
-        <div className="flex items-center justify-between border-b border-app-border/60 px-5 py-4">
+      <aside className="flex h-full w-full max-w-md flex-col border-l border-app-border bg-app-surface-elevated pt-[env(safe-area-inset-top)] shadow-2xl">
+        <div className="flex items-center justify-between border-b border-app-border px-5 py-4">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-wide text-app-subtle">
               Order
@@ -93,7 +93,8 @@ export default function OrderDetailDrawer({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-app-border p-2 text-app-muted hover:bg-app-surface-muted"
+            className="app-focus-ring flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl border border-app-border text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+            aria-label="Sluiten"
           >
             <X className="h-4 w-4" />
           </button>
@@ -121,7 +122,7 @@ export default function OrderDetailDrawer({
             </p>
           </section>
 
-          <section className="rounded-2xl border border-app-border/70 bg-app-surface-muted/20 p-4">
+          <section className="rounded-2xl border border-app-border bg-app-surface-muted p-4">
             <h3 className="text-[12px] font-semibold uppercase tracking-wide text-app-muted">
               Product
             </h3>
@@ -145,7 +146,7 @@ export default function OrderDetailDrawer({
                   {formatMerchPrice(order.amount_cents / 100)}
                 </p>
                 {order.discount_code ? (
-                  <p className="text-[11px] text-emerald-300">
+                  <p className="text-[11px] text-emerald-400">
                     Korting: {order.discount_code} (
                     {formatMerchPrice((order.discount_cents || 0) / 100)})
                   </p>
@@ -202,7 +203,7 @@ export default function OrderDetailDrawer({
             </h3>
             <MerchOrderTimeline order={order} />
             {events.length > 0 ? (
-              <div className="mt-4 space-y-2 border-t border-app-border/50 pt-3">
+              <div className="mt-4 space-y-2 border-t border-app-border pt-3">
                 {events.map((event) => (
                   <p key={event.id} className="text-[11px] text-app-subtle">
                     {event.event_type} ·{" "}
@@ -254,19 +255,19 @@ export default function OrderDetailDrawer({
               type="button"
               disabled={saving}
               onClick={() => void handleSaveCoachNote()}
-              className="app-btn-secondary mt-2"
+              className="app-btn-secondary app-focus-ring mt-2 min-h-[44px]"
             >
               Notitie opslaan
             </button>
           </section>
         </div>
 
-        <div className="space-y-2 border-t border-app-border/60 p-5">
+        <div className="space-y-2 border-t border-app-border p-5 pb-[max(1.25rem,env(safe-area-inset-bottom))]">
           <button
             type="button"
             disabled={saving || fulfillment === "shipped"}
             onClick={() => void handleStatusSave("shipped")}
-            className="app-btn-primary inline-flex w-full items-center justify-center gap-2 disabled:opacity-60"
+            className="app-btn-primary app-focus-ring min-h-[44px] w-full disabled:opacity-60"
           >
             <Truck className="h-4 w-4" />
             Markeer als verzonden
@@ -274,7 +275,7 @@ export default function OrderDetailDrawer({
           <button
             type="button"
             disabled
-            className="app-btn-secondary w-full opacity-50"
+            className="app-btn-secondary min-h-[44px] w-full opacity-50"
             title="Stripe terugbetaling volgt in een latere update"
           >
             Terugbetaling (binnenkort)

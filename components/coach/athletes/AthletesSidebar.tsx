@@ -49,7 +49,7 @@ export default function AthletesSidebar() {
       <div className="athletes-sidebar-panel flex h-full min-h-[calc(100dvh-3.5rem)] flex-col items-center py-4">
         <Link
           href="/dashboard"
-          className="mb-6 flex h-10 w-10 items-center justify-center rounded-xl bg-app-accent/15 text-[15px] font-bold text-app-accent shadow-[0_0_20px_rgba(79,140,255,0.25)] app-focus-ring"
+          className="mb-6 flex h-10 w-10 items-center justify-center rounded-xl bg-app-accent/15 text-[15px] font-bold text-app-accent app-focus-ring"
           title="Limitless Coaching"
         >
           L
@@ -70,7 +70,7 @@ export default function AthletesSidebar() {
                 className={`group relative flex h-10 w-10 items-center justify-center rounded-xl transition app-focus-ring ${
                   active
                     ? "athletes-sidebar-icon-active text-app-accent"
-                    : "text-app-muted hover:bg-app-surface-raised/50 hover:text-app-text"
+                    : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                 }`}
               >
                 <Icon className="h-[18px] w-[18px]" strokeWidth={active ? 2.25 : 2} />

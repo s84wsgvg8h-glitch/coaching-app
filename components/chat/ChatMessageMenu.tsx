@@ -125,7 +125,7 @@ export default function ChatMessageMenu({
         <button
           type="button"
           aria-label="Menu sluiten"
-          className="absolute inset-0 bg-app-overlay"
+          className="absolute inset-0 bg-[var(--app-overlay)]"
           onClick={onClose}
         />
         <div className="chat-sheet absolute inset-x-0 bottom-0 pb-[max(16px,env(safe-area-inset-bottom))]">

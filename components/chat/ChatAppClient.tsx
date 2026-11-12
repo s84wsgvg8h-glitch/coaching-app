@@ -3381,7 +3381,7 @@ export default function ChatAppClient() {
               ) : (
                 <>
               {!canSendMessages && activeGroupId && (
-                <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-200">
+                <div className="shrink-0 border-b border-amber-500/30 bg-amber-500/10 px-4 py-2 text-sm text-amber-400">
                   Alleen beheerders kunnen berichten sturen in deze groep.
                 </div>
               )}

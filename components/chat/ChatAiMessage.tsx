@@ -17,7 +17,7 @@ export default function ChatAiMessage({
         </p>
       ) : null}
 
-      <div className="rounded-2xl border border-app-accent/25 bg-app-accent-muted px-4 py-3 text-app-text">
+      <div className="rounded-2xl border border-app-accent/25 bg-app-accent/15 px-4 py-3 text-app-text">
         <p className="mb-1 text-[10px] font-bold uppercase tracking-wide text-app-accent">
           AI-assistent
         </p>

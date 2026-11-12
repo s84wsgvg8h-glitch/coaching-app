@@ -41,7 +41,7 @@ export default function MerchSidebar({
   <>
     <aside className="hidden lg:block w-[200px] shrink-0">
       <div
-        className="sticky top-4 rounded-2xl border border-app-border/80 bg-[#11161D]/90 p-2 shadow-[0_0_24px_rgba(59,130,246,0.06)] backdrop-blur-md"
+        className="sticky top-4 rounded-2xl border border-app-border bg-app-surface p-2"
       >
         {LINKS.map((link) => {
           const Icon = link.icon;
@@ -58,18 +58,18 @@ export default function MerchSidebar({
               key={link.id}
               type="button"
               onClick={() => onTabChange(link.id)}
-              className={`mb-0.5 flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition ${
+              className={`app-focus-ring mb-0.5 flex min-h-[44px] w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-[13px] font-medium transition ${
                 isActive
-                  ? "bg-sky-500/15 text-app-text shadow-[0_0_16px_rgba(59,130,246,0.25)] ring-1 ring-sky-500/30"
-                  : "text-app-muted hover:bg-app-surface-muted/60 hover:text-app-text"
+                  ? "bg-app-accent/15 text-app-text"
+                  : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
               }`}
             >
               <span className="flex items-center gap-2.5">
-                <Icon className={`h-4 w-4 ${isActive ? "text-sky-400" : ""}`} />
+                <Icon className={`h-4 w-4 ${isActive ? "text-app-accent" : ""}`} />
                 {link.label}
               </span>
               {badge > 0 ? (
-                <span className="rounded-full bg-sky-500 px-2 py-0.5 text-[10px] font-semibold text-white">
+                <span className="rounded-full bg-app-accent px-2 py-0.5 text-[10px] font-semibold text-white">
                   {badge}
                 </span>
               ) : null}
@@ -79,8 +79,8 @@ export default function MerchSidebar({
       </div>
     </aside>
 
-    <div className="lg:hidden mb-4 -mx-1 overflow-x-auto px-1 pb-1">
-      <div className="flex gap-1 min-w-max">
+    <div className="-mx-1 mb-4 overflow-x-auto px-1 pb-1 scrollbar-none lg:hidden">
+      <div className="flex min-w-max gap-2">
         {LINKS.map((link) => {
           const isActive = activeTab === link.id;
           return (
@@ -88,10 +88,10 @@ export default function MerchSidebar({
               key={link.id}
               type="button"
               onClick={() => onTabChange(link.id)}
-              className={`rounded-xl px-3 py-2 text-[12px] font-medium whitespace-nowrap transition ${
+              className={`app-focus-ring min-h-[44px] whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-medium transition ${
                 isActive
-                  ? "bg-sky-500/15 text-app-text ring-1 ring-sky-500/30"
-                  : "text-app-muted hover:text-app-text"
+                  ? "bg-app-accent text-white"
+                  : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
               }`}
             >
               {link.label}

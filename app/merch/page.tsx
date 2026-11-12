@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import MerchCoachHub from "@/components/merch/MerchCoachHub";
 import MerchAthleteShop from "@/components/merch/athlete/MerchAthleteShop";
+import { PageContainer, Panel } from "@/components/ui/design-system";
 import { PageLoading } from "@/components/ui/Skeleton";
 import Toast, { useToast } from "@/components/ui/Toast";
 import { supabase } from "@/lib/supabaseClient";
@@ -169,45 +170,45 @@ function MerchPageContent() {
   const isAthlete = isAthleteRole(role);
 
   return (
-    <AppShell contentClassName="app-page-content flex-1 p-4 md:p-8">
+    <AppShell>
       <Toast message={toastMessage} onDismiss={clearToast} />
 
-      {loading ? (
-        <div className="mx-auto w-full max-w-[1500px]">
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <PageContainer size="full">
+        {loading ? (
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
-                className="h-56 animate-pulse rounded-2xl border border-app-border/60 bg-app-surface/30"
+                className="h-56 animate-pulse rounded-2xl border border-app-border bg-app-surface"
               />
             ))}
           </div>
-        </div>
-      ) : isCoach ? (
-        <MerchCoachHub
-          userId={userId}
-          items={items}
-          orders={orders}
-          ordersLoading={ordersLoading}
-          athleteCount={athleteCount}
-          onRefresh={refresh}
-          onToggleLive={handleToggleLive}
-          onDelete={handleDelete}
-          onToast={showToast}
-          togglingId={togglingId}
-        />
-      ) : isAthlete ? (
-        <MerchAthleteShop
-          items={items}
-          orders={athleteOrders}
-          ordersLoading={ordersLoading}
-          coachId={coachId}
-        />
-      ) : (
-        <div className="app-card text-app-muted">
-          Geen toegang tot merch.
-        </div>
-      )}
+        ) : isCoach ? (
+          <MerchCoachHub
+            userId={userId}
+            items={items}
+            orders={orders}
+            ordersLoading={ordersLoading}
+            athleteCount={athleteCount}
+            onRefresh={refresh}
+            onToggleLive={handleToggleLive}
+            onDelete={handleDelete}
+            onToast={showToast}
+            togglingId={togglingId}
+          />
+        ) : isAthlete ? (
+          <MerchAthleteShop
+            items={items}
+            orders={athleteOrders}
+            ordersLoading={ordersLoading}
+            coachId={coachId}
+          />
+        ) : (
+          <Panel className="text-[13px] text-app-muted">
+            Geen toegang tot merch.
+          </Panel>
+        )}
+      </PageContainer>
     </AppShell>
   );
 }

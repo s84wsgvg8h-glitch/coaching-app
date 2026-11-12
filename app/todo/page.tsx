@@ -49,7 +49,7 @@ const KANBAN_COLUMNS: Array<{
     label: "Done",
     icon: (
       <CheckCircle2
-        className="h-[18px] w-[18px] text-[#3b82f6]"
+        className="h-[18px] w-[18px] text-app-accent"
         aria-hidden="true"
       />
     ),

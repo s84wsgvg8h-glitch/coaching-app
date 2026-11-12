@@ -4,7 +4,7 @@ import { Suspense, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
-import { PageContainer, PageHeader } from "@/components/ui/design-system";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { PageLoading } from "@/components/ui/Skeleton";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -192,9 +192,9 @@ function DataPageInner() {
                 ) : null}
               </>
             ) : (
-              <div className="app-card">
+              <Panel className="py-10 text-center">
                 <p className="text-sm text-app-muted">Geen atleten gevonden.</p>
-              </div>
+              </Panel>
             )}
           </div>
         ) : (
@@ -210,7 +210,9 @@ export default function DataPage() {
     <Suspense
       fallback={
         <AppShell>
-          <PageLoading label="Data laden…" />
+          <PageContainer size="full">
+            <PageLoading label="Data laden…" />
+          </PageContainer>
         </AppShell>
       }
     >

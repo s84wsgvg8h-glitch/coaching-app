@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { getLogicalBackRoute } from "@/lib/appBackNavigation";
 import { useAuth } from "@/components/AuthProvider";
 import { calculateWarmupSets } from "@/lib/warmupCalculator";
@@ -32,7 +33,7 @@ const RPE_RIR_LEGEND = [
       { rpe: "9", rir: "Kon nog 1 herhaling doen" },
       { rpe: "8,5", rir: "Kon nog 1 herhaling, mogelijk 2" },
     ],
-    accent: "bg-app-destructive/10 text-app-destructive",
+    accent: "bg-red-500/15 text-red-400",
   },
   {
     zone: "Matig tot hoog",
@@ -49,7 +50,7 @@ const RPE_RIR_LEGEND = [
       { rpe: "5–6", rir: "Kon nog 4–6 herhalingen doen" },
       { rpe: "1–4", rir: "Zeer licht tot weinig inspanning" },
     ],
-    accent: "bg-app-surface text-app-muted",
+    accent: "bg-app-surface-muted text-app-muted",
   },
 ] as const;
 
@@ -112,43 +113,33 @@ export default function RpeTablePage() {
   );
 
   return (
-    <AppShell contentClassName="flex-1 p-4 md:p-8">
-      <div className="mx-auto max-w-[1600px] space-y-6">
+    <AppShell>
+      <PageContainer size="full" className="space-y-4">
+        <PageHeader
+          eyebrow="RPE tabel"
+          title="Load/RIR chart"
+          description="Gebruik deze tabel om op basis van RPE/RIR en het aantal uitgevoerde reps een percentage van de load te kiezen."
+          actions={
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  getLogicalBackRoute({ pathname, searchParams, role }),
+                )
+              }
+              className="app-btn-secondary app-focus-ring min-h-11 w-full sm:w-auto"
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Terug
+            </button>
+          }
+        />
 
-        {/* Header */}
-        <div className="flex flex-wrap items-start justify-between gap-4">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-app-muted">
-              RPE tabel
-            </p>
-            <h1 className="mt-1 text-3xl font-bold text-app-text">
-              Load/RIR chart
-            </h1>
-            <p className="mt-2 max-w-2xl text-sm text-app-muted">
-              Gebruik deze tabel om op basis van RPE/RIR en het aantal
-              uitgevoerde reps een percentage van de load te kiezen.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={() =>
-              router.push(
-                getLogicalBackRoute({ pathname, searchParams, role }),
-              )
-            }
-            className="app-focus-ring inline-flex items-center gap-1.5 rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover"
-          >
-            <ChevronLeft className="h-4 w-4" />
-            Terug
-          </button>
-        </div>
-
-        {/* Main table */}
-        <div className="app-card overflow-hidden p-0">
+        <Panel className="table-compact-wrap overflow-hidden !p-0">
           <div className="overflow-auto">
             <table className="min-w-[1320px] w-full border-collapse text-center text-[10px] text-app-text">
               <thead>
-                <tr className="bg-app-surface">
+                <tr className="bg-app-surface-muted">
                   <th className="sticky left-0 z-20 border border-app-border bg-app-surface px-2 py-2.5 font-bold text-app-muted">
                     RPE
                   </th>
@@ -195,24 +186,21 @@ export default function RpeTablePage() {
               </tbody>
             </table>
           </div>
-        </div>
+        </Panel>
 
-        {/* Calculators row */}
-        <div className="grid gap-4 xl:grid-cols-3">
-
-          {/* RPE Calculator */}
-          <div className="app-card space-y-4 p-5">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+          <Panel className="space-y-4">
             <div>
-              <p className="font-semibold text-app-text">RPE calculator</p>
+              <h2 className="text-[15px] font-semibold tracking-tight text-app-text">RPE calculator</h2>
               <p className="mt-1 text-sm leading-relaxed text-app-muted">
                 Gebruikt dezelfde percentages als de tabel hierboven om een
                 gewicht voor te stellen op basis van je 1RM, reps en target RPE.
               </p>
             </div>
 
-            <div className="grid gap-3 sm:grid-cols-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-app-muted">
+                <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   1RM (kg)
                 </span>
                 <input
@@ -220,12 +208,12 @@ export default function RpeTablePage() {
                   inputMode="decimal"
                   value={oneRepMax}
                   onChange={(event) => setOneRepMax(event.target.value)}
-                  className="app-focus-ring w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm text-app-text outline-none transition placeholder:text-app-muted/50 focus:border-app-accent"
+                  className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text outline-none transition placeholder:text-app-subtle focus:border-app-accent md:text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-app-muted">
+                <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Reps
                 </span>
                 <input
@@ -233,18 +221,18 @@ export default function RpeTablePage() {
                   inputMode="numeric"
                   value={targetReps}
                   onChange={(event) => setTargetReps(event.target.value)}
-                  className="app-focus-ring w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm text-app-text outline-none transition placeholder:text-app-muted/50 focus:border-app-accent"
+                  className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text outline-none transition placeholder:text-app-subtle focus:border-app-accent md:text-sm"
                 />
               </label>
 
               <label className="block">
-                <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-app-muted">
+                <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Target RPE
                 </span>
                 <select
                   value={targetRpe}
                   onChange={(event) => setTargetRpe(event.target.value)}
-                  className="app-focus-ring w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm text-app-text outline-none transition focus:border-app-accent"
+                  className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text outline-none transition focus:border-app-accent md:text-sm"
                 >
                   {RPE_ROWS.map((value) => (
                     <option key={value} value={String(value)}>
@@ -256,11 +244,11 @@ export default function RpeTablePage() {
             </div>
 
             {rpeCalculation && (
-              <div className="rounded-xl border border-app-accent/20 bg-app-accent/5 p-4">
-                <p className="text-xs font-semibold uppercase tracking-wider text-app-muted">
+              <div className="rounded-xl border border-app-accent/20 bg-app-accent/10 p-4">
+                <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                   Resultaat
                 </p>
-                <p className="mt-2 text-3xl font-bold text-app-text">
+                <p className="mt-2 text-[28px] font-semibold leading-none tracking-tight text-app-text">
                   {rpeCalculation.suggestedWeight ?? "—"} <span className="text-lg font-medium text-app-muted">kg</span>
                 </p>
                 <p className="mt-1 text-sm text-app-muted">
@@ -268,12 +256,11 @@ export default function RpeTablePage() {
                 </p>
               </div>
             )}
-          </div>
+          </Panel>
 
-          {/* Warm-up calculator */}
-          <div className="app-card space-y-4 p-5 xl:col-span-2">
+          <Panel className="space-y-4 xl:col-span-2">
             <div>
-              <p className="font-semibold text-app-text">Warm-up calculator</p>
+              <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Warm-up calculator</h2>
               <p className="mt-1 text-sm leading-relaxed text-app-muted">
                 Vul het gewicht van je eerste werkset in. De calculator toont
                 gewichtsranges per opwarmset.
@@ -281,7 +268,7 @@ export default function RpeTablePage() {
             </div>
 
             <label className="block max-w-xs">
-              <span className="mb-1.5 block text-xs font-semibold uppercase tracking-wider text-app-muted">
+              <span className="mb-1.5 block text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                 Eerste werkset (kg)
               </span>
               <input
@@ -289,17 +276,17 @@ export default function RpeTablePage() {
                 inputMode="decimal"
                 value={firstSetWeight}
                 onChange={(event) => setFirstSetWeight(event.target.value)}
-                className="app-focus-ring w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-sm text-app-text outline-none transition focus:border-app-accent"
+                className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface-muted px-3 py-2 text-base text-app-text outline-none transition focus:border-app-accent md:text-sm"
               />
             </label>
 
-            <div className="overflow-hidden rounded-xl border border-app-border">
+            <div className="table-compact-wrap overflow-x-auto rounded-xl border border-app-border">
               <table className="w-full text-left text-sm">
-                <thead className="border-b border-app-border">
+                <thead className="border-b border-app-border bg-app-surface-muted">
                   <tr>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-app-muted">Set</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-app-muted">Gewicht</th>
-                    <th className="px-4 py-3 text-xs font-semibold uppercase tracking-wider text-app-muted">Herhalingen</th>
+                    <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Set</th>
+                    <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Gewicht</th>
+                    <th className="px-4 py-3 text-[11px] font-medium uppercase tracking-wide text-app-subtle">Herhalingen</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -331,20 +318,19 @@ export default function RpeTablePage() {
             <p className="text-sm font-semibold text-app-text">
               Start daarna met je werksets.
             </p>
-          </div>
+          </Panel>
         </div>
 
-        {/* Info row */}
-        <div className="grid gap-4 lg:grid-cols-2">
-          <div className="app-card p-5">
-            <p className="font-semibold text-app-text">Load/RIR chart</p>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Panel>
+            <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Load/RIR chart</h2>
             <p className="mt-2 text-sm leading-relaxed text-app-muted">
               Kies eerst de RPE/RIR links, daarna het aantal reps bovenaan. De
               cel geeft het percentage load dat bij die combinatie hoort.
             </p>
-          </div>
+          </Panel>
 
-          <div className="app-card overflow-hidden p-0">
+          <Panel className="overflow-hidden !p-0">
             <div className="border-b border-app-border px-4 py-3">
               <p className="text-sm font-semibold text-app-text">
                 RPE → Reps In Reserve
@@ -353,7 +339,7 @@ export default function RpeTablePage() {
             <div className="divide-y divide-app-border">
               {RPE_RIR_LEGEND.map((section) => (
                 <div key={section.zone}>
-                  <div className={`px-4 py-2 text-xs font-semibold uppercase tracking-wider ${section.accent}`}>
+                  <div className={`px-4 py-2 text-[11px] font-semibold uppercase tracking-wide ${section.accent}`}>
                     {section.zone}
                   </div>
                   <table className="w-full text-left text-sm">
@@ -374,10 +360,9 @@ export default function RpeTablePage() {
                 </div>
               ))}
             </div>
-          </div>
+          </Panel>
         </div>
-
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

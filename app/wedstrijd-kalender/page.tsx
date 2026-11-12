@@ -506,7 +506,7 @@ export default function WedstrijdKalenderPage() {
           <button
             type="button"
             onClick={() => startBewerken(wedstrijd)}
-            className="app-btn-secondary !px-3 !py-1.5 text-[12px]"
+            className="app-btn-secondary app-focus-ring min-h-[44px] !px-3 !py-1.5 text-[12px] md:min-h-0"
           >
             Aanpassen
           </button>
@@ -514,7 +514,7 @@ export default function WedstrijdKalenderPage() {
           <button
             type="button"
             onClick={() => void verwijderWedstrijd(wedstrijd.id)}
-            className="app-btn-secondary !px-3 !py-1.5 text-[12px] !text-app-destructive"
+            className="app-btn-secondary app-focus-ring min-h-[44px] !px-3 !py-1.5 text-[12px] !text-app-destructive md:min-h-0"
           >
             Verwijderen
           </button>

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Plus, Tag } from "lucide-react";
 import EmptyState from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/design-system";
 import {
   createMerchDiscountId,
   loadMerchDiscountsAsync,
@@ -89,31 +90,27 @@ export default function MerchDiscountsTab({
 
   return (
     <>
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-[28px] font-bold tracking-tight text-app-text">
-            Kortingen
-          </h1>
-          <p className="mt-1 text-[14px] text-app-muted">
-            Beheer kortingscodes voor je merch shop. Codes worden gevalideerd bij checkout.
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-[#3B82F6] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#2563EB]"
-        >
-          <Plus className="h-4 w-4" />
-          Korting maken
-        </button>
-      </header>
+      <PageHeader
+        title="Kortingen"
+        description="Beheer kortingscodes voor je merch shop. Codes worden gevalideerd bij checkout."
+        actions={
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="app-btn-primary app-focus-ring min-h-[44px] w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Korting maken
+          </button>
+        }
+      />
 
       {loading ? (
         <div className="space-y-2">
           {[1, 2].map((key) => (
             <div
               key={key}
-              className="h-20 animate-pulse rounded-2xl border border-app-border/50 bg-[#161B22]/50"
+              className="h-20 animate-pulse rounded-2xl border border-app-border bg-app-surface"
             />
           ))}
         </div>
@@ -136,10 +133,10 @@ export default function MerchDiscountsTab({
           {discounts.map((discount) => (
             <article
               key={discount.id}
-              className="flex flex-wrap items-center gap-3 rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4"
+              className="flex flex-wrap items-center gap-3 rounded-2xl border border-app-border bg-app-surface p-4"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-sky-500/10">
-                <Tag className="h-4 w-4 text-sky-400" />
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-app-accent/10">
+                <Tag className="h-4 w-4 text-app-accent" />
               </div>
               <div className="min-w-0 flex-1">
                 <p className="font-mono text-[15px] font-semibold text-app-text">
@@ -160,7 +157,7 @@ export default function MerchDiscountsTab({
               <span
                 className={`rounded-full px-2.5 py-1 text-[10px] font-semibold ${
                   discount.active
-                    ? "bg-emerald-500/15 text-emerald-300"
+                    ? "bg-emerald-500/15 text-emerald-400"
                     : "bg-app-surface-muted text-app-muted"
                 }`}
               >
@@ -169,7 +166,7 @@ export default function MerchDiscountsTab({
               <button
                 type="button"
                 onClick={() => void toggleActive(discount)}
-                className="app-btn-secondary py-2 text-[12px]"
+                className="app-btn-secondary app-focus-ring min-h-[44px] text-[12px]"
               >
                 {discount.active ? "Deactiveren" : "Activeren"}
               </button>
@@ -179,8 +176,8 @@ export default function MerchDiscountsTab({
       )}
 
       {modalOpen ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-2xl border border-app-border bg-[#11161D] p-5 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+          <div className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-2xl border border-app-border bg-app-surface-elevated p-5 shadow-2xl">
             <h2 className="text-lg font-semibold text-app-text">
               Korting maken
             </h2>
@@ -260,18 +257,18 @@ export default function MerchDiscountsTab({
                 className="ui-auth-input sm:col-span-2"
               />
             </div>
-            <div className="mt-5 flex justify-end gap-2">
+            <div className="mt-5 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="app-btn-secondary"
+                className="app-btn-secondary app-focus-ring min-h-[44px]"
               >
                 Annuleren
               </button>
               <button
                 type="button"
                 onClick={() => void handleCreate()}
-                className="app-btn-primary"
+                className="app-btn-primary app-focus-ring min-h-[44px]"
               >
                 Opslaan
               </button>

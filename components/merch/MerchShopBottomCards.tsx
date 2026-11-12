@@ -14,15 +14,15 @@ type BottomCard = {
 const CARDS: BottomCard[] = [
   {
     icon: Users,
-    iconClass: "text-sky-300",
-    bgClass: "bg-sky-500/10",
+    iconClass: "text-app-accent",
+    bgClass: "bg-app-accent/10",
     title: "Teambestellingen",
     description:
       "Zet één shirt op concept en deel het pas live als het team compleet wil bestellen.",
   },
   {
     icon: Percent,
-    iconClass: "text-emerald-300",
+    iconClass: "text-emerald-400",
     bgClass: "bg-emerald-500/10",
     title: "Teamkorting",
     description:
@@ -30,7 +30,7 @@ const CARDS: BottomCard[] = [
   },
   {
     icon: Medal,
-    iconClass: "text-amber-300",
+    iconClass: "text-amber-400",
     bgClass: "bg-amber-500/10",
     title: "Wedstrijd merch",
     description:
@@ -38,8 +38,8 @@ const CARDS: BottomCard[] = [
   },
   {
     icon: Megaphone,
-    iconClass: "text-violet-300",
-    bgClass: "bg-violet-500/10",
+    iconClass: "text-app-accent",
+    bgClass: "bg-app-accent/10",
     title: "Promoot de shop",
     description:
       "Deel een broadcast in de chat zodra een nieuw product live staat in de shop.",
@@ -48,11 +48,11 @@ const CARDS: BottomCard[] = [
 
 export default function MerchShopBottomCards() {
   return (
-    <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {CARDS.map((card) => (
         <article
           key={card.title}
-          className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4"
+          className="rounded-2xl border border-app-border bg-app-surface p-4"
         >
           <div
             className={`mb-3 flex h-9 w-9 items-center justify-center rounded-xl ${card.bgClass}`}

@@ -108,16 +108,16 @@ export default function CoachAppointmentModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-start justify-center bg-black/40 p-4 pt-16 backdrop-blur-sm"
+      className="fixed inset-0 z-50 flex items-start justify-center bg-[var(--app-overlay)] p-3 pt-[max(1rem,env(safe-area-inset-top))] backdrop-blur-sm sm:p-4 sm:pt-16"
       onClick={onClose}
     >
       <form
         onSubmit={handleSubmit}
         onClick={(event) => event.stopPropagation()}
-        className="w-full max-w-md overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-2xl backdrop-blur-md"
+        className="flex max-h-[90dvh] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-app-border bg-app-surface shadow-[0_24px_64px_rgba(0,0,0,0.45)]"
       >
-        <div className="border-b border-app-border p-3">
-          <div className="flex rounded-full bg-app-surface-muted p-1">
+        <div className="shrink-0 border-b border-app-border p-3">
+          <div className="flex rounded-full border border-app-border bg-app-bg p-1">
             {(
               [
                 { id: "activity", label: "Activiteit" },
@@ -132,9 +132,9 @@ export default function CoachAppointmentModal({
                     current ? { ...current, event_type: tab.id } : current,
                   )
                 }
-                className={`flex-1 rounded-full px-3 py-2 text-sm font-semibold transition ${
+                className={`app-focus-ring min-h-[40px] flex-1 rounded-full px-3 py-2 text-sm font-semibold transition ${
                   form.event_type === tab.id
-                    ? "bg-red-500 text-white"
+                    ? "bg-app-accent text-white"
                     : "text-app-muted hover:text-app-text"
                 }`}
               >
@@ -144,7 +144,7 @@ export default function CoachAppointmentModal({
           </div>
         </div>
 
-        <div className="space-y-2 p-3">
+        <div className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
           <section className="overflow-hidden rounded-xl border border-app-border bg-app-surface">
             <input
               value={form.title}
@@ -161,7 +161,7 @@ export default function CoachAppointmentModal({
             <button
               type="button"
               onClick={() => setShowExtraFields((current) => !current)}
-              className="flex w-full items-center justify-between border-t border-gray-200 px-3 py-2 text-left text-sm font-semibold text-app-muted hover:text-app-text"
+              className="flex w-full items-center justify-between min-h-[44px] border-t border-app-border px-3 py-2 text-left text-sm font-semibold text-app-muted hover:text-app-text"
             >
               <span>Locatie, videogesprek, genodigden & notities</span>
               <span>{showExtraFields ? "−" : "+"}</span>
@@ -244,7 +244,7 @@ export default function CoachAppointmentModal({
                         : current,
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
+                  className="mt-1 w-full min-w-0 rounded-lg border border-app-border bg-app-bg px-2 py-2 text-base text-app-text outline-none focus:border-app-accent md:text-sm"
                 />
               </label>
               <label className="block text-xs font-semibold text-app-muted">
@@ -262,11 +262,11 @@ export default function CoachAppointmentModal({
                         : current,
                     )
                   }
-                  className="mt-1 w-full rounded-lg border border-app-border bg-app-surface-muted px-2 py-2 text-sm text-app-text outline-none focus:border-app-accent"
+                  className="mt-1 w-full min-w-0 rounded-lg border border-app-border bg-app-bg px-2 py-2 text-base text-app-text outline-none focus:border-app-accent md:text-sm"
                 />
               </label>
             </div>
-            <label className="flex items-center gap-2 border-t border-app-border px-3 py-2 text-sm font-semibold text-app-text">
+            <label className="flex min-h-[44px] items-center gap-2 border-t border-app-border px-3 py-2 text-sm font-semibold text-app-text">
               <input
                 type="checkbox"
                 checked={form.all_day}
@@ -287,13 +287,13 @@ export default function CoachAppointmentModal({
           <p className="px-4 pb-2 text-sm font-semibold text-app-destructive">{error}</p>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t border-app-border px-4 py-3">
+        <div className="flex shrink-0 items-center justify-between gap-2 border-t border-app-border px-4 py-3">
           {isEditing ? (
             <button
               type="button"
               onClick={() => void handleDelete()}
               disabled={deleting || saving}
-              className="rounded-xl border border-red-200 px-4 py-2 text-sm font-semibold text-app-destructive hover:bg-red-50 disabled:opacity-60"
+              className="app-focus-ring min-h-[44px] rounded-xl border border-red-500/30 px-4 py-2 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/15 disabled:opacity-60"
             >
               {deleting ? "Verwijderen..." : "Verwijderen"}
             </button>
@@ -304,14 +304,14 @@ export default function CoachAppointmentModal({
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-app-border px-4 py-2 text-sm font-semibold text-app-muted hover:bg-app-surface-hover"
+              className="app-focus-ring min-h-[44px] rounded-xl border border-app-border bg-app-surface px-4 py-2 text-sm font-semibold text-app-muted transition-colors hover:bg-app-surface-hover hover:text-app-text"
             >
               Annuleren
             </button>
             <button
               type="submit"
               disabled={saving || deleting}
-              className="rounded-xl bg-app-accent px-4 py-2 text-sm font-semibold text-white disabled:opacity-60"
+              className="app-focus-ring min-h-[44px] rounded-xl bg-app-accent px-4 py-2 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60"
             >
               {saving ? "Opslaan..." : "Opslaan"}
             </button>

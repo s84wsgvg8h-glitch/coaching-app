@@ -357,8 +357,8 @@ export default function ChatVideoCoachFeedbackViewer({
               <button
                 type="button"
                 onClick={() => setTool("pen")}
-                className={`inline-flex items-center gap-1 rounded-[16px] px-3 py-1.5 text-xs font-semibold ${
-                  tool === "pen" ? "bg-white text-black" : "bg-white/10"
+                className={`app-focus-ring inline-flex min-h-[44px] items-center gap-1 rounded-[16px] px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  tool === "pen" ? "bg-app-accent text-white" : "bg-white/10 hover:bg-white/15"
                 }`}
               >
                 <Pencil className="h-3.5 w-3.5" />
@@ -370,8 +370,8 @@ export default function ChatVideoCoachFeedbackViewer({
                   setTool("ruler");
                   setLineStart(null);
                 }}
-                className={`inline-flex items-center gap-1 rounded-[16px] px-3 py-1.5 text-xs font-semibold ${
-                  tool === "ruler" ? "bg-white text-black" : "bg-white/10"
+                className={`app-focus-ring inline-flex min-h-[44px] items-center gap-1 rounded-[16px] px-3 py-1.5 text-xs font-semibold transition-colors ${
+                  tool === "ruler" ? "bg-app-accent text-white" : "bg-white/10 hover:bg-white/15"
                 }`}
               >
                 <Ruler className="h-3.5 w-3.5" />
@@ -392,7 +392,7 @@ export default function ChatVideoCoachFeedbackViewer({
               <button
                 type="button"
                 onClick={clearAnnotations}
-                className="rounded-[16px] border border-white/20 px-3 py-1.5 text-xs font-semibold"
+                className="app-focus-ring inline-flex min-h-[44px] items-center rounded-[16px] border border-white/20 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/10"
               >
                 Wissen
               </button>
@@ -402,7 +402,7 @@ export default function ChatVideoCoachFeedbackViewer({
                   setAnnotateMode(false);
                   setLineStart(null);
                 }}
-                className="rounded-[16px] border border-white/20 px-3 py-1.5 text-xs font-semibold"
+                className="app-focus-ring inline-flex min-h-[44px] items-center rounded-[16px] border border-white/20 px-3 py-1.5 text-xs font-semibold transition-colors hover:bg-white/10"
               >
                 Terug naar video
               </button>

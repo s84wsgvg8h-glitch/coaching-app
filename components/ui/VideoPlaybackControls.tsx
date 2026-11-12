@@ -63,7 +63,7 @@ export default function VideoPlaybackControls({
           onClick={() => changeSpeed(option)}
           className={`rounded-lg px-2 py-1 text-xs font-bold ${
             speed === option
-              ? "bg-brand-purple text-white"
+              ? "bg-app-accent text-white"
               : "bg-app-surface-muted text-app-text hover:bg-app-surface-hover"
           }`}
         >

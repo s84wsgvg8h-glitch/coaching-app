@@ -443,16 +443,16 @@ export default function StatisticsOverviewDashboard({
 
       {expandedBw ? (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
           onClick={() => setExpandedBw(false)}
         >
           <div
-            className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-app-border bg-app-surface p-4"
+            className="max-h-[90dvh] w-full max-w-6xl overflow-auto rounded-t-2xl border border-app-border bg-app-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-2xl"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h3 className="text-lg font-semibold text-app-text">Lichaamsgewicht</h3>
+                <h3 className="text-[17px] font-semibold tracking-tight text-app-text">Lichaamsgewicht</h3>
                 <p className="mt-1 text-sm text-app-muted">
                   BW trend per programmaweek
                   {bwWeeklyTrend ? ` · ${bwWeeklyTrend}` : ""}
@@ -466,7 +466,7 @@ export default function StatisticsOverviewDashboard({
                 <button
                   type="button"
                   onClick={() => setExpandedBw(false)}
-                  className="rounded-lg border border-app-border p-2 text-app-muted hover:text-app-text"
+                  className="app-focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-app-border text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
                   aria-label="Sluiten"
                 >
                   <X className="h-4 w-4" />

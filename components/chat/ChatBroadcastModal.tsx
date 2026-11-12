@@ -36,16 +36,18 @@ export default function ChatBroadcastModal({
   }
 
   return (
-    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-app-overlay p-4">
-      <div className="app-card w-full max-w-lg">
-        <h2 className="text-lg font-bold text-app-text">Broadcast naar atleten</h2>
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--app-overlay)] p-4 pb-[max(1rem,env(safe-area-inset-bottom))]">
+      <div className="ui-panel max-h-[90dvh] w-full max-w-lg overflow-y-auto">
+        <h2 className="text-[17px] font-semibold tracking-tight text-app-text">Broadcast naar atleten</h2>
 
         <div className="mt-3 flex gap-2">
           <button
             type="button"
             onClick={() => setTab("now")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
-              tab === "now" ? "bg-brand-purple text-white" : "bg-app-bg text-app-muted"
+            className={`app-focus-ring min-h-[44px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
+              tab === "now"
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
             }`}
           >
             Nu versturen
@@ -53,10 +55,10 @@ export default function ChatBroadcastModal({
           <button
             type="button"
             onClick={() => setTab("scheduled")}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold ${
+            className={`app-focus-ring min-h-[44px] rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors ${
               tab === "scheduled"
-                ? "bg-brand-purple text-white"
-                : "bg-app-bg text-app-muted"
+                ? "bg-app-accent text-white"
+                : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
             }`}
           >
             Inplannen
@@ -73,7 +75,7 @@ export default function ChatBroadcastModal({
               onChange={(e) => setBody(e.target.value)}
               rows={5}
               placeholder="Bericht voor al je atleten..."
-              className="mt-4 w-full rounded-xl border border-app-border px-4 py-3 text-sm app-focus-ring"
+              className="mt-4 w-full rounded-xl border border-app-border bg-app-surface px-4 py-3 text-base text-app-text app-focus-ring md:text-sm"
             />
             {error ? <p className="mt-2 text-sm text-app-destructive">{error}</p> : null}
             <div className="mt-4 flex justify-end gap-2">

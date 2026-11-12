@@ -290,7 +290,7 @@ export default function StatisticsChartsSection({
 
     return (
       <div>
-        <label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-app-muted">
+        <label className="mb-1 block text-[11px] font-medium uppercase tracking-wide text-app-subtle">
           Oefening
         </label>
         <select
@@ -298,7 +298,7 @@ export default function StatisticsChartsSection({
           onChange={(event) =>
             onUpdateInstance({ ...instance, exerciseName: event.target.value })
           }
-          className="w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+          className="app-focus-ring min-h-11 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-base text-app-text outline-none md:min-h-9 md:text-sm"
         >
           {options.map((name) => (
             <option key={name} value={name}>
@@ -764,7 +764,7 @@ export default function StatisticsChartsSection({
 
   if (instances.length === 0) {
     return (
-      <div className="rounded-2xl border border-dashed border-app-border bg-app-surface p-8 text-center">
+      <div className="rounded-2xl border border-dashed border-app-border bg-app-surface px-4 py-10 text-center">
         <p className="text-sm text-app-muted">
           Nog geen grafieken. Klik op &quot;Grafiek toevoegen&quot; om te beginnen.
         </p>

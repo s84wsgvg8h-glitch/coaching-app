@@ -30,7 +30,7 @@ export default function MiniMetricCard({
     <div
       className={`rounded-2xl border border-app-border bg-app-surface p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${
         onClick
-          ? "cursor-pointer transition hover:border-white/20 hover:bg-[#10151f]"
+          ? "app-focus-ring cursor-pointer transition hover:border-app-border-strong hover:bg-app-surface-hover"
           : ""
       }`}
       onClick={onClick}
@@ -47,10 +47,10 @@ export default function MiniMetricCard({
       role={onClick ? "button" : undefined}
       tabIndex={onClick ? 0 : undefined}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-app-muted">
+      <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
         {title}
       </p>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-app-text">{value}</p>
+      <p className="mt-2 text-[22px] font-semibold leading-none tracking-tight text-app-text">{value}</p>
       <p className={`mt-1 text-xs font-medium ${toneClass}`}>{change}</p>
       <div className="mt-3">{children}</div>
     </div>

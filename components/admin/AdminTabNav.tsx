@@ -241,7 +241,7 @@ export default function AdminTabNav({
       </div>
 
       <div className="admin-sidebar-brand">
-        <Shield className="h-4 w-4 text-sky-400" />
+        <Shield className="h-4 w-4 text-app-accent" />
         <div className="min-w-0">
           <p className="admin-sidebar-brand-title">Platform Admin</p>
           <p className="admin-sidebar-brand-sub">Limitless Coaching</p>

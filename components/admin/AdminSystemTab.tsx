@@ -137,7 +137,7 @@ export default function AdminSystemTab() {
               <p className="admin-strong text-[14px]">Cron secret ontbreekt</p>
               <p className="admin-muted mt-1 text-[13px]">
                 Geplande taken (herinneringen, broadcasts) werken niet zonder{" "}
-                <code className="text-amber-200">CRON_SECRET</code>. Stel deze in
+                <code className="text-amber-400">CRON_SECRET</code>. Stel deze in
                 via Vercel environment variables.
               </p>
             </div>
@@ -250,10 +250,10 @@ export default function AdminSystemTab() {
           </div>
         )}
 
-        <div className="border-t border-white/6 px-4 py-3">
+        <div className="border-t border-app-border px-4 py-3">
           <Link
             href="/admin?tab=settings"
-            className="text-[13px] font-semibold text-blue-400 hover:text-blue-300"
+            className="text-[13px] font-semibold text-app-accent hover:underline"
           >
             Bekijk alle sync logs →
           </Link>

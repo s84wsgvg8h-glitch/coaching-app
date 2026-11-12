@@ -20,7 +20,7 @@ export default function MerchPickupList({ orders }: MerchPickupListProps) {
 
   if (pickupOrders.length === 0) {
     return (
-      <p className="rounded-2xl border border-dashed border-app-border/70 px-4 py-6 text-center text-[13px] text-app-muted">
+      <p className="rounded-2xl border border-dashed border-app-border bg-app-surface px-4 py-6 text-center text-[13px] text-app-muted">
         Geen openstaande ophaalorders.
       </p>
     );
@@ -31,7 +31,7 @@ export default function MerchPickupList({ orders }: MerchPickupListProps) {
       {pickupOrders.map((order) => (
         <div
           key={order.id}
-          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-app-border/70 bg-app-surface/30 px-4 py-3"
+          className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-app-border bg-app-surface px-4 py-3"
         >
           <div>
             <p className="text-[14px] font-semibold text-app-text">

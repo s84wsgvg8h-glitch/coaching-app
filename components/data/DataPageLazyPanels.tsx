@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 
 function PanelFallback({ label }: { label: string }) {
   return (
-    <div className="app-card animate-pulse py-8 text-center text-sm text-app-muted">
+    <div className="ui-panel animate-pulse py-8 text-center text-sm text-app-muted">
       {label}
     </div>
   );

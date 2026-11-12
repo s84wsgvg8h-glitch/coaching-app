@@ -41,14 +41,14 @@ export default function TeamStatistiekenPanel({
 
   if (loading) {
     return (
-      <div className="app-card">
+      <div className="ui-panel">
         <p className="text-sm text-app-muted">Teamstatistieken laden...</p>
       </div>
     );
   }
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <h2 className="text-lg font-bold text-app-text">Teamstatistieken</h2>
       <p className="mt-1 text-sm text-app-muted">
         Invulscore afgelopen 30 dagen (maand)

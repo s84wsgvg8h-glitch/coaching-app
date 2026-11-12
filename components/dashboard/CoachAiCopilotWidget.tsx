@@ -59,7 +59,7 @@ export default function CoachAiCopilotWidget({
   }, [coachId, role]);
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <div className="flex items-start justify-between gap-2">
         <div>
           <p className="text-xs font-bold uppercase tracking-wide text-app-muted">
@@ -67,7 +67,7 @@ export default function CoachAiCopilotWidget({
           </p>
           <h3 className="text-lg font-bold text-app-text">Weekoverzicht</h3>
         </div>
-        <Link href="/kennisbank?tab=vragen" className="text-xs font-semibold text-brand-purple hover:underline">
+        <Link href="/kennisbank?tab=vragen" className="text-xs font-semibold text-app-accent hover:underline">
           AI-vragen →
         </Link>
       </div>

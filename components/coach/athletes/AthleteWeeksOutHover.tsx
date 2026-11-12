@@ -80,7 +80,7 @@ export default function AthleteWeeksOutHover({
     open && hasCompetitions ? (
       <div
         ref={popoverRef}
-        className="fixed z-[9999] w-60 rounded-xl border border-app-border bg-app-surface p-3 shadow-xl"
+        className="fixed z-[9999] w-60 rounded-xl border border-app-border bg-app-surface-elevated p-3 shadow-[0_12px_32px_rgba(0,0,0,0.35)]"
         style={{ left: position.left, top: position.top }}
         onMouseEnter={handleOpen}
         onMouseLeave={handleClose}

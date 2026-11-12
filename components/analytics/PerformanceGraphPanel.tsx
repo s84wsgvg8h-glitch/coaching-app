@@ -104,7 +104,7 @@ export default function PerformanceGraphPanel({
 
   if (loading) {
     return (
-      <div className="app-card">
+      <div className="ui-panel">
         <p className="text-sm text-app-muted">Performance grafiek laden...</p>
       </div>
     );
@@ -112,7 +112,7 @@ export default function PerformanceGraphPanel({
 
   if (points.length === 0) {
     return (
-      <div className="app-card">
+      <div className="ui-panel">
         <p className="text-sm text-app-muted">
           Geen performance data voor {athleteName}.
         </p>
@@ -121,7 +121,7 @@ export default function PerformanceGraphPanel({
   }
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <h2 className="text-lg font-bold text-app-text">Performance — {athleteName}</h2>
       <p className="mt-1 text-sm text-app-muted">
         Volume, e1RM-trend uit gelogde sets en wedstrijddata.

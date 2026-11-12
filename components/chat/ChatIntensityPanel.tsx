@@ -37,9 +37,9 @@ type ChatIntensityPanelProps = {
 const SBD_LIFTS: SbdLift[] = ["squat", "bench", "deadlift"];
 
 const LIFT_COLORS: Record<SbdLift, string> = {
-  squat: "#111827",
-  bench: "#6b7280",
-  deadlift: "#9ca3af",
+  squat: "var(--app-accent)",
+  bench: "var(--color-emerald-400)",
+  deadlift: "var(--color-amber-400)",
 };
 
 type StatKey = "averageIntensity" | "peakIntensity" | "peakLoad";

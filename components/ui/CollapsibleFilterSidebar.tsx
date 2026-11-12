@@ -21,7 +21,7 @@ export default function CollapsibleFilterSidebar({
     return (
       <aside className="hidden w-52 shrink-0 flex-col border-r border-app-border bg-app-surface lg:flex">
         <div className="border-b border-app-border px-3 py-3">
-          <span className="text-xs font-bold uppercase tracking-wide text-app-muted">
+          <span className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             {title}
           </span>
         </div>
@@ -41,14 +41,14 @@ export default function CollapsibleFilterSidebar({
       <button
         type="button"
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2 border-b border-app-border px-2 py-3 text-left app-focus-ring"
+        className="flex items-center gap-2 border-b border-app-border px-2 py-3 text-left transition-colors hover:bg-app-surface-hover app-focus-ring"
         title={open ? "Navigatie inklappen" : "Navigatie uitklappen"}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-app-surface-muted text-sm">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-app-surface-muted text-sm text-app-muted">
           {open ? "◀" : "▶"}
         </span>
         {open && (
-          <span className="truncate text-xs font-bold uppercase tracking-wide text-app-muted">
+          <span className="truncate text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             {title}
           </span>
         )}

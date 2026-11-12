@@ -95,7 +95,7 @@ export default function AthleteGoalsSection({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-bold text-app-text">Doelen</h2>
+        <h2 className="text-[15px] font-semibold tracking-tight text-app-text">Doelen</h2>
         <p className="mt-1 text-sm text-app-muted">
           Stel liftdoelen met streefgewicht en datum. Voortgang t.o.v. current maxes.
         </p>
@@ -108,13 +108,13 @@ export default function AthleteGoalsSection({
       </div>
 
       {canEdit ? (
-        <div className="grid gap-3 rounded-2xl border border-app-border p-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
-          <label className="text-sm font-semibold">
+        <div className="grid grid-cols-1 gap-3 rounded-2xl border border-app-border bg-app-surface-muted p-4 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
+          <label className="text-sm font-semibold text-app-text">
             Lift
             <select
               value={lift}
               onChange={(e) => setLift(e.target.value as SbdLiftKey)}
-              className="mt-1 w-full rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+              className="mt-1 min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-normal text-app-text app-focus-ring"
             >
               {LIFTS.map((key) => (
                 <option key={key} value={key}>
@@ -123,29 +123,29 @@ export default function AthleteGoalsSection({
               ))}
             </select>
           </label>
-          <label className="text-sm font-semibold">
+          <label className="text-sm font-semibold text-app-text">
             Streefgewicht (kg)
             <input
               value={targetWeight}
               onChange={(e) => setTargetWeight(e.target.value)}
               placeholder="200"
-              className="mt-1 w-full rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+              className="mt-1 min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-normal text-app-text app-focus-ring"
             />
           </label>
-          <label className="text-sm font-semibold">
+          <label className="text-sm font-semibold text-app-text">
             Streefdatum
             <input
               type="date"
               value={targetDate}
               onChange={(e) => setTargetDate(e.target.value)}
-              className="mt-1 w-full rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+              className="mt-1 min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-normal text-app-text app-focus-ring"
             />
           </label>
           <button
             type="button"
             onClick={() => void handleAdd()}
             disabled={saving}
-            className="app-btn-primary disabled:opacity-60"
+            className="app-btn-primary min-h-[44px] disabled:opacity-60"
           >
             Toevoegen
           </button>
@@ -166,11 +166,11 @@ export default function AthleteGoalsSection({
             return (
               <div
                 key={goal.id}
-                className="rounded-2xl border border-app-border p-4"
+                className="rounded-2xl border border-app-border bg-app-surface-muted p-4"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div>
-                    <p className="font-bold text-app-text">
+                    <p className="font-semibold text-app-text">
                       {SBD_LIFT_LABELS[goal.lift]} — {goal.target_weight} kg
                     </p>
                     <p className="text-sm text-app-muted">
@@ -187,7 +187,7 @@ export default function AthleteGoalsSection({
                     <button
                       type="button"
                       onClick={() => void handleDelete(goal.id)}
-                      className="text-sm font-semibold text-red-600"
+                      className="inline-flex min-h-[44px] shrink-0 items-center rounded-lg px-2 text-sm font-semibold text-red-400 transition hover:bg-red-500/15 app-focus-ring"
                     >
                       Verwijder
                     </button>

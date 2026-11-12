@@ -117,10 +117,10 @@ export default function ScheduledBroadcastPanel({
                     key={athlete.id}
                     type="button"
                     onClick={() => toggleAthlete(athlete.id)}
-                    className={`rounded-full px-2 py-1 text-xs font-semibold ${
+                    className={`app-focus-ring inline-flex min-h-[36px] items-center rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                       selected
-                        ? "bg-brand-purple text-white"
-                        : "bg-app-surface-hover text-app-text"
+                        ? "bg-app-accent text-white"
+                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
                     }`}
                   >
                     {athlete.full_name || "Atleet"}
@@ -162,7 +162,7 @@ export default function ScheduledBroadcastPanel({
                 <button
                   type="button"
                   onClick={() => void handleDelete(row.id)}
-                  className="rounded p-1 text-app-muted hover:text-red-500"
+                  className="app-focus-ring inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-app-muted transition-colors hover:bg-red-500/15 hover:text-red-400"
                   aria-label="Verwijderen"
                 >
                   <Trash2 className="h-4 w-4" />

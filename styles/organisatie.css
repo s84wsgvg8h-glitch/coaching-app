@@ -6,11 +6,12 @@
   padding: 1rem 1.125rem;
   border-radius: 1rem;
   border: 1px solid var(--app-border);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.03) 0%,
-    rgba(255, 255, 255, 0.01) 100%
-  );
+  background: var(--app-surface);
+  transition: border-color 0.2s ease;
+}
+
+.organisatie-stat-card:hover {
+  border-color: var(--app-border-strong);
 }
 
 .organisatie-stat-icon {
@@ -24,32 +25,34 @@
 }
 
 .organisatie-stat-icon--blue {
-  background: rgba(79, 140, 255, 0.14);
-  color: #6ea1ff;
+  background: var(--app-accent-muted);
+  color: var(--app-accent);
 }
 
 .organisatie-stat-icon--purple {
-  background: rgba(139, 92, 246, 0.14);
-  color: #a78bfa;
+  background: var(--app-accent-muted);
+  color: var(--app-accent);
 }
 
 .organisatie-stat-icon--amber {
-  background: rgba(245, 158, 11, 0.14);
-  color: #fbbf24;
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(251 191 36);
 }
 
 .organisatie-stat-label {
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--app-text-subtle);
 }
 
 .organisatie-stat-value {
-  font-size: 1.375rem;
-  font-weight: 700;
-  line-height: 1.1;
+  margin-top: 0.25rem;
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.01em;
   color: var(--app-text);
 }
 
@@ -73,29 +76,14 @@
   }
 }
 
-.organisatie-add-btn {
-  display: inline-flex;
-  min-height: 2.75rem;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0 1rem;
-  border-radius: 9999px;
-  border: 1px solid rgba(79, 140, 255, 0.35);
-  background: linear-gradient(180deg, rgba(79, 140, 255, 0.22), rgba(79, 140, 255, 0.12));
-  color: var(--app-text);
-  font-size: 13px;
-  font-weight: 600;
-  transition: background 0.15s ease, border-color 0.15s ease;
-}
-
-.organisatie-add-btn:hover {
-  background: linear-gradient(180deg, rgba(79, 140, 255, 0.3), rgba(79, 140, 255, 0.16));
-  border-color: rgba(79, 140, 255, 0.5);
-}
-
 .organisatie-add-btn--submit {
-  width: fit-content;
+  width: 100%;
+}
+
+@media (min-width: 640px) {
+  .organisatie-add-btn--submit {
+    width: fit-content;
+  }
 }
 
 .organisatie-banner {
@@ -108,20 +96,20 @@
 
 .organisatie-banner--success {
   border: 1px solid rgba(16, 185, 129, 0.25);
-  background: rgba(16, 185, 129, 0.1);
-  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.15);
+  color: rgb(52 211 153);
 }
 
 .organisatie-banner--error {
-  border: 1px solid rgba(244, 63, 94, 0.25);
-  background: rgba(244, 63, 94, 0.1);
-  color: #fda4af;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  background: rgba(239, 68, 68, 0.15);
+  color: rgb(248 113 113);
 }
 
 .organisatie-add-form {
   padding: 1rem;
   border-bottom: 1px solid var(--app-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--app-surface-muted);
 }
 
 .organisatie-add-form-header {
@@ -137,10 +125,10 @@
   display: block;
   margin-bottom: 0.375rem;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--app-muted);
+  color: var(--app-text-subtle);
 }
 
 .organisatie-input {
@@ -149,58 +137,73 @@
   padding: 0.625rem 0.875rem;
   border-radius: 0.75rem;
   border: 1px solid var(--app-border);
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--app-surface-muted);
   color: var(--app-text);
   font-size: 16px;
   outline: none;
-  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .organisatie-input:focus {
-  border-color: rgba(79, 140, 255, 0.45);
-  box-shadow: 0 0 0 3px rgba(79, 140, 255, 0.12);
+  border-color: var(--app-accent);
+  box-shadow: 0 0 0 3px var(--app-accent-muted);
 }
 
 .organisatie-input--cell {
-  min-height: 2.5rem;
+  min-height: 2.75rem;
   padding: 0.5rem 0.75rem;
-  font-size: 14px;
+  border-color: transparent;
   background: transparent;
 }
 
+@media (min-width: 768px) {
+  .organisatie-input--cell {
+    min-height: 2.5rem;
+    font-size: 14px;
+  }
+}
+
+.organisatie-input--cell:hover {
+  border-color: var(--app-border);
+}
+
 .organisatie-input--cell:focus {
-  background: rgba(255, 255, 255, 0.03);
+  background: var(--app-surface-muted);
 }
 
 .organisatie-empty {
   padding: 2.5rem 1rem;
   text-align: center;
   font-size: 13px;
-  color: var(--app-muted);
+  color: var(--app-text-muted);
 }
 
 .organisatie-table thead tr {
   border-bottom: 1px solid var(--app-border);
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--app-surface-muted);
 }
 
 .organisatie-table th {
   padding: 0.75rem 1rem;
   font-size: 11px;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.05em;
   text-transform: uppercase;
   text-align: left;
-  color: var(--app-muted);
+  color: var(--app-text-subtle);
 }
 
 .organisatie-row {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid var(--app-border);
   transition: background 0.15s ease;
 }
 
+.organisatie-row:last-child {
+  border-bottom: 0;
+}
+
 .organisatie-row:hover {
-  background: rgba(255, 255, 255, 0.02);
+  background: var(--app-surface-hover);
 }
 
 .organisatie-row td {
@@ -219,15 +222,15 @@
 }
 
 .organisatie-tag--app {
-  border: 1px solid rgba(79, 140, 255, 0.2);
-  background: rgba(79, 140, 255, 0.08);
-  color: #93b4ff;
+  border: 1px solid var(--app-accent-muted);
+  background: var(--app-accent-muted);
+  color: var(--app-accent);
 }
 
 .organisatie-tag--club {
-  border: 1px solid rgba(139, 92, 246, 0.2);
-  background: rgba(139, 92, 246, 0.08);
-  color: #c4b5fd;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.15);
+  color: rgb(52 211 153);
 }
 
 .organisatie-save {
@@ -242,15 +245,15 @@
 }
 
 .organisatie-save--saving {
-  color: var(--app-muted);
+  color: var(--app-text-muted);
 }
 
 .organisatie-save--saved {
-  background: rgba(16, 185, 129, 0.12);
-  color: #6ee7b7;
+  background: rgba(16, 185, 129, 0.15);
+  color: rgb(52 211 153);
 }
 
 .organisatie-save--error {
-  background: rgba(244, 63, 94, 0.12);
-  color: #fda4af;
+  background: rgba(239, 68, 68, 0.15);
+  color: rgb(248 113 113);
 }

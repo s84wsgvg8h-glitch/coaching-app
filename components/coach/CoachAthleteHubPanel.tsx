@@ -61,16 +61,20 @@ export default function CoachAthleteHubPanel({
 
   return (
     <div>
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {links.map((item) => (
           <Link
             key={item.title}
             href={item.href}
-            className="app-card block transition hover:border-brand-purple/40 hover:shadow-md"
+            className="ui-panel app-focus-ring group flex min-h-[44px] items-start gap-3 transition-all duration-200 hover:border-app-border-strong hover:bg-app-surface-hover"
           >
-            <span className="text-2xl">{item.icon}</span>
-            <p className="mt-3 text-base font-bold text-app-text">{item.title}</p>
-            <p className="mt-1 text-sm text-app-muted">{item.description}</p>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-accent/15 text-xl">
+              {item.icon}
+            </span>
+            <span className="min-w-0">
+              <span className="block text-[14px] font-semibold text-app-text">{item.title}</span>
+              <span className="mt-0.5 block text-[13px] text-app-muted">{item.description}</span>
+            </span>
           </Link>
         ))}
       </div>

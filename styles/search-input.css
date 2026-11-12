@@ -2,8 +2,8 @@
 .app-search-field {
   --app-search-border: rgba(255, 255, 255, 0.1);
   --app-search-border-hover: rgba(255, 255, 255, 0.14);
-  --app-search-border-focus: rgba(79, 140, 255, 0.45);
-  --app-search-ring-focus: rgba(79, 140, 255, 0.12);
+  --app-search-border-focus: rgba(var(--app-accent-rgb), 0.45);
+  --app-search-ring-focus: rgba(var(--app-accent-rgb), 0.12);
   --app-search-bg: rgba(255, 255, 255, 0.04);
   --app-search-text: rgba(255, 255, 255, 0.92);
   --app-search-placeholder: rgba(255, 255, 255, 0.5);
@@ -47,8 +47,8 @@
 .app-search-field--on-light {
   --app-search-border: rgba(0, 0, 0, 0.1);
   --app-search-border-hover: rgba(0, 0, 0, 0.14);
-  --app-search-border-focus: rgba(59, 130, 246, 0.45);
-  --app-search-ring-focus: rgba(59, 130, 246, 0.12);
+  --app-search-border-focus: rgba(var(--app-accent-rgb), 0.45);
+  --app-search-ring-focus: rgba(var(--app-accent-rgb), 0.12);
   --app-search-bg: #ffffff;
   --app-search-text: rgba(0, 0, 0, 0.88);
   --app-search-placeholder: rgba(0, 0, 0, 0.45);

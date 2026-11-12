@@ -48,13 +48,13 @@ function timeAgo(iso: string) {
 function statusToneClass(status: CoachMerchOrderRow["status"]) {
   switch (status) {
     case "paid":
-      return "bg-emerald-500/15 text-emerald-300";
+      return "bg-emerald-500/15 text-emerald-400";
     case "pending":
-      return "bg-sky-500/15 text-sky-300";
+      return "bg-amber-500/15 text-amber-400";
     case "cancelled":
       return "bg-app-surface-hover text-app-muted";
     case "failed":
-      return "bg-red-500/15 text-red-300";
+      return "bg-red-500/15 text-red-400";
     default:
       return "bg-app-surface-hover text-app-muted";
   }
@@ -90,7 +90,7 @@ export default function MerchShopSidebar({
 
   return (
     <aside className="flex flex-col gap-4">
-      <section className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4">
+      <section className="rounded-2xl border border-app-border bg-app-surface p-4">
         <div className="mb-3 flex items-center justify-between">
           <h2 className="text-[14px] font-semibold text-app-text">
             Recente bestellingen
@@ -143,7 +143,7 @@ export default function MerchShopSidebar({
                       event.target.value as MerchFulfillmentStatus,
                     )
                   }
-                  className="ml-1 w-[118px] rounded-lg border border-app-border bg-app-surface px-2 py-1 text-[10px] text-app-text"
+                  className="app-focus-ring ml-1 w-[118px] rounded-lg border border-app-border bg-app-surface-muted px-2 py-1 text-[10px] text-app-text"
                 >
                   <option value="new">Nieuw</option>
                   <option value="processing">In behandeling</option>
@@ -158,7 +158,7 @@ export default function MerchShopSidebar({
       </section>
 
       {stats.bestSeller ? (
-        <section className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface p-4">
           <h2 className="mb-3 text-[14px] font-semibold text-app-text">
             Best verkopend product
           </h2>
@@ -187,7 +187,7 @@ export default function MerchShopSidebar({
         </section>
       ) : null}
 
-      <section className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4">
+      <section className="rounded-2xl border border-app-border bg-app-surface p-4">
         <div className="mb-2 flex items-center justify-between">
           <h2 className="text-[14px] font-semibold text-app-text">
             Omzet deze maand
@@ -225,8 +225,8 @@ export default function MerchShopSidebar({
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#0f141b",
-                    border: "1px solid rgba(148,163,184,0.2)",
+                    background: "var(--app-surface-elevated)",
+                    border: "1px solid var(--app-border)",
                     borderRadius: 12,
                     fontSize: 12,
                   }}
@@ -239,7 +239,7 @@ export default function MerchShopSidebar({
                 <Line
                   type="monotone"
                   dataKey="euro"
-                  stroke="#4f8cff"
+                  stroke="var(--app-accent)"
                   strokeWidth={2}
                   dot={false}
                   activeDot={{ r: 4 }}
@@ -255,12 +255,12 @@ export default function MerchShopSidebar({
       </section>
 
       {stats.topBuyer ? (
-        <section className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-4">
+        <section className="rounded-2xl border border-app-border bg-app-surface p-4">
           <h2 className="mb-3 text-[14px] font-semibold text-app-text">
             Top koper deze maand
           </h2>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-300">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/15 text-amber-400">
               <Crown className="h-5 w-5" />
             </span>
             <div className="min-w-0 flex-1">

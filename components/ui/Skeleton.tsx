@@ -13,7 +13,7 @@ export function Skeleton({ className = "" }: SkeletonProps) {
 
 export function SkeletonCard() {
   return (
-    <div className="app-card space-y-3 p-6">
+    <div className="ui-panel space-y-3 p-6">
       <Skeleton className="h-6 w-1/3" />
       <Skeleton className="h-4 w-2/3" />
       <Skeleton className="h-10 w-full" />
@@ -67,7 +67,7 @@ export function SkeletonButton({ className = "h-11 w-full" }: { className?: stri
 
 export function SkeletonMetricCard() {
   return (
-    <div className="app-card space-y-3 p-4">
+    <div className="ui-panel space-y-3 p-4">
       <Skeleton className="h-3 w-24" />
       <Skeleton className="h-8 w-20" />
     </div>

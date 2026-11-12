@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import AppShell from "@/components/AppShell";
+import { PageContainer, Panel } from "@/components/ui/design-system";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { supabase } from "@/lib/supabaseClient";
 
@@ -38,7 +39,11 @@ export default function CompetitionChecklistPage() {
 
   return (
     <AppShell>
-      <div className="app-card">Doorverwijzen naar meet-week...</div>
+      <PageContainer size="full">
+        <Panel>
+          <p className="text-sm text-app-muted">Doorverwijzen naar meet-week...</p>
+        </Panel>
+      </PageContainer>
     </AppShell>
   );
 }

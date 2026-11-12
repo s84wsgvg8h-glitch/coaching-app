@@ -15,7 +15,7 @@ export default function AdminDemoPanel() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0">
           <div className="mb-2 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-sky-400" />
+            <Sparkles className="h-4 w-4 text-app-accent" />
             <h2 className="admin-panel-title">Demo-modus</h2>
           </div>
           <p className="admin-muted max-w-xl text-[13px] leading-relaxed">
@@ -35,7 +35,7 @@ export default function AdminDemoPanel() {
           <button
             type="button"
             onClick={() => launchDemo("atleet")}
-            className="admin-btn admin-btn--ghost inline-flex min-h-[44px] w-full items-center justify-center gap-2 border border-emerald-500/30 text-emerald-300 hover:bg-emerald-500/10"
+            className="admin-btn admin-btn--ghost inline-flex min-h-[44px] w-full items-center justify-center gap-2 border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/15"
           >
             <Sparkles className="h-4 w-4" />
             Demo atleet openen

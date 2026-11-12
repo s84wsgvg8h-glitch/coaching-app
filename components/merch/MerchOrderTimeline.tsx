@@ -29,11 +29,11 @@ export default function MerchOrderTimeline({ order }: MerchOrderTimelineProps) {
             <span
               className={`mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[11px] font-bold ${
                 state === "done"
-                  ? "bg-emerald-500/20 text-emerald-300"
+                  ? "bg-emerald-500/15 text-emerald-400"
                   : state === "current"
-                    ? "bg-app-accent/20 text-app-accent"
+                    ? "bg-app-accent/15 text-app-accent"
                     : state === "cancelled"
-                      ? "bg-rose-500/10 text-rose-300/70"
+                      ? "bg-red-500/15 text-red-400"
                       : "bg-app-surface-muted text-app-subtle"
               }`}
             >

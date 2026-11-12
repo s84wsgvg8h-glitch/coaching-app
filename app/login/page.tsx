@@ -169,7 +169,7 @@ function LoginForm() {
       {accountDeleted ? (
         <div
           role="status"
-          className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-700 dark:text-emerald-300"
+          className="mb-4 rounded-xl border border-emerald-500/30 bg-emerald-500/15 px-4 py-3 text-sm text-emerald-400"
         >
           Je account is permanent verwijderd. Je kunt opnieuw inloggen als je
           opnieuw bent uitgenodigd.
@@ -208,12 +208,12 @@ function LoginForm() {
         </Link>
       </div>
       {error ? (
-        <p className="text-[13px] font-medium text-red-600 dark:text-red-400" role="alert">
+        <p className="text-[13px] font-medium text-red-400" role="alert">
           {error}
         </p>
       ) : null}
       <button
-        className="app-btn-primary min-h-[44px] w-full"
+        className="app-btn-primary app-focus-ring min-h-[44px] w-full"
         onClick={() => void login()}
         disabled={loading}
       >

@@ -714,10 +714,10 @@ function RawDataPageContent({
       : "grid-cols-[1.35fr_0.35fr_0.5fr_0.6fr_0.55fr_0.65fr]";
 
     return (
-      <div className="overflow-visible">
-        <div className="w-full">
+      <div className="-mx-1 overflow-x-auto px-1 md:mx-0 md:overflow-visible md:px-0">
+        <div className="w-full min-w-[560px] md:min-w-0">
           <div
-            className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-hover rounded-lg text-[10px] font-black text-app-muted uppercase leading-none`}
+            className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-hover rounded-lg text-[10px] font-semibold tracking-wide text-app-subtle uppercase leading-none`}
           >
             <div>Oefening</div>
             <div>Set</div>
@@ -738,9 +738,9 @@ function RawDataPageContent({
               return (
                 <div
                   key={`${exercise.id}-${setRow.set_number}`}
-                  className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-muted border border-app-border rounded-lg text-[12px] leading-tight text-black items-start`}
+                  className={`grid ${gridColumns} gap-2 px-2 py-1.5 bg-app-surface-muted border border-app-border rounded-lg text-[12px] leading-tight text-app-text items-start`}
                 >
-                  <div className="font-bold break-words">
+                  <div className="font-semibold break-words">
                     {exercise.name || "Oefening"}
                   </div>
 
@@ -763,13 +763,13 @@ function RawDataPageContent({
                   )}
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-app-text font-bold">
+                    <div className="text-[11px] leading-tight text-app-text font-semibold">
                       {getSetTonnage(exercise, setRow)}
                     </div>
                   )}
 
                   {showNotes && (
-                    <div className="text-[11px] leading-tight text-app-text font-bold">
+                    <div className="text-[11px] leading-tight text-app-text font-semibold">
                       {getSetIntensity(exercise, setRow)}
                     </div>
                   )}
@@ -787,31 +787,31 @@ function RawDataPageContent({
     if (filterExercisesForView(rawDay.exercises).length === 0) return null;
 
     return (
-      <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
+      <div className="bg-app-surface rounded-2xl border border-app-border p-4 w-full">
         <div className="mb-3">
           <p className="text-xs text-app-muted font-semibold">
             {rawWeek.athleteName} · {rawWeek.block.title} · {rawWeek.week.title}
           </p>
-          <h3 className="text-xl font-black text-app-text">{rawDay.day.title}</h3>
+          <h3 className="text-[15px] font-semibold tracking-tight text-app-text">{rawDay.day.title}</h3>
         </div>
 
         {showNotes && rawDay.day.warmup?.trim() && (
-          <div className="mb-2 bg-blue-50 border border-blue-200 rounded-xl p-2">
-            <p className="text-[10px] font-black text-blue-700 uppercase">
+          <div className="mb-2 bg-app-accent/10 border border-app-accent/25 rounded-xl p-2">
+            <p className="text-[10px] font-semibold tracking-wide text-app-accent uppercase">
               Warmup
             </p>
-            <p className="text-xs text-blue-950 whitespace-pre-wrap">
+            <p className="text-xs text-app-text whitespace-pre-wrap">
               {rawDay.day.warmup}
             </p>
           </div>
         )}
 
         {showNotes && rawDay.day.notes?.trim() && (
-          <div className="mb-2 bg-yellow-50 border border-yellow-200 rounded-xl p-2">
-            <p className="text-[10px] font-black text-yellow-700 uppercase">
+          <div className="mb-2 bg-amber-500/10 border border-amber-500/25 rounded-xl p-2">
+            <p className="text-[10px] font-semibold tracking-wide text-amber-400 uppercase">
               Dag notes
             </p>
-            <p className="text-xs text-yellow-950 whitespace-pre-wrap">
+            <p className="text-xs text-app-text whitespace-pre-wrap">
               {rawDay.day.notes}
             </p>
           </div>
@@ -831,12 +831,12 @@ function RawDataPageContent({
 
     if (visibleDays.length === 0) {
       return (
-        <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
+        <div className="bg-app-surface rounded-2xl border border-app-border p-4 w-full">
           <div className="mb-4">
             <p className="text-xs text-app-muted font-semibold">
               {rawWeek.block.title}
             </p>
-            <h3 className="text-xl font-black text-app-text">{rawWeek.week.title}</h3>
+            <h3 className="text-[15px] font-semibold tracking-tight text-app-text">{rawWeek.week.title}</h3>
           </div>
 
           <div className="bg-app-surface-muted rounded-xl p-3 text-xs text-app-muted">
@@ -847,7 +847,7 @@ function RawDataPageContent({
     }
 
     return (
-      <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 w-full">
+      <div className="bg-app-surface rounded-2xl border border-app-border p-4 w-full">
         <div className="mb-4">
           <p className="text-xs text-app-muted font-semibold">
             {rawWeek.athleteName} · {rawWeek.block.title}
@@ -855,7 +855,7 @@ function RawDataPageContent({
               ? ` · start ${formatDate(rawWeek.block.start_date)}`
               : ""}
           </p>
-          <h3 className="text-xl font-black text-app-text">{rawWeek.week.title}</h3>
+          <h3 className="text-[15px] font-semibold tracking-tight text-app-text">{rawWeek.week.title}</h3>
         </div>
 
         {visibleDays.length === 0 ? (
@@ -866,7 +866,7 @@ function RawDataPageContent({
           <div className="space-y-4">
             {visibleDays.map((rawDay) => (
               <div key={rawDay.day.id}>
-                <h4 className="text-base font-black text-black mb-2">
+                <h4 className="text-[14px] font-semibold text-app-text mb-2">
                   {rawDay.day.title}
                 </h4>
 
@@ -1142,7 +1142,7 @@ function RawDataPageContent({
     const cleanName = exerciseName.toLowerCase();
 
     if (cleanName.includes("squat")) {
-      return "border-l-[#6fa8dc]";
+      return "border-l-app-accent";
     }
 
     if (
@@ -1150,14 +1150,14 @@ function RawDataPageContent({
       cleanName.includes("bench press") ||
       cleanName.includes("bench")
     ) {
-      return "border-l-[#9fc5e8]";
+      return "border-l-app-accent/60";
     }
 
     if (cleanName.includes("deadlift")) {
-      return "border-l-[#cfe2f3]";
+      return "border-l-app-accent/30";
     }
 
-    return "border-l-gray-300";
+    return "border-l-app-border-strong";
   }
 
   function renderProgressionView() {
@@ -1165,7 +1165,7 @@ function RawDataPageContent({
 
     if (!rawBlock) {
       return (
-        <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
+        <div className="bg-app-surface rounded-2xl border border-app-border p-6 text-app-muted">
           Geen block gevonden voor deze atleet.
         </div>
       );
@@ -1181,13 +1181,13 @@ function RawDataPageContent({
     return (
       <div className={compact ? "space-y-3" : "space-y-5"}>
         <div
-          className={`bg-app-surface rounded-2xl border border-app-border shadow ${
+          className={`bg-app-surface rounded-2xl border border-app-border ${
             compact ? "p-2.5" : "p-4"
           }`}
         >
           <p
-            className={`font-black text-app-muted uppercase ${
-              compact ? "mb-1.5 text-[10px]" : "mb-2 text-xs"
+            className={`font-medium tracking-wide text-app-subtle uppercase ${
+              compact ? "mb-1.5 text-[10px]" : "mb-2 text-[11px]"
             }`}
           >
             Kies block
@@ -1202,12 +1202,12 @@ function RawDataPageContent({
                   key={blockItem.block.id}
                   type="button"
                   onClick={() => setSelectedProgressionBlockId(blockItem.block.id)}
-                  className={`rounded-xl font-bold border transition ${
-                    compact ? "px-2.5 py-1 text-[11px]" : "px-4 py-2 text-sm"
+                  className={`rounded-full font-semibold border transition app-focus-ring ${
+                    compact ? "px-2.5 py-1 text-[11px]" : "min-h-[44px] px-4 py-2 text-sm md:min-h-[36px]"
                   } ${
                     active
-                      ? "bg-black text-white border-black"
-                      : "bg-app-surface-muted text-app-text border-app-border hover:border-black"
+                      ? "bg-app-accent text-white border-app-accent"
+                      : "bg-app-surface text-app-muted border-app-border hover:bg-app-surface-hover hover:text-app-text"
                   }`}
                 >
                   {blockItem.block.title || "Block"}
@@ -1217,13 +1217,13 @@ function RawDataPageContent({
           </div>
         </div>
 
-        <div className="bg-app-surface rounded-3xl border border-app-border shadow overflow-hidden">
+        <div className="bg-app-surface rounded-2xl border border-app-border overflow-hidden">
           <div
             className={`border-b border-app-border ${compact ? "p-3" : "p-5"}`}
           >
             <h2
-              className={`font-black text-black ${
-                compact ? "text-base" : "text-2xl"
+              className={`font-semibold tracking-tight text-app-text ${
+                compact ? "text-base" : "text-[18px]"
               }`}
             >
               {rawBlock.block.title || "Block"}
@@ -1261,7 +1261,7 @@ function RawDataPageContent({
                 }}
               >
                 <div
-                  className={`sticky top-0 left-0 z-30 bg-app-surface-hover border-b border-r border-gray-300 font-black text-app-muted uppercase ${
+                  className={`sticky top-0 left-0 z-30 bg-app-surface-elevated border-b border-r border-app-border font-semibold tracking-wide text-app-subtle uppercase ${
                     compact
                       ? "px-1 py-1 text-[9px] leading-tight"
                       : "p-3 text-xs"
@@ -1273,7 +1273,7 @@ function RawDataPageContent({
                 {weeks.map((rawWeek) => (
                   <div
                     key={rawWeek.week.id}
-                    className={`sticky top-0 z-20 bg-app-surface-hover border-b border-r border-gray-300 font-black text-app-muted uppercase ${
+                    className={`sticky top-0 z-20 bg-app-surface-elevated border-b border-r border-app-border font-semibold tracking-wide text-app-subtle uppercase ${
                       compact
                         ? "px-1 py-1 text-[9px] leading-tight"
                         : "p-3 text-xs"
@@ -1288,11 +1288,11 @@ function RawDataPageContent({
                     <div
                       className={`sticky left-0 z-10 border-r border-b border-app-border border-l-4 ${getProgressionExerciseColorClass(
                         row.baseName,
-                      )} font-black text-black ${
+                      )} font-semibold text-app-text ${
                         compact
                           ? "px-1 py-1 text-[10px] leading-tight"
                           : "p-3 text-sm"
-                      } ${rowIndex % 2 === 0 ? "bg-app-surface" : "bg-gray-50"}`}
+                      } ${rowIndex % 2 === 0 ? "bg-app-surface" : "bg-app-surface-muted"}`}
                     >
                       {row.name}
                     </div>
@@ -1308,7 +1308,7 @@ function RawDataPageContent({
                               ? "px-1 py-1 text-[9px]"
                               : "p-3 text-xs"
                           } ${
-                            rowIndex % 2 === 0 ? "bg-app-surface" : "bg-gray-50"
+                            rowIndex % 2 === 0 ? "bg-app-surface" : "bg-app-surface-muted"
                           } ${rows.length === 0 ? "text-app-muted" : "text-app-text"}`}
                         >
                           {getProgressionCellText(rows)}
@@ -1341,13 +1341,13 @@ function RawDataPageContent({
 
     return (
       <div className="mb-2 rounded-lg border border-app-border bg-app-surface-muted px-2 py-1 text-[10px] leading-tight text-app-muted">
-        <span className="font-black text-gray-800">bw:</span> {bw}
-        <span className="mx-1 text-gray-300">|</span>
-        <span className="font-black text-gray-800">herstel:</span> {recovery}
-        <span className="mx-1 text-gray-300">|</span>
-        <span className="font-black text-gray-800">fatigue:</span> {fatigue}
-        <span className="mx-1 text-gray-300">|</span>
-        <span className="font-black text-gray-800">notes:</span> {notes}
+        <span className="font-semibold text-app-text">bw:</span> {bw}
+        <span className="mx-1 text-app-subtle">|</span>
+        <span className="font-semibold text-app-text">herstel:</span> {recovery}
+        <span className="mx-1 text-app-subtle">|</span>
+        <span className="font-semibold text-app-text">fatigue:</span> {fatigue}
+        <span className="mx-1 text-app-subtle">|</span>
+        <span className="font-semibold text-app-text">notes:</span> {notes}
       </div>
     );
   }
@@ -1358,10 +1358,10 @@ function RawDataPageContent({
         {filteredRawBlocks.map((rawBlock) => (
           <div
             key={rawBlock.block.id}
-            className="bg-app-surface rounded-3xl border border-app-border shadow p-6"
+            className="bg-app-surface rounded-2xl border border-app-border p-4 md:p-5"
           >
-            <div className="mb-6">
-              <h2 className="text-2xl font-black text-app-text">
+            <div className="mb-4">
+              <h2 className="text-[18px] font-semibold tracking-tight text-app-text">
                 {rawBlock.block.title || "Block"}
               </h2>
 
@@ -1381,7 +1381,7 @@ function RawDataPageContent({
               <div className="space-y-8">
                 {rawBlock.weeks.map((rawWeek) => (
                   <div key={rawWeek.week.id} className="space-y-5">
-                    <h3 className="text-xl font-black text-app-text">
+                    <h3 className="text-[15px] font-semibold tracking-tight text-app-text">
                       {rawWeek.week.title || `Week ${rawWeek.week.week_number}`}
                     </h3>
 
@@ -1393,29 +1393,29 @@ function RawDataPageContent({
                       <div className="space-y-6">
                         {rawWeek.days.map((rawDay) => (
                           <div key={rawDay.day.id}>
-                            <h4 className="text-lg font-black text-black mb-2">
+                            <h4 className="text-[14px] font-semibold text-app-text mb-2">
                               {rawDay.day.title || "Dag"}
                             </h4>
 
                             {renderDayExternals(rawDay)}
 
                             {showNotes && rawDay.day.warmup?.trim() && (
-                              <div className="mb-2 bg-blue-50 border border-blue-200 rounded-xl p-2">
-                                <p className="text-[10px] font-black text-blue-700 uppercase">
+                              <div className="mb-2 bg-app-accent/10 border border-app-accent/25 rounded-xl p-2">
+                                <p className="text-[10px] font-semibold tracking-wide text-app-accent uppercase">
                                   Warmup
                                 </p>
-                                <p className="text-xs text-blue-950 whitespace-pre-wrap">
+                                <p className="text-xs text-app-text whitespace-pre-wrap">
                                   {rawDay.day.warmup}
                                 </p>
                               </div>
                             )}
 
                             {showNotes && rawDay.day.notes?.trim() && (
-                              <div className="mb-2 bg-yellow-50 border border-yellow-200 rounded-xl p-2">
-                                <p className="text-[10px] font-black text-yellow-700 uppercase">
+                              <div className="mb-2 bg-amber-500/10 border border-amber-500/25 rounded-xl p-2">
+                                <p className="text-[10px] font-semibold tracking-wide text-amber-400 uppercase">
                                   Dag notes
                                 </p>
-                                <p className="text-xs text-yellow-950 whitespace-pre-wrap">
+                                <p className="text-xs text-app-text whitespace-pre-wrap">
                                   {rawDay.day.notes}
                                 </p>
                               </div>
@@ -1555,8 +1555,8 @@ function RawDataPageContent({
 
     return (
       <div className="mt-4 border-t border-app-border pt-4">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-xs font-black text-app-muted uppercase">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase">
             Dagen filteren
           </p>
 
@@ -1564,7 +1564,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={selectAllComparableDays}
-              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-app-border bg-app-surface px-3 py-1 text-[11px] font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring md:min-h-[32px]"
             >
               Alles aan
             </button>
@@ -1572,7 +1572,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={hideAllComparableDays}
-              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-app-border bg-app-surface px-3 py-1 text-[11px] font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring md:min-h-[32px]"
             >
               Alles uit
             </button>
@@ -1588,10 +1588,10 @@ function RawDataPageContent({
                 key={day.key}
                 type="button"
                 onClick={() => toggleDayFilter(day.key)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+                className={`min-h-[44px] px-3 py-1.5 rounded-full text-xs font-semibold border transition app-focus-ring md:min-h-[32px] ${
                   active
-                    ? "bg-black text-white border-black"
-                    : "bg-app-surface text-app-muted border-app-border hover:border-black"
+                    ? "bg-app-accent text-white border-app-accent"
+                    : "bg-app-surface text-app-muted border-app-border hover:bg-app-surface-hover hover:text-app-text"
                 }`}
               >
                 {day.title}
@@ -1612,8 +1612,8 @@ function RawDataPageContent({
 
     return (
       <div className="mt-4 border-t border-app-border pt-4">
-        <div className="flex items-center justify-between gap-3 mb-2">
-          <p className="text-xs font-black text-app-muted uppercase">
+        <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
+          <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase">
             Oefeningen filteren
           </p>
 
@@ -1621,7 +1621,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={selectAllComparableExercises}
-              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-app-border bg-app-surface px-3 py-1 text-[11px] font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring md:min-h-[32px]"
             >
               Alles aan
             </button>
@@ -1629,7 +1629,7 @@ function RawDataPageContent({
             <button
               type="button"
               onClick={hideAllComparableExercises}
-              className="text-[11px] font-bold bg-app-surface-hover hover:bg-gray-200 text-black px-2 py-1 rounded-lg"
+              className="inline-flex min-h-[44px] items-center rounded-lg border border-app-border bg-app-surface px-3 py-1 text-[11px] font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text app-focus-ring md:min-h-[32px]"
             >
               Alles uit
             </button>
@@ -1645,10 +1645,10 @@ function RawDataPageContent({
                 key={name}
                 type="button"
                 onClick={() => toggleExerciseFilter(name)}
-                className={`px-3 py-1.5 rounded-full text-xs font-bold border transition ${
+                className={`min-h-[44px] px-3 py-1.5 rounded-full text-xs font-semibold border transition app-focus-ring md:min-h-[32px] ${
                   active
-                    ? "bg-black text-white border-black"
-                    : "bg-app-surface text-app-muted border-app-border hover:border-black"
+                    ? "bg-app-accent text-white border-app-accent"
+                    : "bg-app-surface text-app-muted border-app-border hover:bg-app-surface-hover hover:text-app-text"
                 }`}
               >
                 {name}
@@ -1679,8 +1679,8 @@ function RawDataPageContent({
     const setSelectedValue = side === "left" ? setLeftSelection : setRightSelection;
 
     return (
-      <div className="flex-1 min-w-[320px]">
-        <p className="text-xs font-black text-app-muted uppercase mb-2">
+      <div className="w-full min-w-0 sm:min-w-[280px] sm:flex-1">
+        <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase mb-2">
           {side === "left" ? "Links" : "Rechts"}
         </p>
 
@@ -1694,10 +1694,10 @@ function RawDataPageContent({
                 key={id}
                 type="button"
                 onClick={() => setSelectedValue(id)}
-                className={`w-full text-left rounded-lg px-3 py-2 text-xs font-semibold transition ${
+                className={`w-full text-left rounded-lg px-3 py-2 text-xs font-semibold transition app-focus-ring ${
                   active
-                    ? "bg-black text-white"
-                    : "bg-app-surface text-app-text hover:bg-gray-100"
+                    ? "bg-app-accent text-white"
+                    : "bg-app-surface text-app-text hover:bg-app-surface-hover"
                 }`}
               >
                 {getPickerItemLabel(item)}
@@ -1758,18 +1758,22 @@ function RawDataPageContent({
   const selectedRightWeek = viewMode === "week" ? getSelectedWeek(rightSelection) : null;
 
   return (
-    <main
+    <div
       className={
-        compactShell ? "min-h-full bg-gray-100" : "min-h-[100dvh] bg-gray-100"
+        compactShell ? "min-h-full min-w-0" : "min-h-[100dvh] min-w-0 bg-app-bg"
       }
     >
       <section
         className={
-          compactShell ? "flex-1 p-3 pb-4" : "flex-1 p-8 pb-24"
+          compactShell
+            ? embeddedInChat
+              ? "min-w-0 flex-1 p-3 pb-4"
+              : "min-w-0 flex-1 pb-4"
+            : "min-w-0 flex-1 p-4 pb-24 md:p-6"
         }
       >
           <div
-            className={`flex items-end justify-between gap-4 ${
+            className={`flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between sm:gap-4 ${
               compactShell ? "mb-3" : "mb-6"
             }`}
           >
@@ -1777,14 +1781,14 @@ function RawDataPageContent({
               {!embeddedInUnifiedPage && (
                 <>
                   <h1
-                    className={`font-bold text-black ${
-                      compactShell ? "text-lg" : "text-3xl"
+                    className={`font-semibold tracking-tight text-app-text ${
+                      compactShell ? "text-lg" : "text-[20px] md:text-[24px]"
                     }`}
                   >
                     Raw Data
                   </h1>
                   {!compactShell && (
-                    <p className="text-app-muted mt-2">
+                    <p className="mt-1 text-[13px] text-app-muted">
                       Bekijk alle data, vergelijk weken of bekijk progression per block.
                     </p>
                   )}
@@ -1793,23 +1797,23 @@ function RawDataPageContent({
             </div>
 
             {!compactShell && (
-              <div className="flex items-end gap-2">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:items-end">
                 <button
                   type="button"
                   onClick={downloadCsv}
-                  className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-black shadow hover:bg-gray-50"
+                  className="app-btn-secondary min-h-[44px] text-sm"
                 >
                   Export CSV
                 </button>
-                <div className="min-w-[280px]">
-                  <p className="text-xs font-black text-app-muted uppercase mb-1">
+                <div className="w-full min-w-0 sm:min-w-[280px]">
+                  <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase mb-1">
                     Atleet
                   </p>
 
                   <select
                     value={selectedAthleteId}
                     onChange={(e) => setSelectedAthleteId(e.target.value)}
-                    className="w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                    className="min-h-[44px] w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-app-text app-focus-ring"
                   >
                     {!selectedAthleteId && (
                       <option value="">Kies atleet</option>
@@ -1828,7 +1832,7 @@ function RawDataPageContent({
               <button
                 type="button"
                 onClick={loadRawData}
-                className="bg-black text-white px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition"
+                className="app-btn-primary min-h-[44px]"
               >
                 Ververs
               </button>
@@ -1836,15 +1840,15 @@ function RawDataPageContent({
           </div>
 
           {embeddedInUnifiedPage && (
-            <div className="mb-4 flex flex-wrap items-end justify-end gap-3">
-              <div className="min-w-[280px]">
-                <p className="text-xs font-black text-app-muted uppercase mb-1">
+            <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-end sm:justify-end">
+              <div className="w-full min-w-0 sm:min-w-[280px]">
+                <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase mb-1">
                   Atleet
                 </p>
                 <select
                   value={selectedAthleteId}
                   onChange={(e) => setSelectedAthleteId(e.target.value)}
-                  className="w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-black shadow"
+                  className="min-h-[44px] w-full bg-app-surface border border-app-border rounded-xl px-3 py-2 text-sm outline-none text-app-text app-focus-ring"
                 >
                   {!selectedAthleteId && <option value="">Kies atleet</option>}
                   {athleteOptions.map((athlete) => (
@@ -1857,7 +1861,7 @@ function RawDataPageContent({
               <button
                 type="button"
                 onClick={loadRawData}
-                className="bg-black text-white px-4 py-2 rounded-xl font-semibold hover:opacity-90 transition"
+                className="app-btn-primary min-h-[44px]"
               >
                 Ververs
               </button>
@@ -1865,39 +1869,39 @@ function RawDataPageContent({
           )}
 
           {loading && (
-            <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
+            <div className="bg-app-surface rounded-2xl border border-app-border p-6 text-app-muted">
               Data laden...
             </div>
           )}
 
           {!loading && errorMessage && (
-            <div className="bg-red-50 border border-red-200 text-red-700 rounded-2xl p-5">
+            <div className="bg-red-500/15 border border-red-500/30 text-red-400 rounded-2xl p-5">
               {errorMessage}
             </div>
           )}
 
           {!loading && !errorMessage && rawBlocks.length === 0 && (
-            <div className="bg-app-surface rounded-2xl border border-app-border shadow p-6 text-app-muted">
+            <div className="bg-app-surface rounded-2xl border border-app-border p-6 text-app-muted">
               Geen raw data gevonden.
             </div>
           )}
 
           {!loading && !errorMessage && rawBlocks.length > 0 && (
             <>
-              <div className="bg-app-surface rounded-2xl border border-app-border shadow p-4 mb-6">
+              <div className="bg-app-surface rounded-2xl border border-app-border p-4 mb-4">
                 <div className="flex flex-wrap items-end gap-3">
                   <div>
-                    <p className="text-xs font-black text-app-muted uppercase mb-1">
+                    <p className="text-[11px] font-medium tracking-wide text-app-subtle uppercase mb-1">
                       Weergave
                     </p>
-                    <div className="flex bg-app-surface-hover rounded-xl p-1">
+                    <div className="-mx-1 flex max-w-full gap-1 overflow-x-auto rounded-xl border border-app-border bg-app-surface-muted p-1 scrollbar-none sm:mx-0">
                       <button
                         type="button"
                         onClick={() => switchMode("all")}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
+                        className={`min-h-[40px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition app-focus-ring ${
                           viewMode === "all"
-                            ? "bg-black text-white"
-                            : "text-app-muted hover:bg-app-surface"
+                            ? "bg-app-accent text-white"
+                            : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                         }`}
                       >
                         Alle data
@@ -1906,10 +1910,10 @@ function RawDataPageContent({
                       <button
                         type="button"
                         onClick={() => switchMode("week")}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
+                        className={`min-h-[40px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition app-focus-ring ${
                           viewMode === "week"
-                            ? "bg-black text-white"
-                            : "text-app-muted hover:bg-app-surface"
+                            ? "bg-app-accent text-white"
+                            : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                         }`}
                       >
                         2 weken vergelijken
@@ -1918,10 +1922,10 @@ function RawDataPageContent({
                       <button
                         type="button"
                         onClick={() => switchMode("progression")}
-                        className={`px-4 py-2 rounded-lg text-sm font-bold transition ${
+                        className={`min-h-[40px] shrink-0 whitespace-nowrap px-4 py-2 rounded-lg text-sm font-semibold transition app-focus-ring ${
                           viewMode === "progression"
-                            ? "bg-black text-white"
-                            : "text-app-muted hover:bg-app-surface"
+                            ? "bg-app-accent text-white"
+                            : "text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                         }`}
                       >
                         Progression view
@@ -1937,10 +1941,10 @@ function RawDataPageContent({
                     <button
                       type="button"
                       onClick={() => setShowNotes((current: boolean) => !current)}
-                      className={`px-4 py-2 rounded-xl text-sm font-bold transition ${
+                      className={`min-h-[44px] px-4 py-2 rounded-full border text-sm font-semibold transition app-focus-ring ${
                         showNotes
-                          ? "bg-black text-white"
-                          : "bg-app-surface-hover text-app-muted hover:bg-gray-200"
+                          ? "bg-app-accent text-white border-app-accent"
+                          : "bg-app-surface text-app-muted border-app-border hover:bg-app-surface-hover hover:text-app-text"
                       }`}
                     >
                       Notes aan/uit
@@ -1958,17 +1962,17 @@ function RawDataPageContent({
                 renderProgressionView()
               ) : (
                 <div
-                  className={`grid grid-cols-2 gap-5 items-start overflow-hidden ${
+                  className={`grid grid-cols-1 gap-5 items-start md:grid-cols-2 md:overflow-hidden ${
                     embeddedInChat
-                      ? "h-[calc(100vh-220px)] min-h-[360px]"
-                      : "h-[calc(100vh-300px)] min-h-[520px]"
+                      ? "md:h-[calc(100vh-220px)] md:min-h-[360px]"
+                      : "md:h-[calc(100vh-300px)] md:min-h-[520px]"
                   }`}
                 >
-                  <div className="h-full overflow-y-auto overflow-x-hidden pr-2 rounded-2xl">
+                  <div className="min-w-0 rounded-2xl md:h-full md:overflow-y-auto md:overflow-x-hidden md:pr-2">
                     {selectedLeftWeek ? renderWeekCard(selectedLeftWeek) : null}
                   </div>
 
-                  <div className="h-full overflow-y-auto overflow-x-hidden pr-2 rounded-2xl">
+                  <div className="min-w-0 rounded-2xl md:h-full md:overflow-y-auto md:overflow-x-hidden md:pr-2">
                     {selectedRightWeek ? renderWeekCard(selectedRightWeek) : null}
                   </div>
                 </div>
@@ -1977,6 +1981,6 @@ function RawDataPageContent({
           )}
         </section>
       {!compactShell && <AppSidebar />}
-    </main>
+    </div>
   );
 }

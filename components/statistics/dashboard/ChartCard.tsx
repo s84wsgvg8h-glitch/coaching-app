@@ -40,7 +40,7 @@ type ChartCardProps = {
 
 function MenuSection({ label }: { label: string }) {
   return (
-    <p className="px-3 pb-1 pt-2 text-[10px] font-semibold uppercase tracking-wide text-app-muted">
+    <p className="px-3 pb-1 pt-2 text-[11px] font-medium uppercase tracking-wide text-app-subtle">
       {label}
     </p>
   );
@@ -58,8 +58,8 @@ function MenuItem({
   return (
     <button
       type="button"
-      className={`flex w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-app-surface-hover ${
-        active ? "text-brand-purple" : "text-app-text"
+      className={`flex min-h-10 w-full items-center rounded-lg px-3 py-2 text-left text-sm transition-colors hover:bg-app-surface-hover ${
+        active ? "text-app-accent" : "text-app-text"
       }`}
       onClick={onClick}
     >
@@ -120,10 +120,10 @@ export default function ChartCard({
     .join(" · ");
 
   const body = (
-    <div className="rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm">
+    <div className="min-w-0 rounded-2xl border border-app-border bg-app-surface p-4 transition-colors hover:border-app-border-strong">
       <div className="mb-3 flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1 pr-2">
-          <h3 className="truncate text-[15px] font-semibold text-app-text">{title}</h3>
+          <h3 className="truncate text-[15px] font-semibold tracking-tight text-app-text">{title}</h3>
           {subtitle ? (
             <p className="mt-1 text-xs text-app-muted">{subtitle}</p>
           ) : null}
@@ -143,13 +143,13 @@ export default function ChartCard({
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
+              className="app-focus-ring flex h-9 w-9 items-center justify-center rounded-xl border border-app-border bg-app-surface-muted text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
               aria-label="Grafiek opties"
             >
               <MoreVertical className="h-4 w-4" />
             </button>
             {menuOpen ? (
-              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface p-1 shadow-xl">
+              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface-elevated p-1 shadow-[0_12px_32px_rgba(0,0,0,0.35)]">
                 {onChartModeChange && chartMode ? (
                   <>
                     <MenuSection label="Weergave" />
@@ -271,22 +271,22 @@ export default function ChartCard({
     <>
       {body}
       <div
-        className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+        className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-0 backdrop-blur-sm sm:items-center sm:p-4"
         onClick={() => setExpanded(false)}
       >
         <div
-          className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-app-border bg-app-surface p-4"
+          className="max-h-[90dvh] w-full max-w-6xl overflow-auto rounded-t-2xl border border-app-border bg-app-surface p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:rounded-2xl"
           onClick={(event) => event.stopPropagation()}
         >
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <h3 className="text-lg font-semibold text-app-text">{title}</h3>
+              <h3 className="text-[17px] font-semibold tracking-tight text-app-text">{title}</h3>
               {subtitle ? <p className="text-sm text-app-muted">{subtitle}</p> : null}
             </div>
             <button
               type="button"
               onClick={() => setExpanded(false)}
-              className="rounded-lg border border-app-border p-2 text-app-muted hover:bg-app-surface-hover hover:text-app-text"
+              className="app-focus-ring flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-app-border text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
             >
               <X className="h-4 w-4" />
             </button>

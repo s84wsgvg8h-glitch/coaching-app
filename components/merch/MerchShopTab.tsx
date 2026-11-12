@@ -20,6 +20,7 @@ import {
 import MerchMetricCard from "@/components/merch/MerchMetricCard";
 import MerchShopSidebar from "@/components/merch/MerchShopSidebar";
 import EmptyState from "@/components/ui/EmptyState";
+import { PageHeader } from "@/components/ui/design-system";
 import {
   duplicateMerchItem,
   formatMerchPrice,
@@ -198,87 +199,80 @@ export default function MerchShopTab({
 
   return (
     <>
-      <header className="mb-5 flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-app-subtle">
-            Limitless Coaching
-          </p>
-          <h1 className="mt-1 text-[28px] font-bold tracking-tight text-app-text">
-            Merch shop
-          </h1>
-          <p className="mt-1 text-[14px] text-app-muted">
-            Beheer je producten, bestellingen en prestaties.
-          </p>
-        </div>
+      <PageHeader
+        eyebrow="Limitless Coaching"
+        title="Merch shop"
+        description="Beheer je producten, bestellingen en prestaties."
+        actions={
+          <>
+            <div className="relative w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={() => setActionsOpen((value) => !value)}
+                className="app-btn-secondary app-focus-ring min-h-[44px] w-full sm:w-auto"
+              >
+                Acties
+                <ChevronDown className="h-4 w-4 text-app-muted" />
+              </button>
+              {actionsOpen ? (
+                <>
+                  <button
+                    type="button"
+                    className="fixed inset-0 z-10"
+                    aria-label="Menu sluiten"
+                    onClick={() => setActionsOpen(false)}
+                  />
+                  <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[220px] overflow-hidden rounded-xl border border-app-border bg-app-surface-elevated shadow-xl">
+                    {[
+                      { label: "Producten exporteren", action: exportProductsCsv },
+                      { label: "Orders exporteren", action: exportOrdersCsv },
+                      {
+                        label: "Alle concepten bekijken",
+                        action: () => setFilter("concept"),
+                      },
+                      {
+                        label: "Voorraad controleren",
+                        action: () => setFilter("soldout"),
+                      },
+                      {
+                        label: "Collecties beheren",
+                        action: () => onNavigate("collections"),
+                      },
+                      {
+                        label: "Stripe instellingen",
+                        action: () => onNavigate("settings"),
+                      },
+                    ].map((entry) => (
+                      <button
+                        key={entry.label}
+                        type="button"
+                        className="block min-h-[44px] w-full px-4 py-2.5 text-left text-[13px] text-app-text hover:bg-app-surface-hover"
+                        onClick={() => {
+                          setActionsOpen(false);
+                          entry.action();
+                        }}
+                      >
+                        {entry.label}
+                      </button>
+                    ))}
+                  </div>
+                </>
+              ) : null}
+            </div>
 
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="relative">
             <button
               type="button"
-              onClick={() => setActionsOpen((value) => !value)}
-              className="inline-flex items-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-[13px] font-medium text-app-text hover:bg-app-surface-muted"
+              onClick={onOpenCreate}
+              className="app-btn-primary app-focus-ring min-h-[44px] w-full sm:w-auto"
             >
-              Acties
-              <ChevronDown className="h-4 w-4 text-app-muted" />
+              <Plus className="h-4 w-4" />
+              Product toevoegen
             </button>
-            {actionsOpen ? (
-              <>
-                <button
-                  type="button"
-                  className="fixed inset-0 z-10"
-                  aria-label="Menu sluiten"
-                  onClick={() => setActionsOpen(false)}
-                />
-                <div className="absolute right-0 top-[calc(100%+6px)] z-20 min-w-[220px] overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-xl">
-                  {[
-                    { label: "Producten exporteren", action: exportProductsCsv },
-                    { label: "Orders exporteren", action: exportOrdersCsv },
-                    {
-                      label: "Alle concepten bekijken",
-                      action: () => setFilter("concept"),
-                    },
-                    {
-                      label: "Voorraad controleren",
-                      action: () => setFilter("soldout"),
-                    },
-                    {
-                      label: "Collecties beheren",
-                      action: () => onNavigate("collections"),
-                    },
-                    {
-                      label: "Stripe instellingen",
-                      action: () => onNavigate("settings"),
-                    },
-                  ].map((entry) => (
-                    <button
-                      key={entry.label}
-                      type="button"
-                      className="block w-full px-4 py-2.5 text-left text-[13px] text-app-text hover:bg-app-surface-muted"
-                      onClick={() => {
-                        setActionsOpen(false);
-                        entry.action();
-                      }}
-                    >
-                      {entry.label}
-                    </button>
-                  ))}
-                </div>
-              </>
-            ) : null}
-          </div>
+          </>
+        }
+      />
 
-          <button
-            type="button"
-            onClick={onOpenCreate}
-            className="inline-flex items-center gap-2 rounded-xl bg-[#3B82F6] px-4 py-2.5 text-[13px] font-semibold text-white hover:bg-[#2563EB]"
-          >
-            <Plus className="h-4 w-4" />
-            Product toevoegen
-          </button>
-        </div>
-      </header>
-
-      <div className="mb-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+      <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-5">
         <MerchMetricCard
           label="Live producten"
           value={stats.liveCount}
@@ -292,8 +286,8 @@ export default function MerchShopTab({
           value={stats.orderCount}
           sub={`${stats.newOrderCount} nieuwe`}
           icon={ShoppingBag}
-          tone="text-violet-400"
-          bg="bg-violet-500/10"
+          tone="text-app-accent"
+          bg="bg-app-accent/10"
         />
         <MerchMetricCard
           label="Omzet deze maand"
@@ -301,8 +295,8 @@ export default function MerchShopTab({
           sub={formatTrendPct(stats.revenueTrendPct)}
           subUp={stats.revenueTrendPct === null || stats.revenueTrendPct >= 0}
           icon={TrendingUp}
-          tone="text-sky-400"
-          bg="bg-sky-500/10"
+          tone="text-app-accent"
+          bg="bg-app-accent/10"
         />
         <MerchMetricCard
           label="Winst deze maand"
@@ -318,15 +312,15 @@ export default function MerchShopTab({
           value={stats.conversionPct !== null ? `${stats.conversionPct}%` : "—"}
           sub={stats.conversionLabel}
           icon={Users}
-          tone="text-teal-400"
-          bg="bg-teal-500/10"
+          tone="text-emerald-400"
+          bg="bg-emerald-500/10"
         />
       </div>
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_320px]">
         <div className="min-w-0">
-          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-app-border/70 pb-3">
-            <div className="flex flex-wrap gap-1">
+          <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-app-border pb-3">
+            <div className="-mx-2 flex min-w-0 max-w-full gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:px-0">
               {FILTER_TABS.map((tab) => {
                 const active = filter === tab.id;
                 return (
@@ -334,14 +328,16 @@ export default function MerchShopTab({
                     key={tab.id}
                     type="button"
                     onClick={() => setFilter(tab.id)}
-                    className={`rounded-lg px-3 py-2 text-[13px] font-medium transition ${
+                    className={`app-focus-ring min-h-[44px] shrink-0 whitespace-nowrap rounded-full px-4 py-2 text-[13px] font-medium transition ${
                       active
-                        ? "bg-app-surface text-app-text shadow-sm ring-1 ring-app-border"
-                        : "text-app-muted hover:text-app-text"
+                        ? "bg-app-accent text-white"
+                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover hover:text-app-text"
                     }`}
                   >
                     {tab.label}{" "}
-                    <span className="text-app-subtle">{filterCounts[tab.id]}</span>
+                    <span className={active ? "text-white/80" : "text-app-subtle"}>
+                      {filterCounts[tab.id]}
+                    </span>
                   </button>
                 );
               })}
@@ -351,7 +347,7 @@ export default function MerchShopTab({
               <select
                 value={collectionFilter}
                 onChange={(event) => setCollectionFilter(event.target.value)}
-                className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-[12px] text-app-text"
+                className="app-focus-ring min-h-[44px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-[12px] text-app-text"
               >
                 <option value="all">Alle collecties</option>
                 {collections.map((entry) => (
@@ -365,7 +361,7 @@ export default function MerchShopTab({
                 onChange={(event) =>
                   setSort(event.target.value as MerchProductSort)
                 }
-                className="rounded-xl border border-app-border bg-app-surface px-3 py-2 text-[12px] text-app-text"
+                className="app-focus-ring min-h-[44px] rounded-xl border border-app-border bg-app-surface px-3 py-2 text-[12px] text-app-text"
               >
                 <option value="default">Sorteer</option>
                 <option value="name">Naam</option>
@@ -379,7 +375,7 @@ export default function MerchShopTab({
                 <button
                   type="button"
                   onClick={() => setViewMode("grid")}
-                  className={`px-2.5 py-2 ${viewMode === "grid" ? "bg-app-surface-muted text-app-text" : "text-app-muted"}`}
+                  className={`flex min-h-[44px] min-w-[44px] items-center justify-center ${viewMode === "grid" ? "bg-app-accent text-white" : "bg-app-surface text-app-muted hover:bg-app-surface-hover"}`}
                   aria-label="Gridweergave"
                 >
                   <Grid3X3 className="h-4 w-4" />
@@ -387,7 +383,7 @@ export default function MerchShopTab({
                 <button
                   type="button"
                   onClick={() => setViewMode("list")}
-                  className={`px-2.5 py-2 ${viewMode === "list" ? "bg-app-surface-muted text-app-text" : "text-app-muted"}`}
+                  className={`flex min-h-[44px] min-w-[44px] items-center justify-center ${viewMode === "list" ? "bg-app-accent text-white" : "bg-app-surface text-app-muted hover:bg-app-surface-hover"}`}
                   aria-label="Lijstweergave"
                 >
                   <LayoutList className="h-4 w-4" />
@@ -416,7 +412,7 @@ export default function MerchShopTab({
             <div
               className={
                 viewMode === "grid"
-                  ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3"
+                  ? "grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-2 2xl:grid-cols-3"
                   : "space-y-3"
               }
             >
@@ -515,7 +511,7 @@ function ProductCard({
 
   return (
     <article
-      className={`cursor-pointer overflow-hidden rounded-2xl border border-app-border/80 bg-[#161B22]/80 transition hover:border-sky-500/30 hover:shadow-[0_0_20px_rgba(59,130,246,0.08)] ${
+      className={`app-focus-ring cursor-pointer overflow-hidden rounded-2xl border border-app-border bg-app-surface transition hover:border-app-border-strong hover:shadow-[0_8px_24px_rgba(0,0,0,0.18)] ${
         viewMode === "list" ? "flex gap-4 p-3" : ""
       }`}
       onClick={onOpen}
@@ -540,7 +536,7 @@ function ProductCard({
           />
         ) : (
           <div
-            className={`flex items-center justify-center bg-gradient-to-br from-[#1a1f2e] to-[#111827] text-app-muted ${
+            className={`flex items-center justify-center bg-app-surface-muted text-app-muted ${
               viewMode === "grid" ? "aspect-[4/3] w-full" : "h-full w-full"
             }`}
           >
@@ -550,7 +546,7 @@ function ProductCard({
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
           <StatusBadge status={item.status} />
           {isBestSeller ? (
-            <span className="rounded-md bg-violet-500 px-2 py-0.5 text-[10px] font-bold text-white">
+            <span className="rounded-md bg-app-accent px-2 py-0.5 text-[10px] font-bold text-white">
               Best verkocht
             </span>
           ) : null}
@@ -593,7 +589,7 @@ function ProductCard({
                 key={size}
                 className={`rounded-md px-2 py-0.5 text-[10px] ${
                   item.stock_by_size?.[size] === 0
-                    ? "bg-red-500/10 text-red-300"
+                    ? "bg-red-500/15 text-red-400"
                     : "bg-app-surface-muted text-app-muted"
                 }`}
               >
@@ -604,7 +600,7 @@ function ProductCard({
         ) : null}
 
         <div
-          className="mt-3 flex items-center gap-1 border-t border-app-border/60 pt-3"
+          className="mt-3 flex items-center gap-1 border-t border-app-border pt-3"
           onClick={(event) => event.stopPropagation()}
         >
           <ActionBtn icon={Eye} label="Bekijken" onClick={onOpen} />
@@ -621,7 +617,7 @@ function ProductCard({
                   aria-label="Menu sluiten"
                   onClick={onCloseMenu}
                 />
-                <div className="absolute bottom-full right-0 z-20 mb-1 min-w-[160px] overflow-hidden rounded-xl border border-app-border bg-app-surface shadow-xl">
+                <div className="absolute bottom-full right-0 z-20 mb-1 min-w-[160px] overflow-hidden rounded-xl border border-app-border bg-app-surface-elevated shadow-xl">
                   <MenuItem disabled={toggling} onClick={onToggleLive}>
                     {item.active ? "Naar concept" : "Live zetten"}
                   </MenuItem>
@@ -656,7 +652,7 @@ function ActionBtn({
     <button
       type="button"
       onClick={onClick}
-      className="rounded-lg p-2 text-app-muted hover:bg-app-surface-muted hover:text-app-text"
+      className="app-focus-ring flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-app-muted hover:bg-app-surface-hover hover:text-app-text"
       aria-label={label}
     >
       <Icon className="h-4 w-4" />
@@ -679,7 +675,7 @@ function MenuItem({
     <button
       type="button"
       disabled={disabled}
-      className={`block w-full px-3 py-2 text-left text-[12px] hover:bg-app-surface-muted disabled:opacity-50 ${
+      className={`block min-h-[44px] w-full px-3 py-2 text-left text-[12px] hover:bg-app-surface-hover disabled:opacity-50 ${
         danger ? "text-red-400" : "text-app-text"
       }`}
       onClick={onClick}
@@ -696,7 +692,7 @@ function StatusBadge({ status }: { status: MerchItem["status"] }) {
       : status === "soldout"
         ? "bg-red-500 text-white"
         : status === "archived"
-          ? "bg-slate-500 text-white"
+          ? "bg-app-surface-elevated text-app-muted"
           : "bg-amber-500 text-white";
   return (
     <span className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${tone}`}>

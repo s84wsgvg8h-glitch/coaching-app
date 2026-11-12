@@ -41,19 +41,19 @@ export default function VolumeLandmarksPanel({ athleteId }: VolumeLandmarksPanel
   }, [athleteId]);
 
   if (loading) {
-    return <div className="app-card text-sm text-app-muted">Volume landmarks laden...</div>;
+    return <div className="ui-panel text-sm text-app-muted">Volume landmarks laden...</div>;
   }
 
   if (rows.length === 0) {
     return (
-      <div className="app-card text-sm text-app-muted">
+      <div className="ui-panel text-sm text-app-muted">
         Geen weekvolume om landmarks te tonen.
       </div>
     );
   }
 
   return (
-    <div className="app-card">
+    <div className="ui-panel">
       <h3 className="font-bold text-app-text">Volume landmarks (laatste week)</h3>
       <p className="mt-1 text-xs text-app-muted">
         Indicatieve MEV / MAV / MRV zones per competitielift.

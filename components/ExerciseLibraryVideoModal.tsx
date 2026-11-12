@@ -122,7 +122,7 @@ export default function ExerciseLibraryVideoModal({
                 href={openUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-sm font-semibold text-purple-700 underline"
+                className="text-sm font-semibold text-app-accent underline"
               >
                 Open video in nieuw tabblad
               </a>
@@ -132,24 +132,24 @@ export default function ExerciseLibraryVideoModal({
 
         <div className="space-y-3 p-5">
           <div>
-            <p className="text-xs font-bold uppercase tracking-wide text-gray-400">
+            <p className="text-xs font-bold uppercase tracking-wide text-app-subtle">
               {item.category}
             </p>
             <h2 className="text-2xl font-bold text-app-text">{item.name}</h2>
           </div>
 
           {item.description && (
-            <p className="whitespace-pre-wrap text-sm text-gray-700">
+            <p className="whitespace-pre-wrap text-sm text-app-text">
               {item.description}
             </p>
           )}
 
           {item.cues && (
             <div>
-              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-gray-400">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wide text-app-subtle">
                 Coaching cues
               </p>
-              <p className="whitespace-pre-wrap text-sm text-gray-700">
+              <p className="whitespace-pre-wrap text-sm text-app-text">
                 {item.cues}
               </p>
             </div>

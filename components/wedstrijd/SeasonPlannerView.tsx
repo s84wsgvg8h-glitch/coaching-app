@@ -9,7 +9,7 @@ const ATHLETE_COLORS = [
   "border-amber-500/30 bg-amber-500/10 text-amber-400",
   "border-rose-500/30 bg-rose-500/10 text-rose-400",
   "border-cyan-500/30 bg-cyan-500/10 text-cyan-400",
-  "border-violet-500/30 bg-violet-500/10 text-violet-400",
+  "border-violet-500/30 bg-app-accent/10 text-violet-400",
 ];
 
 type Assignment = {

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { CreditCard, Package, Truck } from "lucide-react";
+import { PageHeader } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import {
   loadMerchShopSettings,
@@ -104,16 +105,12 @@ export default function MerchSettingsTab({
 
   return (
     <>
-      <header className="mb-5">
-        <h1 className="text-[28px] font-bold tracking-tight text-app-text">
-          Instellingen
-        </h1>
-        <p className="mt-1 text-[14px] text-app-muted">
-          Shopinstellingen, betalingen en verzending.
-        </p>
-      </header>
+      <PageHeader
+        title="Instellingen"
+        description="Shopinstellingen, betalingen en verzending."
+      />
 
-      <div className="grid gap-4 xl:grid-cols-2">
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
         <SettingsCard
           icon={CreditCard}
           title="Stripe Connect"
@@ -138,7 +135,7 @@ export default function MerchSettingsTab({
               <button
                 type="button"
                 onClick={() => void handleStripeConnect()}
-                className="app-btn-primary mt-3"
+                className="app-btn-primary app-focus-ring mt-3 min-h-[44px]"
               >
                 {stripe.connected ? "Stripe beheren" : "Stripe koppelen"}
               </button>
@@ -155,6 +152,7 @@ export default function MerchSettingsTab({
             <span>Ophalen bij training</span>
             <input
               type="checkbox"
+              className="h-4 w-4 accent-app-accent"
               checked={settings.pickupAtTraining}
               onChange={(e) =>
                 updateSettings({ pickupAtTraining: e.target.checked })
@@ -215,6 +213,7 @@ export default function MerchSettingsTab({
             <span>Voorraadmeldingen</span>
             <input
               type="checkbox"
+              className="h-4 w-4 accent-app-accent"
               checked={settings.stockAlerts}
               onChange={(e) =>
                 updateSettings({ stockAlerts: e.target.checked })
@@ -225,6 +224,7 @@ export default function MerchSettingsTab({
             <span>Nieuwe order notificaties</span>
             <input
               type="checkbox"
+              className="h-4 w-4 accent-app-accent"
               checked={settings.newOrderNotifications}
               onChange={(e) =>
                 updateSettings({ newOrderNotifications: e.target.checked })
@@ -249,10 +249,10 @@ function SettingsCard({
   children: React.ReactNode;
 }) {
   return (
-    <section className="rounded-2xl border border-app-border/80 bg-[#161B22]/80 p-5">
+    <section className="rounded-2xl border border-app-border bg-app-surface p-5">
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-sky-500/10">
-          <Icon className="h-5 w-5 text-sky-400" />
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-app-accent/10">
+          <Icon className="h-5 w-5 text-app-accent" />
         </div>
         <div className="min-w-0 flex-1">
           <h2 className="text-[15px] font-semibold text-app-text">{title}</h2>

@@ -29,6 +29,7 @@ import CoachAthleteNotesSection, {
 } from "@/components/profile/CoachAthleteNotesSection";
 import ProfileAdvancedSettingsPanel from "@/components/profile/ProfileAdvancedSettingsPanel";
 import { SkeletonCard } from "@/components/ui/Skeleton";
+import { PageContainer, Panel } from "@/components/ui/design-system";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { type BlockIntakeWizard } from "@/lib/blockIntakeWizard";
 import { useLogicalBack } from "@/hooks/useLogicalBack";
@@ -192,26 +193,28 @@ function UserProfilePageContent() {
 
   if (loading) {
     return (
-      <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
+      <AppShell contentClassName={PROFILE_CONTENT_CLASS}>
+        <PageContainer size="full">
           <SkeletonCard />
-        </div>
+        </PageContainer>
       </AppShell>
     );
   }
 
   if (!profile) {
     return (
-      <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
-        <div className="profile-section-card mx-auto max-w-lg text-center">
-          <p className="text-sm text-app-muted">Profiel niet gevonden.</p>
-        </div>
+      <AppShell contentClassName={PROFILE_CONTENT_CLASS}>
+        <PageContainer size="full">
+          <Panel className="text-center">
+            <p className="text-sm text-app-muted">Profiel niet gevonden.</p>
+          </Panel>
+        </PageContainer>
       </AppShell>
     );
   }
 
   return (
-    <AppShell contentClassName="app-page-content flex-1 p-4 md:p-6 lg:px-8">
+    <AppShell contentClassName={PROFILE_CONTENT_CLASS}>
       <ProfileSettingsLayout
         fullWidth
         title={pageTitle}
@@ -220,7 +223,7 @@ function UserProfilePageContent() {
         activeSection={activeSection}
         onSectionChange={setSection}
         headerExtra={
-          <Link href={backHref} className="profile-back-link app-focus-ring">
+          <Link href={backHref} className="profile-back-link app-focus-ring !min-h-[44px] justify-center">
             <ArrowLeft className="h-4 w-4 shrink-0" aria-hidden="true" />
             {backLabel}
           </Link>
@@ -292,11 +295,17 @@ function UserProfilePageContent() {
   );
 }
 
+const PROFILE_CONTENT_CLASS = "app-page-content flex-1 px-2 pb-6 md:px-3 lg:px-4";
+
 export default function UserProfilePage() {
   return (
     <Suspense
       fallback={
-        <AppShell contentClassName="flex-1 p-6">Profiel laden...</AppShell>
+        <AppShell contentClassName={PROFILE_CONTENT_CLASS}>
+          <PageContainer size="full">
+            <p className="text-sm text-app-muted">Profiel laden...</p>
+          </PageContainer>
+        </AppShell>
       }
     >
       <UserProfilePageContent />

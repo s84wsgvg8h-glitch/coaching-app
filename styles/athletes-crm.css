@@ -1,19 +1,6 @@
 /* ─── Athletes CRM page ─── */
 .athletes-crm-glow {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background:
-    radial-gradient(
-      ellipse 50% 40% at 15% 0%,
-      rgba(79, 140, 255, 0.09),
-      transparent 55%
-    ),
-    radial-gradient(
-      ellipse 40% 30% at 85% 10%,
-      rgba(79, 140, 255, 0.06),
-      transparent 50%
-    );
+  display: none;
 }
 
 @media (max-width: 1023px) {
@@ -23,18 +10,7 @@
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background:
-      radial-gradient(
-        ellipse 50% 40% at 15% 0%,
-        rgba(79, 140, 255, 0.09),
-        transparent 55%
-      ),
-      radial-gradient(
-        ellipse 40% 30% at 85% 10%,
-        rgba(79, 140, 255, 0.06),
-        transparent 50%
-      ),
-      var(--app-bg);
+    background: var(--app-bg);
   }
 
   .app-viewport-root:has(.athletes-crm-layout) > .app-viewport-inner {
@@ -64,19 +40,15 @@
     background: transparent;
   }
 
-  .athletes-crm-glow {
-    display: none;
-  }
-
   .athletes-header-search-field.app-search-field {
     min-height: 44px;
     border-radius: 14px;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border: 1px solid var(--app-border) !important;
     box-shadow: none;
   }
 
   .athletes-header-search-field.app-search-field:focus-within {
-    border-color: rgba(79, 140, 255, 0.45) !important;
+    border-color: color-mix(in srgb, var(--app-accent) 45%, transparent) !important;
     box-shadow: none;
   }
 
@@ -110,107 +82,65 @@
 }
 
 .athletes-sidebar-panel {
-  border-right: 1px solid rgba(255, 255, 255, 0.08);
-  background: var(--glass-surface-bg);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-  box-shadow: var(--glass-surface-shadow);
+  border-right: 1px solid var(--app-border);
+  background: var(--app-surface);
 }
 
 .athletes-sidebar-icon-active {
-  background: rgba(79, 140, 255, 0.12);
-  box-shadow:
-    0 0 0 1px rgba(79, 140, 255, 0.28),
-    0 0 18px rgba(79, 140, 255, 0.22);
+  background: var(--app-accent-muted);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--app-accent) 28%, transparent);
 }
 
 .athletes-glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--app-border);
   border-radius: 16px;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.04) 0%,
-    rgba(255, 255, 255, 0.015) 100%
-  );
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  background: var(--app-surface);
   box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.12),
-    0 8px 24px rgba(0, 0, 0, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 8px 24px rgba(0, 0, 0, 0.18);
 }
 
 .athletes-glass-bar {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--app-border);
   border-radius: 16px;
-  background: linear-gradient(
-    165deg,
-    rgba(255, 255, 255, 0.035) 0%,
-    rgba(255, 255, 255, 0.012) 100%
-  );
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.1),
-    inset -1px 0 0 rgba(79, 140, 255, 0.04);
+  background: var(--app-surface);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .athletes-metric-segment {
   transition:
-    transform 200ms ease,
     background 200ms ease,
     border-color 200ms ease;
 }
 
 .athletes-glass-bar .athletes-metric-segment:hover {
-  transform: translateY(-2px);
-  background: rgba(255, 255, 255, 0.025);
-  box-shadow: inset 0 0 0 1px rgba(79, 140, 255, 0.12);
+  background: var(--app-surface-hover);
 }
 
 .athletes-glass-input {
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--app-border);
   border-radius: 12px;
-  background: var(--glass-input-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 1px 2px rgba(0, 0, 0, 0.08);
+  background: var(--app-surface-muted);
   transition:
     border-color 200ms ease,
     box-shadow 200ms ease;
 }
 
 .athletes-glass-input:focus-within {
-  border-color: rgba(79, 140, 255, 0.35);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.04),
-    0 0 0 3px rgba(79, 140, 255, 0.12),
-    0 1px 2px rgba(0, 0, 0, 0.08);
+  border-color: color-mix(in srgb, var(--app-accent) 40%, transparent);
+  box-shadow: 0 0 0 3px var(--app-accent-muted);
 }
 
 .athletes-pill-btn-primary {
-  border: 1px solid rgba(79, 140, 255, 0.4);
-  background: linear-gradient(
-    180deg,
-    rgba(79, 140, 255, 0.88) 0%,
-    rgba(59, 110, 220, 0.92) 100%
-  );
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.15),
-    0 4px 14px rgba(79, 140, 255, 0.22);
+  border: 1px solid var(--app-accent);
+  background: var(--app-accent);
   transition:
     filter 200ms ease,
-    transform 200ms ease,
-    box-shadow 200ms ease;
+    background 200ms ease;
 }
 
 .athletes-pill-btn-primary:hover {
-  filter: brightness(1.05);
-  transform: translateY(-1px);
-  box-shadow:
-    0 1px 2px rgba(0, 0, 0, 0.12),
-    0 6px 18px rgba(79, 140, 255, 0.28);
+  filter: brightness(1.08);
 }
 
 .athletes-pill-btn-primary svg {
@@ -218,14 +148,12 @@
 }
 
 .athletes-pill-btn-ghost {
-  border-color: rgba(255, 255, 255, 0.08);
-  background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
+  border-color: var(--app-border);
+  background: var(--app-surface);
 }
 
 .athletes-pill-btn-ghost:hover {
-  background: var(--glass-hover-bg);
+  background: var(--app-surface-hover);
 }
 
 .athletes-status-badge {
@@ -237,21 +165,21 @@
 }
 
 .athletes-status-badge--active {
-  border: 1px solid rgba(79, 140, 255, 0.35);
-  background: rgba(79, 140, 255, 0.12);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 30%, transparent);
+  background: var(--app-accent-muted);
   color: var(--app-accent);
 }
 
 .athletes-status-badge--warning {
-  border: 1px solid rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.1);
-  color: rgb(252, 211, 77);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(251, 191, 36);
 }
 
 .athletes-status-badge--muted {
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--app-border);
   background: var(--app-surface-muted);
-  color: var(--app-muted);
+  color: var(--app-text-muted);
 }
 
 /* Last-activity badge next to athlete name — greener when recent, redder when inactive */
@@ -261,45 +189,45 @@
 }
 
 .athletes-activity-badge--fresh {
-  border-color: rgba(16, 185, 129, 0.35);
-  background: rgba(16, 185, 129, 0.14);
-  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.3);
+  background: rgba(16, 185, 129, 0.15);
+  color: rgb(52, 211, 153);
 }
 
 .athletes-activity-badge--recent {
-  border-color: rgba(52, 211, 153, 0.28);
+  border-color: rgba(16, 185, 129, 0.22);
   background: rgba(16, 185, 129, 0.1);
-  color: #6ee7b7;
+  color: rgb(110, 231, 183);
 }
 
 .athletes-activity-badge--warm {
-  border-color: rgba(245, 158, 11, 0.35);
-  background: rgba(245, 158, 11, 0.12);
-  color: #fbbf24;
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(251, 191, 36);
 }
 
 .athletes-activity-badge--aging {
-  border-color: rgba(251, 146, 60, 0.38);
-  background: rgba(249, 115, 22, 0.14);
-  color: #fb923c;
+  border-color: rgba(249, 115, 22, 0.32);
+  background: rgba(249, 115, 22, 0.15);
+  color: rgb(251, 146, 60);
 }
 
 .athletes-activity-badge--inactive {
-  border-color: rgba(248, 113, 113, 0.38);
-  background: rgba(239, 68, 68, 0.14);
-  color: #f87171;
+  border-color: rgba(239, 68, 68, 0.32);
+  background: rgba(239, 68, 68, 0.15);
+  color: rgb(248, 113, 113);
 }
 
 .athletes-activity-badge--stale {
-  border-color: rgba(239, 68, 68, 0.45);
-  background: rgba(220, 38, 38, 0.2);
-  color: #fca5a5;
+  border-color: rgba(239, 68, 68, 0.42);
+  background: rgba(239, 68, 68, 0.2);
+  color: rgb(252, 165, 165);
 }
 
 .athletes-activity-badge--unknown {
-  border-color: rgba(255, 255, 255, 0.08);
+  border-color: var(--app-border);
   background: var(--app-surface-muted);
-  color: var(--app-muted);
+  color: var(--app-text-muted);
 }
 
 html:not(.dark) .athletes-activity-badge--fresh {
@@ -339,37 +267,43 @@ html:not(.dark) .athletes-activity-badge--stale {
 }
 
 .athletes-filter-tab {
-  min-height: 34px;
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   border-radius: 9999px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
   padding: 0.4rem 1.05rem;
   font-size: 13px;
   font-weight: 500;
+  color: var(--app-text-muted);
   transition:
     background 200ms ease,
     border-color 200ms ease,
-    color 200ms ease,
-    box-shadow 200ms ease;
+    color 200ms ease;
+}
+
+@media (min-width: 768px) {
+  .athletes-filter-tab {
+    min-height: 36px;
+  }
 }
 
 .athletes-filter-tab:hover:not(.athletes-filter-tab--active) {
-  border-color: rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.04);
+  background: var(--app-surface-hover);
   color: var(--app-text);
 }
 
 .athletes-filter-tab--active {
-  border-color: rgba(79, 140, 255, 0.45);
-  background: rgba(79, 140, 255, 0.14);
-  color: var(--app-accent);
-  box-shadow: 0 0 14px rgba(79, 140, 255, 0.12);
+  border-color: var(--app-accent);
+  background: var(--app-accent);
+  color: #fff;
 }
 
 .athletes-filter-tab--active.athletes-filter-tab--warning {
-  border-color: rgba(245, 158, 11, 0.45);
-  background: rgba(245, 158, 11, 0.1);
-  color: rgb(252, 211, 77);
-  box-shadow: 0 0 14px rgba(245, 158, 11, 0.1);
+  border-color: rgba(245, 158, 11, 0.3);
+  background: rgba(245, 158, 11, 0.15);
+  color: rgb(251, 191, 36);
 }
 
 /* Athletes search uses SearchInput collapsible — no extra chrome */
@@ -445,6 +379,7 @@ html:not(.dark) .athletes-activity-badge--stale {
   width: 20px;
   height: 20px;
   cursor: pointer;
+  accent-color: var(--app-accent);
 }
 
 .athletes-cell-athlete {
@@ -453,12 +388,12 @@ html:not(.dark) .athletes-activity-badge--stale {
 }
 
 .athletes-table-row {
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--app-border);
   transition: background 200ms ease;
 }
 
 .athletes-table-row--expanded {
-  background: rgba(79, 140, 255, 0.04);
+  background: color-mix(in srgb, var(--app-accent) 5%, transparent);
 }
 
 .athletes-table-row--clickable {
@@ -466,7 +401,7 @@ html:not(.dark) .athletes-activity-badge--stale {
 }
 
 .athletes-table-row--clickable:focus-visible {
-  outline: 2px solid rgba(79, 140, 255, 0.45);
+  outline: 2px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
   outline-offset: -2px;
 }
 
@@ -497,17 +432,17 @@ html:not(.dark) .athletes-activity-badge--stale {
 }
 
 .athletes-cell-interactive:hover {
-  background: rgba(79, 140, 255, 0.08);
-  border-color: rgba(79, 140, 255, 0.22);
+  background: color-mix(in srgb, var(--app-accent) 8%, transparent);
+  border-color: color-mix(in srgb, var(--app-accent) 22%, transparent);
 }
 
 .athletes-cell-interactive--active {
-  background: rgba(79, 140, 255, 0.1);
-  border-color: rgba(79, 140, 255, 0.32);
+  background: var(--app-accent-muted);
+  border-color: color-mix(in srgb, var(--app-accent) 32%, transparent);
 }
 
 .athletes-table-row--clickable:hover {
-  background: rgba(255, 255, 255, 0.035);
+  background: var(--app-surface-hover);
 }
 
 .athletes-actions-cell {
@@ -521,8 +456,8 @@ html:not(.dark) .athletes-activity-badge--stale {
   gap: 1px;
   padding: 2px;
   border-radius: 9px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
 }
 
 .athletes-action-btn {
@@ -537,30 +472,27 @@ html:not(.dark) .athletes-activity-badge--stale {
   transition:
     background 200ms ease,
     color 200ms ease,
-    border-color 200ms ease,
-    box-shadow 200ms ease;
+    border-color 200ms ease;
 }
 
 .athletes-action-btn:hover {
-  background: rgba(79, 140, 255, 0.12);
-  border-color: rgba(79, 140, 255, 0.2);
-  box-shadow: 0 0 12px rgba(79, 140, 255, 0.12);
+  background: var(--app-accent-muted);
+  border-color: color-mix(in srgb, var(--app-accent) 20%, transparent);
 }
 
 .athletes-action-btn--danger {
-  color: var(--app-muted);
+  color: var(--app-text-muted);
 }
 
 .athletes-action-btn--danger:hover {
-  background: rgba(244, 63, 94, 0.12);
-  border-color: rgba(244, 63, 94, 0.2);
-  color: rgb(251, 113, 133);
-  box-shadow: 0 0 12px rgba(244, 63, 94, 0.1);
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.2);
+  color: rgb(248, 113, 113);
 }
 
 .athletes-action-btn--active {
-  border-color: rgba(79, 140, 255, 0.35);
-  background: rgba(79, 140, 255, 0.12);
+  border-color: color-mix(in srgb, var(--app-accent) 35%, transparent);
+  background: var(--app-accent-muted);
   color: var(--app-accent);
 }
 
@@ -595,10 +527,9 @@ html:not(.dark) .athletes-activity-badge--stale {
   align-items: center;
   justify-content: center;
   border-radius: 9999px;
-  border: 1px solid rgba(79, 140, 255, 0.18);
-  background: rgba(79, 140, 255, 0.1);
+  border: 1px solid color-mix(in srgb, var(--app-accent) 18%, transparent);
+  background: var(--app-accent-muted);
   color: var(--app-accent);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .athletes-metric-value {
@@ -631,10 +562,6 @@ html:not(.dark) .athletes-activity-badge--stale {
   .athletes-metric-bar .athletes-metric-segment {
     gap: 0.2rem;
     padding: 0.45rem 0.2rem;
-  }
-
-  .athletes-metric-bar .athletes-metric-segment:hover {
-    transform: none;
   }
 
   .athletes-metric-bar .athletes-metric-value {
@@ -705,7 +632,7 @@ button.athletes-mobile-detail-chip {
 
 .athletes-mobile-card {
   cursor: pointer;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--app-border);
 }
 
 .athletes-mobile-card--selection {
@@ -713,51 +640,40 @@ button.athletes-mobile-detail-chip {
 }
 
 .athletes-mobile-card:focus-visible {
-  outline: 2px solid rgba(79, 140, 255, 0.45);
+  outline: 2px solid color-mix(in srgb, var(--app-accent) 45%, transparent);
   outline-offset: -2px;
 }
 
 .athletes-invite-modal {
-  border-radius: 20px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(
-    165deg,
-    rgb(18, 22, 32) 0%,
-    rgb(12, 15, 22) 100%
-  );
-  box-shadow:
-    0 0 0 1px rgba(79, 140, 255, 0.08),
-    0 24px 80px rgba(0, 0, 0, 0.55),
-    0 8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 16px;
+  border: 1px solid var(--app-border);
+  background: var(--app-surface);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.45);
 }
 
 .athletes-payment-card {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
 .athletes-payment-card--paid {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 16px rgba(16, 185, 129, 0.06);
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(16, 185, 129, 0.12);
 }
 
 .athletes-payment-card--overdue {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.05),
-    0 0 16px rgba(244, 63, 94, 0.08);
+    inset 0 1px 0 rgba(255, 255, 255, 0.03),
+    0 0 0 1px rgba(239, 68, 68, 0.14);
 }
 
 .athletes-beheer-row {
-  border-top: 1px solid rgba(255, 255, 255, 0.08);
-  background: linear-gradient(
-    180deg,
-    var(--app-surface-muted) 0%,
-    transparent 100%
-  );
+  border-top: 1px solid var(--app-border);
+  background: var(--app-surface-muted);
 }
 
 .athletes-beheer-row:hover {
-  background: var(--glass-hover-bg);
+  background: var(--app-surface-hover);
 }
 
 @media (max-width: 1023px) {

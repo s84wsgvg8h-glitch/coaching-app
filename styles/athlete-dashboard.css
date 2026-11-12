@@ -129,13 +129,13 @@
     gap: 0;
     justify-content: stretch;
     padding: 10px 14px 12px;
-    border-color: rgba(59, 130, 246, 0.48);
+    border-color: rgba(var(--app-accent-rgb), 0.48);
     background:
-      radial-gradient(ellipse 110% 75% at 50% -15%, rgba(59, 130, 246, 0.22), transparent 58%),
+      radial-gradient(ellipse 110% 75% at 50% -15%, rgba(var(--app-accent-rgb), 0.22), transparent 58%),
       var(--athlete-panel-surface);
     box-shadow:
-      0 0 0 1px rgba(59, 130, 246, 0.22),
-      inset 0 0 28px rgba(59, 130, 246, 0.14),
+      0 0 0 1px rgba(var(--app-accent-rgb), 0.22),
+      inset 0 0 28px rgba(var(--app-accent-rgb), 0.14),
       inset 0 1px 0 rgba(255, 255, 255, 0.04);
   }
 
@@ -149,8 +149,8 @@
   }
 
   .athlete-dashboard-hero-card--training .athlete-dashboard-hero-icon {
-    border-color: rgba(59, 130, 246, 0.38);
-    background: rgba(59, 130, 246, 0.22);
+    border-color: rgba(var(--app-accent-rgb), 0.38);
+    background: rgba(var(--app-accent-rgb), 0.22);
     color: #60a5fa;
   }
 
@@ -507,8 +507,8 @@
     border: 1px solid rgba(96, 165, 250, 0.22);
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.24),
-      rgba(59, 130, 246, 0.12)
+      rgba(var(--app-accent-rgb), 0.24),
+      rgba(var(--app-accent-rgb), 0.12)
     ) !important;
     color: #dbeafe;
   }
@@ -531,8 +531,8 @@
     border-color: rgba(96, 165, 250, 0.32);
     background: linear-gradient(
       135deg,
-      rgba(59, 130, 246, 0.34),
-      rgba(59, 130, 246, 0.16)
+      rgba(var(--app-accent-rgb), 0.34),
+      rgba(var(--app-accent-rgb), 0.16)
     ) !important;
   }
 
@@ -665,8 +665,8 @@
   }
 
   .athlete-dashboard-item-check--done {
-    border-color: rgba(59, 130, 246, 0.55);
-    background: rgba(59, 130, 246, 0.85);
+    border-color: rgba(var(--app-accent-rgb), 0.55);
+    background: rgba(var(--app-accent-rgb), 0.85);
   }
 
   .athlete-dashboard-item-delete {
@@ -699,7 +699,7 @@
   }
 
   .athlete-dashboard-item-edit:active {
-    background: rgba(59, 130, 246, 0.12);
+    background: rgba(var(--app-accent-rgb), 0.12);
     color: var(--app-accent);
   }
 
@@ -717,8 +717,8 @@
   }
 
   .athlete-dashboard-item-edit-action--save {
-    border-color: rgba(59, 130, 246, 0.35);
-    background: rgba(59, 130, 246, 0.15);
+    border-color: rgba(var(--app-accent-rgb), 0.35);
+    background: rgba(var(--app-accent-rgb), 0.15);
     color: var(--app-accent);
   }
 
@@ -764,7 +764,7 @@
 
   .athlete-dashboard-todos-add-btn:active {
     transform: scale(0.98);
-    border-color: rgba(59, 130, 246, 0.28);
+    border-color: rgba(var(--app-accent-rgb), 0.28);
     background: var(--app-accent-muted);
   }
 
@@ -1373,7 +1373,7 @@
   pointer-events: none;
   background: radial-gradient(
     ellipse 80% 60% at 50% -10%,
-    rgba(79, 140, 255, 0.08),
+    rgba(var(--app-accent-rgb), 0.08),
     transparent 70%
   );
 }
@@ -1388,10 +1388,10 @@
 }
 
 .athlete-chat-widget:hover {
-  border-color: rgba(79, 140, 255, 0.28);
+  border-color: rgba(var(--app-accent-rgb), 0.28);
   box-shadow:
     var(--app-card-highlight),
-    0 10px 30px rgba(79, 140, 255, 0.08);
+    0 10px 30px rgba(var(--app-accent-rgb), 0.08);
 }
 
 .athlete-dashboard-eyebrow {
@@ -1487,26 +1487,26 @@
 }
 
 .athlete-dashboard-input:focus {
-  border-color: rgba(59, 130, 246, 0.35);
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+  border-color: rgba(var(--app-accent-rgb), 0.35);
+  box-shadow: 0 0 0 3px rgba(var(--app-accent-rgb), 0.1);
 }
 
 .athlete-dashboard-log-btn {
   border-radius: 12px;
-  border: 1px solid rgba(59, 130, 246, 0.28);
+  border: 1px solid rgba(var(--app-accent-rgb), 0.28);
   background: var(--app-panel-inset);
   padding: 10px 16px;
   font-size: 13px;
   font-weight: 600;
   color: var(--app-text);
-  box-shadow: 0 0 18px rgba(59, 130, 246, 0.08);
+  box-shadow: 0 0 18px rgba(var(--app-accent-rgb), 0.08);
   transition:
     border-color 0.15s ease,
     background 0.15s ease;
 }
 
 .athlete-dashboard-log-btn:hover:not(:disabled) {
-  border-color: rgba(59, 130, 246, 0.45);
+  border-color: rgba(var(--app-accent-rgb), 0.45);
   background: var(--app-accent-muted);
 }
 
@@ -1744,7 +1744,7 @@ html.dark .athlete-dashboard-bw-input-shell input.athlete-dashboard-bw-value-inp
   font-size: 11px;
   font-weight: 700;
   color: white;
-  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  box-shadow: 0 2px 8px rgba(var(--app-accent-rgb), 0.4);
 }
 
 .athlete-chat-widget-preview {
@@ -1858,7 +1858,7 @@ html.dark .athlete-dashboard-bw-input-shell input.athlete-dashboard-bw-value-inp
 
 .athlete-dashboard-quicknav-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(79, 140, 255, 0.22);
+  border-color: rgba(var(--app-accent-rgb), 0.22);
 }
 
 .athlete-dashboard-quicknav-card:active {

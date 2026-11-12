@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { isAthleteRole, isCoachLikeRole } from "@/lib/authRoles";
 import {
@@ -218,39 +219,20 @@ function MeetWeekContent() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-3xl">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-app-muted">Meet-week</p>
-            <h1 className="mt-1 text-3xl font-bold text-app-text">Meet-week hub</h1>
-            <p className="mt-2 text-sm text-app-muted">
-              Countdown, checklist, attempts en wedstrijdvoorbereiding.
-            </p>
-          </div>
-          {isCoach && targetAthleteId ? (
-            <Link
-              href={`/athletes/${targetAthleteId}`}
-              className="app-focus-ring inline-flex items-center gap-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
-            >
-              ← Atleet hub
-            </Link>
-          ) : null}
-        </div>
-
-        {loading ? (
-          <div className="app-card mt-6">
-            <p className="text-sm text-app-muted">Laden...</p>
-          </div>
-        ) : (
-          <>
-            {isCoach ? (
-              <div className="app-card mt-6">
-                <label className="text-sm font-semibold text-app-text">
-                  Atleet
+      <PageContainer size="full">
+        <PageHeader
+          eyebrow="Meet-week"
+          title="Meet-week hub"
+          description="Countdown, checklist, attempts en wedstrijdvoorbereiding."
+          actions={
+            !loading && isCoach ? (
+              <>
+                <label className="flex w-full flex-col gap-1 sm:w-64">
+                  <span className="sr-only">Atleet</span>
                   <select
                     value={targetAthleteId}
                     onChange={(event) => void handleAthleteChange(event.target.value)}
-                    className="mt-2 w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
+                    className="min-h-[44px] w-full rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
                   >
                     {athletes.length === 0 ? (
                       <option value="">Geen atleten</option>
@@ -263,21 +245,37 @@ function MeetWeekContent() {
                     )}
                   </select>
                 </label>
-              </div>
-            ) : null}
+                {targetAthleteId ? (
+                  <Link
+                    href={`/athletes/${targetAthleteId}`}
+                    className="app-btn-secondary app-focus-ring min-h-[44px] w-full sm:w-auto"
+                  >
+                    ← Atleet hub
+                  </Link>
+                ) : null}
+              </>
+            ) : undefined
+          }
+        />
 
+        {loading ? (
+          <Panel>
+            <p className="text-sm text-app-muted">Laden...</p>
+          </Panel>
+        ) : (
+          <div className="space-y-4">
             {!targetAthleteId ? (
-              <div className="app-card mt-6">
+              <Panel>
                 <p className="text-sm text-app-muted">
                   Geen atleet geselecteerd.{" "}
-                  <Link href="/athletes" className="text-brand-purple hover:underline">
+                  <Link href="/athletes" className="font-medium text-app-accent hover:underline">
                     Ga naar atleten
                   </Link>
                 </p>
-              </div>
+              </Panel>
             ) : entries.length > 0 ? (
               <>
-                <div className="mt-4 flex gap-3 overflow-x-auto pb-1">
+                <div className="-mx-2 flex gap-3 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:px-0">
                   {entries.map((entry) => {
                     const entryCountdown = daysUntil(entry.competition.start_date);
                     const entryWeeksOut = weeksOutFromMeet(entry.competition.start_date);
@@ -291,27 +289,27 @@ function MeetWeekContent() {
                         onClick={() => void handleMeetChange(entry.competition.id)}
                         className={`min-w-[220px] flex-1 shrink-0 rounded-2xl border bg-app-surface p-4 text-center transition app-focus-ring ${
                           isSelected
-                            ? "border-brand-purple ring-2 ring-brand-purple/20"
-                            : "border-app-border hover:border-brand-purple/40"
+                            ? "border-app-accent ring-2 ring-app-accent/25"
+                            : "border-app-border hover:border-app-border-strong hover:bg-app-surface-hover"
                         }`}
                       >
-                        <p className="text-xs font-semibold uppercase tracking-wide text-app-muted">
+                        <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
                           {entry.competition.naam}
                         </p>
-                        <p className="mt-2 text-3xl font-black text-brand-purple">
+                        <p className="mt-2 text-3xl font-semibold tracking-tight text-app-accent">
                           {formatWeeksOutLabel(entryWeeksOut)}
                         </p>
-                        <p className="text-sm text-app-muted">
+                        <p className="text-[13px] text-app-muted">
                           {entryCountdown >= 0
                             ? `${entryCountdown} dagen tot wedstrijd`
                             : "Wedstrijdweek"}
                         </p>
                         {entryPhase ? (
-                          <p className="mt-2 inline-block rounded-full bg-app-accent/10 px-3 py-1 text-xs font-bold text-app-accent">
+                          <p className="mt-2 inline-block rounded-full bg-app-accent/15 px-3 py-1 text-xs font-semibold text-app-accent">
                             {entryPhase}
                           </p>
                         ) : null}
-                        <p className="mt-3 text-sm text-app-text">
+                        <p className="mt-3 text-[13px] text-app-text">
                           {formatCompetitionDateRange(
                             entry.competition.start_date,
                             entry.competition.end_date,
@@ -325,16 +323,16 @@ function MeetWeekContent() {
                 {nextMeet ? (
                   <>
                     {selectedEntry?.coachNotes ? (
-                      <div className="app-card mt-4">
+                      <Panel>
                         <p className="text-sm text-app-muted">
                           <span className="font-semibold text-app-text">Coach:</span>{" "}
                           {selectedEntry.coachNotes}
                         </p>
-                      </div>
+                      </Panel>
                     ) : null}
 
                     {selectedEntry?.meetResults?.totalKg ? (
-                      <div className="app-card mt-4">
+                      <Panel>
                         <p className="text-sm text-app-text">
                           <span className="font-semibold">Resultaat:</span> S{" "}
                           {selectedEntry.meetResults.squatKg ?? "—"} / B{" "}
@@ -342,49 +340,53 @@ function MeetWeekContent() {
                           {selectedEntry.meetResults.deadliftKg ?? "—"} — Totaal{" "}
                           {selectedEntry.meetResults.totalKg} kg
                         </p>
-                      </div>
+                      </Panel>
                     ) : null}
 
-                    {activeMilestone ? (
-                      <div className="app-card mt-4">
-                        <p className="text-sm font-bold text-app-text">
-                          Nu belangrijk · {activeMilestone.title}
-                        </p>
-                        <p className="mt-2 text-sm text-app-text">
-                          {activeMilestone.description}
-                        </p>
-                      </div>
-                    ) : null}
+                    {activeMilestone || upcomingMilestones.length > 0 ? (
+                      <div className="grid grid-cols-1 gap-4 lg:grid-cols-2">
+                        {activeMilestone ? (
+                          <Panel>
+                            <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
+                              Nu belangrijk · {activeMilestone.title}
+                            </h2>
+                            <p className="mt-2 text-[13px] leading-relaxed text-app-muted">
+                              {activeMilestone.description}
+                            </p>
+                          </Panel>
+                        ) : null}
 
-                    {upcomingMilestones.length > 0 ? (
-                      <div className="app-card mt-4">
-                        <p className="text-sm font-bold text-app-text">
-                          Meet-voorbereiding
-                        </p>
-                        <ul className="mt-3 space-y-2 text-sm text-app-muted">
-                          {upcomingMilestones.map((item) => (
-                            <li key={item.weeksOut}>
-                              <span className="font-semibold text-app-text">
-                                {item.title}:
-                              </span>{" "}
-                              {item.description}
-                            </li>
-                          ))}
-                        </ul>
+                        {upcomingMilestones.length > 0 ? (
+                          <Panel>
+                            <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
+                              Meet-voorbereiding
+                            </h2>
+                            <ul className="mt-3 space-y-2 text-[13px] text-app-muted">
+                              {upcomingMilestones.map((item) => (
+                                <li key={item.weeksOut}>
+                                  <span className="font-semibold text-app-text">
+                                    {item.title}:
+                                  </span>{" "}
+                                  {item.description}
+                                </li>
+                              ))}
+                            </ul>
+                          </Panel>
+                        ) : null}
                       </div>
                     ) : null}
                   </>
                 ) : null}
               </>
             ) : (
-              <div className="app-card mt-6">
+              <Panel>
                 <p className="text-sm text-app-muted">
                   Geen aankomende wedstrijd voor {targetAthleteName}.
                   {isCoach
                     ? " Voeg hieronder een wedstrijd toe."
                     : " Bekijk de wedstrijdkalender voor aankomende meets."}
                 </p>
-              </div>
+              </Panel>
             )}
 
             {isCoach && targetAthleteId ? (
@@ -396,14 +398,14 @@ function MeetWeekContent() {
             ) : null}
 
             {isAthlete && calendarMeets.length > 0 ? (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     const ics = buildCompetitionsIcs(calendarMeets);
                     downloadIcsFile("limitless-wedstrijden.ics", ics);
                   }}
-                  className="app-btn-secondary text-sm"
+                  className="app-btn-secondary app-focus-ring min-h-[44px] w-full sm:w-auto"
                 >
                   Download agenda (.ics)
                 </button>
@@ -412,14 +414,14 @@ function MeetWeekContent() {
 
             {targetAthleteId ? (
               <>
-                <div className="app-card mt-4">
+                <Panel>
                   <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div>
-                      <p className="text-sm font-bold text-app-text">
+                    <div className="min-w-0">
+                      <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
                         Wedstrijd-checklist
-                      </p>
+                      </h2>
                       {checklistProgress.totalCount > 0 ? (
-                        <p className="text-xs text-app-muted">
+                        <p className="mt-0.5 text-[12px] text-app-muted">
                           {checklistProgress.checkedCount}/
                           {checklistProgress.totalCount} afgevinkt
                         </p>
@@ -428,7 +430,7 @@ function MeetWeekContent() {
                     <button
                       type="button"
                       onClick={() => setShowChecklist((value) => !value)}
-                      className="app-btn-secondary text-sm"
+                      className="app-btn-secondary app-focus-ring min-h-[44px]"
                     >
                       {showChecklist ? "Inklappen" : "Open checklist"}
                     </button>
@@ -441,16 +443,18 @@ function MeetWeekContent() {
                       />
                     </div>
                   ) : null}
-                </div>
+                </Panel>
 
                 {nextMeet ? (
-                  <div className="app-card mt-4">
+                  <Panel>
                     <div className="flex flex-wrap items-center justify-between gap-3">
-                      <p className="text-sm font-bold text-app-text">Attempt planner</p>
+                      <h2 className="text-[15px] font-semibold tracking-tight text-app-text">
+                        Attempt planner
+                      </h2>
                       <button
                         type="button"
                         onClick={() => setShowAttemptPlanner((value) => !value)}
-                        className="app-btn-secondary text-sm"
+                        className="app-btn-secondary app-focus-ring min-h-[44px]"
                       >
                         {showAttemptPlanner ? "Inklappen" : "Open planner"}
                       </button>
@@ -464,13 +468,13 @@ function MeetWeekContent() {
                         />
                       </div>
                     ) : null}
-                  </div>
+                  </Panel>
                 ) : null}
               </>
             ) : null}
-          </>
+          </div>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }
@@ -480,9 +484,11 @@ export default function MeetWeekPage() {
     <Suspense
       fallback={
         <AppShell>
-          <div className="app-card mt-6">
-            <p className="text-sm text-app-muted">Meet-week laden...</p>
-          </div>
+          <PageContainer size="full">
+            <Panel>
+              <p className="text-sm text-app-muted">Meet-week laden...</p>
+            </Panel>
+          </PageContainer>
         </AppShell>
       }
     >

@@ -27,7 +27,7 @@ export default function MerchPreviewCard({
       <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-app-muted">
         Voorbeeld
       </p>
-      <article className="app-card overflow-hidden p-0">
+      <article className="overflow-hidden rounded-2xl border border-app-border bg-app-surface">
         {imageUrl ? (
           <img
             src={imageUrl}

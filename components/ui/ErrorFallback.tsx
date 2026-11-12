@@ -12,7 +12,7 @@ export default function ErrorFallback({
   reset,
 }: ErrorFallbackProps) {
   return (
-    <div className="app-card mx-auto flex max-w-lg flex-col items-center p-8 text-center">
+    <div className="ui-panel mx-auto flex max-w-lg flex-col items-center p-8 text-center">
       <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-red-50 text-2xl dark:bg-red-950/40">
         ⚠️
       </div>

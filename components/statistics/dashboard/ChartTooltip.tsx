@@ -26,7 +26,7 @@ export default function ChartTooltip({
 
   return (
     <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2.5 shadow-2xl">
-      <p className="text-xs font-semibold text-white">
+      <p className="text-xs font-semibold text-app-text">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>
       {point.date ? (
@@ -41,10 +41,10 @@ export default function ChartTooltip({
             <div key={liftName} className="flex items-center gap-2 text-xs">
               <span
                 className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: entry.color || "#a78bfa" }}
+                style={{ backgroundColor: entry.color || "var(--app-accent)" }}
               />
               <span className="text-app-muted">{liftName}</span>
-              <span className="ml-auto font-medium text-white">
+              <span className="ml-auto font-medium text-app-text">
                 {entry.value}
                 {suffix}
               </span>
