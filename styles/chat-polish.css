@@ -75,6 +75,7 @@ html:not(.dark) .chat-shell {
 /* ─── Composition: sidebar vs conversation depth ─── */
 .chat-shell .chat-list-panel {
   border-color: var(--chat-border);
+  border-right: 1px solid var(--app-border-strong);
   background: var(--app-bg);
 }
 
