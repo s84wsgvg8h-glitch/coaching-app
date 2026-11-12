@@ -363,18 +363,17 @@ export default function ProgramBlocksSidebar({
                         </button>
                       ) : null}
                       <div className="relative">
-                        <div className="w-full pl-2.5 text-left">
+                        <div className="flex w-full min-w-0 items-center gap-2 pl-2.5 pr-20 text-left">
+                          <h3 className="min-w-0 truncate font-bold text-sm leading-none">
+                            {block.title}
+                          </h3>
                           <p
-                            className={`text-[10px] mb-1 ${
+                            className={`shrink-0 text-[10px] leading-none ${
                               activeBlock ? "text-gray-300" : "text-gray-400"
                             }`}
                           >
                             {formatDate(block.start_date)}
                           </p>
-
-                          <h3 className="font-bold text-sm leading-tight">
-                            {isOpen ? "⌄" : "›"} {block.title}
-                          </h3>
                         </div>
 
                         {isCoachLikeRole(role) && (
