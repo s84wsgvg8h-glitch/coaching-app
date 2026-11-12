@@ -514,6 +514,16 @@ export default function CoachProgramWeekContent({
                         }}
                         onContextMenu={(event) => openDayContextMenu(event, day.id)}
                       >
+                      {isCoach ? (
+                        <button
+                          type="button"
+                          onClick={() => deleteDay(day.id)}
+                          className={`${COACH_CARD_DISMISS_BTN} coach-program-day-dismiss opacity-0 group-hover/day:opacity-100`}
+                          title="Dag verwijderen"
+                        >
+                          ✕
+                        </button>
+                      ) : null}
                       <div className="flex h-full flex-col">
                         <div className="coach-program-day-header-row mb-2 min-w-0">
                           <CoachProgramDayHeader
@@ -534,25 +544,6 @@ export default function CoachProgramWeekContent({
                               });
                             }}
                           />
-                          {isCoach ? (
-                            <div className="coach-program-day-header-actions">
-                              <button
-                                type="button"
-                                onClick={() => duplicateDay(day)}
-                                className="coach-program-icon-btn opacity-0 transition group-hover/day:opacity-100"
-                                title="Dag dupliceren"
-                              >
-                                ⧉
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => deleteDay(day.id)}
-                                className={`${DELETE_X_BTN} opacity-0 group-hover/day:opacity-100`}
-                              >
-                                ✕
-                              </button>
-                            </div>
-                          ) : null}
                         </div>
 
                         {day.warmup?.trim() && !warmupOpen && (
@@ -1425,6 +1416,19 @@ export default function CoachProgramWeekContent({
         >
           {contextMenu.target === "day" ? (
             <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  const targetDay = days.find(
+                    (item) => item.id === contextMenu.dayId,
+                  );
+                  if (targetDay) duplicateDay(targetDay);
+                  setContextMenu(null);
+                }}
+              >
+                Dupliceren
+              </button>
               <button
                 type="button"
                 role="menuitem"

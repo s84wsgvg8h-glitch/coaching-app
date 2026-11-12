@@ -2588,16 +2588,6 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   margin-bottom: 12px;
 }
 
-.coach-program-day-header-actions {
-  position: absolute;
-  top: 0;
-  right: 0;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
 .coach-program-day-chips-start {
   display: flex;
   min-width: 0;
@@ -2947,7 +2937,8 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   z-index: 10;
 }
 
-.coach-program-exercise-dismiss {
+.coach-program-exercise-dismiss,
+.coach-program-day-dismiss {
   top: -0.5rem;
   right: -0.5rem;
   z-index: 20;
