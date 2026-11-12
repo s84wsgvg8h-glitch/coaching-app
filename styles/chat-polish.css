@@ -1,13 +1,13 @@
 /* ─── Chat premium polish (layout-preserving) ─── */
 .chat-shell {
-  --chat-border: rgba(255, 255, 255, 0.06);
-  --chat-border-strong: rgba(255, 255, 255, 0.1);
+  --chat-border: var(--app-border, rgba(255, 255, 255, 0.06));
+  --chat-border-strong: var(--app-border-strong, rgba(255, 255, 255, 0.1));
   --chat-compose-divider: rgba(255, 255, 255, 0.035);
   --chat-compose-input-border: rgba(255, 255, 255, 0.045);
   --chat-surface-raised: rgba(255, 255, 255, 0.025);
-  --chat-surface-hover: rgba(255, 255, 255, 0.04);
-  --chat-accent-soft: rgba(79, 140, 255, 0.1);
-  --chat-accent-ring: rgba(79, 140, 255, 0.14);
+  --chat-surface-hover: var(--app-surface-hover, rgba(255, 255, 255, 0.04));
+  --chat-accent-soft: var(--app-accent-muted, rgba(61, 139, 255, 0.14));
+  --chat-accent-ring: var(--app-accent-glow, rgba(61, 139, 255, 0.22));
 }
 
 html:not(.dark) .chat-shell {
@@ -51,7 +51,7 @@ html:not(.dark) .chat-shell {
   }
 }
 
-/* Same home control as program week header */
+/* Same accent language as dashboard / premium coach UI */
 .chat-home-btn {
   display: inline-flex;
   align-items: center;
@@ -62,9 +62,9 @@ html:not(.dark) .chat-shell {
   min-width: 2.4rem;
   min-height: 2.4rem;
   border-radius: 12px;
-  background: linear-gradient(135deg, #2563eb, #1e40af);
+  background: var(--app-accent, #3d8bff);
   color: #ffffff;
-  box-shadow: 0 2px 8px rgba(30, 64, 175, 0.22);
+  box-shadow: 0 2px 8px var(--app-accent-glow, rgba(61, 139, 255, 0.22));
   transition: opacity 0.15s ease;
 }
 
@@ -75,12 +75,7 @@ html:not(.dark) .chat-shell {
 /* ─── Composition: sidebar vs conversation depth ─── */
 .chat-shell .chat-list-panel {
   border-color: var(--chat-border);
-  background: linear-gradient(
-    180deg,
-    rgba(255, 255, 255, 0.018) 0%,
-    var(--app-bg) 28%,
-    var(--app-bg) 100%
-  );
+  background: var(--app-bg);
 }
 
 .chat-shell .chat-conversation-panel {
@@ -88,15 +83,10 @@ html:not(.dark) .chat-shell {
   background:
     radial-gradient(
       ellipse 90% 55% at 50% -8%,
-      rgba(79, 140, 255, 0.05),
+      var(--app-accent-muted, rgba(61, 139, 255, 0.08)),
       transparent 58%
     ),
-    linear-gradient(
-      180deg,
-      rgba(255, 255, 255, 0.02) 0%,
-      var(--app-bg) 22%,
-      var(--app-bg) 100%
-    );
+    var(--app-bg);
 }
 
 .chat-shell .chat-messages-scroll {
@@ -401,11 +391,11 @@ html:not(.dark) .chat-filter-tab--active {
 
 /* ─── Message bubbles (Telegram-style) ─── */
 .chat-shell .chat-bubble-own {
-  --chat-bubble-tail-color: #3b6edc;
+  --chat-bubble-tail-color: var(--app-accent, #3d8bff);
   --chat-bubble-radius-lg: 17px;
   --chat-bubble-radius-sm: 5px;
   border: none;
-  background: #3b6edc;
+  background: var(--app-accent, #3d8bff);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
@@ -413,11 +403,11 @@ html:not(.dark) .chat-filter-tab--active {
 }
 
 .chat-shell .chat-bubble-other {
-  --chat-bubble-tail-color: #182533;
+  --chat-bubble-tail-color: var(--app-surface, #161b22);
   --chat-bubble-radius-lg: 17px;
   --chat-bubble-radius-sm: 5px;
   border: none;
-  background: #182533;
+  background: var(--app-surface, #161b22);
   box-shadow: none;
   backdrop-filter: none;
   -webkit-backdrop-filter: none;

@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import "@/styles/dashboard-premium.css";
 import DemoModeBanner from "@/components/DemoModeBanner";
 import DemoPagesPanel from "@/components/DemoPagesPanel";
 import CoachAppSidebar from "@/components/coach/CoachAppSidebar";
@@ -200,11 +201,13 @@ export default function AppShell({
     >
       <div className="app-shell-glow pointer-events-none" aria-hidden="true" />
       <div
-        className={`flex min-h-0 min-w-0 flex-1 flex-col ${
-          showCoachSidebar
-            ? "lg:flex-row premium-coach-ui"
-            : showAthleteSidebar
-              ? "lg:flex-row premium-coach-ui premium-athlete-ui"
+        className={`flex min-h-0 min-w-0 flex-1 flex-col${
+          showCoachSidebar || showAthleteSidebar ? " lg:flex-row" : ""
+        }${
+          showCoachNav && !hideChrome
+            ? " premium-coach-ui"
+            : showAthleteNav && !hideChrome
+              ? " premium-coach-ui premium-athlete-ui"
               : ""
         }`}
       >
