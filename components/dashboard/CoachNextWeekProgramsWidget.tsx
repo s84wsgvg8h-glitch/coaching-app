@@ -14,14 +14,14 @@ export default function CoachNextWeekProgramsWidget({
   coachId,
   role,
 }: CoachNextWeekProgramsWidgetProps) {
-  const { data: needs = [], isLoading } = useNextWeekProgramsNeeded(
+  const { data: needs = [], isPending } = useNextWeekProgramsNeeded(
     coachId,
     isAdminRole(role),
   );
 
   const count = needs.length;
 
-  if (isLoading) {
+  if (isPending) {
     return (
       <div className="dashboard-next-week-programs-widget">
         <SkeletonCard />
@@ -55,10 +55,16 @@ export default function CoachNextWeekProgramsWidget({
                 className="block truncate text-[12px] font-medium text-app-text hover:text-app-accent"
               >
                 {item.athleteName}
-                <span className="ml-1 font-normal text-app-muted">
-                  {item.reason === "ending_this_week"
-                    ? "· loopt af"
-                    : "· geen week"}
+                <span
+                  className={`ml-1 font-normal ${
+                    item.dueTone === "overdue"
+                      ? "font-semibold text-red-400"
+                      : item.dueTone === "today"
+                        ? "text-app-text"
+                        : "text-app-muted"
+                  }`}
+                >
+                  · {item.dueLabel}
                 </span>
               </Link>
             </li>

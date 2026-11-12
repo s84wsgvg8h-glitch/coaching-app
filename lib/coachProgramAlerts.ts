@@ -117,7 +117,67 @@ export type NextWeekProgramNeed = {
   blockId: string | null;
   blockTitle: string | null;
   endDate: string | null;
+  /** Days until due (negative = overdue). */
+  daysUntilDue: number;
+  dueLabel: string;
+  dueTone: "upcoming" | "today" | "overdue";
 };
+
+const DUTCH_WEEKDAY_LABELS = [
+  "zondag",
+  "maandag",
+  "dinsdag",
+  "woensdag",
+  "donderdag",
+  "vrijdag",
+  "zaterdag",
+] as const;
+
+function dateOnlyAtNoon(date: Date) {
+  const value = new Date(date);
+  value.setHours(12, 0, 0, 0);
+  return value;
+}
+
+/** Next calendar date with weekday `weekday` on/after `from` (0=Sun … 6=Sat). */
+function onOrAfterWeekday(from: Date, weekday: number) {
+  const value = dateOnlyAtNoon(from);
+  const diff = (weekday - value.getDay() + 7) % 7;
+  value.setDate(value.getDate() + diff);
+  return value;
+}
+
+function dueMeta(dueDate: Date, today: Date) {
+  const daysUntilDue = Math.round(
+    (dateOnlyAtNoon(dueDate).getTime() - dateOnlyAtNoon(today).getTime()) /
+      (1000 * 60 * 60 * 24),
+  );
+
+  if (daysUntilDue > 0) {
+    return {
+      daysUntilDue,
+      dueLabel: DUTCH_WEEKDAY_LABELS[dueDate.getDay()] || "weekstart",
+      dueTone: "upcoming" as const,
+    };
+  }
+  if (daysUntilDue === 0) {
+    return {
+      daysUntilDue,
+      dueLabel: "vandaag",
+      dueTone: "today" as const,
+    };
+  }
+  return {
+    daysUntilDue,
+    dueLabel: `${Math.abs(daysUntilDue)}d`,
+    dueTone: "overdue" as const,
+  };
+}
+
+function weekStartWeekdayFromBlockStart(startDate: string | null) {
+  const start = startDate ? toDateOnly(startDate) : null;
+  return start ? start.getDay() : 1;
+}
 
 function startOfWeekMonday(date: Date) {
   const value = new Date(date);
@@ -185,11 +245,18 @@ export async function loadAthletesNeedingProgramNextWeek(
   const allBlocks = blocks || [];
   const blockIds = allBlocks.map((block) => block.id);
   const weekCountByBlock = new Map<string, number>();
+  const blocksByAthlete = new Map<string, typeof allBlocks>();
+
+  for (const block of allBlocks) {
+    const list = blocksByAthlete.get(block.athlete_id);
+    if (list) list.push(block);
+    else blocksByAthlete.set(block.athlete_id, [block]);
+  }
 
   if (blockIds.length > 0) {
     const { data: weeks, error: weeksError } = await supabase
       .from("program_weeks")
-      .select("id, program_block_id")
+      .select("program_block_id")
       .in("program_block_id", blockIds);
 
     if (weeksError) return [];
@@ -202,8 +269,7 @@ export async function loadAthletesNeedingProgramNextWeek(
     }
   }
 
-  const today = new Date();
-  today.setHours(12, 0, 0, 0);
+  const today = dateOnlyAtNoon(new Date());
   const thisWeekStart = startOfWeekMonday(today);
   const thisWeekEnd = addDays(thisWeekStart, 6);
   const nextWeekStart = addDays(thisWeekStart, 7);
@@ -212,17 +278,17 @@ export async function loadAthletesNeedingProgramNextWeek(
   const needs: NextWeekProgramNeed[] = [];
 
   for (const athlete of athletes) {
-    const athleteBlocks = allBlocks.filter(
-      (block) => block.athlete_id === athlete.id,
-    );
+    const athleteBlocks = blocksByAthlete.get(athlete.id) || [];
 
     let coversThisWeek = false;
     let coversNextWeek = false;
+    let coveringBlockStart: string | null = null;
     let endingThisWeek:
       | {
           blockId: string;
           blockTitle: string;
           endDate: Date;
+          startDate: string | null;
         }
       | null = null;
 
@@ -233,6 +299,7 @@ export async function loadAthletesNeedingProgramNextWeek(
 
       if (rangesOverlap(range.start, range.end, thisWeekStart, thisWeekEnd)) {
         coversThisWeek = true;
+        coveringBlockStart = block.start_date;
       }
       if (rangesOverlap(range.start, range.end, nextWeekStart, nextWeekEnd)) {
         coversNextWeek = true;
@@ -243,12 +310,26 @@ export async function loadAthletesNeedingProgramNextWeek(
             blockId: block.id,
             blockTitle: block.title || "Block",
             endDate: range.end,
+            startDate: block.start_date,
           };
         }
       }
     }
 
     if (!coversThisWeek) {
+      const referenceStart =
+        coveringBlockStart ||
+        endingThisWeek?.startDate ||
+        athleteBlocks[athleteBlocks.length - 1]?.start_date ||
+        null;
+      const weekday = weekStartWeekdayFromBlockStart(referenceStart);
+      const dueDate = onOrAfterWeekday(thisWeekStart, weekday);
+      // If due day already passed this week, keep that past date (overdue).
+      const dueThisWeek =
+        dueDate > thisWeekEnd
+          ? addDays(dueDate, -7)
+          : dueDate;
+      const meta = dueMeta(dueThisWeek, today);
       needs.push({
         athleteId: athlete.id,
         athleteName: athlete.full_name || "Naamloos",
@@ -256,11 +337,15 @@ export async function loadAthletesNeedingProgramNextWeek(
         blockId: null,
         blockTitle: null,
         endDate: null,
+        ...meta,
       });
       continue;
     }
 
     if (endingThisWeek && !coversNextWeek) {
+      const weekday = weekStartWeekdayFromBlockStart(endingThisWeek.startDate);
+      const dueDate = onOrAfterWeekday(nextWeekStart, weekday);
+      const meta = dueMeta(dueDate, today);
       needs.push({
         athleteId: athlete.id,
         athleteName: athlete.full_name || "Naamloos",
@@ -268,11 +353,15 @@ export async function loadAthletesNeedingProgramNextWeek(
         blockId: endingThisWeek.blockId,
         blockTitle: endingThisWeek.blockTitle,
         endDate: endingThisWeek.endDate.toISOString().slice(0, 10),
+        ...meta,
       });
     }
   }
 
-  return needs.sort((a, b) =>
-    a.athleteName.localeCompare(b.athleteName, "nl"),
-  );
+  return needs.sort((a, b) => {
+    if (a.daysUntilDue !== b.daysUntilDue) {
+      return a.daysUntilDue - b.daysUntilDue;
+    }
+    return a.athleteName.localeCompare(b.athleteName, "nl");
+  });
 }

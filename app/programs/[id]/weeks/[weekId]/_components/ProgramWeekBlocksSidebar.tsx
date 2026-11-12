@@ -428,7 +428,23 @@ export default function ProgramWeekBlocksSidebar({
                           }}
                         >
                           <div
-                            className={`group/block relative p-3 ${
+                            role="button"
+                            tabIndex={0}
+                            onClick={() =>
+                              setOpenBlockIds((current) => ({
+                                ...current,
+                                [block.id]: !current[block.id],
+                              }))
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key !== "Enter" && event.key !== " ") return;
+                              event.preventDefault();
+                              setOpenBlockIds((current) => ({
+                                ...current,
+                                [block.id]: !current[block.id],
+                              }));
+                            }}
+                            className={`group/block relative cursor-pointer p-3 ${
                               activeBlock
                                 ? "bg-black text-white"
                                 : "bg-gray-50 text-black"
@@ -436,16 +452,7 @@ export default function ProgramWeekBlocksSidebar({
                           >
                             <div className="relative">
                               <div className="relative min-w-0">
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    setOpenBlockIds((current) => ({
-                                      ...current,
-                                      [block.id]: !current[block.id],
-                                    }))
-                                  }
-                                  className="w-full pl-2.5 text-left"
-                                >
+                                <div className="w-full pl-2.5 text-left">
                                   <p
                                     className={`mb-1 text-[10px] ${
                                       activeBlock ? "text-gray-300" : "text-gray-400"
@@ -456,7 +463,7 @@ export default function ProgramWeekBlocksSidebar({
                                   <h3 className="font-bold text-sm leading-tight">
                                     {isOpen ? "⌄" : "›"} {block.title}
                                   </h3>
-                                </button>
+                                </div>
                                 {blockOverlapMap[block.id]?.length ? (
                                   <ProgramBlockOverlapWarning
                                     overlappingTitles={blockOverlapMap[block.id]!}
@@ -473,6 +480,7 @@ export default function ProgramWeekBlocksSidebar({
                                       ? "pointer-events-auto opacity-100"
                                       : "pointer-events-none opacity-0 group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
                                   }`}
+                                  onClick={(e) => e.stopPropagation()}
                                 >
                                   <button
                                     type="button"

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
-import { Badge, PageContainer, Panel } from "@/components/ui/design-system";
+import { PageContainer, Panel } from "@/components/ui/design-system";
 import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -63,22 +63,20 @@ const LIVE_SUBSCRIPTION_STATUSES = new Set([
   "paused",
 ]);
 
-function statusBadgeVariant(
-  status: string,
-): "default" | "success" | "warning" | "danger" | "accent" {
+function statusTextClass(status: string | null | undefined) {
   switch (status) {
     case "active":
-      return "success";
     case "trialing":
-      return "accent";
+      return "text-emerald-400";
     case "past_due":
     case "unpaid":
-      return "danger";
+      return "text-rose-400";
+    case "canceled":
     case "incomplete":
     case "paused":
-      return "warning";
+      return "text-app-muted";
     default:
-      return "default";
+      return "text-app-muted";
   }
 }
 
@@ -521,33 +519,17 @@ function BetalingenPageContent() {
           </div>
         ) : (
           <div className="min-w-0">
-              <div className="mb-4 flex flex-col gap-3">
-                <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+              <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div className="-mx-2 flex min-w-0 items-center gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                   <SearchInput
                     value={search}
                     onChange={setSearch}
-                    placeholder="Zoek op naam of e-mailadres…"
-                    className="w-full min-w-0 sm:max-w-xl"
+                    placeholder="Zoek op naam of e-mail…"
+                    collapsible
+                    compact
+                    className="shrink-0"
+                    aria-label="Zoek atleten"
                   />
-                  <button
-                    type="button"
-                    onClick={() => void handleConnectStripe()}
-                    disabled={loading || connecting || !stripeConfigured}
-                    className="app-btn-primary w-full shrink-0 disabled:opacity-50 sm:ml-auto sm:w-auto"
-                  >
-                    {connecting
-                      ? "Stripe openen..."
-                      : !overview ||
-                          stripeConnected ||
-                          overview.stripeConnectOnboardedAt
-                        ? "Beheer Stripe"
-                        : stripePendingOnboarding ||
-                            overview.stripeConnectAccountId
-                          ? "Koppeling afronden"
-                          : "Koppel met Stripe"}
-                  </button>
-                </div>
-                <div className="-mx-2 flex gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
                   {FILTERS.map((filter) => {
                     const active = coverageFilter === filter.key;
                     return (
@@ -555,10 +537,10 @@ function BetalingenPageContent() {
                         key={filter.key}
                         type="button"
                         onClick={() => setCoverageFilter(filter.key)}
-                        className={`app-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full border px-4 text-[12px] font-semibold transition ${
+                        className={`app-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[12px] font-medium transition ${
                           active
-                            ? "border-app-accent/35 bg-app-accent-muted text-app-text"
-                            : "border-app-border bg-app-surface-muted text-app-muted hover:text-app-text"
+                            ? "bg-app-surface-hover text-app-text"
+                            : "text-app-muted hover:text-app-text"
                         }`}
                       >
                         {filter.label}
@@ -566,37 +548,54 @@ function BetalingenPageContent() {
                     );
                   })}
                 </div>
+                <button
+                  type="button"
+                  onClick={() => void handleConnectStripe()}
+                  disabled={loading || connecting || !stripeConfigured}
+                  className="app-focus-ring inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl border border-app-border px-3 text-[12px] font-semibold text-app-muted transition hover:border-app-border-strong hover:text-app-text disabled:opacity-50 sm:w-auto"
+                >
+                  {connecting
+                    ? "Stripe openen..."
+                    : !overview ||
+                        stripeConnected ||
+                        overview.stripeConnectOnboardedAt
+                      ? "Beheer Stripe"
+                      : stripePendingOnboarding ||
+                          overview.stripeConnectAccountId
+                        ? "Koppeling afronden"
+                        : "Koppel met Stripe"}
+                </button>
               </div>
 
-              <Panel className="overflow-hidden !p-0">
+              <Panel className="overflow-hidden !border-0 !bg-transparent !p-0 !shadow-none">
                 {visibleRows.length === 0 ? (
-                  <p className="px-4 py-8 text-center text-[13px] text-app-muted">
+                  <p className="px-1 py-8 text-center text-[13px] text-app-muted">
                     {mergedRows.length === 0
                       ? "Nog geen atleten."
                       : "Geen atleten voor deze filter of zoekopdracht."}
                   </p>
                 ) : (
                   <>
-                    <div className="hidden overflow-x-auto md:block">
+                    <div className="table-compact-wrap hidden overflow-x-auto md:block">
                       <table className="min-w-full text-left text-[13px]">
-                        <thead className="border-b border-app-border">
-                          <tr>
-                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                        <thead>
+                          <tr className="border-b border-app-border/60">
+                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
                               Atleet
                             </th>
-                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
                               Maandprijs
                             </th>
-                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
                               Betaaldag
                             </th>
-                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
                               Abonnement
                             </th>
-                            <th className="px-4 py-3 text-[15px] font-semibold text-app-text">
+                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
                               Volgende
                             </th>
-                            <th className="px-4 py-3" />
+                            <th className="px-2 py-2.5 sm:px-3" />
                           </tr>
                         </thead>
                         <tbody>
@@ -611,7 +610,7 @@ function BetalingenPageContent() {
                         </tbody>
                       </table>
                     </div>
-                    <div className="grid grid-cols-1 gap-3 p-3 md:hidden">
+                    <div className="grid grid-cols-1 gap-2 md:hidden">
                       {visibleRows.map((row) => (
                         <PaymentAthleteCard
                           key={row.key}
@@ -637,13 +636,13 @@ function SubscriptionStatus({
   subscription: CoachAthleteSubscriptionRow | null;
 }) {
   if (!subscription) {
-    return <Badge>Geen abonnement</Badge>;
+    return <span className="text-app-muted">Geen abonnement</span>;
   }
 
   return (
-    <Badge variant={statusBadgeVariant(subscription.status)}>
+    <span className={statusTextClass(subscription.status)}>
       {subscription.statusLabel}
-    </Badge>
+    </span>
   );
 }
 
@@ -665,28 +664,32 @@ function PaymentAthleteRow({
   const isOpening = Boolean(subscriptionId && openingPortal === subscriptionId);
 
   return (
-    <tr className="border-b border-app-border/70 last:border-b-0">
-      <td className="px-4 py-3 align-middle">
+    <tr className="border-b border-app-border/40 last:border-b-0">
+      <td className="px-2 py-3 align-middle sm:px-3">
         <p className="font-medium text-app-text">{row.athleteName}</p>
       </td>
-      <td className="px-4 py-3 align-middle">{formatPaymentPrice(row.monthlyPrice)}</td>
-      <td className="px-4 py-3 align-middle">{row.paymentDay ?? "—"}</td>
-      <td className="px-4 py-3 align-middle">
+      <td className="px-2 py-3 align-middle text-app-text sm:px-3">
+        {formatPaymentPrice(row.monthlyPrice)}
+      </td>
+      <td className="px-2 py-3 align-middle text-app-muted sm:px-3">
+        {row.paymentDay ?? "—"}
+      </td>
+      <td className="px-2 py-3 align-middle sm:px-3">
         <SubscriptionStatus subscription={row.subscription} />
         {row.subscription?.cancelAtPeriodEnd ? (
-          <p className="mt-1 text-[11px] font-medium text-amber-400">
-            Stopt aan einde periode
-          </p>
+          <p className="mt-0.5 text-[11px] text-amber-400/90">Stopt eind periode</p>
         ) : null}
       </td>
-      <td className="px-4 py-3 align-middle text-app-muted">{nextPaymentLabel(row)}</td>
-      <td className="px-4 py-3 align-middle">
+      <td className="px-2 py-3 align-middle text-app-muted sm:px-3">
+        {nextPaymentLabel(row)}
+      </td>
+      <td className="px-2 py-3 align-middle sm:px-3">
         {subscriptionId ? (
           <button
             type="button"
             onClick={() => onOpenPortal(subscriptionId)}
             disabled={Boolean(openingPortal)}
-            className="app-focus-ring inline-flex min-h-11 items-center gap-2 rounded-xl border border-app-border-strong bg-app-surface px-3 text-[12px] font-semibold text-app-text transition hover:border-app-accent/35 disabled:opacity-60"
+            className="app-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
           >
             {isOpening ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
@@ -714,46 +717,48 @@ function PaymentAthleteCard({
   const isOpening = Boolean(subscriptionId && openingPortal === subscriptionId);
 
   return (
-    <article className="rounded-2xl border border-app-border bg-app-surface-muted/40 p-4">
+    <article className="border-b border-app-border/50 py-3.5 last:border-b-0">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="truncate text-[14px] font-semibold text-app-text">
             {row.athleteName}
           </p>
+          <p className={`mt-0.5 text-[12px] ${statusTextClass(row.subscription?.status)}`}>
+            {row.subscription?.statusLabel || "Geen abonnement"}
+          </p>
         </div>
-        <SubscriptionStatus subscription={row.subscription} />
+        {subscriptionId ? (
+          <button
+            type="button"
+            onClick={() => onOpenPortal(subscriptionId)}
+            disabled={Boolean(openingPortal)}
+            className="app-focus-ring inline-flex min-h-11 shrink-0 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
+          >
+            {isOpening ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />
+            ) : (
+              <ExternalLink className="h-3.5 w-3.5" aria-hidden="true" />
+            )}
+            Beheer
+          </button>
+        ) : null}
       </div>
-      <dl className="mt-3 grid grid-cols-2 gap-2 text-[12px]">
+      <dl className="mt-2.5 grid grid-cols-3 gap-2 text-[12px]">
         <div>
-          <dt className="text-app-subtle">Maandprijs</dt>
+          <dt className="text-app-subtle">Prijs</dt>
           <dd className="font-medium text-app-text">
             {formatPaymentPrice(row.monthlyPrice)}
           </dd>
         </div>
         <div>
-          <dt className="text-app-subtle">Betaaldag</dt>
+          <dt className="text-app-subtle">Dag</dt>
           <dd className="font-medium text-app-text">{row.paymentDay ?? "—"}</dd>
         </div>
-        <div className="col-span-2">
-          <dt className="text-app-subtle">Volgende betaling</dt>
+        <div>
+          <dt className="text-app-subtle">Volgende</dt>
           <dd className="font-medium text-app-text">{nextPaymentLabel(row)}</dd>
         </div>
       </dl>
-      {subscriptionId ? (
-        <button
-          type="button"
-          onClick={() => onOpenPortal(subscriptionId)}
-          disabled={Boolean(openingPortal)}
-          className="app-focus-ring mt-4 inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border-strong bg-app-surface px-3 text-[13px] font-semibold text-app-text transition hover:border-app-accent/35 disabled:opacity-60"
-        >
-          {isOpening ? (
-            <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-          ) : (
-            <ExternalLink className="h-4 w-4" aria-hidden="true" />
-          )}
-          Beheer in Stripe
-        </button>
-      ) : null}
     </article>
   );
 }

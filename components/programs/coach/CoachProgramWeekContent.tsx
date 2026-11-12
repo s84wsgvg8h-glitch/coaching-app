@@ -515,7 +515,7 @@ export default function CoachProgramWeekContent({
                         onContextMenu={(event) => openDayContextMenu(event, day.id)}
                       >
                       <div className="flex h-full flex-col">
-                        <div className="coach-program-day-header-row mb-3 min-w-0">
+                        <div className="coach-program-day-header-row mb-2 min-w-0">
                           <CoachProgramDayHeader
                             title={day.title}
                             dateLabel={getDayDate(day)}
@@ -534,10 +534,8 @@ export default function CoachProgramWeekContent({
                               });
                             }}
                           />
-                        </div>
-                        {isCoach ? (
-                          <div className="coach-program-day-chips coach-program-day-chips--actions-only">
-                            <div className="coach-program-day-chip-actions">
+                          {isCoach ? (
+                            <div className="coach-program-day-header-actions">
                               <button
                                 type="button"
                                 onClick={() => duplicateDay(day)}
@@ -546,7 +544,6 @@ export default function CoachProgramWeekContent({
                               >
                                 ⧉
                               </button>
-
                               <button
                                 type="button"
                                 onClick={() => deleteDay(day.id)}
@@ -555,8 +552,8 @@ export default function CoachProgramWeekContent({
                                 ✕
                               </button>
                             </div>
-                          </div>
-                        ) : null}
+                          ) : null}
+                        </div>
 
                         {day.warmup?.trim() && !warmupOpen && (
                           <div className="coach-program-warmup-panel group/warmup relative mb-3">

@@ -332,18 +332,22 @@ export default function ProgramBlocksSidebar({
                     }`}
                   >
                     <div
-                      className={`group/block p-3 ${
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => onToggleBlockOpen(block.id)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter" && event.key !== " ") return;
+                        event.preventDefault();
+                        onToggleBlockOpen(block.id);
+                      }}
+                      className={`group/block cursor-pointer p-3 ${
                         activeBlock
                           ? "bg-black text-white"
                           : "bg-app-surface-muted text-app-text"
                       }`}
                     >
                       <div className="relative">
-                        <button
-                          type="button"
-                          onClick={() => onToggleBlockOpen(block.id)}
-                          className="w-full pl-2.5 text-left"
-                        >
+                        <div className="w-full pl-2.5 text-left">
                           <p
                             className={`text-[10px] mb-1 ${
                               activeBlock ? "text-gray-300" : "text-gray-400"
@@ -355,10 +359,13 @@ export default function ProgramBlocksSidebar({
                           <h3 className="font-bold text-sm leading-tight">
                             {isOpen ? "⌄" : "›"} {block.title}
                           </h3>
-                        </button>
+                        </div>
 
                         {isCoachLikeRole(role) && (
-                          <div className="pointer-events-none absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100">
+                          <div
+                            className="pointer-events-none absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
+                            onClick={(e) => e.stopPropagation()}
+                          >
                             <button
                               type="button"
                               onClick={(e) => {
