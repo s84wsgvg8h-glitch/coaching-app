@@ -241,9 +241,11 @@ export async function loadAthletesNeedingProgramNextWeek(
   coachId: string,
   isAdmin = false,
 ): Promise<NextWeekProgramNeed[]> {
+  // Keep athletes + blocks as separate queries: program_blocks has no FK to
+  // profiles, so a nested select fails and would incorrectly return [].
   let athletesQuery = supabase
     .from("profiles")
-    .select("id, full_name, program_blocks(id, title, start_date)")
+    .select("id, full_name")
     .eq("role", "atleet")
     .order("full_name", { ascending: true });
 
@@ -251,34 +253,26 @@ export async function loadAthletesNeedingProgramNextWeek(
     athletesQuery = athletesQuery.eq("coach_id", coachId);
   }
 
-  const { data: athleteRows, error: athletesError } = await athletesQuery;
-  if (athletesError || !athleteRows?.length) return [];
+  const { data: athletes, error: athletesError } = await athletesQuery;
+  if (athletesError || !athletes?.length) return [];
 
-  const athletes = athleteRows.map((athlete) => ({
-    id: athlete.id as string,
-    full_name: (athlete.full_name as string | null) || null,
-  }));
+  const athleteIds = athletes.map((athlete) => athlete.id);
 
-  const allBlocks: BlockRow[] = [];
+  const { data: blocks, error: blocksError } = await supabase
+    .from("program_blocks")
+    .select("id, athlete_id, title, start_date")
+    .in("athlete_id", athleteIds)
+    .order("start_date", { ascending: true });
+
+  if (blocksError) return [];
+
+  const allBlocks = (blocks || []) as BlockRow[];
   const blocksByAthlete = new Map<string, BlockRow[]>();
 
-  for (const athlete of athleteRows) {
-    const nested = (athlete.program_blocks || []) as Array<{
-      id: string;
-      title: string | null;
-      start_date: string | null;
-    }>;
-    const sorted = [...nested].sort((left, right) =>
-      (left.start_date || "").localeCompare(right.start_date || ""),
-    );
-    const mapped = sorted.map((block) => ({
-      id: block.id,
-      athlete_id: athlete.id as string,
-      title: block.title,
-      start_date: block.start_date,
-    }));
-    blocksByAthlete.set(athlete.id as string, mapped);
-    allBlocks.push(...mapped);
+  for (const block of allBlocks) {
+    const list = blocksByAthlete.get(block.athlete_id);
+    if (list) list.push(block);
+    else blocksByAthlete.set(block.athlete_id, [block]);
   }
 
   const blockIds = allBlocks.map((block) => block.id);
