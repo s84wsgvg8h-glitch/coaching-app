@@ -626,7 +626,7 @@ export default function CoachProgramWeekContent({
                                   e.stopPropagation();
                                   deleteDayField(day.id, "notes");
                                 }}
-                                className={`${COACH_CARD_DISMISS_BTN} opacity-0 group-hover/daynote:opacity-100`}
+                                className={`${COACH_CARD_DISMISS_BTN} coach-program-notes-dismiss opacity-0 group-hover/daynote:opacity-100`}
                                 aria-label="Notes verwijderen"
                               >
                                 ✕
@@ -1107,7 +1107,7 @@ export default function CoachProgramWeekContent({
                                               exercise.id,
                                             );
                                           }}
-                                          className={`${COACH_CARD_DISMISS_BTN} opacity-0 group-hover/exnote:opacity-100`}
+                                          className={`${COACH_CARD_DISMISS_BTN} coach-program-notes-dismiss opacity-0 group-hover/exnote:opacity-100`}
                                           aria-label="Notes verwijderen"
                                         >
                                           ✕

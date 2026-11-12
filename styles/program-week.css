@@ -2948,7 +2948,8 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
 }
 
 .coach-program-exercise-dismiss,
-.coach-program-day-dismiss {
+.coach-program-day-dismiss,
+.coach-program-notes-dismiss {
   top: -0.5rem;
   right: -0.5rem;
   z-index: 20;
@@ -2983,6 +2984,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   position: relative;
   display: flex;
   align-items: center;
+  overflow: visible;
   border: 1px solid rgba(245, 158, 11, 0.22);
   border-radius: var(--coach-program-radius);
   background: rgba(245, 158, 11, 0.08);
