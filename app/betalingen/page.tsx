@@ -577,25 +577,25 @@ function BetalingenPageContent() {
                 ) : (
                   <>
                     <div className="table-compact-wrap hidden overflow-x-auto md:block">
-                      <table className="min-w-full text-left text-[13px]">
+                      <table className="min-w-full text-center text-[13px]">
                         <thead>
                           <tr className="border-b border-app-border/60">
-                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
+                            <th className="px-2 py-2.5 text-center text-[13px] font-semibold text-app-text sm:px-3">
                               Atleet
                             </th>
-                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
+                            <th className="px-2 py-2.5 text-center text-[13px] font-semibold text-app-text sm:px-3">
                               Maandprijs
                             </th>
-                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
+                            <th className="px-2 py-2.5 text-center text-[13px] font-semibold text-app-text sm:px-3">
                               Betaaldag
                             </th>
-                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
+                            <th className="px-2 py-2.5 text-center text-[13px] font-semibold text-app-text sm:px-3">
                               Abonnement
                             </th>
-                            <th className="px-2 py-2.5 text-[13px] font-semibold text-app-text sm:px-3">
+                            <th className="px-2 py-2.5 text-center text-[13px] font-semibold text-app-text sm:px-3">
                               Volgende
                             </th>
-                            <th className="px-2 py-2.5 sm:px-3" />
+                            <th className="px-2 py-2.5 text-center sm:px-3" />
                           </tr>
                         </thead>
                         <tbody>
@@ -665,31 +665,31 @@ function PaymentAthleteRow({
 
   return (
     <tr className="border-b border-app-border/40 last:border-b-0">
-      <td className="px-2 py-3 align-middle sm:px-3">
+      <td className="px-2 py-3 text-center align-middle sm:px-3">
         <p className="font-medium text-app-text">{row.athleteName}</p>
       </td>
-      <td className="px-2 py-3 align-middle text-app-text sm:px-3">
+      <td className="px-2 py-3 text-center align-middle text-app-text sm:px-3">
         {formatPaymentPrice(row.monthlyPrice)}
       </td>
-      <td className="px-2 py-3 align-middle text-app-muted sm:px-3">
+      <td className="px-2 py-3 text-center align-middle text-app-muted sm:px-3">
         {row.paymentDay ?? "—"}
       </td>
-      <td className="px-2 py-3 align-middle sm:px-3">
+      <td className="px-2 py-3 text-center align-middle sm:px-3">
         <SubscriptionStatus subscription={row.subscription} />
         {row.subscription?.cancelAtPeriodEnd ? (
           <p className="mt-0.5 text-[11px] text-amber-400/90">Stopt eind periode</p>
         ) : null}
       </td>
-      <td className="px-2 py-3 align-middle text-app-muted sm:px-3">
+      <td className="px-2 py-3 text-center align-middle text-app-muted sm:px-3">
         {nextPaymentLabel(row)}
       </td>
-      <td className="px-2 py-3 align-middle sm:px-3">
+      <td className="px-2 py-3 text-center align-middle sm:px-3">
         {subscriptionId ? (
           <button
             type="button"
             onClick={() => onOpenPortal(subscriptionId)}
             disabled={Boolean(openingPortal)}
-            className="app-focus-ring inline-flex min-h-11 items-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
+            className="app-focus-ring inline-flex min-h-11 items-center justify-center gap-1.5 rounded-lg px-2 text-[12px] font-medium text-app-muted transition hover:text-app-text disabled:opacity-60"
           >
             {isOpening ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden="true" />

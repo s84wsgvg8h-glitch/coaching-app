@@ -1704,9 +1704,10 @@ html.dark .program-week-shell select {
     align-items: start;
     overflow-x: auto;
     overflow-y: visible;
+    padding-top: 0.65rem;
     padding-bottom: 4px;
-    padding-inline: 4px;
-    scroll-padding-inline: 4px;
+    padding-inline: 0.65rem;
+    scroll-padding-inline: 0.65rem;
     scroll-snap-type: x mandatory;
     overscroll-behavior-x: contain;
   }
@@ -2456,15 +2457,16 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   gap: 12px;
   align-items: stretch;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   overscroll-behavior-x: contain;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
   margin-inline: -0.75rem;
-  padding-inline: 0.75rem;
+  padding-top: 0.65rem;
+  padding-inline: 0.85rem;
   padding-bottom: 8px;
-  scroll-padding-inline: 0.75rem;
+  scroll-padding-inline: 0.85rem;
 }
 
 .coach-program-days-grid::-webkit-scrollbar {
@@ -2478,6 +2480,7 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   max-width: var(--coach-day-card-width);
   flex-direction: column;
   gap: 8px;
+  overflow: visible;
   scroll-snap-align: start;
   scroll-snap-stop: always;
   transition:

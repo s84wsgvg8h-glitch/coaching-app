@@ -1,4 +1,5 @@
 import { supabase } from "@/lib/supabaseClient";
+import { parseWeekdayFromDayTitle } from "@/lib/programWeek/weekdayFromTitle";
 
 export type AthleteProgramAlert = {
   athleteId: string;
@@ -179,6 +180,20 @@ function weekStartWeekdayFromBlockStart(startDate: string | null) {
   return start ? start.getDay() : 1;
 }
 
+function weekdayFromFirstDay(day: {
+  title?: string | null;
+  scheduled_date?: string | null;
+} | null) {
+  if (!day) return null;
+  const fromTitle = parseWeekdayFromDayTitle(day.title);
+  if (fromTitle !== null) return fromTitle;
+  if (day.scheduled_date) {
+    const scheduled = toDateOnly(day.scheduled_date);
+    if (scheduled) return scheduled.getDay();
+  }
+  return null;
+}
+
 function startOfWeekMonday(date: Date) {
   const value = new Date(date);
   value.setHours(12, 0, 0, 0);
@@ -253,11 +268,15 @@ export async function loadAthletesNeedingProgramNextWeek(
     else blocksByAthlete.set(block.athlete_id, [block]);
   }
 
+  const firstDayWeekdayByBlock = new Map<string, number>();
+  const sampleWeekByBlock = new Map<string, string>();
+
   if (blockIds.length > 0) {
     const { data: weeks, error: weeksError } = await supabase
       .from("program_weeks")
-      .select("program_block_id")
-      .in("program_block_id", blockIds);
+      .select("id, program_block_id, created_at")
+      .in("program_block_id", blockIds)
+      .order("created_at", { ascending: false });
 
     if (weeksError) return [];
 
@@ -266,6 +285,33 @@ export async function loadAthletesNeedingProgramNextWeek(
         week.program_block_id,
         (weekCountByBlock.get(week.program_block_id) || 0) + 1,
       );
+      if (!sampleWeekByBlock.has(week.program_block_id)) {
+        sampleWeekByBlock.set(week.program_block_id, week.id);
+      }
+    }
+
+    const sampleWeekIds = [...sampleWeekByBlock.values()];
+    if (sampleWeekIds.length > 0) {
+      const { data: firstDays } = await supabase
+        .from("program_days")
+        .select("program_week_id, title, scheduled_date, day_number")
+        .in("program_week_id", sampleWeekIds)
+        .order("day_number", { ascending: true });
+
+      const firstDayByWeek = new Map<
+        string,
+        { title?: string | null; scheduled_date?: string | null }
+      >();
+      for (const day of firstDays || []) {
+        if (!firstDayByWeek.has(day.program_week_id)) {
+          firstDayByWeek.set(day.program_week_id, day);
+        }
+      }
+
+      for (const [blockId, weekId] of sampleWeekByBlock) {
+        const weekday = weekdayFromFirstDay(firstDayByWeek.get(weekId) || null);
+        if (weekday !== null) firstDayWeekdayByBlock.set(blockId, weekday);
+      }
     }
   }
 
@@ -282,6 +328,7 @@ export async function loadAthletesNeedingProgramNextWeek(
 
     let coversThisWeek = false;
     let coversNextWeek = false;
+    let coveringBlockId: string | null = null;
     let coveringBlockStart: string | null = null;
     let endingThisWeek:
       | {
@@ -299,6 +346,7 @@ export async function loadAthletesNeedingProgramNextWeek(
 
       if (rangesOverlap(range.start, range.end, thisWeekStart, thisWeekEnd)) {
         coversThisWeek = true;
+        coveringBlockId = block.id;
         coveringBlockStart = block.start_date;
       }
       if (rangesOverlap(range.start, range.end, nextWeekStart, nextWeekEnd)) {
@@ -316,13 +364,31 @@ export async function loadAthletesNeedingProgramNextWeek(
       }
     }
 
+    const resolveWeekday = (blockId: string | null, startDate: string | null) => {
+      if (blockId && firstDayWeekdayByBlock.has(blockId)) {
+        return firstDayWeekdayByBlock.get(blockId)!;
+      }
+      for (let index = athleteBlocks.length - 1; index >= 0; index -= 1) {
+        const candidate = athleteBlocks[index];
+        if (firstDayWeekdayByBlock.has(candidate.id)) {
+          return firstDayWeekdayByBlock.get(candidate.id)!;
+        }
+      }
+      return weekStartWeekdayFromBlockStart(startDate);
+    };
+
     if (!coversThisWeek) {
+      const referenceBlockId =
+        coveringBlockId ||
+        endingThisWeek?.blockId ||
+        athleteBlocks[athleteBlocks.length - 1]?.id ||
+        null;
       const referenceStart =
         coveringBlockStart ||
         endingThisWeek?.startDate ||
         athleteBlocks[athleteBlocks.length - 1]?.start_date ||
         null;
-      const weekday = weekStartWeekdayFromBlockStart(referenceStart);
+      const weekday = resolveWeekday(referenceBlockId, referenceStart);
       const dueDate = onOrAfterWeekday(thisWeekStart, weekday);
       // If due day already passed this week, keep that past date (overdue).
       const dueThisWeek =
@@ -343,7 +409,10 @@ export async function loadAthletesNeedingProgramNextWeek(
     }
 
     if (endingThisWeek && !coversNextWeek) {
-      const weekday = weekStartWeekdayFromBlockStart(endingThisWeek.startDate);
+      const weekday = resolveWeekday(
+        endingThisWeek.blockId,
+        endingThisWeek.startDate,
+      );
       const dueDate = onOrAfterWeekday(nextWeekStart, weekday);
       const meta = dueMeta(dueDate, today);
       needs.push({
