@@ -408,7 +408,7 @@ export default function ProgramWeekBlocksSidebar({
                             </p>
                           )}
                         <div
-                          className={`rounded-2xl border overflow-hidden ${
+                          className={`rounded-2xl border overflow-visible ${
                             activeBlock ? "border-black" : "border-gray-200"
                           } ${
                             weekDropIndicator?.blockId === block.id &&
@@ -450,6 +450,35 @@ export default function ProgramWeekBlocksSidebar({
                                 : "bg-gray-50 text-black"
                             }`}
                           >
+                            {isCoachLikeRole(role) ? (
+                              <button
+                                type="button"
+                                disabled={Boolean(pendingBlockAction)}
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  void deleteBlock(block);
+                                }}
+                                className={`${
+                                  isBlockActionPending(block.id) &&
+                                  pendingBlockAction?.type === "delete"
+                                    ? "opacity-100"
+                                    : "opacity-0 group-hover/block:opacity-100"
+                                } coach-program-sidebar-corner-x disabled:cursor-not-allowed disabled:opacity-60`}
+                                title="Verwijderen"
+                                aria-busy={
+                                  isBlockActionPending(block.id) &&
+                                  pendingBlockAction?.type === "delete"
+                                }
+                              >
+                                {isBlockActionPending(block.id) &&
+                                pendingBlockAction?.type === "delete" ? (
+                                  <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
+                                ) : (
+                                  "✕"
+                                )}
+                              </button>
+                            ) : null}
                             <div className="relative">
                               <div className="relative min-w-0">
                                 <div className="w-full pl-2.5 text-left">
@@ -475,7 +504,7 @@ export default function ProgramWeekBlocksSidebar({
       
                               {isCoachLikeRole(role) && (
                                 <div
-                                  className={`absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 transition-opacity ${
+                                  className={`absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 gap-1 transition-opacity ${
                                     isBlockActionPending(block.id)
                                       ? "pointer-events-auto opacity-100"
                                       : "pointer-events-none opacity-0 group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
@@ -541,29 +570,6 @@ export default function ProgramWeekBlocksSidebar({
                                     compact
                                     activeTone={activeBlock ? "dark" : "light"}
                                   />
-      
-                                  <button
-                                    type="button"
-                                    disabled={Boolean(pendingBlockAction)}
-                                    onClick={(e) => {
-                                      e.preventDefault();
-                                      e.stopPropagation();
-                                      void deleteBlock(block);
-                                    }}
-                                    className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
-                                    title="Verwijderen"
-                                    aria-busy={
-                                      isBlockActionPending(block.id) &&
-                                      pendingBlockAction?.type === "delete"
-                                    }
-                                  >
-                                    {isBlockActionPending(block.id) &&
-                                    pendingBlockAction?.type === "delete" ? (
-                                      <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-r-transparent" />
-                                    ) : (
-                                      "✕"
-                                    )}
-                                  </button>
                                 </div>
                               )}
                             </div>
@@ -610,7 +616,7 @@ export default function ProgramWeekBlocksSidebar({
                                           "after",
                                         )
                                       }
-                                      className={`group/week rounded-xl ${
+                                      className={`group/week relative rounded-xl ${
                                         coachProgramUi
                                           ? `coach-program-sidebar-week ${
                                               activeWeek ? "is-active" : ""
@@ -620,6 +626,20 @@ export default function ProgramWeekBlocksSidebar({
                                             : "bg-gray-100 text-black"
                                       } ${isDragging ? "coach-program-sidebar-week--dragging" : ""}`}
                                     >
+                                    {isCoachLikeRole(role) ? (
+                                      <button
+                                        type="button"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          e.stopPropagation();
+                                          deleteWeek(item);
+                                        }}
+                                        className="coach-program-sidebar-corner-x opacity-0 group-hover/week:opacity-100"
+                                        title="Verwijderen"
+                                      >
+                                        ✕
+                                      </button>
+                                    ) : null}
                                     <div className="relative flex items-center p-2">
                                         <button
                                           type="button"
@@ -676,19 +696,6 @@ export default function ProgramWeekBlocksSidebar({
                                               compact
                                               activeTone={activeWeek ? "dark" : "light"}
                                             />
-      
-                                            <button
-                                              type="button"
-                                              onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                deleteWeek(item);
-                                              }}
-                                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
-                                              title="Verwijderen"
-                                            >
-                                              ✕
-                                            </button>
                                           </div>
                                         )}
                                       </div>

@@ -327,7 +327,7 @@ export default function ProgramBlocksSidebar({
                     </p>
                   )}
                   <div
-                    className={`rounded-2xl border overflow-hidden ${
+                    className={`rounded-2xl border overflow-visible ${
                       activeBlock ? "border-black" : "border-gray-200"
                     }`}
                   >
@@ -340,12 +340,26 @@ export default function ProgramBlocksSidebar({
                         event.preventDefault();
                         onToggleBlockOpen(block.id);
                       }}
-                      className={`group/block cursor-pointer p-3 ${
+                      className={`group/block relative cursor-pointer p-3 ${
                         activeBlock
                           ? "bg-black text-white"
                           : "bg-app-surface-muted text-app-text"
                       }`}
                     >
+                      {isCoachLikeRole(role) ? (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            onDeleteBlock(block);
+                          }}
+                          className="coach-program-sidebar-corner-x opacity-0 group-hover/block:opacity-100"
+                          title="Verwijderen"
+                        >
+                          ✕
+                        </button>
+                      ) : null}
                       <div className="relative">
                         <div className="w-full pl-2.5 text-left">
                           <p
@@ -363,7 +377,7 @@ export default function ProgramBlocksSidebar({
 
                         {isCoachLikeRole(role) && (
                           <div
-                            className="pointer-events-none absolute right-0 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
+                            className="pointer-events-none absolute right-1.5 top-1/2 z-10 flex -translate-y-1/2 gap-1 opacity-0 transition-opacity group-hover/block:pointer-events-auto group-hover/block:opacity-100 focus-within:pointer-events-auto focus-within:opacity-100"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <button
@@ -408,19 +422,6 @@ export default function ProgramBlocksSidebar({
                               compact
                               activeTone={activeBlock ? "dark" : "light"}
                             />
-
-                            <button
-                              type="button"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                onDeleteBlock(block);
-                              }}
-                              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
-                              title="Verwijderen"
-                            >
-                              ✕
-                            </button>
                           </div>
                         )}
                       </div>
@@ -434,7 +435,7 @@ export default function ProgramBlocksSidebar({
                           return (
                             <div
                               key={item.id}
-                              className={`group/week rounded-xl ${
+                              className={`group/week relative rounded-xl ${
                                 coachProgramUi
                                   ? `coach-program-sidebar-week ${
                                       activeWeek ? "is-active" : ""
@@ -444,6 +445,20 @@ export default function ProgramBlocksSidebar({
                                     : "bg-app-surface-hover text-app-text"
                               }`}
                             >
+                              {isCoachLikeRole(role) ? (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.preventDefault();
+                                    e.stopPropagation();
+                                    onDeleteWeek(item);
+                                  }}
+                                  className="coach-program-sidebar-corner-x opacity-0 group-hover/week:opacity-100"
+                                  title="Verwijderen"
+                                >
+                                  ✕
+                                </button>
+                              ) : null}
                               <div className="relative flex items-center p-2">
                                 <button
                                   type="button"
@@ -497,19 +512,6 @@ export default function ProgramBlocksSidebar({
                                       compact
                                       activeTone={activeWeek ? "dark" : "light"}
                                     />
-
-                                    <button
-                                      type="button"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        e.stopPropagation();
-                                        onDeleteWeek(item);
-                                      }}
-                                      className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-red-500 text-xs text-white transition hover:bg-red-600"
-                                      title="Verwijderen"
-                                    >
-                                      ✕
-                                    </button>
                                   </div>
                                 )}
                               </div>

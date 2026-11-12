@@ -2944,6 +2944,31 @@ html:not(.dark) .coach-program-search-icon-btn:hover {
   z-index: 20;
 }
 
+.coach-program-sidebar-corner-x {
+  position: absolute;
+  top: -0.5rem;
+  right: -0.5rem;
+  z-index: 30;
+  display: flex;
+  height: 1rem;
+  width: 1rem;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  background: #ef4444;
+  color: #ffffff;
+  font-size: 9px;
+  line-height: 1;
+  transition:
+    background 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.coach-program-sidebar-corner-x:hover {
+  background: #dc2626;
+}
+
 .coach-program-inline-notes {
   position: relative;
   display: flex;
