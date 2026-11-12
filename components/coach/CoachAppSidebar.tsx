@@ -23,10 +23,6 @@ import { useAuth } from "@/components/AuthProvider";
 import { useCoachNavBadges } from "@/hooks/useCoachNavBadges";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { isActiveNavPath } from "@/lib/navigation";
-import {
-  dashboardFirstName,
-  formatDashboardDate,
-} from "@/lib/dashboardGreeting";
 
 type SidebarLink = {
   href: string;
@@ -42,17 +38,10 @@ type SidebarSection = {
 
 export default function CoachAppSidebar() {
   const pathname = usePathname();
-  const { userId, role, profile } = useAuth();
+  const { userId, role } = useAuth();
   const badges = useCoachNavBadges(userId, role || "");
 
   if (!userId || !isCoachLikeRole(role)) return null;
-
-  const fullName = profile?.full_name || "Coach";
-  const initials = fullName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((part) => part[0]?.toUpperCase() || "")
-    .join("");
 
   const sections: SidebarSection[] = [
     {
@@ -189,17 +178,6 @@ export default function CoachAppSidebar() {
       </nav>
 
       <div className="coach-app-sidebar-footer">
-        <Link href="/profile" className="coach-app-sidebar-profile app-focus-ring">
-          <span className="coach-app-sidebar-profile-avatar">{initials || "LC"}</span>
-          <span className="coach-app-sidebar-footer-text min-w-0 flex-1">
-            <span className="block truncate text-[13px] font-semibold text-app-text">
-              {dashboardFirstName(fullName)}
-            </span>
-            <span className="block truncate text-[11px] text-app-muted">
-              {formatDashboardDate()}
-            </span>
-          </span>
-        </Link>
         <Link href="/betalingen" className="coach-app-sidebar-plan app-focus-ring">
           <CreditCard className="h-4 w-4 shrink-0 text-app-accent" strokeWidth={1.75} />
           <span className="coach-app-sidebar-footer-text min-w-0 flex-1">
