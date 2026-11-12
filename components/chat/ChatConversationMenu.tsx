@@ -46,7 +46,7 @@ export default function ChatConversationMenu({
       <button
         type="button"
         onClick={() => setOpen((current) => !current)}
-        className="ui-icon-btn app-focus-ring"
+        className="chat-bare-icon-btn app-focus-ring"
         aria-label="Chat opties"
       >
         <MoreVertical className="h-5 w-5" />

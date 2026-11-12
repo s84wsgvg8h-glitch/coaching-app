@@ -18,6 +18,7 @@ import {
   Check,
   CheckCheck,
   Home,
+  Megaphone,
   MessageCircle,
   MoreVertical,
   Pin,
@@ -324,6 +325,7 @@ export default function ChatAppClient() {
   const [uploadingMedia, setUploadingMedia] = useState(false);
   const [attachMenuOpen, setAttachMenuOpen] = useState(false);
   const [broadcastOpen, setBroadcastOpen] = useState(false);
+  const [newChatMenuOpen, setNewChatMenuOpen] = useState(false);
   const [typingIndicator, setTypingIndicator] = useState<TypingPayload | null>(null);
   const [peerLastReadAt, setPeerLastReadAt] = useState<string | null>(null);
   const [slashCommandActiveIndex, setSlashCommandActiveIndex] = useState(0);
@@ -2986,23 +2988,51 @@ export default function ChatAppClient() {
                 </div>
                 <div className="flex items-center gap-2">
                   {isCoachLikeRole(userRole) && (
-                    <>
+                    <div className="relative">
                       <button
                         type="button"
-                        onClick={() => setBroadcastOpen(true)}
-                        className="app-focus-ring flex h-10 items-center rounded-full bg-app-accent px-3 text-xs font-semibold text-white"
+                        onClick={() => setNewChatMenuOpen((current) => !current)}
+                        className="chat-bare-icon-btn app-focus-ring"
+                        aria-label="Nieuw"
+                        aria-expanded={newChatMenuOpen}
                       >
-                        Broadcast
+                        <Plus className="h-5 w-5" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => setCreateGroupOpen(true)}
-                        className="ui-icon-btn app-focus-ring"
-                        aria-label="Nieuwe groep"
-                      >
-                        <Users className="h-5 w-5" />
-                      </button>
-                    </>
+                      {newChatMenuOpen ? (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Menu sluiten"
+                            className="fixed inset-0 z-10"
+                            onClick={() => setNewChatMenuOpen(false)}
+                          />
+                          <div className="chat-menu-dropdown absolute right-0 top-full z-20 mt-1 min-w-[200px]">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewChatMenuOpen(false);
+                                setCreateGroupOpen(true);
+                              }}
+                              className="chat-menu-item"
+                            >
+                              <Users className="h-4 w-4" />
+                              Nieuwe groep
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setNewChatMenuOpen(false);
+                                setBroadcastOpen(true);
+                              }}
+                              className="chat-menu-item"
+                            >
+                              <Megaphone className="h-4 w-4" />
+                              Broadcast
+                            </button>
+                          </div>
+                        </>
+                      ) : null}
+                    </div>
                   )}
                 </div>
               </div>
@@ -3267,10 +3297,10 @@ export default function ChatAppClient() {
                 <button
                   type="button"
                   onClick={closeConversation}
-                  className="ui-icon-btn md:hidden app-focus-ring"
+                  className="chat-bare-icon-btn md:hidden app-focus-ring"
                   aria-label="Terug naar chats"
                 >
-                  <ArrowLeft className="h-4 w-4" />
+                  <ArrowLeft className="h-5 w-5" />
                 </button>
 
                 {activeGroupId ? (
