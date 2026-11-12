@@ -943,6 +943,7 @@
     width: 100%;
     min-width: 0;
     max-width: 100%;
+    height: auto;
     padding: 0.85rem 0.95rem;
   }
 
@@ -955,6 +956,12 @@
       width: 16.5rem;
       max-width: 16.5rem;
     }
+  }
+
+  .dashboard-next-week-programs-list {
+    margin-left: 0;
+    padding-left: 0;
+    list-style: none;
   }
 
   .dashboard-next-week-programs-icon {
