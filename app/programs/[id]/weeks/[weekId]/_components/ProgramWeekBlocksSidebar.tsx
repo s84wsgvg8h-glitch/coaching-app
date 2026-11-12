@@ -445,6 +445,8 @@ export default function ProgramWeekBlocksSidebar({
                               }));
                             }}
                             className={`group/block relative cursor-pointer p-3 ${
+                              isOpen ? "rounded-t-2xl" : "rounded-2xl"
+                            } ${
                               activeBlock
                                 ? "bg-black text-white"
                                 : "bg-gray-50 text-black"
@@ -577,7 +579,7 @@ export default function ProgramWeekBlocksSidebar({
       
                           {isOpen && (
                             <div
-                              className="p-2 bg-white space-y-2"
+                              className="space-y-2 rounded-b-2xl bg-white p-2"
                               onDragOver={(event) =>
                                 onWeekListDragOver?.(event, block.id)
                               }

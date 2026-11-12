@@ -1579,6 +1579,13 @@ html.dark .program-week-shell select {
 .coach-program-sidebar .group\/block.bg-gray-50 {
   background: var(--app-surface-muted) !important;
   color: var(--app-text) !important;
+  border-radius: 1rem;
+}
+
+.coach-program-sidebar .group\/block.bg-black:has(+ *),
+.coach-program-sidebar .group\/block.bg-gray-50:has(+ *) {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
 }
 
 .coach-program-sidebar .text-gray-400,

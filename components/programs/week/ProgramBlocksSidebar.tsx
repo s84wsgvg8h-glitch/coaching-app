@@ -341,6 +341,8 @@ export default function ProgramBlocksSidebar({
                         onToggleBlockOpen(block.id);
                       }}
                       className={`group/block relative cursor-pointer p-3 ${
+                        isOpen ? "rounded-t-2xl" : "rounded-2xl"
+                      } ${
                         activeBlock
                           ? "bg-black text-white"
                           : "bg-app-surface-muted text-app-text"
@@ -428,7 +430,7 @@ export default function ProgramBlocksSidebar({
                     </div>
 
                     {isOpen && (
-                      <div className="p-2 bg-app-surface space-y-2">
+                      <div className="space-y-2 rounded-b-2xl bg-app-surface p-2">
                         {blockWeeks.map((item) => {
                           const activeWeek = item.id === weekId;
 
