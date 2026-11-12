@@ -78,8 +78,8 @@ export default function AppShell({
     hideChrome || (pathname.startsWith("/chat") && isActiveChatConversation(pathname));
   const isChatRoute = pathname.startsWith("/chat");
   const hideFloatingChrome = hideChrome || isChatRoute;
-  const showCoachSidebar = showCoachNav && !hideChrome;
-  const showAthleteSidebar = showAthleteNav && !hideChrome;
+  const showCoachSidebar = showCoachNav && !hideChrome && !isChatRoute;
+  const showAthleteSidebar = showAthleteNav && !hideChrome && !isChatRoute;
   const isAthleteDashboard = pathname === "/dashboard" && showAthleteNav;
   const isCoachDashboard = pathname === "/dashboard" && showCoachNav;
   const useMobilePageShell =
