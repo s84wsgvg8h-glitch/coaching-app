@@ -5,7 +5,7 @@ import type { OverviewInsight } from "@/lib/statisticsOverview";
 
 export default function InsightsCard({ insights }: { insights: OverviewInsight[] }) {
   return (
-    <div className="rounded-2xl border border-white/10 bg-[#0d1118] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+    <div className="rounded-2xl border border-app-border bg-app-surface p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-app-muted">
         Insights
       </p>

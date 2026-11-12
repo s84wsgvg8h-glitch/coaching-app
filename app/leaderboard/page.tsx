@@ -587,7 +587,7 @@ export default function LeaderboardPage() {
                       rank === 1
                         ? "bg-yellow-400/90 text-yellow-900"
                         : rank === 2
-                          ? "bg-slate-400/60 text-slate-100"
+                          ? "bg-app-surface-muted text-app-text"
                           : rank === 3
                             ? "bg-orange-500/80 text-white"
                             : rank
@@ -672,7 +672,7 @@ export default function LeaderboardPage() {
                           rank === 1
                             ? "bg-yellow-400/90 text-yellow-900"
                             : rank === 2
-                              ? "bg-slate-400/60 text-slate-100"
+                              ? "bg-app-surface-muted text-app-text"
                               : rank === 3
                                 ? "bg-orange-500/80 text-white"
                                 : rank

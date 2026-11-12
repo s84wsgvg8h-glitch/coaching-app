@@ -134,7 +134,7 @@ export default function StatisticsChartFrame({
 
   return (
     <div
-      className="group relative rounded-2xl border border-app-border/80 bg-[#0d1118] p-4 shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
+      className="group relative rounded-2xl border border-app-border/80 bg-app-surface p-4 shadow-[0_12px_40px_rgba(0,0,0,0.22)]"
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -194,7 +194,7 @@ export default function StatisticsChartFrame({
               <MoreVertical className="h-4 w-4" />
             </button>
             {menuOpen ? (
-              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-white/10 bg-[#111827] p-1 shadow-xl">
+              <div className="absolute right-0 z-20 mt-2 max-h-[min(70vh,420px)] min-w-[220px] overflow-y-auto rounded-xl border border-app-border bg-app-surface-elevated p-1 shadow-xl">
                 {onChartModeChange && chartMode ? (
                   <>
                     <MenuSection label="Weergave" />

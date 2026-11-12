@@ -395,7 +395,7 @@ export default function ExerciseLibraryPage() {
 
   return (
     <AppShell>
-      <div className="mx-auto flex w-full max-w-none min-h-0 flex-1 gap-0 overflow-hidden rounded-3xl border border-app-border bg-app-surface shadow-xl">
+      <div className="mx-auto flex w-full max-w-none min-h-0 flex-1 gap-0 overflow-hidden rounded-2xl border border-app-border bg-app-surface">
         <CollapsibleFilterSidebar title="Categorie" collapsible={false}>
           <ExerciseLibraryCategoryNav
             customCategories={customCategories}
@@ -413,10 +413,10 @@ export default function ExerciseLibraryPage() {
 
         <div className="min-h-0 min-w-0 flex-1 overflow-y-auto p-4 mobile-scroll md:p-6">
         <div className="mb-6">
-          <p className="text-sm font-semibold uppercase tracking-wide text-app-muted">
+          <p className="text-[11px] font-medium uppercase tracking-wide text-app-subtle">
             Oefeningenbibliotheek
           </p>
-          <h1 className="text-3xl font-bold text-app-text">
+          <h1 className="mt-0.5 text-[20px] font-semibold tracking-tight text-app-text md:text-[24px] md:leading-[1.1]">
             {categoryFilterLabel(categoryFilter)}
           </h1>
         </div>

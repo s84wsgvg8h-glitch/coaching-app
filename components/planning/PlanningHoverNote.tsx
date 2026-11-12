@@ -125,7 +125,7 @@ export default function PlanningHoverNote({
         onMouseEnter={handleOpen}
         onMouseLeave={handleClose}
       >
-        <p className="text-[10px] font-bold uppercase text-gray-500">{title}</p>
+        <p className="text-[10px] font-bold uppercase text-app-subtle">{title}</p>
 
         <div className="mt-2 space-y-3">
           {sections.map((section) => {
@@ -134,7 +134,7 @@ export default function PlanningHoverNote({
             return (
               <div key={section.key}>
                 {section.label ? (
-                  <p className="mb-1 text-[10px] font-semibold text-gray-600">
+                  <p className="mb-1 text-[10px] font-semibold text-app-muted">
                     {section.label}
                   </p>
                 ) : null}
@@ -158,13 +158,13 @@ export default function PlanningHoverNote({
                       type="button"
                       disabled={savingKey === section.key}
                       onClick={() => void handleSave(section)}
-                      className="mt-1 rounded-md bg-violet-600 px-2 py-0.5 text-[10px] font-semibold text-white hover:bg-violet-700 disabled:opacity-50"
+                      className="mt-1 rounded-md bg-app-accent px-2 py-0.5 text-[10px] font-semibold text-white hover:opacity-90 disabled:opacity-50"
                     >
                       {savingKey === section.key ? "..." : "Opslaan"}
                     </button>
                   </>
                 ) : draft.trim() ? (
-                  <p className="whitespace-pre-wrap text-xs text-gray-800">{draft}</p>
+                  <p className="whitespace-pre-wrap text-xs text-app-text">{draft}</p>
                 ) : null}
               </div>
             );

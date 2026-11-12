@@ -102,7 +102,7 @@ function OverlayTooltip({
   const overlaySuffix = getOverlaySuffix(overlayMetric);
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#111827] px-3 py-2.5 shadow-2xl">
+    <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2.5 shadow-2xl">
       <p className="text-xs font-semibold text-white">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>
@@ -293,7 +293,7 @@ export function E1rmLiftChart({
                     <g>
                       <circle cx={cx} cy={cy} r={4} fill={color} />
                       <foreignObject x={cx - 42} y={cy - 38} width={84} height={28}>
-                        <div className="flex items-center justify-center gap-1 rounded-full border border-white/10 bg-[#111827] px-2 py-1 text-[10px] font-semibold text-white shadow-lg">
+                        <div className="flex items-center justify-center gap-1 rounded-full border border-app-border bg-app-surface-elevated px-2 py-1 text-[10px] font-semibold text-white shadow-lg">
                           <Star className="h-3 w-3" style={{ color }} fill={color} />
                           <span>PR {value} kg</span>
                         </div>

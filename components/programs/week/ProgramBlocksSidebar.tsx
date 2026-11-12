@@ -339,7 +339,7 @@ export default function ProgramBlocksSidebar({
                         event.preventDefault();
                         onToggleBlockOpen(block.id);
                       }}
-                      className={`group/block relative cursor-pointer p-3 ${
+                      className={`group/block relative cursor-pointer px-3 py-4 ${
                         isOpen ? "rounded-t-2xl" : "rounded-2xl"
                       } ${
                         activeBlock
@@ -362,7 +362,7 @@ export default function ProgramBlocksSidebar({
                         </button>
                       ) : null}
                       <div className="relative">
-                        <div className="flex w-full items-center gap-2 pl-2.5 pr-20 text-left">
+                        <div className="flex w-full items-end gap-2 pl-2.5 pr-16 text-left">
                           <h3 className="shrink-0 whitespace-nowrap font-bold text-sm leading-none">
                             {block.title}
                           </h3>
@@ -387,7 +387,7 @@ export default function ProgramBlocksSidebar({
                                 e.stopPropagation();
                                 onEditBlock(block);
                               }}
-                              className={`w-7 h-7 rounded-lg text-xs ${
+                              className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] leading-none ${
                                 activeBlock
                                   ? "bg-app-accent/20 hover:bg-app-accent/30 text-white"
                                   : "bg-app-surface hover:bg-app-surface-hover text-app-text"
@@ -404,7 +404,7 @@ export default function ProgramBlocksSidebar({
                                 e.stopPropagation();
                                 onDuplicateBlock(block);
                               }}
-                              className={`w-7 h-7 rounded-lg text-xs ${
+                              className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] leading-none ${
                                 activeBlock
                                   ? "bg-app-accent/20 hover:bg-app-accent/30 text-white"
                                   : "bg-app-surface hover:bg-app-surface-hover text-app-text"

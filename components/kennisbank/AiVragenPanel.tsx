@@ -93,7 +93,7 @@ export default function AiVragenPanel() {
 
   return (
     <div className="space-y-6">
-      <p className="text-sm text-gray-600">
+      <p className="text-sm text-app-muted">
         Bekijk vragen die atleten aan de chat-AI stellen. Filter op onbekende
         antwoorden om ontbrekende kennis te vinden.
       </p>
@@ -104,7 +104,7 @@ export default function AiVragenPanel() {
           onClick={() => setFilter("unknown")}
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "unknown"
-              ? "bg-black text-white"
+              ? "bg-app-accent text-white"
               : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
@@ -115,7 +115,7 @@ export default function AiVragenPanel() {
           onClick={() => setFilter("errors")}
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "errors"
-              ? "bg-black text-white"
+              ? "bg-app-accent text-white"
               : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
@@ -126,7 +126,7 @@ export default function AiVragenPanel() {
           onClick={() => setFilter("all")}
           className={`rounded-xl px-3 py-1.5 text-sm font-semibold ${
             filter === "all"
-              ? "bg-black text-white"
+              ? "bg-app-accent text-white"
               : "border border-app-border bg-app-surface text-app-text"
           }`}
         >
@@ -135,7 +135,7 @@ export default function AiVragenPanel() {
       </div>
 
       {loading ? (
-        <p className="text-sm text-gray-500">Laden...</p>
+        <p className="text-sm text-app-muted">Laden...</p>
       ) : filteredLogs.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-app-border bg-app-surface-muted p-6 text-sm text-app-muted">
           Geen AI-vragen gevonden voor dit filter.
@@ -145,38 +145,38 @@ export default function AiVragenPanel() {
           {filteredLogs.map((log) => (
             <li
               key={log.id}
-              className="rounded-2xl border border-app-border bg-app-surface p-4 shadow-sm"
+              className="rounded-2xl border border-app-border bg-app-surface p-4"
             >
-              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-gray-500">
-                <span className="font-semibold text-gray-800">
+              <div className="mb-3 flex flex-wrap items-center gap-2 text-xs text-app-muted">
+                <span className="font-semibold text-app-text">
                   {log.athlete?.full_name || "Onbekende atleet"}
                 </span>
                 <span>·</span>
                 <span>{formatDate(log.created_at)}</span>
                 {log.is_unknown ? (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 font-semibold text-amber-900">
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 font-semibold text-amber-400">
                     Onbekend
                   </span>
                 ) : null}
                 {log.had_error ? (
-                  <span className="rounded-full bg-red-100 px-2 py-0.5 font-semibold text-red-800">
+                  <span className="rounded-full bg-red-500/15 px-2 py-0.5 font-semibold text-red-400">
                     Fout
                   </span>
                 ) : null}
               </div>
 
               <p className="text-sm font-semibold text-app-text">Vraag</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-800">
+              <p className="mt-1 whitespace-pre-wrap text-sm text-app-text">
                 {log.question}
               </p>
 
               <p className="mt-3 text-sm font-semibold text-app-text">Antwoord</p>
-              <p className="mt-1 whitespace-pre-wrap text-sm text-gray-700">
+              <p className="mt-1 whitespace-pre-wrap text-sm text-app-muted">
                 {log.answer || "—"}
               </p>
 
               {Array.isArray(log.sources) && log.sources.length > 0 ? (
-                <p className="mt-3 text-xs text-gray-500">
+                <p className="mt-3 text-xs text-app-subtle">
                   Bronnen: {log.sources.join(", ")}
                 </p>
               ) : null}

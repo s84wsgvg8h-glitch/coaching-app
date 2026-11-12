@@ -84,39 +84,40 @@ type ProgramPlanningCalendarProps = {
 
 const WEEK_COL_WIDTH = 64;
 const LABEL_COL_WIDTH = "5rem";
-const MEET_COLUMN_CLASS = "bg-amber-100 text-amber-950 hover:bg-amber-200";
+const MEET_COLUMN_CLASS =
+  "bg-amber-500/15 text-amber-200 hover:bg-amber-500/25";
 const TODAY_LINE_CLASS = "bg-rose-500";
 
 const BLOCK_PALETTE = [
   {
-    bg: "bg-blue-100",
-    border: "border-blue-300",
-    text: "text-blue-950",
+    bg: "bg-app-accent/15",
+    border: "border-app-accent/35",
+    text: "text-app-accent",
   },
   {
-    bg: "bg-emerald-100",
-    border: "border-emerald-300",
-    text: "text-emerald-950",
+    bg: "bg-emerald-500/15",
+    border: "border-emerald-400/35",
+    text: "text-emerald-300",
   },
   {
-    bg: "bg-orange-100",
-    border: "border-orange-300",
-    text: "text-orange-950",
+    bg: "bg-orange-500/15",
+    border: "border-orange-400/35",
+    text: "text-orange-300",
   },
   {
-    bg: "bg-pink-100",
-    border: "border-pink-300",
-    text: "text-pink-950",
+    bg: "bg-fuchsia-500/15",
+    border: "border-fuchsia-400/35",
+    text: "text-fuchsia-300",
   },
   {
-    bg: "bg-cyan-100",
-    border: "border-cyan-300",
-    text: "text-cyan-950",
+    bg: "bg-cyan-500/15",
+    border: "border-cyan-400/35",
+    text: "text-cyan-300",
   },
   {
-    bg: "bg-lime-100",
-    border: "border-lime-300",
-    text: "text-lime-950",
+    bg: "bg-lime-500/15",
+    border: "border-lime-400/35",
+    text: "text-lime-300",
   },
 ] as const;
 
@@ -1123,7 +1124,7 @@ export default function ProgramPlanningCalendar({
                     return (
                       <div
                         key={`meet-empty-${column.key}`}
-                        className="h-10 border-r border-gray-200 bg-app-surface"
+                        className="h-10 border-r border-app-border bg-app-surface"
                         style={{ gridRow: 4, gridColumn: index + 2 }}
                       />
                     );

@@ -25,7 +25,7 @@ export default function ChartTooltip({
   if (!point) return null;
 
   return (
-    <div className="rounded-xl border border-white/10 bg-[#111827] px-3 py-2.5 shadow-2xl">
+    <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2.5 shadow-2xl">
       <p className="text-xs font-semibold text-white">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>

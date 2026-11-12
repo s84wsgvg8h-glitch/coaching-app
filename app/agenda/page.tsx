@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import AppShell from "@/components/AppShell";
 import CoachAppointmentModal from "@/components/CoachAppointmentModal";
 import CoachWeekCalendar from "@/components/CoachWeekCalendar";
+import { PageHeader } from "@/components/ui/design-system";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import { createDefaultAppointmentDraft } from "@/lib/coachCalendarEvents";
@@ -69,23 +70,19 @@ export default function AgendaPage() {
   return (
     <AppShell contentClassName="flex min-h-0 flex-1 flex-col px-2 pb-6 pt-3 md:px-3 lg:px-4">
       <div className="agenda-page-shell">
-        <div className="mb-3 flex shrink-0 items-center justify-between gap-3">
-          <div>
-            <h1 className="text-xl font-semibold tracking-tight text-app-text">
-              Agenda
-            </h1>
-            <p className="mt-0.5 text-sm text-app-muted">
-              Weekoverzicht en planning.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreateModal}
-            className="app-btn-primary app-focus-ring shrink-0"
-          >
-            Nieuwe afspraak
-          </button>
-        </div>
+        <PageHeader
+          title="Agenda"
+          description="Weekoverzicht en planning."
+          actions={
+            <button
+              type="button"
+              onClick={openCreateModal}
+              className="app-btn-primary app-focus-ring shrink-0"
+            >
+              Nieuwe afspraak
+            </button>
+          }
+        />
 
         <CoachWeekCalendar
           userId={coachId}

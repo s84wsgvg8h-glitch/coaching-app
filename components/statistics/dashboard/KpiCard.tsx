@@ -32,7 +32,7 @@ export default function KpiCard({
 
   return (
     <div
-      className={`rounded-2xl border border-white/10 bg-[#0d1118] p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_40px_rgba(0,0,0,0.22)] ${
+      className={`rounded-2xl border border-app-border bg-app-surface p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_12px_40px_rgba(0,0,0,0.22)] ${
         onClick ? "cursor-pointer transition hover:border-white/20 hover:bg-[#10151f]" : ""
       }`}
       onClick={onClick}

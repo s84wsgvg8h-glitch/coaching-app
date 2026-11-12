@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import { PageContainer, PageHeader } from "@/components/ui/design-system";
 import VideoAnnotator from "@/components/video-review/VideoAnnotator";
 import VideoReviewFeedbackComposer, {
   type FeedbackMediaItem,
@@ -197,28 +198,28 @@ function VideoReviewContent() {
 
   return (
     <AppShell>
-      <div className="mx-auto max-w-4xl">
-        <div className="mb-6 flex flex-wrap items-start justify-between gap-3">
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-app-muted">Video review</p>
-            <h1 className="mt-1 text-3xl font-bold text-app-text">Video review</h1>
-            <p className="mt-2 text-sm text-app-muted">
-              {pendingCount > 0
-                ? `${pendingCount} openstaande review${pendingCount === 1 ? "" : "s"}`
-                : "Alle reviews zijn verwerkt."}
-            </p>
-          </div>
-          {athleteFilter ? (
-            <Link
-              href={`/athletes/${athleteFilter}`}
-              className="app-focus-ring inline-flex items-center gap-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
-            >
-              ← Atleet hub
-            </Link>
-          ) : null}
-        </div>
+      <PageContainer size="full">
+        <PageHeader
+          eyebrow="Video review"
+          title="Video review"
+          description={
+            pendingCount > 0
+              ? `${pendingCount} openstaande review${pendingCount === 1 ? "" : "s"}`
+              : "Alle reviews zijn verwerkt."
+          }
+          actions={
+            athleteFilter ? (
+              <Link
+                href={`/athletes/${athleteFilter}`}
+                className="app-focus-ring inline-flex min-h-11 items-center gap-1 rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm font-semibold text-app-muted transition hover:bg-app-surface-hover hover:text-app-text"
+              >
+                ← Atleet hub
+              </Link>
+            ) : null
+          }
+        />
 
-        <div className="mt-4 flex flex-wrap gap-2">
+        <div className="mb-4 flex flex-wrap gap-2">
           {(
             [
               { id: "all", label: "Alles" },
@@ -230,9 +231,9 @@ function VideoReviewContent() {
               key={item.id}
               type="button"
               onClick={() => setStatusFilter(item.id)}
-              className={`rounded-full px-3 py-1.5 text-xs font-bold ${
+              className={`rounded-xl px-3 py-1.5 text-xs font-bold ${
                 statusFilter === item.id
-                  ? "bg-brand-purple text-white"
+                  ? "bg-app-accent text-white"
                   : "bg-app-surface-muted text-app-text"
               }`}
             >
@@ -368,7 +369,7 @@ function VideoReviewContent() {
             })}
           </ul>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

@@ -101,7 +101,7 @@ function PlanningPageContent() {
                   <select
                     value={selectedAthleteId}
                     onChange={(event) => setSelectedAthleteId(event.target.value)}
-                    className="mt-2 w-full max-w-md rounded-xl border border-app-border px-3 py-2 text-sm app-focus-ring"
+                    className="mt-2 w-full max-w-md rounded-xl border border-app-border bg-app-surface px-3 py-2 text-sm text-app-text app-focus-ring"
                   >
                     {athletes.length === 0 ? (
                       <option value="">Geen atleten</option>

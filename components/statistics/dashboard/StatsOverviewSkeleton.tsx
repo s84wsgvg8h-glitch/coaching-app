@@ -7,7 +7,7 @@ export default function StatsOverviewSkeleton() {
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
-            className="h-[148px] rounded-2xl border border-white/10 bg-[#0d1118]"
+            className="h-[148px] rounded-2xl border border-app-border bg-app-surface"
           />
         ))}
       </div>
@@ -15,7 +15,7 @@ export default function StatsOverviewSkeleton() {
         {Array.from({ length: 4 }).map((_, index) => (
           <div
             key={index}
-            className="h-[380px] rounded-2xl border border-white/10 bg-[#0d1118]"
+            className="h-[380px] rounded-2xl border border-app-border bg-app-surface"
           />
         ))}
       </div>
@@ -23,7 +23,7 @@ export default function StatsOverviewSkeleton() {
         {Array.from({ length: 6 }).map((_, index) => (
           <div
             key={index}
-            className="h-[180px] rounded-2xl border border-white/10 bg-[#0d1118]"
+            className="h-[180px] rounded-2xl border border-app-border bg-app-surface"
           />
         ))}
       </div>

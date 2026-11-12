@@ -46,7 +46,7 @@ export default function StatsFilterBar({
           <select
             value={selectedAthleteId}
             onChange={(event) => onAthleteChange(event.target.value)}
-            className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+            className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
           >
             {athleteOptions.map((athlete) => (
               <option key={athlete.id} value={athlete.id}>
@@ -68,7 +68,7 @@ export default function StatsFilterBar({
                 preset: event.target.value as StatisticsPeriodFilter["preset"],
               })
             }
-            className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+            className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
           >
             {CHART_BLOCK_FILTER_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -91,7 +91,7 @@ export default function StatsFilterBar({
                 onChange={(event) =>
                   onPeriodChange({ ...period, fromBlockId: event.target.value })
                 }
-                className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
               >
                 {blockMetas.map((block) => (
                   <option key={block.blockId} value={block.blockId}>
@@ -109,7 +109,7 @@ export default function StatsFilterBar({
                 onChange={(event) =>
                   onPeriodChange({ ...period, toBlockId: event.target.value })
                 }
-                className="w-full rounded-xl border border-white/10 bg-[#111827] px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
+                className="w-full rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 text-sm text-app-text outline-none focus:ring-2 focus:ring-brand-purple/40"
               >
                 {blockMetas.map((block) => (
                   <option key={block.blockId} value={block.blockId}>

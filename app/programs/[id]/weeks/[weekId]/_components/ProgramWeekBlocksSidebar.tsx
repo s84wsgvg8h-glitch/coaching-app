@@ -443,7 +443,7 @@ export default function ProgramWeekBlocksSidebar({
                                 [block.id]: !current[block.id],
                               }));
                             }}
-                            className={`group/block relative cursor-pointer p-3 ${
+                            className={`group/block relative cursor-pointer px-3 py-4 ${
                               isOpen ? "rounded-t-2xl" : "rounded-2xl"
                             } ${
                               activeBlock
@@ -482,7 +482,7 @@ export default function ProgramWeekBlocksSidebar({
                             ) : null}
                             <div className="relative">
                               <div className="relative min-w-0">
-                                <div className="flex w-full items-center gap-2 pl-2.5 pr-20 text-left">
+                                <div className="flex w-full items-end gap-2 pl-2.5 pr-16 text-left">
                                   <h3 className="shrink-0 whitespace-nowrap font-bold text-sm leading-none">
                                     {block.title}
                                   </h3>
@@ -526,7 +526,7 @@ export default function ProgramWeekBlocksSidebar({
                                         block.macrocycle_id || "",
                                       );
                                     }}
-                                    className={`w-7 h-7 rounded-lg text-xs ${
+                                    className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] leading-none ${
                                       activeBlock
                                         ? "bg-white/20 hover:bg-white/30 text-white"
                                         : "bg-white hover:bg-gray-100 text-black"
@@ -544,7 +544,7 @@ export default function ProgramWeekBlocksSidebar({
                                       e.stopPropagation();
                                       void duplicateBlock(block);
                                     }}
-                                    className={`w-7 h-7 rounded-lg text-xs disabled:cursor-not-allowed disabled:opacity-60 ${
+                                    className={`flex h-5 w-5 items-center justify-center rounded-md text-[10px] leading-none disabled:cursor-not-allowed disabled:opacity-60 ${
                                       activeBlock
                                         ? "bg-white/20 hover:bg-white/30 text-white"
                                         : "bg-white hover:bg-gray-100 text-black"

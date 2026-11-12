@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronDown, ChevronUp } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import SearchInput from "@/components/ui/SearchInput";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import { PageLoading } from "@/components/ui/Skeleton";
 import AiVragenPanel from "@/components/kennisbank/AiVragenPanel";
 import type { KnowledgeChunk } from "@/lib/knowledgeBase";
@@ -123,45 +124,44 @@ function KennisbankPageInner() {
   const canViewAiVragen = isCoachLikeRole(role);
 
   return (
-    <AppShell contentClassName="app-page-content flex-1 p-4 md:p-8">
-      <div className="mx-auto w-full max-w-none space-y-6">
-        <div className="app-card p-6 md:p-8">
-          <p className="text-xs font-bold uppercase tracking-wide text-app-subtle">
-            {scope === "athlete" ? "Atleten kennisbank" : "Coach kennisbank"}
-          </p>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight text-app-text md:text-3xl">
-            Kennisbank & AI-vragen
-          </h1>
-          <p className="mt-2 max-w-2xl text-sm text-app-muted md:text-[15px]">
-            Coachingkennis en antwoorden voor atleten-AI op één plek.
-          </p>
-
-          {canViewAiVragen ? (
-            <div className="mt-6 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={() => switchTab("chunks")}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
-                  activeTab === "chunks"
-                    ? "bg-app-accent text-white"
-                    : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
-                }`}
-              >
-                Kennisbank
-              </button>
-              <button
-                type="button"
-                onClick={() => switchTab("vragen")}
-                className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
-                  activeTab === "vragen"
-                    ? "bg-app-accent text-white"
-                    : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
-                }`}
-              >
-                AI-vragen
-              </button>
-            </div>
-          ) : null}
+    <AppShell>
+      <PageContainer size="full" className="space-y-6">
+        <Panel className="!p-5 md:!p-6">
+          <PageHeader
+            eyebrow={
+              scope === "athlete" ? "Atleten kennisbank" : "Coach kennisbank"
+            }
+            title="Kennisbank & AI-vragen"
+            description="Coachingkennis en antwoorden voor atleten-AI op één plek."
+            actions={
+              canViewAiVragen ? (
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => switchTab("chunks")}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
+                      activeTab === "chunks"
+                        ? "bg-app-accent text-white"
+                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
+                    }`}
+                  >
+                    Kennisbank
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => switchTab("vragen")}
+                    className={`rounded-xl px-4 py-2 text-sm font-semibold transition app-focus-ring ${
+                      activeTab === "vragen"
+                        ? "bg-app-accent text-white"
+                        : "border border-app-border bg-app-surface text-app-muted hover:bg-app-surface-hover"
+                    }`}
+                  >
+                    AI-vragen
+                  </button>
+                </div>
+              ) : null
+            }
+          />
 
           {stats && activeTab === "chunks" ? (
             <div className="mt-5 flex flex-wrap items-center gap-3">
@@ -171,15 +171,15 @@ function KennisbankPageInner() {
               </span>
             </div>
           ) : null}
-        </div>
+        </Panel>
 
         {activeTab === "vragen" && canViewAiVragen ? (
-          <div className="app-card p-4 md:p-6">
+          <Panel className="!p-4 md:!p-6">
             <AiVragenPanel />
-          </div>
+          </Panel>
         ) : (
           <>
-            <div className="app-card p-4 md:p-6">
+            <Panel className="!p-4 md:!p-6">
               <SearchInput
                 value={query}
                 onChange={setQuery}
@@ -204,18 +204,18 @@ function KennisbankPageInner() {
                   </button>
                 ))}
               </div>
-            </div>
+            </Panel>
 
             {loading ? (
-              <div className="app-card p-8">
+              <Panel className="!p-8">
                 <PageLoading label="Kennisbank laden…" />
-              </div>
+              </Panel>
             ) : grouped.length === 0 ? (
-              <div className="app-card p-8 text-center">
+              <Panel className="!p-8 text-center">
                 <p className="text-sm text-app-muted">
                   Geen resultaten voor deze zoekopdracht.
                 </p>
-              </div>
+              </Panel>
             ) : (
               grouped.map((group) => (
                 <section key={group.category} className="space-y-3">
@@ -233,7 +233,7 @@ function KennisbankPageInner() {
                       return (
                         <article
                           key={chunk.id}
-                          className="app-card p-5"
+                          className="ui-panel p-5"
                         >
                           <button
                             type="button"
@@ -287,7 +287,7 @@ function KennisbankPageInner() {
             )}
           </>
         )}
-      </div>
+      </PageContainer>
     </AppShell>
   );
 }

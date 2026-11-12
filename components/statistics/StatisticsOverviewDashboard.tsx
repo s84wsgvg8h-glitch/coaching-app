@@ -447,7 +447,7 @@ export default function StatisticsOverviewDashboard({
           onClick={() => setExpandedBw(false)}
         >
           <div
-            className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-white/10 bg-[#0d1118] p-4"
+            className="max-h-[90vh] w-full max-w-6xl overflow-auto rounded-2xl border border-app-border bg-app-surface p-4"
             onClick={(event) => event.stopPropagation()}
           >
             <div className="mb-3 flex flex-wrap items-start justify-between gap-3">
@@ -466,7 +466,7 @@ export default function StatisticsOverviewDashboard({
                 <button
                   type="button"
                   onClick={() => setExpandedBw(false)}
-                  className="rounded-lg border border-white/10 p-2 text-app-muted hover:text-app-text"
+                  className="rounded-lg border border-app-border p-2 text-app-muted hover:text-app-text"
                   aria-label="Sluiten"
                 >
                   <X className="h-4 w-4" />

@@ -3228,8 +3228,8 @@ export default function ChatAppClient() {
           }`}
         >
           {!activeUserId && !activeGroupId ? (
-            <div className="flex min-h-0 flex-1 justify-center px-4 pt-[28%] md:pt-[32%]">
-              <div className="w-full max-w-[16.5rem]">
+            <div className="flex min-h-0 flex-1 justify-center px-4 pt-[18%] md:pt-[20%]">
+              <div className="w-full max-w-[22rem] md:max-w-[24rem]">
                 <EmptyState
                   icon="chat"
                   title="Limitless Chat"

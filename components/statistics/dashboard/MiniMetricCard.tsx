@@ -28,7 +28,7 @@ export default function MiniMetricCard({
 
   return (
     <div
-      className={`rounded-2xl border border-white/10 bg-[#0d1118] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${
+      className={`rounded-2xl border border-app-border bg-app-surface p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] ${
         onClick
           ? "cursor-pointer transition hover:border-white/20 hover:bg-[#10151f]"
           : ""

@@ -5,7 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { ArrowDown, ArrowUp, ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
-import { PageContainer, Panel } from "@/components/ui/design-system";
+import { PageContainer, PageHeader, Panel } from "@/components/ui/design-system";
 import SearchInput from "@/components/ui/SearchInput";
 import { supabase } from "@/lib/supabaseClient";
 import { isCoachLikeRole } from "@/lib/authRoles";
@@ -611,25 +611,29 @@ function BetalingenPageContent() {
           </div>
         ) : (
           <div className="min-w-0">
-              <div className="mb-3 flex w-full justify-end sm:mb-4">
-                <button
-                  type="button"
-                  onClick={() => void handleConnectStripe()}
-                  disabled={loading || connecting || !stripeConfigured}
-                  className="app-focus-ring inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl border border-app-border px-3 text-[12px] font-semibold text-app-muted transition hover:border-app-border-strong hover:text-app-text disabled:opacity-50 sm:w-auto"
-                >
-                  {connecting
-                    ? "Stripe openen..."
-                    : !overview ||
-                        stripeConnected ||
-                        overview.stripeConnectOnboardedAt
-                      ? "Beheer Stripe"
-                      : stripePendingOnboarding ||
-                          overview.stripeConnectAccountId
-                        ? "Koppeling afronden"
-                        : "Koppel met Stripe"}
-                </button>
-              </div>
+              <PageHeader
+                title="Betalingen"
+                description="Overzicht van maandprijzen, betaaldagen en Stripe-abonnementen."
+                actions={
+                  <button
+                    type="button"
+                    onClick={() => void handleConnectStripe()}
+                    disabled={loading || connecting || !stripeConfigured}
+                    className="app-focus-ring inline-flex min-h-11 w-full shrink-0 items-center justify-center rounded-xl border border-app-border px-3 text-[12px] font-semibold text-app-muted transition hover:border-app-border-strong hover:text-app-text disabled:opacity-50 sm:w-auto"
+                  >
+                    {connecting
+                      ? "Stripe openen..."
+                      : !overview ||
+                          stripeConnected ||
+                          overview.stripeConnectOnboardedAt
+                        ? "Beheer Stripe"
+                        : stripePendingOnboarding ||
+                            overview.stripeConnectAccountId
+                          ? "Koppeling afronden"
+                          : "Koppel met Stripe"}
+                  </button>
+                }
+              />
 
               <Panel className="overflow-hidden !border-0 !bg-transparent !p-0 !shadow-none">
                 <div className="mb-3 flex items-center md:hidden">

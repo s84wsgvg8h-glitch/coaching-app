@@ -224,7 +224,7 @@ export function StatisticsChartTooltip({
     }));
 
   return (
-    <div className="rounded-xl border border-app-border bg-[#111827] px-3 py-2 shadow-xl">
+    <div className="rounded-xl border border-app-border bg-app-surface-elevated px-3 py-2 shadow-xl">
       <p className="text-xs font-semibold text-white">
         {point.shortBlockLabel} · {point.weekLabel}
       </p>

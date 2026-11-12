@@ -110,7 +110,7 @@ export default function PollDetailsPanel({
                     <span
                       className={`inline-flex items-center gap-1 rounded-full px-3 py-1 text-xs font-bold ${
                         isWinner
-                          ? "bg-green-100 text-green-800"
+                          ? "bg-emerald-500/15 text-emerald-400"
                           : "bg-app-surface-hover text-app-muted"
                       }`}
                     >
