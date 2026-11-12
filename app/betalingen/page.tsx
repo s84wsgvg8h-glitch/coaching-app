@@ -295,17 +295,23 @@ function BetalingenPageContent() {
   const [stripePendingOnboarding, setStripePendingOnboarding] = useState(false);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<SortKey>("athlete");
+  const [sortKey, setSortKey] = useState<SortKey | null>(null);
   const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [openingPortal, setOpeningPortal] = useState<string | null>(null);
 
   function handleSort(nextKey: SortKey) {
-    if (sortKey === nextKey) {
-      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+    // Three states per column: first direction → opposite → normale volgorde.
+    if (sortKey !== nextKey) {
+      setSortKey(nextKey);
+      setSortDirection(nextKey === "athlete" ? "asc" : "desc");
       return;
     }
-    setSortKey(nextKey);
-    setSortDirection(nextKey === "athlete" ? "asc" : "desc");
+    if (sortDirection === (nextKey === "athlete" ? "asc" : "desc")) {
+      setSortDirection(nextKey === "athlete" ? "desc" : "asc");
+      return;
+    }
+    setSortKey(null);
+    setSortDirection("asc");
   }
 
   useEffect(() => {
@@ -481,6 +487,7 @@ function BetalingenPageContent() {
 
   const visibleRows = useMemo(() => {
     const filtered = mergedRows.filter((row) => rowMatchesSearch(row, search));
+    if (!sortKey) return filtered;
     return [...filtered].sort((left, right) =>
       compareRows(left, right, sortKey, sortDirection),
     );
