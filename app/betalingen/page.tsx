@@ -2,7 +2,7 @@
 
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { ArrowDown, ArrowUp, ExternalLink, Loader2 } from "lucide-react";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
 import { PageContainer, Panel } from "@/components/ui/design-system";
@@ -34,7 +34,14 @@ type StripeConnectUiStatus = {
   accountId?: string;
 };
 
-type CoverageFilter = "all" | "with" | "without" | "canceled";
+type SortKey =
+  | "athlete"
+  | "monthlyPrice"
+  | "paymentDay"
+  | "subscription"
+  | "next";
+
+type SortDirection = "asc" | "desc";
 
 type MergedPaymentRow = {
   key: string;
@@ -47,21 +54,23 @@ type MergedPaymentRow = {
   subscription: CoachAthleteSubscriptionRow | null;
 };
 
-const FILTERS: Array<{ key: CoverageFilter; label: string }> = [
-  { key: "all", label: "Alle" },
-  { key: "with", label: "Met abonnement" },
-  { key: "without", label: "Zonder abonnement" },
-  { key: "canceled", label: "Geannuleerd" },
+const SORT_COLUMNS: Array<{ key: SortKey; label: string }> = [
+  { key: "athlete", label: "Atleet" },
+  { key: "monthlyPrice", label: "Maandprijs" },
+  { key: "paymentDay", label: "Betaaldag" },
+  { key: "subscription", label: "Abonnement" },
+  { key: "next", label: "Volgende" },
 ];
 
-const LIVE_SUBSCRIPTION_STATUSES = new Set([
-  "active",
-  "trialing",
-  "past_due",
-  "unpaid",
-  "incomplete",
-  "paused",
-]);
+const SUBSCRIPTION_SORT_RANK: Record<string, number> = {
+  active: 1,
+  trialing: 2,
+  past_due: 3,
+  unpaid: 4,
+  paused: 5,
+  incomplete: 6,
+  canceled: 7,
+};
 
 function statusTextClass(status: string | null | undefined) {
   switch (status) {
@@ -90,10 +99,93 @@ function formatShortDate(iso: string | null) {
   });
 }
 
-function hasLiveSubscription(row: MergedPaymentRow) {
-  return Boolean(
-    row.subscription && LIVE_SUBSCRIPTION_STATUSES.has(row.subscription.status),
-  );
+function nextPaymentSortValue(row: MergedPaymentRow) {
+  const raw = row.subscription?.nextPaymentDate || row.profileNextDate;
+  if (!raw) return Number.POSITIVE_INFINITY;
+  const parsed = new Date(
+    raw.includes("T") ? raw : `${raw}T12:00:00`,
+  ).getTime();
+  return Number.isNaN(parsed) ? Number.POSITIVE_INFINITY : parsed;
+}
+
+function subscriptionSortValue(row: MergedPaymentRow) {
+  if (!row.subscription) return 99;
+  return SUBSCRIPTION_SORT_RANK[row.subscription.status] ?? 50;
+}
+
+function compareNullableNumber(
+  left: number | null,
+  right: number | null,
+  direction: SortDirection,
+) {
+  const leftEmpty = left == null;
+  const rightEmpty = right == null;
+  if (leftEmpty && rightEmpty) return 0;
+  if (leftEmpty) return 1;
+  if (rightEmpty) return -1;
+  return direction === "asc" ? left - right : right - left;
+}
+
+function compareRows(
+  left: MergedPaymentRow,
+  right: MergedPaymentRow,
+  sortKey: SortKey,
+  direction: SortDirection,
+) {
+  const sign = direction === "asc" ? 1 : -1;
+  let result = 0;
+
+  switch (sortKey) {
+    case "athlete":
+      result = left.athleteName.localeCompare(right.athleteName, "nl") * sign;
+      break;
+    case "monthlyPrice":
+      result = compareNullableNumber(
+        left.monthlyPrice,
+        right.monthlyPrice,
+        direction,
+      );
+      break;
+    case "paymentDay":
+      result = compareNullableNumber(
+        left.paymentDay,
+        right.paymentDay,
+        direction,
+      );
+      break;
+    case "subscription": {
+      const leftRank = subscriptionSortValue(left);
+      const rightRank = subscriptionSortValue(right);
+      if (leftRank !== rightRank) {
+        result = (leftRank - rightRank) * sign;
+      } else {
+        result =
+          (left.subscription?.statusLabel || "Geen abonnement").localeCompare(
+            right.subscription?.statusLabel || "Geen abonnement",
+            "nl",
+          ) * sign;
+      }
+      break;
+    }
+    case "next": {
+      const leftValue = nextPaymentSortValue(left);
+      const rightValue = nextPaymentSortValue(right);
+      const leftEmpty = !Number.isFinite(leftValue);
+      const rightEmpty = !Number.isFinite(rightValue);
+      if (leftEmpty || rightEmpty) {
+        result = Number(leftEmpty) - Number(rightEmpty);
+      } else {
+        result = (leftValue - rightValue) * sign;
+      }
+      break;
+    }
+  }
+
+  if (result === 0 && sortKey !== "athlete") {
+    return left.athleteName.localeCompare(right.athleteName, "nl");
+  }
+
+  return result;
 }
 
 function mergePaymentRows(
@@ -164,13 +256,6 @@ function mergePaymentRows(
   );
 }
 
-function rowMatchesFilter(row: MergedPaymentRow, filter: CoverageFilter) {
-  if (filter === "all") return true;
-  if (filter === "with") return hasLiveSubscription(row);
-  if (filter === "without") return !row.subscription;
-  return row.subscription?.status === "canceled";
-}
-
 function rowMatchesSearch(row: MergedPaymentRow, search: string) {
   const query = search.trim().toLowerCase();
   if (!query) return true;
@@ -210,8 +295,18 @@ function BetalingenPageContent() {
   const [stripePendingOnboarding, setStripePendingOnboarding] = useState(false);
   const [message, setMessage] = useState("");
   const [search, setSearch] = useState("");
-  const [coverageFilter, setCoverageFilter] = useState<CoverageFilter>("all");
+  const [sortKey, setSortKey] = useState<SortKey>("athlete");
+  const [sortDirection, setSortDirection] = useState<SortDirection>("asc");
   const [openingPortal, setOpeningPortal] = useState<string | null>(null);
+
+  function handleSort(nextKey: SortKey) {
+    if (sortKey === nextKey) {
+      setSortDirection((current) => (current === "asc" ? "desc" : "asc"));
+      return;
+    }
+    setSortKey(nextKey);
+    setSortDirection(nextKey === "athlete" ? "asc" : "desc");
+  }
 
   useEffect(() => {
     document.title = "Betalingen";
@@ -384,14 +479,12 @@ function BetalingenPageContent() {
     [overview, subscriptions],
   );
 
-  const visibleRows = useMemo(
-    () =>
-      mergedRows.filter(
-        (row) =>
-          rowMatchesFilter(row, coverageFilter) && rowMatchesSearch(row, search),
-      ),
-    [mergedRows, coverageFilter, search],
-  );
+  const visibleRows = useMemo(() => {
+    const filtered = mergedRows.filter((row) => rowMatchesSearch(row, search));
+    return [...filtered].sort((left, right) =>
+      compareRows(left, right, sortKey, sortDirection),
+    );
+  }, [mergedRows, search, sortKey, sortDirection]);
 
 
   async function handleConnectStripe() {
@@ -487,16 +580,8 @@ function BetalingenPageContent() {
         {loading || !overview ? (
           <div className="min-w-0 space-y-4" aria-busy="true" aria-live="polite">
             <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-              <div className="h-11 w-full max-w-xl animate-pulse rounded-full bg-app-surface-muted" />
+              <div className="h-11 w-11 animate-pulse rounded-full bg-app-surface-muted" />
               <div className="h-11 w-full animate-pulse rounded-xl bg-app-surface-muted sm:ml-auto sm:w-36" />
-            </div>
-            <div className="flex gap-2">
-              {Array.from({ length: 4 }).map((_, index) => (
-                <div
-                  key={index}
-                  className="h-11 w-28 shrink-0 animate-pulse rounded-full bg-app-surface-muted"
-                />
-              ))}
             </div>
             <div className="overflow-hidden rounded-2xl border border-app-border">
               <div className="grid grid-cols-5 gap-3 border-b border-app-border px-4 py-3">
@@ -520,34 +605,15 @@ function BetalingenPageContent() {
         ) : (
           <div className="min-w-0">
               <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div className="-mx-2 flex min-w-0 items-center gap-2 overflow-x-auto px-2 pb-1 scrollbar-none sm:mx-0 sm:flex-wrap sm:overflow-visible sm:px-0">
-                  <SearchInput
-                    value={search}
-                    onChange={setSearch}
-                    placeholder="Zoek op naam of e-mail…"
-                    collapsible
-                    compact
-                    className="shrink-0"
-                    aria-label="Zoek atleten"
-                  />
-                  {FILTERS.map((filter) => {
-                    const active = coverageFilter === filter.key;
-                    return (
-                      <button
-                        key={filter.key}
-                        type="button"
-                        onClick={() => setCoverageFilter(filter.key)}
-                        className={`app-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full px-3.5 text-[12px] font-medium transition ${
-                          active
-                            ? "bg-app-surface-hover text-app-text"
-                            : "text-app-muted hover:text-app-text"
-                        }`}
-                      >
-                        {filter.label}
-                      </button>
-                    );
-                  })}
-                </div>
+                <SearchInput
+                  value={search}
+                  onChange={setSearch}
+                  placeholder="Zoek op naam of e-mail…"
+                  collapsible
+                  compact
+                  className="shrink-0"
+                  aria-label="Zoek atleten"
+                />
                 <button
                   type="button"
                   onClick={() => void handleConnectStripe()}
@@ -572,7 +638,7 @@ function BetalingenPageContent() {
                   <p className="px-1 py-8 text-center text-[13px] text-app-muted">
                     {mergedRows.length === 0
                       ? "Nog geen atleten."
-                      : "Geen atleten voor deze filter of zoekopdracht."}
+                      : "Geen atleten voor deze zoekopdracht."}
                   </p>
                 ) : (
                   <>
@@ -580,21 +646,47 @@ function BetalingenPageContent() {
                       <table className="min-w-full text-center text-[11px]">
                         <thead>
                           <tr className="border-b border-app-border/60">
-                            <th className="px-2 py-2.5 text-center text-[15px] font-semibold leading-none text-app-text sm:px-3">
-                              Atleet
-                            </th>
-                            <th className="px-2 py-2.5 text-center text-[15px] font-semibold leading-none text-app-text sm:px-3">
-                              Maandprijs
-                            </th>
-                            <th className="px-2 py-2.5 text-center text-[15px] font-semibold leading-none text-app-text sm:px-3">
-                              Betaaldag
-                            </th>
-                            <th className="px-2 py-2.5 text-center text-[15px] font-semibold leading-none text-app-text sm:px-3">
-                              Abonnement
-                            </th>
-                            <th className="px-2 py-2.5 text-center text-[15px] font-semibold leading-none text-app-text sm:px-3">
-                              Volgende
-                            </th>
+                            {SORT_COLUMNS.map((column) => {
+                              const active = sortKey === column.key;
+                              return (
+                                <th
+                                  key={column.key}
+                                  className="px-2 py-2.5 text-center sm:px-3"
+                                  aria-sort={
+                                    active
+                                      ? sortDirection === "asc"
+                                        ? "ascending"
+                                        : "descending"
+                                      : "none"
+                                  }
+                                >
+                                  <button
+                                    type="button"
+                                    onClick={() => handleSort(column.key)}
+                                    className={`app-focus-ring inline-flex min-h-11 items-center justify-center gap-1 rounded-lg px-1.5 text-[15px] font-semibold leading-none transition ${
+                                      active
+                                        ? "text-app-text"
+                                        : "text-app-muted hover:text-app-text"
+                                    }`}
+                                  >
+                                    {column.label}
+                                    {active ? (
+                                      sortDirection === "asc" ? (
+                                        <ArrowUp
+                                          className="h-3.5 w-3.5"
+                                          aria-hidden="true"
+                                        />
+                                      ) : (
+                                        <ArrowDown
+                                          className="h-3.5 w-3.5"
+                                          aria-hidden="true"
+                                        />
+                                      )
+                                    ) : null}
+                                  </button>
+                                </th>
+                              );
+                            })}
                             <th className="px-2 py-2.5 text-center sm:px-3" />
                           </tr>
                         </thead>

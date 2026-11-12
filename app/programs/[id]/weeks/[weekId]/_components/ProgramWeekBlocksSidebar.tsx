@@ -483,12 +483,12 @@ export default function ProgramWeekBlocksSidebar({
                             ) : null}
                             <div className="relative">
                               <div className="relative min-w-0">
-                                <div className="flex w-full min-w-0 items-center gap-2 pl-2.5 pr-20 text-left">
-                                  <h3 className="min-w-0 truncate font-bold text-sm leading-none">
+                                <div className="flex w-full items-center gap-2 pl-2.5 pr-20 text-left">
+                                  <h3 className="shrink-0 whitespace-nowrap font-bold text-sm leading-none">
                                     {block.title}
                                   </h3>
                                   <p
-                                    className={`shrink-0 text-[10px] leading-none ${
+                                    className={`shrink-0 whitespace-nowrap text-[10px] leading-none ${
                                       activeBlock ? "text-gray-300" : "text-gray-400"
                                     }`}
                                   >
