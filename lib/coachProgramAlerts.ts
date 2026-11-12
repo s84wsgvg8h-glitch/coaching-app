@@ -229,6 +229,13 @@ function rangesOverlap(
   return aStart <= bEnd && aEnd >= bStart;
 }
 
+type BlockRow = {
+  id: string;
+  athlete_id: string;
+  title: string | null;
+  start_date: string | null;
+};
+
 /** Athletes who need a new program for next week: block ends this week, or no block/week this week. */
 export async function loadAthletesNeedingProgramNextWeek(
   coachId: string,
@@ -236,7 +243,7 @@ export async function loadAthletesNeedingProgramNextWeek(
 ): Promise<NextWeekProgramNeed[]> {
   let athletesQuery = supabase
     .from("profiles")
-    .select("id, full_name")
+    .select("id, full_name, program_blocks(id, title, start_date)")
     .eq("role", "atleet")
     .order("full_name", { ascending: true });
 
@@ -244,40 +251,50 @@ export async function loadAthletesNeedingProgramNextWeek(
     athletesQuery = athletesQuery.eq("coach_id", coachId);
   }
 
-  const { data: athletes, error: athletesError } = await athletesQuery;
-  if (athletesError || !athletes?.length) return [];
+  const { data: athleteRows, error: athletesError } = await athletesQuery;
+  if (athletesError || !athleteRows?.length) return [];
 
-  const athleteIds = athletes.map((athlete) => athlete.id);
+  const athletes = athleteRows.map((athlete) => ({
+    id: athlete.id as string,
+    full_name: (athlete.full_name as string | null) || null,
+  }));
 
-  const { data: blocks, error: blocksError } = await supabase
-    .from("program_blocks")
-    .select("id, athlete_id, title, start_date")
-    .in("athlete_id", athleteIds)
-    .order("start_date", { ascending: true });
+  const allBlocks: BlockRow[] = [];
+  const blocksByAthlete = new Map<string, BlockRow[]>();
 
-  if (blocksError) return [];
-
-  const allBlocks = blocks || [];
-  const blockIds = allBlocks.map((block) => block.id);
-  const weekCountByBlock = new Map<string, number>();
-  const blocksByAthlete = new Map<string, typeof allBlocks>();
-
-  for (const block of allBlocks) {
-    const list = blocksByAthlete.get(block.athlete_id);
-    if (list) list.push(block);
-    else blocksByAthlete.set(block.athlete_id, [block]);
+  for (const athlete of athleteRows) {
+    const nested = (athlete.program_blocks || []) as Array<{
+      id: string;
+      title: string | null;
+      start_date: string | null;
+    }>;
+    const sorted = [...nested].sort((left, right) =>
+      (left.start_date || "").localeCompare(right.start_date || ""),
+    );
+    const mapped = sorted.map((block) => ({
+      id: block.id,
+      athlete_id: athlete.id as string,
+      title: block.title,
+      start_date: block.start_date,
+    }));
+    blocksByAthlete.set(athlete.id as string, mapped);
+    allBlocks.push(...mapped);
   }
 
-  const firstDayWeekdayByBlock = new Map<string, number>();
-  const sampleWeekByBlock = new Map<string, string>();
+  const blockIds = allBlocks.map((block) => block.id);
+  const weekCountByBlock = new Map<string, number>();
+  const latestWeekByBlock = new Map<string, string>();
+  const weekdayByAthlete = new Map<string, number>();
 
   if (blockIds.length > 0) {
-    const { data: weeks, error: weeksError } = await supabase
+    // One week-count query + one first-day query in parallel where possible.
+    const weeksPromise = supabase
       .from("program_weeks")
       .select("id, program_block_id, created_at")
       .in("program_block_id", blockIds)
       .order("created_at", { ascending: false });
 
+    const { data: weeks, error: weeksError } = await weeksPromise;
     if (weeksError) return [];
 
     for (const week of weeks || []) {
@@ -285,32 +302,36 @@ export async function loadAthletesNeedingProgramNextWeek(
         week.program_block_id,
         (weekCountByBlock.get(week.program_block_id) || 0) + 1,
       );
-      if (!sampleWeekByBlock.has(week.program_block_id)) {
-        sampleWeekByBlock.set(week.program_block_id, week.id);
+      if (!latestWeekByBlock.has(week.program_block_id)) {
+        latestWeekByBlock.set(week.program_block_id, week.id);
       }
     }
 
-    const sampleWeekIds = [...sampleWeekByBlock.values()];
+    // Only resolve first-day weekday from each athlete's latest block.
+    const sampleWeekIds: string[] = [];
+    const sampleWeekToAthlete = new Map<string, string>();
+    for (const athlete of athletes) {
+      const athleteBlocks = blocksByAthlete.get(athlete.id) || [];
+      const latestBlock = athleteBlocks[athleteBlocks.length - 1];
+      if (!latestBlock) continue;
+      const weekId = latestWeekByBlock.get(latestBlock.id);
+      if (!weekId) continue;
+      sampleWeekIds.push(weekId);
+      sampleWeekToAthlete.set(weekId, athlete.id);
+    }
+
     if (sampleWeekIds.length > 0) {
       const { data: firstDays } = await supabase
         .from("program_days")
-        .select("program_week_id, title, scheduled_date, day_number")
+        .select("program_week_id, title, scheduled_date")
         .in("program_week_id", sampleWeekIds)
-        .order("day_number", { ascending: true });
+        .eq("day_number", 1);
 
-      const firstDayByWeek = new Map<
-        string,
-        { title?: string | null; scheduled_date?: string | null }
-      >();
       for (const day of firstDays || []) {
-        if (!firstDayByWeek.has(day.program_week_id)) {
-          firstDayByWeek.set(day.program_week_id, day);
-        }
-      }
-
-      for (const [blockId, weekId] of sampleWeekByBlock) {
-        const weekday = weekdayFromFirstDay(firstDayByWeek.get(weekId) || null);
-        if (weekday !== null) firstDayWeekdayByBlock.set(blockId, weekday);
+        const athleteId = sampleWeekToAthlete.get(day.program_week_id);
+        if (!athleteId || weekdayByAthlete.has(athleteId)) continue;
+        const weekday = weekdayFromFirstDay(day);
+        if (weekday !== null) weekdayByAthlete.set(athleteId, weekday);
       }
     }
   }
@@ -328,7 +349,6 @@ export async function loadAthletesNeedingProgramNextWeek(
 
     let coversThisWeek = false;
     let coversNextWeek = false;
-    let coveringBlockId: string | null = null;
     let coveringBlockStart: string | null = null;
     let endingThisWeek:
       | {
@@ -346,7 +366,6 @@ export async function loadAthletesNeedingProgramNextWeek(
 
       if (rangesOverlap(range.start, range.end, thisWeekStart, thisWeekEnd)) {
         coversThisWeek = true;
-        coveringBlockId = block.id;
         coveringBlockStart = block.start_date;
       }
       if (rangesOverlap(range.start, range.end, nextWeekStart, nextWeekEnd)) {
@@ -364,37 +383,20 @@ export async function loadAthletesNeedingProgramNextWeek(
       }
     }
 
-    const resolveWeekday = (blockId: string | null, startDate: string | null) => {
-      if (blockId && firstDayWeekdayByBlock.has(blockId)) {
-        return firstDayWeekdayByBlock.get(blockId)!;
-      }
-      for (let index = athleteBlocks.length - 1; index >= 0; index -= 1) {
-        const candidate = athleteBlocks[index];
-        if (firstDayWeekdayByBlock.has(candidate.id)) {
-          return firstDayWeekdayByBlock.get(candidate.id)!;
-        }
-      }
-      return weekStartWeekdayFromBlockStart(startDate);
-    };
+    const resolveWeekday = (startDate: string | null) =>
+      weekdayByAthlete.get(athlete.id) ??
+      weekStartWeekdayFromBlockStart(startDate);
 
     if (!coversThisWeek) {
-      const referenceBlockId =
-        coveringBlockId ||
-        endingThisWeek?.blockId ||
-        athleteBlocks[athleteBlocks.length - 1]?.id ||
-        null;
       const referenceStart =
         coveringBlockStart ||
         endingThisWeek?.startDate ||
         athleteBlocks[athleteBlocks.length - 1]?.start_date ||
         null;
-      const weekday = resolveWeekday(referenceBlockId, referenceStart);
+      const weekday = resolveWeekday(referenceStart);
       const dueDate = onOrAfterWeekday(thisWeekStart, weekday);
-      // If due day already passed this week, keep that past date (overdue).
       const dueThisWeek =
-        dueDate > thisWeekEnd
-          ? addDays(dueDate, -7)
-          : dueDate;
+        dueDate > thisWeekEnd ? addDays(dueDate, -7) : dueDate;
       const meta = dueMeta(dueThisWeek, today);
       needs.push({
         athleteId: athlete.id,
@@ -409,10 +411,7 @@ export async function loadAthletesNeedingProgramNextWeek(
     }
 
     if (endingThisWeek && !coversNextWeek) {
-      const weekday = resolveWeekday(
-        endingThisWeek.blockId,
-        endingThisWeek.startDate,
-      );
+      const weekday = resolveWeekday(endingThisWeek.startDate);
       const dueDate = onOrAfterWeekday(nextWeekStart, weekday);
       const meta = dueMeta(dueDate, today);
       needs.push({

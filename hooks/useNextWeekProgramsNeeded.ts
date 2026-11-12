@@ -11,5 +11,7 @@ export function useNextWeekProgramsNeeded(coachId: string, isAdmin: boolean) {
     queryFn: () => loadAthletesNeedingProgramNextWeek(coachId, isAdmin),
     enabled: Boolean(coachId),
     ...athleteQueryDefaults,
+    staleTime: 2 * 60_000,
+    refetchOnMount: false,
   });
 }

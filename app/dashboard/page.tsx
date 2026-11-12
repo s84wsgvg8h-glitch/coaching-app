@@ -9,6 +9,7 @@ import { useCoachDashboardData } from "@/hooks/useCoachDashboardData";
 import CoachCockpitHeader from "@/components/dashboard/CoachCockpitHeader";
 import AthleteDashboard from "@/components/dashboard/AthleteDashboard";
 import CoachMobileDashboardSearch from "@/components/dashboard/CoachMobileDashboardSearch";
+import CoachNextWeekProgramsWidget from "@/components/dashboard/CoachNextWeekProgramsWidget";
 import { isCoachLikeRole } from "@/lib/authRoles";
 import type { CoachDashboardMetrics } from "@/lib/coachDashboardFeed";
 
@@ -26,10 +27,6 @@ const CoachAlertsWidget = dynamic(
 );
 const CoachAttentionWidget = dynamic(
   () => import("@/components/dashboard/CoachAttentionWidget"),
-  { loading: widgetFallback, ssr: false },
-);
-const CoachNextWeekProgramsWidget = dynamic(
-  () => import("@/components/dashboard/CoachNextWeekProgramsWidget"),
   { loading: widgetFallback, ssr: false },
 );
 const ClientNotesWidget = dynamic(
