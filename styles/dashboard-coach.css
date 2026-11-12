@@ -515,14 +515,15 @@
     min-width: 0;
     flex: 1;
     padding-left: 0.25rem;
-    padding-top: 0.35rem;
+    padding-top: 1.15rem;
+    padding-bottom: 0.35rem;
   }
 
   .shell-topbar-greeting-title {
-    font-size: 17px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.2;
+    font-size: 1.625rem;
+    font-weight: 650;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
     color: var(--app-text);
     white-space: nowrap;
     overflow: hidden;
@@ -530,8 +531,8 @@
   }
 
   .shell-topbar-greeting-sub {
-    margin-top: 0.25rem;
-    font-size: 12px;
+    margin-top: 0.4rem;
+    font-size: 0.9375rem;
     font-weight: 500;
     color: var(--app-muted);
     white-space: nowrap;
@@ -1163,11 +1164,11 @@
 
   .premium-coach-ui .shell-topbar--coach-dashboard:not(.shell-topbar--dashboard) .shell-topbar-inner {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     justify-content: space-between;
     gap: 1rem;
-    min-height: calc(4.5rem - 1px);
-    padding: 1.15rem 0 0.85rem;
+    min-height: 5.75rem;
+    padding: 1.75rem 0 1.1rem;
   }
 
   .dashboard-cockpit-panel {
