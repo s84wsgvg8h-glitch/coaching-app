@@ -339,7 +339,7 @@ export default function ProgramBlocksSidebar({
                         event.preventDefault();
                         onToggleBlockOpen(block.id);
                       }}
-                      className={`group/block relative cursor-pointer px-3 py-4 ${
+                      className={`group/block relative flex min-h-[5.5rem] cursor-pointer items-center px-3 py-8 ${
                         isOpen ? "rounded-t-2xl" : "rounded-2xl"
                       } ${
                         activeBlock
