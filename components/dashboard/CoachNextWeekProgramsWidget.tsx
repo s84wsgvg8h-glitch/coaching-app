@@ -51,7 +51,7 @@ export default function CoachNextWeekProgramsWidget({
           {needs.map((item) => (
             <li key={item.athleteId}>
               <Link
-                href={`/athletes/${item.athleteId}`}
+                href={`/programs?athlete=${item.athleteId}`}
                 className="block truncate text-[12px] font-medium text-app-text hover:text-app-accent"
               >
                 {item.athleteName}
