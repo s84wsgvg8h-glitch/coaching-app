@@ -535,54 +535,28 @@ export default function CoachProgramWeekContent({
                             }}
                           />
                         </div>
-                        <div className="coach-program-day-chips">
-                          <div className="coach-program-day-chips-start">
-                            {isCoach && !day.warmup?.trim() && (
+                        {isCoach ? (
+                          <div className="coach-program-day-chips coach-program-day-chips--actions-only">
+                            <div className="coach-program-day-chip-actions">
                               <button
                                 type="button"
-                                onClick={() => setOpenDayWarmupId(day.id)}
-                                className="program-day-chip program-day-chip-warmup"
+                                onClick={() => duplicateDay(day)}
+                                className="coach-program-icon-btn opacity-0 transition group-hover/day:opacity-100"
+                                title="Dag dupliceren"
                               >
-                                Warmup
+                                ⧉
                               </button>
-                            )}
 
-                            {isCoach && (
                               <button
                                 type="button"
-                                onClick={() => setUitlegMode((current) => !current)}
-                                className={`program-day-chip program-day-chip-uitleg ${
-                                  uitlegMode ? "program-day-chip-uitleg-active" : ""
-                                }`}
+                                onClick={() => deleteDay(day.id)}
+                                className={`${DELETE_X_BTN} opacity-0 group-hover/day:opacity-100`}
                               >
-                                Uitleg
+                                ✕
                               </button>
-                            )}
+                            </div>
                           </div>
-
-                          <div className="coach-program-day-chip-actions">
-                            {isCoach && (
-                              <>
-                                <button
-                                  type="button"
-                                  onClick={() => duplicateDay(day)}
-                                  className="coach-program-icon-btn opacity-0 transition group-hover/day:opacity-100"
-                                  title="Dag dupliceren"
-                                >
-                                  ⧉
-                                </button>
-
-                                <button
-                                  type="button"
-                                  onClick={() => deleteDay(day.id)}
-                                  className={`${DELETE_X_BTN} opacity-0 group-hover/day:opacity-100`}
-                                >
-                                  ✕
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        </div>
+                        ) : null}
 
                         {day.warmup?.trim() && !warmupOpen && (
                           <div className="coach-program-warmup-panel group/warmup relative mb-3">
@@ -1453,16 +1427,38 @@ export default function CoachProgramWeekContent({
           onClick={(event) => event.stopPropagation()}
         >
           {contextMenu.target === "day" ? (
-            <button
-              type="button"
-              role="menuitem"
-              onClick={() => {
-                setOpenDayNoteId(contextMenu.dayId);
-                setContextMenu(null);
-              }}
-            >
-              Note
-            </button>
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpenDayWarmupId(contextMenu.dayId);
+                  setContextMenu(null);
+                }}
+              >
+                Warmup
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setUitlegMode((current) => !current);
+                  setContextMenu(null);
+                }}
+              >
+                {uitlegMode ? "Uitleg uitzetten" : "Uitleg"}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpenDayNoteId(contextMenu.dayId);
+                  setContextMenu(null);
+                }}
+              >
+                Note
+              </button>
+            </>
           ) : (
             <>
               <button
