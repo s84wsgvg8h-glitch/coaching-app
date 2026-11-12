@@ -31,14 +31,14 @@ export default function CoachNextWeekProgramsWidget({
 
   return (
     <div className="dashboard-next-week-programs-widget ui-panel-compact">
-      <div className="flex items-start gap-3">
+      <div className="flex items-center gap-3">
         <div
           className="dashboard-next-week-programs-icon"
           aria-label={`${count} programma’s`}
         >
           <span className="tabular-nums">{count}</span>
         </div>
-        <p className="min-w-0 flex-1 pt-0.5 text-[15px] font-semibold text-app-text">
+        <p className="min-w-0 flex-1 leading-none text-[15px] font-semibold text-app-text">
           {count === 0
             ? "Geen programma’s nodig"
             : count === 1
