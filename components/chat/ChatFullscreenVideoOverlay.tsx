@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { X } from "lucide-react";
 
 type ChatFullscreenVideoOverlayProps = {
@@ -22,6 +23,18 @@ export default function ChatFullscreenVideoOverlay({
   footerPlacement = "bottom",
 }: ChatFullscreenVideoOverlayProps) {
   const showFooter = Boolean(footer) && !hideFooter;
+
+  useEffect(() => {
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return (
     <div

@@ -386,7 +386,7 @@ export default function ChatVoiceRecorder({
       type="button"
       disabled={disabled}
       onClick={() => void startRecording()}
-      className="chat-compose-icon-btn disabled:cursor-not-allowed disabled:opacity-40"
+      className="chat-compose-icon-btn app-focus-ring relative before:absolute before:-inset-1.5 before:content-[''] disabled:cursor-not-allowed disabled:opacity-40"
       aria-label="Spraakbericht opnemen"
     >
       <Mic className="h-5 w-5" />

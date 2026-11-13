@@ -23,7 +23,7 @@ function ChatMessageEmojiRow({
           key={emoji}
           type="button"
           onClick={() => onCloseAndRun(() => onReact(emoji))}
-          className="flex h-10 w-10 items-center justify-center rounded-full text-2xl transition hover:bg-app-surface-hover"
+          className="flex h-11 w-11 items-center justify-center rounded-full text-2xl transition hover:bg-app-surface-hover"
           aria-label={`Reageer met ${emoji}`}
         >
           {emoji}
@@ -128,7 +128,7 @@ export default function ChatMessageMenu({
           className="absolute inset-0 bg-[var(--app-overlay)]"
           onClick={onClose}
         />
-        <div className="chat-sheet absolute inset-x-0 bottom-0 pb-[max(16px,env(safe-area-inset-bottom))]">
+        <div className="chat-sheet absolute inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto overscroll-contain pb-[max(16px,env(safe-area-inset-bottom))]">
           <ChatMessageEmojiRow onReact={onReact} onCloseAndRun={run} />
           <button
             type="button"
@@ -240,8 +240,8 @@ export function ChatMessageMenuTrigger({
         event.stopPropagation();
         onOpen(event);
       }}
-      className={`absolute top-1 hidden h-6 w-6 items-center justify-center rounded-full opacity-70 md:flex md:opacity-0 md:transition md:group-hover:opacity-100 ${
-        isMine ? "left-1 text-white/80 hover:bg-white/15" : "right-1 text-app-subtle hover:bg-app-surface-hover"
+      className={`chat-message-menu-trigger app-focus-ring absolute top-0.5 hidden h-8 w-8 items-center justify-center rounded-full md:flex md:transition ${
+        isMine ? "left-0.5 text-white/80 hover:bg-white/15" : "right-0.5 text-app-subtle hover:bg-app-surface-hover"
       }`}
       aria-label="Berichtopties"
     >

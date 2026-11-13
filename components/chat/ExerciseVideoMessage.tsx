@@ -64,8 +64,9 @@ export default function ExerciseVideoMessage({
             <img
               src={payload.thumbnailUrl}
               alt={`${payload.exerciseName} set ${payload.setNumber}`}
-              className="max-h-[35dvh] w-full object-cover"
+              className="aspect-[4/5] max-h-[35dvh] w-full bg-black object-cover"
               loading="lazy"
+              decoding="async"
             />
           ) : (
             <div className="chat-video-preview">

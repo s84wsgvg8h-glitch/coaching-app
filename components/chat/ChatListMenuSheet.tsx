@@ -38,7 +38,7 @@ export default function ChatListMenuSheet({
         className="absolute inset-0 bg-[var(--app-overlay)]"
         onClick={onClose}
       />
-      <div className="chat-sheet absolute inset-x-0 bottom-0 pb-[max(16px,env(safe-area-inset-bottom))] md:bottom-auto md:top-1/2 md:left-1/2 md:w-full md:max-w-sm md:-translate-x-1/2 md:-translate-y-1/2">
+      <div className="chat-sheet absolute inset-x-0 bottom-0 max-h-[90dvh] overflow-y-auto overscroll-contain pb-[max(16px,env(safe-area-inset-bottom))] md:bottom-auto md:top-1/2 md:left-1/2 md:w-full md:max-w-sm md:-translate-x-1/2 md:-translate-y-1/2">
         <button
           type="button"
           onClick={() => run(onPin)}

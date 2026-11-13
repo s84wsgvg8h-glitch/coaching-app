@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Mic, Play, Pause } from "lucide-react";
+
+const CHAT_AUDIO_PLAY_EVENT = "chat-audio-play";
 
 type ChatVoiceMessageProps = {
   src: string;
@@ -16,6 +18,7 @@ function formatDuration(seconds: number) {
 
 export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const playerId = useId();
   const [playing, setPlaying] = useState(false);
   const [duration, setDuration] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
@@ -39,16 +42,39 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
       setCurrentTime(0);
     }
 
+    function onPause() {
+      setPlaying(false);
+    }
+
     audio.addEventListener("loadedmetadata", onLoaded);
     audio.addEventListener("timeupdate", onTimeUpdate);
     audio.addEventListener("ended", onEnded);
+    audio.addEventListener("pause", onPause);
 
     return () => {
       audio.removeEventListener("loadedmetadata", onLoaded);
       audio.removeEventListener("timeupdate", onTimeUpdate);
       audio.removeEventListener("ended", onEnded);
+      audio.removeEventListener("pause", onPause);
     };
   }, [src]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+
+    function onOtherAudioPlay(event: Event) {
+      const id = (event as CustomEvent<{ id: string }>).detail?.id;
+      if (id === playerId || !audio || audio.paused) return;
+      audio.pause();
+      setPlaying(false);
+    }
+
+    window.addEventListener(CHAT_AUDIO_PLAY_EVENT, onOtherAudioPlay);
+    return () => {
+      window.removeEventListener(CHAT_AUDIO_PLAY_EVENT, onOtherAudioPlay);
+      audio?.pause();
+    };
+  }, [playerId]);
 
   async function togglePlay() {
     const audio = audioRef.current;
@@ -66,6 +92,9 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
       audio.load();
     }
 
+    window.dispatchEvent(
+      new CustomEvent(CHAT_AUDIO_PLAY_EVENT, { detail: { id: playerId } }),
+    );
     await audio.play();
     setPlaying(true);
   }
@@ -79,7 +108,7 @@ export default function ChatVoiceMessage({ src, isMine }: ChatVoiceMessageProps)
       <button
         type="button"
         onClick={() => void togglePlay()}
-        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+        className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-full ${
           isMine ? "bg-white/20 text-white" : "bg-app-accent text-white"
         }`}
         aria-label={playing ? "Pauzeer spraakbericht" : "Speel spraakbericht af"}

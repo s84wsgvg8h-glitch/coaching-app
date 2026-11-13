@@ -1027,6 +1027,49 @@ html.dark .chat-shell .chat-input-bar .chat-message-input:focus-visible {
   background: var(--chat-surface-hover);
 }
 
+@media (min-width: 768px) {
+  .chat-bare-icon-btn.md\:hidden,
+  .chat-compose-icon-btn.md\:hidden {
+    display: none;
+  }
+}
+
+.chat-panel-header.chat-panel-header--safe-top {
+  padding-top: max(12px, env(safe-area-inset-top, 0px));
+}
+
+.chat-message-menu-trigger {
+  opacity: 0.7;
+}
+
+@media (hover: none) {
+  .chat-message-menu-trigger {
+    opacity: 1;
+  }
+}
+
+@media (min-width: 768px) and (hover: hover) {
+  .chat-message-menu-trigger {
+    opacity: 0;
+  }
+
+  .group:hover .chat-message-menu-trigger,
+  .chat-message-menu-trigger:focus-visible {
+    opacity: 1;
+  }
+}
+
+.chat-shell .chat-bubble-own,
+.chat-shell .chat-bubble-other,
+.chat-bubble-media,
+.chat-media-card,
+.chat-bubble-media img,
+.chat-bubble-media video,
+.chat-media-card img,
+.chat-media-card video {
+  -webkit-touch-callout: none;
+}
+
 .chat-send-btn {
   box-shadow: 0 2px 10px var(--app-accent-glow);
   transition:

@@ -18,8 +18,10 @@
     overflow: hidden;
   }
 
-  html[data-chat-viewport-sync="true"] .chat-list-panel {
-    display: none !important;
+  @media (max-width: 767px) {
+    html[data-chat-viewport-sync="true"] .chat-list-panel {
+      display: none !important;
+    }
   }
 
   html[data-chat-viewport-sync="true"] .chat-side-panel--viewport-sync {

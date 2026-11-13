@@ -30,6 +30,7 @@ export default function ChatVideoCoachFeedbackViewer({
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const frameCanvasRef = useRef<HTMLCanvasElement>(null);
+  const capturedFrameRef = useRef<HTMLCanvasElement | null>(null);
 
   const [feedbackText, setFeedbackText] = useState("");
   const [sending, setSending] = useState(false);
@@ -88,9 +89,16 @@ export default function ChatVideoCoachFeedbackViewer({
     const frameCanvas = frameCanvasRef.current;
     if (!canvas || !frameCanvas) return;
 
+    const captured = capturedFrameRef.current;
+    if (captured) {
+      frameCanvas.width = captured.width;
+      frameCanvas.height = captured.height;
+      frameCanvas.getContext("2d")?.drawImage(captured, 0, 0);
+    }
+
     canvas.width = frameCanvas.width;
     canvas.height = frameCanvas.height;
-  }, [annotateMode]);
+  }, [annotateMode, capturedAt]);
 
   function pointerPos(event: React.PointerEvent<HTMLCanvasElement>) {
     const canvas = canvasRef.current;
@@ -121,8 +129,8 @@ export default function ChatVideoCoachFeedbackViewer({
 
   function captureFrame() {
     const video = videoRef.current;
-    const frameCanvas = frameCanvasRef.current;
-    if (!video || !frameCanvas) return;
+    if (!video) return;
+    const frameCanvas = document.createElement("canvas");
 
     if (!videoReady || video.readyState < 2) {
       video.pause();
@@ -147,6 +155,7 @@ export default function ChatVideoCoachFeedbackViewer({
       return;
     }
 
+    capturedFrameRef.current = frameCanvas;
     setCapturedAt(video.currentTime);
     setAnnotateMode(true);
     setLineStart(null);
@@ -251,6 +260,22 @@ export default function ChatVideoCoachFeedbackViewer({
           : "flex items-center gap-2"
       }
     >
+      <button
+        type="button"
+        disabled={!videoReady}
+        onClick={captureFrame}
+        className={
+          useSideFeedback
+            ? "app-focus-ring inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[12px] border border-white/20 text-sm font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-40"
+            : "app-focus-ring inline-flex h-11 min-w-11 shrink-0 items-center justify-center gap-1.5 rounded-[12px] border border-white/20 px-3 text-xs font-semibold text-white transition-colors hover:bg-white/10 disabled:opacity-40"
+        }
+        aria-label="Annoteren"
+      >
+        <Pencil className="h-4 w-4" />
+        <span className={useSideFeedback ? "" : "hidden sm:inline"}>
+          Annoteren
+        </span>
+      </button>
       <textarea
         value={feedbackText}
         onChange={(event) => setFeedbackText(event.target.value)}
@@ -260,7 +285,7 @@ export default function ChatVideoCoachFeedbackViewer({
         className={
           useSideFeedback
             ? "chat-fullscreen-video__feedback-sidebar-input min-h-[88px] min-w-0 flex-1 resize-none rounded-[12px] border border-white/15 bg-white/10 px-3 py-2 text-base leading-5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/25 sm:text-sm"
-            : "min-h-[36px] min-w-0 flex-1 resize-none rounded-[12px] border border-white/15 bg-white/10 px-3 py-2 text-base leading-5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/25 sm:text-sm"
+            : "min-h-[44px] min-w-0 flex-1 resize-none rounded-[12px] border border-white/15 bg-white/10 px-3 py-3 text-base leading-5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/25 sm:text-sm"
         }
       />
       <button
@@ -270,7 +295,7 @@ export default function ChatVideoCoachFeedbackViewer({
         className={
           useSideFeedback
             ? "inline-flex h-11 w-full shrink-0 items-center justify-center gap-2 rounded-[12px] bg-app-accent text-sm font-semibold text-white disabled:opacity-40"
-            : "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-app-accent text-white disabled:opacity-40"
+            : "app-focus-ring inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-accent text-white disabled:opacity-40"
         }
         aria-label="Feedback versturen"
       >
@@ -382,12 +407,17 @@ export default function ChatVideoCoachFeedbackViewer({
                   key={c}
                   type="button"
                   onClick={() => setColor(c)}
-                  className={`h-7 w-7 rounded-full border-2 ${
-                    color === c ? "border-white" : "border-transparent"
-                  }`}
-                  style={{ backgroundColor: c }}
+                  className="app-focus-ring -mx-1 inline-flex h-11 w-11 items-center justify-center rounded-full"
                   aria-label={`Kleur ${c}`}
-                />
+                  aria-pressed={color === c}
+                >
+                  <span
+                    className={`h-7 w-7 rounded-full border-2 ${
+                      color === c ? "border-white" : "border-transparent"
+                    }`}
+                    style={{ backgroundColor: c }}
+                  />
+                </button>
               ))}
               <button
                 type="button"
@@ -424,13 +454,13 @@ export default function ChatVideoCoachFeedbackViewer({
                 onKeyDown={handleFeedbackKeyDown}
                 placeholder="Typ feedback bij dit frame..."
                 rows={1}
-                className="min-h-[36px] min-w-0 flex-1 resize-none rounded-[12px] border border-white/15 bg-white/10 px-3 py-2 text-base leading-5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/25 sm:text-sm"
+                className="min-h-[44px] min-w-0 flex-1 resize-none rounded-[12px] border border-white/15 bg-white/10 px-3 py-3 text-base leading-5 text-white placeholder:text-white/45 focus:outline-none focus:ring-2 focus:ring-white/25 sm:text-sm"
               />
               <button
                 type="button"
                 disabled={sending || (!feedbackText.trim() && !annotateMode)}
                 onClick={() => void handleSend(annotateMode)}
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-[12px] bg-app-accent text-white disabled:opacity-40"
+                className="app-focus-ring inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-[12px] bg-app-accent text-white disabled:opacity-40"
                 aria-label="Feedback versturen"
               >
                 <Send className="h-4 w-4" />

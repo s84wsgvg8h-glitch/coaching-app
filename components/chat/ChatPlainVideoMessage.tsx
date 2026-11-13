@@ -49,7 +49,7 @@ export default function ChatPlainVideoMessage({
           playsInline
           muted
           onLoadedData={onMediaLoaded}
-          className="max-h-72 w-full object-cover"
+          className="aspect-[4/5] max-h-72 w-full bg-black object-cover"
         />
         <span className="absolute inset-0 flex items-center justify-center bg-black/20">
           <span className="flex h-12 w-12 items-center justify-center rounded-full bg-black/50 text-white backdrop-blur-sm">

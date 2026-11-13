@@ -68,7 +68,7 @@ export default function PollDetailsPanel({
       />
 
       <aside className="chat-panel absolute right-0 top-0 w-full max-w-md shadow-2xl">
-        <div className="chat-panel-header items-start">
+        <div className="chat-panel-header chat-panel-header--safe-top items-start">
           <button
             type="button"
             onClick={onClose}

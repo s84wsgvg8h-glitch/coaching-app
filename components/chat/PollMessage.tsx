@@ -96,7 +96,7 @@ export default function PollMessage({
           <button
             type="button"
             onClick={onOpenDetails}
-            className={`text-xs font-semibold underline-offset-2 hover:underline ${
+            className={`app-focus-ring -my-3 inline-flex min-h-[44px] items-center rounded-md px-1 text-xs font-semibold underline-offset-2 hover:underline ${
               isMine ? "text-white/80" : "text-app-muted"
             }`}
           >

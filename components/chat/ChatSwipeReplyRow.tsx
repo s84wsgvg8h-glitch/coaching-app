@@ -1,7 +1,7 @@
 "use client";
 
 import { Reply } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 type ChatSwipeReplyRowProps = {
   children: React.ReactNode;
@@ -11,8 +11,12 @@ type ChatSwipeReplyRowProps = {
   className?: string;
 };
 
+type SwipeAxis = "none" | "horizontal" | "vertical";
+
 const REPLY_THRESHOLD = 56;
 const MAX_OFFSET = 72;
+const AXIS_LOCK_DISTANCE = 6;
+const EDGE_GESTURE_GUARD = 24;
 
 export default function ChatSwipeReplyRow({
   children,
@@ -23,64 +27,107 @@ export default function ChatSwipeReplyRow({
 }: ChatSwipeReplyRowProps) {
   const [offset, setOffset] = useState(0);
   const [animating, setAnimating] = useState(false);
-  const startXRef = useRef(0);
-  const startYRef = useRef(0);
-  const swipingRef = useRef(false);
+  const contentRef = useRef<HTMLDivElement | null>(null);
+  const callbacksRef = useRef({ onReply, onSwipeStart, disabled });
 
-  function resetOffset() {
-    setAnimating(true);
-    setOffset(0);
-    window.setTimeout(() => setAnimating(false), 200);
-  }
+  useEffect(() => {
+    callbacksRef.current = { onReply, onSwipeStart, disabled };
+  });
 
-  function handleTouchStart(event: React.TouchEvent) {
-    if (disabled || typeof window === "undefined" || window.innerWidth >= 768) {
-      return;
+  useEffect(() => {
+    const node = contentRef.current;
+    if (!node) return;
+
+    let startX = 0;
+    let startY = 0;
+    let axis: SwipeAxis = "none";
+    let tracking = false;
+    let currentOffset = 0;
+    let resetTimer = 0;
+
+    function isSwipeEnabled() {
+      return !callbacksRef.current.disabled && window.innerWidth < 768;
     }
 
-    const touch = event.touches[0];
-    if (!touch) return;
-
-    startXRef.current = touch.clientX;
-    startYRef.current = touch.clientY;
-    swipingRef.current = false;
-    setAnimating(false);
-  }
-
-  function handleTouchMove(event: React.TouchEvent) {
-    if (disabled || typeof window === "undefined" || window.innerWidth >= 768) {
-      return;
+    function updateOffset(next: number) {
+      currentOffset = next;
+      setOffset(next);
     }
 
-    const touch = event.touches[0];
-    if (!touch) return;
+    function handleTouchStart(event: TouchEvent) {
+      tracking = false;
+      axis = "none";
+      if (!isSwipeEnabled()) return;
 
-    const deltaX = touch.clientX - startXRef.current;
-    const deltaY = Math.abs(touch.clientY - startYRef.current);
+      const touch = event.touches[0];
+      if (!touch || touch.clientX <= EDGE_GESTURE_GUARD) return;
 
-    if (deltaX <= 6 || deltaX <= deltaY) return;
-
-    swipingRef.current = true;
-    onSwipeStart?.();
-    event.preventDefault();
-    setOffset(Math.min(deltaX, MAX_OFFSET));
-  }
-
-  function handleTouchEnd() {
-    if (disabled || typeof window === "undefined" || window.innerWidth >= 768) {
-      return;
+      startX = touch.clientX;
+      startY = touch.clientY;
+      tracking = true;
+      window.clearTimeout(resetTimer);
+      setAnimating(false);
     }
 
-    if (swipingRef.current && offset >= REPLY_THRESHOLD) {
-      onReply();
-      if (typeof navigator !== "undefined" && "vibrate" in navigator) {
-        navigator.vibrate(10);
+    function handleTouchMove(event: TouchEvent) {
+      if (!tracking || axis === "vertical" || !isSwipeEnabled()) return;
+
+      const touch = event.touches[0];
+      if (!touch) return;
+
+      const deltaX = touch.clientX - startX;
+      const deltaY = Math.abs(touch.clientY - startY);
+
+      if (axis === "none") {
+        if (deltaX > AXIS_LOCK_DISTANCE && deltaX > deltaY) {
+          axis = "horizontal";
+          callbacksRef.current.onSwipeStart?.();
+        } else if (
+          deltaY > AXIS_LOCK_DISTANCE ||
+          deltaX < -AXIS_LOCK_DISTANCE
+        ) {
+          axis = "vertical";
+          return;
+        } else {
+          return;
+        }
       }
+
+      if (event.cancelable) event.preventDefault();
+      updateOffset(Math.min(Math.max(deltaX, 0), MAX_OFFSET));
     }
 
-    swipingRef.current = false;
-    resetOffset();
-  }
+    function handleTouchEnd() {
+      const wasHorizontal = tracking && axis === "horizontal";
+      tracking = false;
+      axis = "none";
+      if (!wasHorizontal) return;
+
+      if (currentOffset >= REPLY_THRESHOLD) {
+        callbacksRef.current.onReply();
+        if ("vibrate" in navigator) {
+          navigator.vibrate(10);
+        }
+      }
+
+      setAnimating(true);
+      updateOffset(0);
+      resetTimer = window.setTimeout(() => setAnimating(false), 200);
+    }
+
+    node.addEventListener("touchstart", handleTouchStart, { passive: true });
+    node.addEventListener("touchmove", handleTouchMove, { passive: false });
+    node.addEventListener("touchend", handleTouchEnd);
+    node.addEventListener("touchcancel", handleTouchEnd);
+
+    return () => {
+      window.clearTimeout(resetTimer);
+      node.removeEventListener("touchstart", handleTouchStart);
+      node.removeEventListener("touchmove", handleTouchMove);
+      node.removeEventListener("touchend", handleTouchEnd);
+      node.removeEventListener("touchcancel", handleTouchEnd);
+    };
+  }, []);
 
   return (
     <div
@@ -97,12 +144,9 @@ export default function ChatSwipeReplyRow({
         />
       </div>
       <div
+        ref={contentRef}
         className={`w-full max-w-full ${animating ? "transition-transform duration-200 ease-out" : ""}`}
         style={{ transform: offset > 0 ? `translateX(${offset}px)` : undefined }}
-        onTouchStart={handleTouchStart}
-        onTouchMove={handleTouchMove}
-        onTouchEnd={handleTouchEnd}
-        onTouchCancel={handleTouchEnd}
       >
         {children}
       </div>

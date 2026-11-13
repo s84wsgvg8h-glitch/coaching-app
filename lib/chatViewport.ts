@@ -1,6 +1,7 @@
 import { readKeyboardInset, lockWindowScroll } from "@/lib/viewportPin";
 import {
   applyKeyboardCssVars,
+  clearKeyboardCssVars,
   getNativeKeyboardHeight,
   isCapacitorNativePlatform,
 } from "@/lib/nativeKeyboard";
@@ -110,6 +111,7 @@ export function clearChatVisualViewport() {
   }
 
   keyboardWasOpen = false;
+  clearKeyboardCssVars();
   document.documentElement.removeAttribute(CHAT_VIEWPORT_SYNC_ATTR);
 }
 

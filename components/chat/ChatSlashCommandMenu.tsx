@@ -19,7 +19,7 @@ export default function ChatSlashCommandMenu({
 
   return (
     <div className="chat-menu-dropdown absolute bottom-full left-0 z-30 mb-1.5 w-full shadow-md">
-      <ul className="max-h-36 overflow-y-auto overscroll-contain py-0.5">
+      <ul className="max-h-48 overflow-y-auto overscroll-contain py-0.5">
         {commands.map((item, index) => {
           const isActive = index === activeIndex;
 
@@ -29,7 +29,7 @@ export default function ChatSlashCommandMenu({
                 type="button"
                 onMouseEnter={() => onHover(index)}
                 onClick={() => onSelect(item.command)}
-                className={`flex w-full items-center gap-2 px-2 py-1.5 text-left transition ${
+                className={`app-focus-ring flex min-h-[44px] w-full items-center gap-2 px-2 py-1.5 text-left transition ${
                   isActive ? "bg-app-surface-hover" : "hover:bg-app-surface-muted"
                 }`}
               >

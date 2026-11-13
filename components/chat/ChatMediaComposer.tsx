@@ -40,6 +40,28 @@ export default function ChatMediaComposer({
     }
   }, [open]);
 
+  const visible = open && Boolean(file);
+
+  useEffect(() => {
+    if (!visible) return;
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape" && !busy) {
+        event.preventDefault();
+        onClose();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [visible, busy, onClose]);
+
   useEffect(() => {
     return () => {
       if (previewUrl) {
@@ -74,7 +96,7 @@ export default function ChatMediaComposer({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="rounded-full p-2 hover:bg-white/10 disabled:opacity-40"
+            className="-ml-2 flex h-11 w-11 items-center justify-center rounded-full hover:bg-white/10 disabled:opacity-40"
             aria-label="Sluiten"
           >
             <X className="h-5 w-5" />
@@ -86,7 +108,7 @@ export default function ChatMediaComposer({
                 ? "Video versturen"
                 : "Foto versturen"}
           </p>
-          <div className="w-9" />
+          <div className="-mr-2 w-11" />
         </div>
 
         <div className="relative min-h-0 flex-1 overflow-hidden bg-black">
@@ -112,7 +134,7 @@ export default function ChatMediaComposer({
           ) : null}
         </div>
 
-        <div className="shrink-0 border-t border-white/10 bg-[#111] px-4 py-3 pb-[max(12px,env(safe-area-inset-bottom))]">
+        <div className="shrink-0 border-t border-white/10 bg-[#111] px-4 pt-3 pb-[calc(max(12px,env(safe-area-inset-bottom))+var(--keyboard-height,0px))]">
           <div className="flex items-end gap-2">
             <textarea
               rows={1}
@@ -120,7 +142,7 @@ export default function ChatMediaComposer({
               onChange={(event) => setCaption(event.target.value)}
               placeholder="Voeg een bijschrift toe..."
               disabled={busy}
-              className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-[15px] text-white outline-none placeholder:text-white/40 disabled:opacity-50"
+              className="max-h-28 min-h-[44px] flex-1 resize-none rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-base text-white md:text-[15px] outline-none placeholder:text-white/40 disabled:opacity-50"
             />
             <button
               type="button"

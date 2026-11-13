@@ -127,6 +127,26 @@ export default function ChatMediaCapture({
     };
   }, [open]);
 
+  const handleCloseRef = useRef<() => void>(() => {});
+
+  useEffect(() => {
+    handleCloseRef.current = handleClose;
+  });
+
+  useEffect(() => {
+    if (!open) return;
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        handleCloseRef.current();
+      }
+    }
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [open]);
+
   useEffect(() => {
     if (!open || previewUrl) return;
 
