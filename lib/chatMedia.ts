@@ -29,7 +29,11 @@ function inferMimeTypeFromExtension(extension: string) {
         ? "image/webp"
         : extension === "gif"
           ? "image/gif"
-          : "image/jpeg";
+          : extension === "heic"
+            ? "image/heic"
+            : extension === "heif"
+              ? "image/heif"
+              : "image/jpeg";
   }
   if (AUDIO_EXTENSIONS.has(extension)) {
     return extension === "mp3"
@@ -243,14 +247,22 @@ export async function insertChatMediaMessage(params: {
   };
 
   if (params.groupId) {
-    return supabase.from("messages").insert({
-      ...base,
-      group_id: params.groupId,
-    });
+    return supabase
+      .from("messages")
+      .insert({
+        ...base,
+        group_id: params.groupId,
+      })
+      .select("id")
+      .single();
   }
 
-  return supabase.from("messages").insert({
-    ...base,
-    receiver_id: params.receiverId!,
-  });
+  return supabase
+    .from("messages")
+    .insert({
+      ...base,
+      receiver_id: params.receiverId!,
+    })
+    .select("id")
+    .single();
 }

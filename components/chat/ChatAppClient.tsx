@@ -261,6 +261,55 @@ const PollDetailsPanel = dynamic(
   { ssr: false },
 );
 
+type OverviewEntry = {
+  id: string;
+  unreadCount?: number;
+  lastMessage?: string | null;
+  lastMessageSender?: string | null;
+  lastMessageTime?: string | null;
+};
+
+function mergeOverviewEntries<T extends OverviewEntry>(current: T[], incoming: T[]) {
+  if (current.length === 0) return incoming;
+  const previousById = new Map(current.map((item) => [item.id, item]));
+  return incoming.map((item) => {
+    const previous = previousById.get(item.id);
+    if (!previous) return item;
+    const previousIsNewer =
+      Boolean(previous.lastMessageTime) &&
+      (!item.lastMessageTime ||
+        new Date(previous.lastMessageTime!).getTime() >
+          new Date(item.lastMessageTime).getTime());
+    return {
+      ...item,
+      unreadCount: previous.unreadCount ?? item.unreadCount,
+      ...(previousIsNewer
+        ? {
+            lastMessage: previous.lastMessage,
+            lastMessageSender: previous.lastMessageSender,
+            lastMessageTime: previous.lastMessageTime,
+          }
+        : {}),
+    };
+  });
+}
+
+function upsertMessage(list: ChatMessage[], message: ChatMessage) {
+  const index = list.findIndex((item) => item.id === message.id);
+  if (index === -1) return [...list, message];
+  const next = list.slice();
+  next[index] = { ...list[index], ...message };
+  return next;
+}
+
+function mergeMessagesById(base: ChatMessage[], incoming: ChatMessage[]) {
+  const byId = new Map(base.map((item) => [item.id, item]));
+  for (const item of incoming) byId.set(item.id, { ...byId.get(item.id), ...item });
+  return Array.from(byId.values()).sort(
+    (a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime(),
+  );
+}
+
 export default function ChatAppClient() {
   const router = useRouter();
   const pathname = usePathname();
@@ -281,6 +330,12 @@ export default function ChatAppClient() {
   const messagesContainerRef = useRef<HTMLDivElement | null>(null);
   const shouldStickToBottomRef = useRef(true);
   const isInitialScrollRef = useRef(true);
+  const pendingScrollAnchorRef = useRef<{
+    prevHeight: number;
+    prevTop: number;
+  } | null>(null);
+  const sendLockRef = useRef(false);
+  const scheduleActiveMarkReadRef = useRef<() => void>(() => {});
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -424,16 +479,16 @@ export default function ChatAppClient() {
       setUserRole(authRole);
       setUserName(authProfile?.full_name || "");
       setConversationSettings(overview.settingsMap);
-      setContacts(overview.contacts);
-      setGroups(overview.groups);
+      setContacts((current) => mergeOverviewEntries(current, overview.contacts));
+      setGroups((current) => mergeOverviewEntries(current, overview.groups));
       setBootstrapping(false);
 
       void loadBlockedUserIds(authUserId).then((blockedIds) => {
         if (cancelled) return;
         const blockedSet = new Set(blockedIds);
         setBlockedUserIds(blockedSet);
-        setContacts(
-          overview.contacts.filter((contact) => !blockedSet.has(contact.id)),
+        setContacts((current) =>
+          current.filter((contact) => !blockedSet.has(contact.id)),
         );
       });
 
@@ -503,7 +558,11 @@ export default function ChatAppClient() {
   useEffect(() => {
     if (!userId || isBootstrapping) return;
 
+    let markTimer: number | null = null;
+
     async function syncActiveConversationReadState() {
+      if (document.visibilityState !== "visible") return;
+
       if (activeUserId) {
         await markConversationAsRead(userId, activeUserId);
         setContacts((current) =>
@@ -526,11 +585,103 @@ export default function ChatAppClient() {
       }
     }
 
+    scheduleActiveMarkReadRef.current = () => {
+      if (markTimer) window.clearTimeout(markTimer);
+      markTimer = window.setTimeout(() => {
+        markTimer = null;
+        void syncActiveConversationReadState();
+      }, 500);
+    };
+
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible") {
+        void syncActiveConversationReadState();
+      }
+    }
+
     void syncActiveConversationReadState();
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      if (markTimer) window.clearTimeout(markTimer);
+      scheduleActiveMarkReadRef.current = () => {};
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [activeUserId, activeGroupId, userId, isBootstrapping]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    function resyncActiveConversation() {
+      if (document.visibilityState !== "visible") return;
+
+      notifyChatUnreadChanged();
+
+      const {
+        activeUserId: peerId,
+        activeGroupId: groupId,
+        conversationSettings: settings,
+      } = realtimeStateRef.current;
+      if (!peerId && !groupId) return;
+
+      const settingsKey = peerId
+        ? getSettingsKey({ peerUserId: peerId })
+        : getSettingsKey({ groupId: groupId! });
+      const clearedAt = settings[settingsKey]?.cleared_at;
+      const cacheKey = peerId
+        ? getDirectChatCacheKey(userId, peerId)
+        : getGroupChatCacheKey(groupId!);
+
+      if (peerId) {
+        void loadPeerReadState(peerId, userId).then((peerRead) => {
+          if (realtimeStateRef.current.activeUserId === peerId) {
+            setPeerLastReadAt(peerRead);
+          }
+        });
+      }
+
+      const loader = peerId
+        ? loadDirectMessagesRecent(userId, peerId)
+        : loadGroupMessagesRecent(groupId!);
+
+      void loader
+        .then((recent) => {
+          const state = realtimeStateRef.current;
+          if (state.activeUserId !== peerId || state.activeGroupId !== groupId) {
+            return;
+          }
+          setMessages((current) =>
+            filterMessagesByClearedAt(mergeMessagesById(current, recent), clearedAt),
+          );
+          const cached = getCachedChatMessages(cacheKey);
+          setCachedChatMessages(cacheKey, mergeMessagesById(cached || [], recent));
+        })
+        .catch(() => {});
+    }
+
+    document.addEventListener("visibilitychange", resyncActiveConversation);
+    window.addEventListener("online", resyncActiveConversation);
+
+    return () => {
+      document.removeEventListener("visibilitychange", resyncActiveConversation);
+      window.removeEventListener("online", resyncActiveConversation);
+    };
+  }, [userId]);
 
   useLayoutEffect(() => {
     if (messages.length === 0) return;
+
+    const anchor = pendingScrollAnchorRef.current;
+    if (anchor) {
+      pendingScrollAnchorRef.current = null;
+      const container = messagesContainerRef.current;
+      if (container && !shouldStickToBottomRef.current) {
+        container.scrollTop =
+          anchor.prevTop + (container.scrollHeight - anchor.prevHeight);
+        return;
+      }
+    }
+
     if (!shouldStickToBottomRef.current && !isInitialScrollRef.current) return;
 
     scrollToBottomInstant();
@@ -553,7 +704,19 @@ export default function ChatAppClient() {
     );
     if (!key) return;
 
-    return subscribeToTyping(key, userId, userName, setTypingIndicator);
+    let clearTimer: number | null = null;
+    const unsubscribe = subscribeToTyping(key, userId, userName, (indicator) => {
+      if (clearTimer) window.clearTimeout(clearTimer);
+      setTypingIndicator(indicator);
+      if (indicator) {
+        clearTimer = window.setTimeout(() => setTypingIndicator(null), 4000);
+      }
+    });
+
+    return () => {
+      if (clearTimer) window.clearTimeout(clearTimer);
+      unsubscribe?.();
+    };
   }, [userId, userName, activeUserId, activeGroupId]);
 
   useEffect(() => {
@@ -563,8 +726,9 @@ export default function ChatAppClient() {
     }
 
     const interval = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
       void loadPeerReadState(activeUserId, userId).then(setPeerLastReadAt);
-    }, 8000);
+    }, 4000);
 
     return () => window.clearInterval(interval);
   }, [activeUserId, userId]);
@@ -707,8 +871,21 @@ export default function ChatAppClient() {
     return "";
   }
 
+  function applyMessagesPreservingScroll(nextMessages: ChatMessage[]) {
+    const container = messagesContainerRef.current;
+    if (container && !shouldStickToBottomRef.current) {
+      pendingScrollAnchorRef.current = {
+        prevHeight: container.scrollHeight,
+        prevTop: container.scrollTop,
+      };
+    }
+    setMessages(nextMessages);
+  }
+
   function handleMediaLoaded() {
-    forceScrollToBottom();
+    if (!shouldStickToBottomRef.current) return;
+    scrollToBottomInstant();
+    requestAnimationFrame(scrollToBottomInstant);
   }
 
   function getConversationSettingsKey() {
@@ -978,6 +1155,9 @@ export default function ChatAppClient() {
           setMessages(filterMessagesByClearedAt(cached, clearedAt));
           isInitialScrollRef.current = true;
           setSwitchingConversation(false);
+        } else {
+          setMessages([]);
+          setMessageReactions({});
         }
 
         void loadPeerReadState(route.id, userId).then((peerRead) => {
@@ -1007,7 +1187,7 @@ export default function ChatAppClient() {
           const fullFiltered = filterMessagesByClearedAt(allMessages, clearedAt);
           if (fullFiltered.length <= filteredMessages.length) return;
           setCachedChatMessages(cacheKey, allMessages);
-          setMessages(fullFiltered);
+          applyMessagesPreservingScroll(fullFiltered);
           deferEffectUpdate(() => {
             void syncMessageReactions(fullFiltered);
           });
@@ -1021,6 +1201,9 @@ export default function ChatAppClient() {
         setMessages(filterMessagesByClearedAt(cached, clearedAt));
         isInitialScrollRef.current = true;
         setSwitchingConversation(false);
+      } else {
+        setMessages([]);
+        setMessageReactions({});
       }
 
       const group =
@@ -1090,7 +1273,7 @@ export default function ChatAppClient() {
         const fullFiltered = filterMessagesByClearedAt(allMessages, clearedAt);
         if (fullFiltered.length <= filteredMessages.length) return;
         setCachedChatMessages(cacheKey, allMessages);
-        setMessages(fullFiltered);
+        applyMessagesPreservingScroll(fullFiltered);
         deferEffectUpdate(() => {
           void syncMessageReactions(fullFiltered);
         });
@@ -1155,7 +1338,7 @@ export default function ChatAppClient() {
 
   function closeConversation() {
     startTransition(() => {
-      router.push("/chat", { scroll: false });
+      router.replace("/chat", { scroll: false });
     });
   }
 
@@ -1265,19 +1448,24 @@ export default function ChatAppClient() {
       reply_to_sender_id: null,
     };
 
-    const { error } = await supabase.from("messages").insert({
-      sender_id: userId,
-      receiver_id: activeUserId,
-      body,
-      read_at: null,
-    });
+    const { data: inserted, error } = await supabase
+      .from("messages")
+      .insert({
+        sender_id: userId,
+        receiver_id: activeUserId,
+        body,
+        read_at: null,
+      })
+      .select("id")
+      .single();
 
     if (error) {
-      alert(error.message);
+      showAppToast(error.message || "Versturen mislukt");
       return;
     }
 
-    setMessages((current) => [...current, optimisticMessage]);
+    if (inserted?.id) optimisticMessage.id = inserted.id;
+    setMessages((current) => upsertMessage(current, optimisticMessage));
     setContacts((current) =>
       current.map((contact) =>
         contact.id === activeUserId
@@ -1309,15 +1497,27 @@ export default function ChatAppClient() {
     if (parseAgendaCommand(message).active) return;
     if (!activeUserId && !activeGroupId) return;
     if (activeUserId && isUserBlocked(blockedUserIds, activeUserId)) {
-      alert("Je hebt deze gebruiker geblokkeerd.");
+      showAppToast("Je hebt deze gebruiker geblokkeerd.");
       return;
     }
     if (!canSendMessages) {
-      alert("Alleen beheerders kunnen berichten sturen in deze groep.");
+      showAppToast("Alleen beheerders kunnen berichten sturen in deze groep.");
       return;
     }
 
+    if (sendLockRef.current) return;
+    sendLockRef.current = true;
+    try {
+      await sendTextMessage();
+    } finally {
+      sendLockRef.current = false;
+    }
+  }
+
+  async function sendTextMessage() {
+    if (!userId) return;
     const messageText = message.trim();
+    if (!messageText) return;
     const replyTarget = replyingTo;
     const optimisticId = crypto.randomUUID();
     const optimisticMessage: ChatMessage = {
@@ -1391,7 +1591,7 @@ export default function ChatAppClient() {
       }
       setMessage(messageText);
       focusMessageInput();
-      alert(error.message);
+      showAppToast("Niet verzonden. Controleer je verbinding en probeer opnieuw.");
       return;
     }
 
@@ -1495,7 +1695,7 @@ export default function ChatAppClient() {
     }
     if (uploadingMedia) return;
     if (!canSendMessages) {
-      alert("Alleen beheerders kunnen berichten sturen in deze groep.");
+      showAppToast("Alleen beheerders kunnen berichten sturen in deze groep.");
       return;
     }
 
@@ -1550,7 +1750,7 @@ export default function ChatAppClient() {
         return;
       }
 
-      const { error } = await insertChatMediaMessage({
+      const { data: inserted, error } = await insertChatMediaMessage({
         userId,
         fileUrl: url,
         fileType,
@@ -1564,16 +1764,28 @@ export default function ChatAppClient() {
       if (error) {
         setMessages((current) => current.filter((message) => message.id !== optimisticId));
         URL.revokeObjectURL(optimisticUrl);
-        alert(error.message);
+        showAppToast(error.message || "Versturen mislukt");
         return;
       }
 
       URL.revokeObjectURL(optimisticUrl);
+      const confirmedMessage: ChatMessage = {
+        ...optimisticMessage,
+        id: (inserted as { id: string } | null)?.id ?? optimisticId,
+        file_url: url,
+        file_type: fileType,
+      };
       setMessages((current) =>
-        current.map((message) =>
-          message.id === optimisticId ? { ...message, file_url: url } : message,
+        upsertMessage(
+          current.filter((message) => message.id !== optimisticId),
+          confirmedMessage,
         ),
       );
+      const mediaCacheKey = getActiveConversationCacheKey();
+      if (mediaCacheKey) {
+        removeCachedChatMessage(mediaCacheKey, optimisticId);
+        appendCachedChatMessage(mediaCacheKey, confirmedMessage);
+      }
     } finally {
       setUploadingMedia(false);
     }
@@ -1586,7 +1798,7 @@ export default function ChatAppClient() {
   ) {
     if (!userId || (!activeUserId && !activeGroupId)) return;
     if (!canSendMessages) {
-      alert("Alleen beheerders kunnen berichten sturen in deze groep.");
+      showAppToast("Alleen beheerders kunnen berichten sturen in deze groep.");
       return;
     }
 
@@ -1617,36 +1829,49 @@ export default function ChatAppClient() {
 
     let error: { message: string } | null = null;
 
+    let insertedId: string | null = null;
+
     if (activeGroupId) {
-      const result = await supabase.from("messages").insert({
-        sender_id: userId,
-        group_id: activeGroupId,
-        body: messageText,
-        read_at: null,
-        reply_to_body: reply ? getReplyText(reply) : null,
-        reply_to_file_type: reply?.file_type || null,
-        reply_to_sender_id: reply?.sender_id || null,
-      });
+      const result = await supabase
+        .from("messages")
+        .insert({
+          sender_id: userId,
+          group_id: activeGroupId,
+          body: messageText,
+          read_at: null,
+          reply_to_body: reply ? getReplyText(reply) : null,
+          reply_to_file_type: reply?.file_type || null,
+          reply_to_sender_id: reply?.sender_id || null,
+        })
+        .select("id")
+        .single();
       error = result.error;
+      insertedId = result.data?.id ?? null;
     } else {
-      const result = await supabase.from("messages").insert({
-        sender_id: userId,
-        receiver_id: activeUserId,
-        body: messageText,
-        read_at: null,
-        reply_to_body: reply ? getReplyText(reply) : null,
-        reply_to_file_type: reply?.file_type || null,
-        reply_to_sender_id: reply?.sender_id || null,
-      });
+      const result = await supabase
+        .from("messages")
+        .insert({
+          sender_id: userId,
+          receiver_id: activeUserId,
+          body: messageText,
+          read_at: null,
+          reply_to_body: reply ? getReplyText(reply) : null,
+          reply_to_file_type: reply?.file_type || null,
+          reply_to_sender_id: reply?.sender_id || null,
+        })
+        .select("id")
+        .single();
       error = result.error;
+      insertedId = result.data?.id ?? null;
     }
 
     if (error) {
-      alert(error.message);
+      showAppToast(error.message || "Versturen mislukt");
       return;
     }
 
-    setMessages((current) => [...current, optimisticMessage]);
+    if (insertedId) optimisticMessage.id = insertedId;
+    setMessages((current) => upsertMessage(current, optimisticMessage));
     updateSidebarAfterMessage(
       getMessagePreview(optimisticMessage, userId),
       optimisticMessage.created_at,
@@ -1658,7 +1883,7 @@ export default function ChatAppClient() {
   async function sendVoiceMessage(blob: Blob, mimeType: string) {
     if (!userId || (!activeUserId && !activeGroupId) || uploadingMedia) return;
     if (!canSendMessages) {
-      alert("Alleen beheerders kunnen berichten sturen in deze groep.");
+      showAppToast("Alleen beheerders kunnen berichten sturen in deze groep.");
       return;
     }
 
@@ -1672,11 +1897,11 @@ export default function ChatAppClient() {
       );
 
       if (uploadError || !url || !fileType) {
-        alert(uploadError?.message || "Upload mislukt");
+        showAppToast(uploadError?.message || "Upload mislukt");
         return;
       }
 
-      const { error } = await insertChatMediaMessage({
+      const { data: inserted, error } = await insertChatMediaMessage({
         userId,
         fileUrl: url,
         fileType,
@@ -1686,13 +1911,13 @@ export default function ChatAppClient() {
       });
 
       if (error) {
-        alert(error.message);
+        showAppToast(error.message || "Versturen mislukt");
         return;
       }
 
       const createdAt = new Date().toISOString();
       const optimisticMessage: ChatMessage = {
-        id: crypto.randomUUID(),
+        id: (inserted as { id: string } | null)?.id ?? crypto.randomUUID(),
         sender_id: userId,
         receiver_id: activeUserId || null,
         group_id: activeGroupId || null,
@@ -1706,7 +1931,7 @@ export default function ChatAppClient() {
         reply_to_sender_id: replyingTo?.sender_id || null,
       };
 
-      setMessages((current) => [...current, optimisticMessage]);
+      setMessages((current) => upsertMessage(current, optimisticMessage));
       updateSidebarAfterMessage(
         getMessagePreview(optimisticMessage, userId),
         createdAt,
@@ -1841,7 +2066,7 @@ export default function ChatAppClient() {
 
     const { error } = await blockUser(peerUserId);
     if (error) {
-      alert(error.message);
+      showAppToast(error.message);
       return;
     }
 
@@ -2061,7 +2286,7 @@ export default function ChatAppClient() {
     const { error } = await supabase.from("messages").delete().eq("id", msg.id);
 
     if (error) {
-      alert(error.message);
+      showAppToast(error.message);
       return;
     }
 
@@ -2196,17 +2421,17 @@ export default function ChatAppClient() {
       .filter((option) => option.text);
 
     if (!question) {
-      alert("Vul een vraag in.");
+      showAppToast("Vul een vraag in.");
       return;
     }
 
     if (options.length < 2) {
-      alert("Voeg minimaal 2 opties toe.");
+      showAppToast("Voeg minimaal 2 opties toe.");
       return;
     }
 
     if (options.length > 6) {
-      alert("Maximaal 6 opties toegestaan.");
+      showAppToast("Maximaal 6 opties toegestaan.");
       return;
     }
 
@@ -2227,7 +2452,7 @@ export default function ChatAppClient() {
     setCreatingPoll(false);
 
     if (error || !data) {
-      alert(error?.message || "Poll kon niet worden aangemaakt.");
+      showAppToast(error?.message || "Poll kon niet worden aangemaakt.");
       return;
     }
 
@@ -2265,7 +2490,7 @@ export default function ChatAppClient() {
     setVotingPollId("");
 
     if (error) {
-      alert(error.message);
+      showAppToast(error.message);
       return;
     }
 
@@ -2456,7 +2681,7 @@ export default function ChatAppClient() {
 
   async function handleCreateGroup() {
     if (!newGroupName.trim() || selectedGroupMemberIds.length === 0 || !userId) {
-      alert("Kies een groepsnaam en minimaal één atleet.");
+      showAppToast("Kies een groepsnaam en minimaal één atleet.");
       return;
     }
 
@@ -2471,7 +2696,7 @@ export default function ChatAppClient() {
     setCreatingGroup(false);
 
     if (error || !group) {
-      alert(error?.message || "Groep kon niet worden aangemaakt.");
+      showAppToast(error?.message || "Groep kon niet worden aangemaakt.");
       return;
     }
 
@@ -2769,6 +2994,26 @@ export default function ChatAppClient() {
     };
   }, [activeGroupId, pollMessageIds.join("|")]);
 
+  const realtimeStateRef = useRef({
+    activeUserId,
+    activeGroupId,
+    conversationSettings,
+    groupMemberNames,
+    groups,
+    contacts,
+  });
+
+  useEffect(() => {
+    realtimeStateRef.current = {
+      activeUserId,
+      activeGroupId,
+      conversationSettings,
+      groupMemberNames,
+      groups,
+      contacts,
+    };
+  });
+
   useEffect(() => {
     if (!userId) return;
 
@@ -2783,6 +3028,14 @@ export default function ChatAppClient() {
         },
         (payload) => {
           const incoming = payload.new as ChatMessage;
+          const {
+            activeUserId,
+            activeGroupId,
+            conversationSettings,
+            groupMemberNames,
+            groups,
+            contacts,
+          } = realtimeStateRef.current;
 
           const isDirectForUser =
             !incoming.group_id &&
@@ -2819,14 +3072,17 @@ export default function ChatAppClient() {
               }
 
               let next = current;
-              if (incoming.sender_id === userId && incoming.body) {
+              if (incoming.sender_id === userId) {
                 const withoutOptimisticDupes = current.filter(
                   (item) =>
                     !(
                       item.sender_id === userId &&
-                      item.body === incoming.body &&
                       item.id !== incoming.id &&
-                      !item.file_url
+                      (incoming.file_url
+                        ? item.file_url === incoming.file_url
+                        : Boolean(incoming.body) &&
+                          item.body === incoming.body &&
+                          !item.file_url)
                     ),
                 );
                 if (withoutOptimisticDupes.length !== current.length) {
@@ -2839,6 +3095,22 @@ export default function ChatAppClient() {
                 clearedAt,
               );
             });
+
+            if (incoming.sender_id !== userId) {
+              scheduleActiveMarkReadRef.current();
+            }
+          }
+
+          const incomingCacheKey = incoming.group_id
+            ? getGroupChatCacheKey(incoming.group_id)
+            : getDirectChatCacheKey(
+                userId,
+                incoming.sender_id === userId
+                  ? incoming.receiver_id || ""
+                  : incoming.sender_id,
+              );
+          if (getCachedChatMessages(incomingCacheKey)) {
+            appendCachedChatMessage(incomingCacheKey, incoming);
           }
 
           if (!incoming.group_id) {
@@ -2878,11 +3150,12 @@ export default function ChatAppClient() {
             return;
           }
 
-          const preview = getMessagePreview(
-            incoming,
-            userId,
-            groupMemberNames[incoming.sender_id] || "",
-          );
+          const groupSenderName =
+            groupMemberNames[incoming.sender_id] ||
+            contacts.find((contact) => contact.id === incoming.sender_id)
+              ?.full_name ||
+            "";
+          const preview = getMessagePreview(incoming, userId, groupSenderName);
           const isActive = incoming.group_id === activeGroupId;
           const fromSelf = incoming.sender_id === userId;
 
@@ -2895,7 +3168,7 @@ export default function ChatAppClient() {
                 lastMessage: preview.text,
                 lastMessageSender:
                   preview.sender ||
-                  groupMemberNames[incoming.sender_id] ||
+                  groupSenderName ||
                   group.lastMessageSender ||
                   "Groep",
                 lastMessageTime: incoming.created_at,
@@ -2932,14 +3205,7 @@ export default function ChatAppClient() {
     return () => {
       void supabase.removeChannel(channel);
     };
-  }, [
-    activeUserId,
-    activeGroupId,
-    userId,
-    conversationSettings,
-    groupMemberNames,
-    groups,
-  ]);
+  }, [userId]);
 
   function selectSlashCommand(command: string) {
     setMessage(command);
