@@ -309,6 +309,7 @@ export function getPageTitle(pathname: string, role: string) {
   if (pathname.startsWith("/profile/")) return "Atleet profiel";
   if (pathname.startsWith("/programs/")) return "Programma";
   if (pathname.startsWith("/athletes/")) return "Atleet hub";
+  if (pathname === "/athletes") return "Atleten";
 
   return "Dashboard";
 }

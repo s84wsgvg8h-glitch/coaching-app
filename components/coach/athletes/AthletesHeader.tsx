@@ -62,7 +62,6 @@ export default function AthletesHeader({
   return (
     <div className="mb-1 lg:mb-3">
       <PageHeader
-        eyebrow="Coach"
         title="Atleten"
         actions={
           <div className="flex w-full min-w-0 flex-wrap items-center gap-2 sm:w-auto sm:justify-end">
