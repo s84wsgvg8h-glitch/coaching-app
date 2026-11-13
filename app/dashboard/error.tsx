@@ -15,6 +15,7 @@ export default function DashboardError({
       <ErrorFallback
         title="Dashboard kon niet laden"
         message={error.message || "Er is een fout opgetreden op het dashboard."}
+        error={error}
         reset={reset}
       />
     </AppShell>

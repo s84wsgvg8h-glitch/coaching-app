@@ -15,6 +15,7 @@ export default function StatisticsError({
       <ErrorFallback
         title="Statistieken kon niet laden"
         message={error.message || "Er is een fout opgetreden bij je statistieken."}
+        error={error}
         reset={reset}
       />
     </AppShell>

@@ -15,6 +15,7 @@ export default function ProfileError({
       <ErrorFallback
         title="Profiel kon niet laden"
         message={error.message || "Er is een fout opgetreden bij je profiel."}
+        error={error}
         reset={reset}
       />
     </AppShell>

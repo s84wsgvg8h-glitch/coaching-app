@@ -15,8 +15,8 @@ export default function GlobalError({
   }, [error]);
 
   return (
-    <html lang="nl">
-      <body className="bg-app-bg text-app-text">
+    <html lang="nl" className="dark">
+      <body className="premium-coach-ui bg-app-bg text-app-text">
         <main className="mx-auto flex min-h-[100dvh] max-w-lg flex-col items-center justify-center px-6 text-center">
           <h1 className="text-xl font-semibold">Er ging iets mis</h1>
           <p className="mt-2 text-sm text-app-muted">

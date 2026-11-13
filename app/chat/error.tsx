@@ -15,6 +15,7 @@ export default function ChatError({
       <ErrorFallback
         title="Chat kon niet laden"
         message={error.message || "Er is een fout opgetreden in de chat."}
+        error={error}
         reset={reset}
       />
     </AppShell>

@@ -103,6 +103,7 @@ async function loginAs(page, supabase, email) {
 async function capture(page, fileName, targetUrl, waitMs = 2500) {
   const filePath = path.join(OUT_DIR, fileName);
   await page.goto(targetUrl, { waitUntil: "domcontentloaded", timeout: 60000 });
+  await page.waitForLoadState("networkidle", { timeout: 20000 }).catch(() => {});
   await page.waitForTimeout(waitMs);
   await page.screenshot({ path: filePath, fullPage: false });
   const stats = fs.statSync(filePath);
@@ -138,20 +139,12 @@ async function main() {
   const page = await context.newPage();
   const results = [];
 
-  // 1 — Coach dashboard
+  // 1 — Coach dashboard is search-only on phones, so the set starts with athletes
   await loginAs(page, supabase, REVIEW.coachEmail);
-  results.push(
-    await capture(
-      page,
-      "01-coach-dashboard.png",
-      `${BASE_URL}/dashboard`,
-      3000,
-    ),
-  );
 
   // 2 — Coach athletes list
   results.push(
-    await capture(page, "02-coach-athletes.png", `${BASE_URL}/athletes`, 2500),
+    await capture(page, "02-coach-athletes.png", `${BASE_URL}/athletes`, 4000),
   );
 
   // 3 — Coach chat with review athlete

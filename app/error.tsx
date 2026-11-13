@@ -2,7 +2,7 @@
 
 import ErrorFallback from "@/components/ui/ErrorFallback";
 
-export default function GlobalError({
+export default function RootError({
   error,
   reset,
 }: {
@@ -10,14 +10,13 @@ export default function GlobalError({
   reset: () => void;
 }) {
   return (
-    <html lang="nl">
-      <body className="flex min-h-screen items-center justify-center bg-app-bg p-4">
-        <ErrorFallback
-          title="Er ging iets mis"
-          message={error.message || "Probeer de pagina opnieuw te laden."}
-          reset={reset}
-        />
-      </body>
-    </html>
+    <div className="premium-coach-ui flex min-h-[100dvh] items-center justify-center bg-app-bg p-4 pt-safe pb-safe">
+      <ErrorFallback
+        title="Er ging iets mis"
+        message={error.message || "Probeer de pagina opnieuw te laden."}
+        error={error}
+        reset={reset}
+      />
+    </div>
   );
 }
