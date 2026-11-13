@@ -5,11 +5,19 @@
 import { spawn } from "node:child_process";
 import path from "node:path";
 
+const hasSupabaseEnv = Boolean(
+  process.env.NEXT_PUBLIC_SUPABASE_URL && process.env.SUPABASE_SERVICE_ROLE_KEY,
+);
+
 const scripts = [
   "verify-ios-release.mjs",
-  "e2e-athlete-dashboard-desktop.mjs",
-  "e2e-coach-dashboard-dark.mjs",
-  "e2e-coach-dashboard-light.mjs",
+  ...(hasSupabaseEnv
+    ? [
+        "e2e-athlete-dashboard-desktop.mjs",
+        "e2e-coach-dashboard-dark.mjs",
+        "e2e-coach-dashboard-light.mjs",
+      ]
+    : []),
 ];
 
 function run(script) {
@@ -26,6 +34,11 @@ function run(script) {
 }
 
 async function main() {
+  if (!hasSupabaseEnv) {
+    console.log(
+      "Skipping dashboard e2e: NEXT_PUBLIC_SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in CI secrets.",
+    );
+  }
   for (const script of scripts) {
     console.log(`\n=== Running ${script} ===`);
     await run(script);
