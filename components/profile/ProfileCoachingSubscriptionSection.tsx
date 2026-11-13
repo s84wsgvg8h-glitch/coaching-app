@@ -11,6 +11,7 @@ import {
   subscriptionStatusLabel,
 } from "@/lib/subscriptionStatus";
 import { useCoachingSubscription } from "@/hooks/useCoachingSubscription";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 type ProfileCoachingSubscriptionSectionProps = {
   userId: string;
@@ -32,6 +33,7 @@ export default function ProfileCoachingSubscriptionSection({
 }: ProfileCoachingSubscriptionSectionProps) {
   const searchParams = useSearchParams();
   const checkoutState = searchParams.get("checkout");
+  const isNativeApp = useIsNativeApp();
 
   const {
     data: subscriptionState,
@@ -44,9 +46,9 @@ export default function ProfileCoachingSubscriptionSection({
   const monthlyPrice = subscriptionState?.monthlyPrice ?? null;
   const planLabel = subscriptionState?.planLabel ?? null;
 
-  const [actionLoading, setActionLoading] = useState<"checkout" | "portal" | null>(
-    null,
-  );
+  const [actionLoading, setActionLoading] = useState<
+    "checkout" | "portal" | null
+  >(null);
   const [actionError, setActionError] = useState("");
 
   const checkoutFeedback = useMemo(() => {
@@ -78,7 +80,9 @@ export default function ProfileCoachingSubscriptionSection({
   }, [hasAccess, subscription]);
 
   const displayError =
-    actionError || checkoutFeedback.error || (queryError ? queryError.message : "");
+    actionError ||
+    checkoutFeedback.error ||
+    (queryError ? queryError.message : "");
 
   async function getAccessToken(): Promise<string | null> {
     const { data } = await getRealSupabase().auth.getSession();
@@ -107,12 +111,12 @@ export default function ProfileCoachingSubscriptionSection({
         profileRow?.betaling_prijs !== null &&
           profileRow?.betaling_prijs !== undefined
           ? Number(profileRow.betaling_prijs)
-          : null,
+          : null
       );
 
       if (monthlyPrice === null) {
         setActionError(
-          "Je coach moet eerst je abonnementsprijs instellen voordat je kunt afsluiten.",
+          "Je coach moet eerst je abonnementsprijs instellen voordat je kunt afsluiten."
         );
         setActionLoading(null);
         return;
@@ -173,7 +177,9 @@ export default function ProfileCoachingSubscriptionSection({
       } | null;
 
       if (!response.ok || !payload?.url) {
-        setActionError(payload?.error || "Beheerportaal kon niet worden geopend.");
+        setActionError(
+          payload?.error || "Beheerportaal kon niet worden geopend."
+        );
         setActionLoading(null);
         return;
       }
@@ -197,13 +203,19 @@ export default function ProfileCoachingSubscriptionSection({
       <div className="rounded-2xl border border-app-border bg-app-surface-muted p-4 sm:p-5">
         <div className="flex items-start gap-3">
           <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-app-accent/15">
-            <CreditCard className="h-5 w-5 text-app-accent" aria-hidden="true" />
+            <CreditCard
+              className="h-5 w-5 text-app-accent"
+              aria-hidden="true"
+            />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[15px] font-semibold tracking-tight text-app-text">Coachingabonnement</p>
+            <p className="text-[15px] font-semibold tracking-tight text-app-text">
+              Coachingabonnement
+            </p>
             <p className="mt-1 text-xs leading-relaxed text-app-muted">
-              Beheer je maandelijkse coaching via Stripe. Betalingen worden veilig
-              buiten de app afgehandeld.
+              {isNativeApp
+                ? "Je coachingabonnement wordt geregeld met je coach."
+                : "Beheer je maandelijkse coaching via Stripe. Betalingen worden veilig buiten de app afgehandeld."}
             </p>
           </div>
         </div>
@@ -224,8 +236,8 @@ export default function ProfileCoachingSubscriptionSection({
                   {planLabel
                     ? planLabel
                     : monthlyPrice
-                      ? `Coaching abonnement €${monthlyPrice}`
-                      : "Coaching abonnement"}
+                    ? `Coaching abonnement €${monthlyPrice}`
+                    : "Coaching abonnement"}
                 </p>
               </div>
               <div className="rounded-xl border border-app-border bg-app-surface px-3 py-3">
@@ -237,8 +249,8 @@ export default function ProfileCoachingSubscriptionSection({
                     statusTone === "success"
                       ? "text-emerald-400"
                       : statusTone === "warning"
-                        ? "text-amber-400"
-                        : "text-app-text"
+                      ? "text-amber-400"
+                      : "text-app-text"
                   }`}
                 >
                   {subscription
@@ -275,39 +287,47 @@ export default function ProfileCoachingSubscriptionSection({
               </p>
             ) : null}
 
-            <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
-              {!hasAccess ? (
-                <button
-                  type="button"
-                  onClick={() => void startCheckout()}
-                  disabled={actionLoading !== null}
-                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-app-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
-                >
-                  {actionLoading === "checkout" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  Abonnement afsluiten
-                </button>
-              ) : null}
+            {isNativeApp ? null : (
+              <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center">
+                {!hasAccess ? (
+                  <button
+                    type="button"
+                    onClick={() => void startCheckout()}
+                    disabled={actionLoading !== null}
+                    className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl bg-app-accent px-4 py-2.5 text-sm font-semibold text-white transition hover:brightness-110 disabled:opacity-60 sm:w-auto"
+                  >
+                    {actionLoading === "checkout" ? (
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    Abonnement afsluiten
+                  </button>
+                ) : null}
 
-              {hasAccess ? (
-                <button
-                  type="button"
-                  onClick={() => void openPortal()}
-                  disabled={actionLoading !== null}
-                  className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover sm:w-auto"
-                >
-                  {actionLoading === "portal" ? (
-                    <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />
-                  ) : (
-                    <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                  )}
-                  Beheer abonnement
-                </button>
-              ) : null}
-            </div>
+                {hasAccess ? (
+                  <button
+                    type="button"
+                    onClick={() => void openPortal()}
+                    disabled={actionLoading !== null}
+                    className="app-focus-ring inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-xl border border-app-border bg-app-surface px-4 py-2.5 text-sm font-semibold text-app-text transition hover:bg-app-surface-hover sm:w-auto"
+                  >
+                    {actionLoading === "portal" ? (
+                      <Loader2
+                        className="h-4 w-4 animate-spin"
+                        aria-hidden="true"
+                      />
+                    ) : (
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                    )}
+                    Beheer abonnement
+                  </button>
+                ) : null}
+              </div>
+            )}
           </div>
         )}
       </div>

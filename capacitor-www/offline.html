@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b0e14" />
+    <title>Geen verbinding · Limitless Coaching</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        background: #0b0e14;
+        color: #f4f6fb;
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+      .shell {
+        display: grid;
+        min-height: 100dvh;
+        place-items: center;
+        padding: max(2rem, env(safe-area-inset-top)) 1.5rem
+          max(2rem, env(safe-area-inset-bottom));
+      }
+      .card {
+        width: 100%;
+        max-width: 22rem;
+        padding: 2rem 1.5rem;
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        background: #161b22;
+        text-align: center;
+      }
+      .icon {
+        width: 56px;
+        height: 56px;
+        margin: 0 auto 1rem;
+        border-radius: 14px;
+        display: grid;
+        place-items: center;
+        background: rgba(61, 139, 255, 0.15);
+        color: #3d8bff;
+      }
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.125rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+      }
+      p {
+        margin: 0 0 1.5rem;
+        font-size: 0.9rem;
+        line-height: 1.5;
+        color: rgba(244, 246, 251, 0.62);
+      }
+      button {
+        width: 100%;
+        min-height: 44px;
+        border: 0;
+        border-radius: 12px;
+        background: #3d8bff;
+        color: #fff;
+        font: inherit;
+        font-size: 0.95rem;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+      }
+    </style>
+  </head>
+  <body>
+    <main class="shell">
+      <div class="card">
+        <div class="icon" aria-hidden="true">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 20h.01" />
+            <path d="M8.5 16.43a5 5 0 0 1 7 0" />
+            <path d="M5 12.86a10 10 0 0 1 5.17-2.69" />
+            <path d="M19 12.86a10 10 0 0 0-2-1.61" />
+            <path d="M2 8.82a15 15 0 0 1 4.18-2.65" />
+            <path d="M22 8.82a15 15 0 0 0-11.29-3.76" />
+            <path d="m2 2 20 20" />
+          </svg>
+        </div>
+        <h1>Geen internetverbinding</h1>
+        <p>
+          Limitless Coaching heeft internet nodig om je programma, chat en
+          statistieken te laden. Controleer je verbinding en probeer het opnieuw.
+        </p>
+        <button id="retry" type="button">Probeer opnieuw</button>
+      </div>
+    </main>
+    <script>
+      var APP_URL = "https://limitlesscoaching.app";
+      var button = document.getElementById("retry");
+
+      function retry() {
+        button.disabled = true;
+        button.textContent = "Verbinden…";
+        window.location.replace(APP_URL);
+      }
+
+      button.addEventListener("click", retry);
+      window.addEventListener("online", retry);
+    </script>
+  </body>
+</html>

@@ -16,6 +16,7 @@ const config: CapacitorConfig = {
     // iOS allows localhost over HTTP by default (ATS exemption for loopback).
     cleartext: isDev,
     androidScheme: "https",
+    errorPath: "offline.html",
   },
   ios: {
     // Safe-area in CSS; webview uses overlay + theme surface colors at runtime.

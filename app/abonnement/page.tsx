@@ -8,10 +8,12 @@ import { useAuth } from "@/components/AuthProvider";
 import ProfileCoachingSubscriptionSection from "@/components/profile/ProfileCoachingSubscriptionSection";
 import OnboardingProgress from "@/components/OnboardingProgress";
 import { isAthleteRole } from "@/lib/authRoles";
+import { useIsNativeApp } from "@/hooks/useIsNativeApp";
 
 export default function AbonnementPage() {
   const router = useRouter();
   const { userId, profile, loading: authLoading } = useAuth();
+  const isNativeApp = useIsNativeApp();
 
   useEffect(() => {
     document.title = "Coachingabonnement";
@@ -45,9 +47,9 @@ export default function AbonnementPage() {
           Coachingabonnement
         </h1>
         <p className="mt-2 text-[14px] font-normal leading-relaxed text-app-muted">
-          Beheer hier je coachingabonnement en betalingen wanneer je coach een
-          prijs heeft ingesteld. Je kunt de app gewoon gebruiken zonder actief
-          abonnement.
+          {isNativeApp
+            ? "Hier zie je de status van je coachingabonnement. Je kunt de app gewoon gebruiken zonder actief abonnement."
+            : "Beheer hier je coachingabonnement en betalingen wanneer je coach een prijs heeft ingesteld. Je kunt de app gewoon gebruiken zonder actief abonnement."}
         </p>
 
         {userId ? (
