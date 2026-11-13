@@ -27,14 +27,14 @@ Upload **minimaal 3**, aanbevolen **5** (volgorde = wat gebruikers eerst zien):
 
 | # | Bestand | Waarom |
 |---|---------|--------|
-| 1 | `01-coach-dashboard.png` | Hero — coach cockpit |
+| 1 | `05-athlete-dashboard.png` | Hero — atleet dashboard + training van vandaag |
 | 2 | `06-athlete-program-week.png` | Kernfeature — programma + logging |
 | 3 | `07-athlete-chat.png` | Chat + UGC-moderatie context |
-| 4 | `08-athlete-profile.png` | Profiel, settings, account delete |
-| 5 | `05-athlete-dashboard.png` | Atleet dashboard (optioneel) |
-| 6 | `09-athlete-statistics.png` | Data/statistieken (optioneel) |
+| 4 | `04-coach-program.png` | Coach programma-editor |
+| 5 | `08-athlete-profile.png` | Profiel, settings, account delete |
+| 6 | `02-coach-athletes.png` | Coach atletenoverzicht (optioneel) |
 
-**Niet uploaden als store-screenshots:** `02-coach-athletes`, `03-coach-chat`, `04-coach-program` (intern/backup).
+**Niet uploaden als store-screenshots:** `03-coach-chat` (dubbel met atleet-chat) en `09-athlete-statistics` (demo-account heeft nog geen gelogde sets, dus lege grafieken). Het coach-dashboard is op telefoon alleen een zoekbalk en wordt daarom niet meer vastgelegd.
 
 Tip: ASC accepteert **1290 × 2796** — onze exports zijn exact dit formaat.
 

@@ -2,7 +2,7 @@
   "baseUrl": "https://limitlesscoaching.app",
   "device": "iPhone 14 Pro Max (6.7\")",
   "expectedPixels": "1290×2796",
-  "capturedAt": "2026-11-13T13:54:19.037Z",
+  "capturedAt": "2026-11-13T13:58:57.836Z",
   "reviewAccounts": {
     "coach": "review-coach@limitlesscoaching.app",
     "athlete": "review-athlete@limitlesscoaching.app"
@@ -22,7 +22,7 @@
     {
       "fileName": "04-coach-program.png",
       "ok": true,
-      "bytes": 113153
+      "bytes": 278374
     },
     {
       "fileName": "05-athlete-dashboard.png",

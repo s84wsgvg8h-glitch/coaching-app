@@ -86,12 +86,12 @@ CAMERA/MIC: Used for exercise video upload and voice messages in chat.
 
 Upload in deze volgorde:
 
-1. `01-coach-dashboard.png`
+1. `05-athlete-dashboard.png`
 2. `06-athlete-program-week.png`
 3. `07-athlete-chat.png`
-4. `08-athlete-profile.png`
-5. `05-athlete-dashboard.png` *(optioneel)*
-6. `09-athlete-statistics.png` *(optioneel)*
+4. `04-coach-program.png`
+5. `08-athlete-profile.png`
+6. `02-coach-athletes.png` *(optioneel)*
 
 ---
 
