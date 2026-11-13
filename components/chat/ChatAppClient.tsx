@@ -192,6 +192,10 @@ import {
   type ChatListEntry,
 } from "@/components/chat/chatAppRoute";
 
+const COMPOSE_HIT_AREA_CLASS =
+  "app-focus-ring relative before:absolute before:-inset-1.5 before:content-['']";
+const COMPOSE_INPUT_MAX_HEIGHT = 128;
+
 const ChatProgramPanel = dynamic(
   () => import("@/components/chat/ChatProgramPanel"),
   { ssr: false },
@@ -1366,6 +1370,19 @@ export default function ChatAppClient() {
     focusMessageInput();
   }, [replyingTo]);
 
+  useLayoutEffect(() => {
+    const input = inputRef.current;
+    if (!input) return;
+    if (window.getComputedStyle(input).getPropertyValue("field-sizing") === "content") {
+      return;
+    }
+    input.style.height = "auto";
+    const nextHeight = Math.min(input.scrollHeight, COMPOSE_INPUT_MAX_HEIGHT);
+    input.style.height = `${nextHeight}px`;
+    input.style.overflowY =
+      input.scrollHeight > COMPOSE_INPUT_MAX_HEIGHT ? "auto" : "hidden";
+  }, [message, activeUserId, activeGroupId]);
+
   function closeProgramPanel() {
     setMessage((current) => (current.startsWith("/program") ? "" : current));
   }
@@ -2329,11 +2346,19 @@ export default function ChatAppClient() {
     }
   }
 
+  function supportsMessageLongPress() {
+    if (typeof window === "undefined") return false;
+    return (
+      window.innerWidth < 768 ||
+      window.matchMedia?.("(pointer: coarse)").matches === true
+    );
+  }
+
   function startMessageLongPress(
     msg: ChatMessage,
     event: React.TouchEvent<HTMLElement>,
   ) {
-    if (typeof window !== "undefined" && window.innerWidth >= 768) return;
+    if (!supportsMessageLongPress()) return;
 
     const touch = event.touches[0];
     if (!touch) return;
@@ -3314,7 +3339,8 @@ export default function ChatAppClient() {
                 <button
                   type="button"
                   onClick={() => setListFilter("all")}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                  aria-pressed={listFilter === "all"}
+                  className={`app-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold transition md:min-h-9 md:px-3.5 ${
                     listFilter === "all"
                       ? "bg-app-accent text-white"
                       : "bg-app-surface-muted text-app-muted hover:bg-app-surface-hover"
@@ -3325,7 +3351,8 @@ export default function ChatAppClient() {
                 <button
                   type="button"
                   onClick={() => setListFilter("unread")}
-                  className={`shrink-0 rounded-full px-3.5 py-1.5 text-xs font-semibold transition ${
+                  aria-pressed={listFilter === "unread"}
+                  className={`app-focus-ring inline-flex min-h-11 shrink-0 items-center rounded-full px-4 text-xs font-semibold transition md:min-h-9 md:px-3.5 ${
                     listFilter === "unread"
                       ? "bg-app-accent text-white"
                       : "bg-app-surface-muted text-app-muted hover:bg-app-surface-hover"
@@ -3338,7 +3365,13 @@ export default function ChatAppClient() {
             </div>
           </div>
 
-          <div className="chat-list-scroll">
+          <div
+            className={`chat-list-scroll ${
+              showConversationOnMobile
+                ? ""
+                : "pb-[calc(4.75rem+env(safe-area-inset-bottom))] lg:pb-0"
+            }`}
+          >
             {isBootstrapping && (
               <div className="px-4 py-4">
                 <SkeletonList rows={6} />
@@ -3702,7 +3735,7 @@ export default function ChatAppClient() {
                   <button
                     type="button"
                     onClick={() => void handlePinMessage(pinnedMessage)}
-                    className="shrink-0 p-1 text-app-muted transition hover:text-app-text"
+                    className="app-focus-ring -my-2 -mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-app-muted transition hover:text-app-text"
                     aria-label="Vastgezet bericht losmaken"
                   >
                     <X className="h-4 w-4" />
@@ -3850,10 +3883,7 @@ export default function ChatAppClient() {
                               }
                               onTouchCancel={cancelMessageLongPress}
                               onContextMenu={(event) => {
-                                if (
-                                  typeof window !== "undefined" &&
-                                  window.innerWidth < 768
-                                ) {
+                                if (supportsMessageLongPress()) {
                                   event.preventDefault();
                                 }
                               }}
@@ -3892,6 +3922,9 @@ export default function ChatAppClient() {
                               <img
                                 src={msg.file_url}
                                 alt="Gedeelde foto"
+                                loading="lazy"
+                                decoding="async"
+                                draggable={false}
                                 onLoad={handleMediaLoaded}
                                 onClick={(event) => event.stopPropagation()}
                                 className="max-h-72 w-full object-cover"
@@ -4106,7 +4139,7 @@ export default function ChatAppClient() {
                   <button
                     type="button"
                     onClick={() => setReplyingTo(null)}
-                    className="rounded-xl p-2 text-app-muted hover:bg-app-surface-hover"
+                    className="app-focus-ring -my-2 -mr-2 inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-app-muted hover:bg-app-surface-hover"
                     aria-label="Antwoord annuleren"
                   >
                     <X className="h-4 w-4" />
@@ -4130,8 +4163,9 @@ export default function ChatAppClient() {
                         type="button"
                         onClick={() => setAttachMenuOpen((current) => !current)}
                         disabled={!canSendMessages || uploadingMedia}
-                        className="chat-compose-icon-btn disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`chat-compose-icon-btn ${COMPOSE_HIT_AREA_CLASS} disabled:cursor-not-allowed disabled:opacity-40`}
                         aria-label="Bijlage toevoegen"
+                        aria-expanded={attachMenuOpen}
                       >
                         <Plus className="h-5 w-5" />
                       </button>
@@ -4319,7 +4353,7 @@ export default function ChatAppClient() {
                       type="button"
                       onClick={() => setMediaCaptureOpen(true)}
                       disabled={!canSendMessages || uploadingMedia}
-                      className="chat-compose-icon-btn disabled:cursor-not-allowed disabled:opacity-40 md:hidden"
+                      className={`chat-compose-icon-btn ${COMPOSE_HIT_AREA_CLASS} disabled:cursor-not-allowed disabled:opacity-40 md:hidden`}
                       aria-label="Camera openen"
                     >
                       <Camera className="h-5 w-5" />
@@ -4331,7 +4365,7 @@ export default function ChatAppClient() {
                         onMouseDown={(event) => event.preventDefault()}
                         onClick={sendMessage}
                         disabled={uploadingMedia}
-                        className="chat-send-btn flex h-8 w-8 shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40"
+                        className={`chat-send-btn ${COMPOSE_HIT_AREA_CLASS} flex h-8 w-8 shrink-0 items-center justify-center disabled:cursor-not-allowed disabled:opacity-40`}
                         aria-label="Verstuur bericht"
                       >
                         <SendHorizontal className="h-4 w-4" />
