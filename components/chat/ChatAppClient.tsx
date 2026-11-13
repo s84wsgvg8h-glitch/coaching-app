@@ -1608,7 +1608,11 @@ export default function ChatAppClient() {
       }
       setMessage(messageText);
       focusMessageInput();
-      showAppToast("Niet verzonden. Controleer je verbinding en probeer opnieuw.");
+      showAppToast(
+        /row-level security/i.test(error.message)
+          ? "Je kunt deze persoon op dit moment geen berichten sturen."
+          : "Niet verzonden. Controleer je verbinding en probeer opnieuw.",
+      );
       return;
     }
 
