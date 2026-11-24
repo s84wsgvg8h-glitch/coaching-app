@@ -1,4 +1,4 @@
-import { copyFileSync, existsSync, mkdirSync, statSync } from "node:fs";
+import { copyFileSync, existsSync, mkdirSync, statSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -17,6 +17,7 @@ for (const fileName of wasmFiles) {
   const to = path.join(wasmTarget, fileName);
 
   if (!existsSync(from)) {
+    if (existsSync(to)) continue;
     throw new Error(
       `MediaPipe wasm ontbreekt (${from}). Installeer eerst @mediapipe/tasks-vision.`,
     );
@@ -37,6 +38,5 @@ if (!existsSync(modelTarget) || statSync(modelTarget).size < 1_000_000) {
     throw new Error(`Pose-model download mislukt (${response.status}).`);
   }
 
-  const { writeFileSync } = await import("node:fs");
   writeFileSync(modelTarget, Buffer.from(await response.arrayBuffer()));
 }
