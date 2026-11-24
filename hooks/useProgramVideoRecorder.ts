@@ -1,4 +1,5 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import type { LiveRepCounterHandle } from "@/hooks/useLiveRepCounter";
 import { FFmpeg } from "@ffmpeg/ffmpeg";
 import { fetchFile } from "@ffmpeg/util";
 import { showAppToast } from "@/lib/appToast";
@@ -15,6 +16,12 @@ type UseProgramVideoRecorderOptions = {
     caption: string | null,
   ) => Promise<void>;
   getExistingCaption: (exerciseId: string, setNumber: number) => string;
+  getExistingReps?: (exerciseId: string, setNumber: number) => string;
+  onApplyCountedReps?: (
+    exercise: ProgramExercise,
+    setNumber: number,
+    reps: string,
+  ) => Promise<void> | void;
   uploadingVideoSetKey: string;
   scrollMobileFieldIntoView: (target: HTMLElement) => void;
 };
@@ -22,6 +29,8 @@ type UseProgramVideoRecorderOptions = {
 export function useProgramVideoRecorder({
   onUpload,
   getExistingCaption,
+  getExistingReps,
+  onApplyCountedReps,
   uploadingVideoSetKey,
   scrollMobileFieldIntoView,
 }: UseProgramVideoRecorderOptions) {
@@ -49,7 +58,13 @@ export function useProgramVideoRecorder({
   const [activeTrimHandle, setActiveTrimHandle] = useState<"start" | "end" | null>(
     null,
   );
+  const [repSessionKey, setRepSessionKey] = useState(0);
+  const [countedReps, setCountedReps] = useState(0);
+  const [applyCountedReps, setApplyCountedReps] = useState(true);
+  const [existingSetReps, setExistingSetReps] = useState("");
   const galleryInputRef = useRef<HTMLInputElement | null>(null);
+  const liveRepsRef = useRef(0);
+  const repCounterRef = useRef<LiveRepCounterHandle | null>(null);
   const trimSliderRef = useRef<HTMLDivElement | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const previewVideoRef = useRef<HTMLVideoElement | null>(null);
@@ -151,6 +166,12 @@ export function useProgramVideoRecorder({
     setFlashOn(false);
     setActiveTrimHandle(null);
     setVideoCaption(getExistingCaption(exercise.id, setNumber));
+    const existingReps = getExistingReps?.(exercise.id, setNumber)?.trim() || "";
+    liveRepsRef.current = 0;
+    setCountedReps(0);
+    setExistingSetReps(existingReps);
+    setApplyCountedReps(existingReps === "");
+    setRepSessionKey((current) => current + 1);
     setCameraError("");
     setCameraReady(false);
     setVideoRecorderOpen(true);
@@ -348,6 +369,9 @@ export function useProgramVideoRecorder({
     setRecordingSeconds(0);
     setGalleryOpen(false);
     setMuteVideoAudio(false);
+    liveRepsRef.current = 0;
+    setCountedReps(0);
+    setApplyCountedReps(false);
     stopRecordingTimer();
     setIsRecordingVideo(false);
   }
@@ -400,6 +424,9 @@ export function useProgramVideoRecorder({
       };
 
       recorder.start(250);
+      liveRepsRef.current = 0;
+      setCountedReps(0);
+      setRepSessionKey((current) => current + 1);
       setRecordingSeconds(0);
       stopRecordingTimer();
       recordingTimerRef.current = window.setInterval(() => {
@@ -413,9 +440,17 @@ export function useProgramVideoRecorder({
     }
   }
 
+  const reportLiveReps = useCallback((reps: number, fromRecording: boolean) => {
+    if (!fromRecording) return;
+    liveRepsRef.current = reps;
+  }, []);
+
   function stopVideoRecording() {
     if (!mediaRecorderRef.current) return;
 
+    const reps = repCounterRef.current?.flushReps() ?? liveRepsRef.current;
+    liveRepsRef.current = reps;
+    setCountedReps(reps);
     stopRecordingTimer();
 
     if (mediaRecorderRef.current.state !== "inactive") {
@@ -436,6 +471,9 @@ export function useProgramVideoRecorder({
     setGalleryOpen(false);
     setCameraError("");
     setVideoCaption("");
+    liveRepsRef.current = 0;
+    setCountedReps(0);
+    setRepSessionKey((current) => current + 1);
 
     window.setTimeout(() => {
       if (!videoRecorderOpen) return;
@@ -602,6 +640,7 @@ export function useProgramVideoRecorder({
     }
 
     const target = videoRecorderTarget;
+    const repsToApply = applyCountedReps ? countedReps : 0;
     const endTime = trimEnd || videoDuration || 0;
     let fileToUpload = recordedVideoFile;
     const skipTrim =
@@ -621,6 +660,15 @@ export function useProgramVideoRecorder({
         } catch (trimError) {
           console.error("TRIM ERROR, uploading original video:", trimError);
           fileToUpload = recordedVideoFile;
+        }
+      }
+
+      if (repsToApply > 0 && onApplyCountedReps) {
+        try {
+          await onApplyCountedReps(target.exercise, target.setNumber, String(repsToApply));
+        } catch (repError) {
+          console.error("APPLY REPS ERROR:", repError);
+          showAppToast("Reps invullen mislukt");
         }
       }
 
@@ -679,5 +727,12 @@ export function useProgramVideoRecorder({
     trimmingVideo,
     uploadingVideoSetKey,
     saveRecordedVideo,
+    repSessionKey,
+    countedReps,
+    applyCountedReps,
+    setApplyCountedReps,
+    existingSetReps,
+    reportLiveReps,
+    repCounterRef,
   };
 }

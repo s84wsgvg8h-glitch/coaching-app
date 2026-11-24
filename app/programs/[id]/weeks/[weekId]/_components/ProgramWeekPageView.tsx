@@ -864,6 +864,13 @@ export default function ProgramWeekPageView(props: ProgramWeekPageViewProps) {
         trimmingVideo={videoRecorder.trimmingVideo}
         uploadingVideoSetKey={videoRecorder.uploadingVideoSetKey}
         saveRecordedVideo={videoRecorder.saveRecordedVideo}
+        repSessionKey={videoRecorder.repSessionKey}
+        countedReps={videoRecorder.countedReps}
+        applyCountedReps={videoRecorder.applyCountedReps}
+        setApplyCountedReps={videoRecorder.setApplyCountedReps}
+        existingSetReps={videoRecorder.existingSetReps}
+        reportLiveReps={videoRecorder.reportLiveReps}
+        repCounterRef={videoRecorder.repCounterRef}
       />
       </div>
 

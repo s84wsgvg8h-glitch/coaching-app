@@ -16,6 +16,7 @@ const eslintConfig = defineConfig([
     ".vercel/**",
     "ios/**",
     "capacitor-www/**",
+    "public/mediapipe/**",
   ]),
   {
     rules: {
