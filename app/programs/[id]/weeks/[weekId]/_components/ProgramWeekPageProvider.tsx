@@ -592,6 +592,12 @@ export default function ProgramWeekPageProvider() {
     getExistingCaption: (exerciseId, setNumber) =>
       athleteLogging.athleteVideosBySet[`${exerciseId}-${setNumber}`]?.caption?.trim() ||
       "",
+    getExistingReps: (exerciseId, setNumber) =>
+      athleteLogging.athleteSetInputs[exerciseId]
+        ?.find((row) => row.set_number === setNumber)
+        ?.reps?.trim() || "",
+    onApplyCountedReps: (exercise, setNumber, reps) =>
+      athleteLogging.saveAthleteSetField(exercise, setNumber, "reps", reps),
     uploadingVideoSetKey: athleteLogging.uploadingVideoSetKey,
     scrollMobileFieldIntoView,
   });

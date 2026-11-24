@@ -60,3 +60,6 @@ supabase/.temp/
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# MediaPipe wasm is copied from node_modules before dev/build
+/public/mediapipe/wasm/

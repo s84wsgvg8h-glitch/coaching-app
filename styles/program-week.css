@@ -6423,3 +6423,19 @@ html:not(.dark) .coach-program-week-mini-exercise {
   border-color: var(--app-border-strong);
   background: var(--app-surface-muted);
 }
+
+@keyframes live-rep-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.08);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.live-rep-count {
+  animation: live-rep-pop 220ms ease-out;
+}

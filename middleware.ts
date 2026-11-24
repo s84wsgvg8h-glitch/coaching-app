@@ -59,7 +59,7 @@ export function middleware(request: NextRequest) {
     "Content-Security-Policy",
     [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline'",
+      "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'",
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       `media-src ${mediaSrc}`,
@@ -72,6 +72,10 @@ export function middleware(request: NextRequest) {
       "object-src 'none'",
     ].join("; "),
   );
+
+  if (request.nextUrl.pathname.endsWith(".wasm")) {
+    response.headers.set("Content-Type", "application/wasm");
+  }
 
   if (request.nextUrl.pathname.startsWith("/api/")) {
     response.headers.set("Cache-Control", "no-store");

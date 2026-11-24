@@ -1,6 +1,8 @@
 "use client";
 
 import { createPortal } from "react-dom";
+import LiveRepCounterOverlay from "@/components/programs/week/LiveRepCounterOverlay";
+import type { LiveRepCounterHandle } from "@/hooks/useLiveRepCounter";
 import { normalizeExerciseName } from "@/lib/programWeek/exerciseUtils";
 import { type VideoRecorderTarget } from "@/lib/programWeek/types";
 
@@ -43,6 +45,13 @@ export type ProgramAthleteVideoRecorderProps = {
   trimmingVideo: boolean;
   uploadingVideoSetKey: string;
   saveRecordedVideo: () => void;
+  repSessionKey: number;
+  countedReps: number;
+  applyCountedReps: boolean;
+  setApplyCountedReps: (value: boolean) => void;
+  existingSetReps: string;
+  reportLiveReps: (reps: number, recording: boolean) => void;
+  repCounterRef: { current: LiveRepCounterHandle | null };
 };
 
 export default function ProgramAthleteVideoRecorder({
@@ -84,6 +93,13 @@ export default function ProgramAthleteVideoRecorder({
   trimmingVideo,
   uploadingVideoSetKey,
   saveRecordedVideo,
+  repSessionKey,
+  countedReps,
+  applyCountedReps,
+  setApplyCountedReps,
+  existingSetReps,
+  reportLiveReps,
+  repCounterRef,
 }: ProgramAthleteVideoRecorderProps) {
   if (!isOpen || typeof document === "undefined") return null;
 
@@ -105,7 +121,17 @@ export default function ProgramAthleteVideoRecorder({
           <div className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-gradient-to-b from-black/80 to-transparent" />
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-72 bg-gradient-to-t from-black/95 to-transparent" />
 
-          <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] flex items-center justify-between">
+          <LiveRepCounterOverlay
+            videoRef={cameraVideoRef}
+            enabled={cameraReady && !cameraError}
+            exerciseName={videoRecorderTarget?.exercise.name || ""}
+            sessionKey={`${videoRecorderTarget?.exercise.id || "set"}-${videoRecorderTarget?.setNumber || 0}-${repSessionKey}`}
+            recording={isRecordingVideo}
+            onReps={reportLiveReps}
+            handleRef={repCounterRef}
+          />
+
+          <div className="absolute left-4 right-4 top-[max(16px,env(safe-area-inset-top))] z-10 flex items-center justify-between">
             <button
               type="button"
               onClick={closeVideoRecorder}
@@ -140,19 +166,19 @@ export default function ProgramAthleteVideoRecorder({
           </div>
 
           {cameraError && (
-            <div className="absolute left-5 right-5 top-28 rounded-3xl bg-red-500/90 p-4 text-center text-sm font-bold text-white shadow-2xl">
+            <div className="absolute left-5 right-5 top-28 z-10 rounded-3xl bg-red-500/90 p-4 text-center text-sm font-bold text-white shadow-2xl">
               {cameraError}
             </div>
           )}
 
           {isRecordingVideo && (
-            <div className="absolute left-1/2 top-[max(86px,calc(env(safe-area-inset-top)+70px))] flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-black text-white backdrop-blur">
+            <div className="absolute left-1/2 top-[max(86px,calc(env(safe-area-inset-top)+70px))] z-10 flex -translate-x-1/2 items-center gap-2 rounded-full bg-black/55 px-4 py-2 text-sm font-black text-white backdrop-blur">
               <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-red-500" />
               {formatVideoTime(recordingSeconds)}
             </div>
           )}
 
-          <div className="absolute bottom-[max(26px,env(safe-area-inset-bottom))] left-0 right-0 px-6">
+          <div className="absolute bottom-[max(26px,env(safe-area-inset-bottom))] left-0 right-0 z-10 px-6">
             {galleryOpen && galleryFiles.length > 0 && (
               <div className="mb-5 max-h-44 overflow-y-auto rounded-3xl border border-white/15 bg-black/60 p-3 shadow-2xl backdrop-blur">
                 <div className="mb-2 flex items-center justify-between">
@@ -387,6 +413,33 @@ export default function ProgramAthleteVideoRecorder({
           </button>
 
           <div className="pointer-events-auto fixed inset-x-0 bottom-0 z-[10000] px-4 pb-[max(16px,env(safe-area-inset-bottom))] pt-3">
+            {countedReps > 0 ? (
+              <div className="mx-auto mb-3 w-full max-w-sm rounded-[28px] border border-white/15 bg-black/45 px-4 py-3 backdrop-blur">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[10px] font-black uppercase tracking-[0.18em] text-white/55">
+                      Getelde reps
+                    </p>
+                    <p className="text-4xl font-black tabular-nums leading-none">{countedReps}</p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-pressed={applyCountedReps}
+                    onClick={() => setApplyCountedReps(!applyCountedReps)}
+                    className={`max-w-[11rem] rounded-full px-3 py-2 text-left text-xs font-bold leading-snug ${
+                      applyCountedReps ? "bg-white text-black" : "bg-white/10 text-white"
+                    }`}
+                  >
+                    {applyCountedReps ? "Wordt ingevuld bij deze set" : "Gebruik voor deze set"}
+                  </button>
+                </div>
+                {existingSetReps ? (
+                  <p className="mt-2 text-[11px] font-semibold text-white/60">
+                    Er staan al {existingSetReps} reps bij deze set.
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
             <div className="mx-auto mb-3 w-full max-w-sm">
               <textarea
                 value={videoCaption}
