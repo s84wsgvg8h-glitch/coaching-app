@@ -1,6 +1,10 @@
 "use client";
 
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useQuery,
+  useQueryClient,
+  type QueryClient,
+} from "@tanstack/react-query";
 import { useMemo } from "react";
 import {
   buildProgramWeekPath,
@@ -54,6 +58,40 @@ async function fetchAthleteProgramEntry(
   };
 }
 
+/** Same-day entry can stay warm; a new calendar day must not keep yesterday's week. */
+const ATHLETE_PROGRAM_ENTRY_STALE_MS = 60_000;
+
+function isSameLocalCalendarDay(leftMs: number, rightMs: number) {
+  const left = new Date(leftMs);
+  const right = new Date(rightMs);
+  return (
+    left.getFullYear() === right.getFullYear() &&
+    left.getMonth() === right.getMonth() &&
+    left.getDate() === right.getDate()
+  );
+}
+
+const athleteProgramEntryQueryOptions = {
+  ...athleteQueryDefaults,
+  staleTime: ATHLETE_PROGRAM_ENTRY_STALE_MS,
+  refetchOnWindowFocus: true,
+} as const;
+
+export function getSameDayAthleteProgramEntry(
+  queryClient: QueryClient,
+  athleteId: string,
+): AthleteProgramEntryResult | null {
+  if (!athleteId) return null;
+
+  const state = queryClient.getQueryState<AthleteProgramEntryResult>(
+    queryKeys.athleteProgramEntry(athleteId, athleteId),
+  );
+
+  if (!state?.data || !state.dataUpdatedAt) return null;
+  if (!isSameLocalCalendarDay(state.dataUpdatedAt, Date.now())) return null;
+  return state.data;
+}
+
 export function useAthleteProgramEntry(
   athleteId: string,
   actingUserId: string,
@@ -63,9 +101,7 @@ export function useAthleteProgramEntry(
     queryKey: queryKeys.athleteProgramEntry(athleteId, actingUserId),
     queryFn: () => fetchAthleteProgramEntry(athleteId, actingUserId),
     enabled: enabled && Boolean(athleteId && actingUserId),
-    ...athleteQueryDefaults,
-    staleTime: 0,
-    refetchOnMount: "always",
+    ...athleteProgramEntryQueryOptions,
   });
 }
 
@@ -77,9 +113,14 @@ export function useAthleteTrainingHref(userId: string, enabled = true) {
   const query = useAthleteProgramEntry(userId, userId, enabled);
 
   return {
-    href: query.data?.href ?? sessionHref,
-    hasProgram: query.data?.hasProgram ?? (sessionHref ? true : true),
-    isLoading: query.isLoading && !query.data && !sessionHref,
+    href: query.data?.href ?? sessionHref ?? null,
+    hasProgram: query.data
+      ? query.data.hasProgram
+      : query.isError
+        ? true
+        : Boolean(sessionHref),
+    isLoading:
+      enabled && !query.data && !sessionHref && !query.isError && query.isPending,
     entry: query.data?.entry ?? null,
   };
 }
@@ -92,7 +133,7 @@ export function prefetchAthleteProgramEntry(
   return queryClient.prefetchQuery({
     queryKey: queryKeys.athleteProgramEntry(athleteId, actingUserId),
     queryFn: () => fetchAthleteProgramEntry(athleteId, actingUserId),
-    ...athleteQueryDefaults,
+    ...athleteProgramEntryQueryOptions,
   });
 }
 

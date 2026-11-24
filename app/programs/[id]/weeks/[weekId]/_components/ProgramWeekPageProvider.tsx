@@ -34,6 +34,8 @@ import {
   buildProgramSidebarCompetitionEntries,
   type ProgramSidebarCompetitionSource,
 } from "@/lib/programWeek/competitionSidebar";
+import { getSameDayAthleteProgramEntry } from "@/hooks/useAthleteProgramEntry";
+import { readAthleteProgramWeekIdSession } from "@/lib/programEntrySessionCache";
 import { useProgramWeekCoreData } from "../_hooks/useProgramWeekCoreData";
 import { useProgramWeekProgressionSnapshot } from "../_hooks/useProgramWeekProgressionSnapshot";
 import { useProgramWeekNavigation } from "../_hooks/useProgramWeekNavigation";
@@ -151,6 +153,7 @@ export default function ProgramWeekPageProvider() {
   const [deletingExtraExerciseId, setDeletingExtraExerciseId] = useState("");
   const [renamingExtraExerciseId, setRenamingExtraExerciseId] = useState("");
   const [choosingVariationExerciseId, setChoosingVariationExerciseId] = useState("");
+  const [alignedWeekId, setAlignedWeekId] = useState<string | null>(null);
 
   if (viewParam !== syncedViewParam) {
     setSyncedViewParam(viewParam);
@@ -257,6 +260,20 @@ export default function ProgramWeekPageProvider() {
   const effectiveRole = authRole || role;
   const isAthleteView = authRole === "atleet";
   const isCoachView = isCoachLikeRole(authRole);
+  const confirmedProgramEntry =
+    isAthleteView && (authUserId || userId)
+      ? getSameDayAthleteProgramEntry(queryClient, authUserId || userId)
+      : null;
+  const confirmedWeekId = confirmedProgramEntry?.entry?.weekId ?? null;
+  const confirmedHref = confirmedProgramEntry?.href ?? null;
+  const sessionWeekId = isAthleteView ? readAthleteProgramWeekIdSession() : null;
+  const athleteWeekReady =
+    !isAthleteView ||
+    preserveWeek ||
+    confirmedWeekId === weekId ||
+    (confirmedWeekId == null && sessionWeekId === weekId) ||
+    alignedWeekId === weekId;
+  const visibleProgramReady = programReady && athleteWeekReady;
 
   useEffect(() => {
     if (authLoading || authRole !== "atleet") return;
@@ -386,8 +403,74 @@ export default function ProgramWeekPageProvider() {
     ],
   );
 
+  useLayoutEffect(() => {
+    if (authLoading) return;
+
+    if (!isAthleteView || preserveWeek || !blockId || !weekId) {
+      return;
+    }
+
+    if (confirmedWeekId === weekId || sessionWeekId === weekId) {
+      return;
+    }
+
+    if (
+      confirmedWeekId &&
+      confirmedWeekId !== weekId &&
+      confirmedHref &&
+      confirmedHref !== "/programs"
+    ) {
+      router.replace(confirmedHref);
+      return;
+    }
+
+    let cancelled = false;
+
+    void (async () => {
+      const { data: entry, error } = await resolveProgramEntryFromBlockId(
+        blockId,
+        null,
+      );
+
+      if (cancelled) return;
+
+      if (error || !entry || entry.weekId === weekId) {
+        setAlignedWeekId(weekId);
+        return;
+      }
+
+      let href = buildProgramWeekPath(entry);
+      if (embeddedInChat) {
+        href = appendProgramWeekQueryParams(href, { embedded: "chat" });
+      }
+      router.replace(href);
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    authLoading,
+    blockId,
+    confirmedHref,
+    confirmedWeekId,
+    embeddedInChat,
+    isAthleteView,
+    preserveWeek,
+    router,
+    sessionWeekId,
+    weekId,
+  ]);
+
   useEffect(() => {
-    if (!programReady || preserveWeek || !userId || !blockId || !weekId) {
+    if (
+      !programReady ||
+      preserveWeek ||
+      !userId ||
+      !blockId ||
+      !weekId ||
+      isAthleteView
+    ) {
       return;
     }
 
@@ -433,6 +516,7 @@ export default function ProgramWeekPageProvider() {
     blockId,
     currentBlock?.athlete_id,
     embeddedInChat,
+    isAthleteView,
     isCoachView,
     preserveWeek,
     programReady,
@@ -449,25 +533,31 @@ export default function ProgramWeekPageProvider() {
     }, 300);
   }, []);
 
-  useLayoutEffect(() => {
-    if (!programReady) return;
+  const scrolledWeekKeyRef = useRef("");
 
-    resetProgramWeekScrollContainers();
-  }, [blockId, weekId, programReady]);
-
-  useLayoutEffect(() => {
-    if (!programReady || !isAthleteView || days.length === 0) return;
+  const athleteDayCenterKey = useMemo(() => {
+    if (!isAthleteView || !currentBlock || !week || days.length === 0) return "";
 
     const targetDayId =
-      focusDayId ??
-      (currentBlock && week
-        ? pickClosestProgramDayId(days, currentBlock, week)
-        : null);
+      focusDayId ?? pickClosestProgramDayId(days, currentBlock, week);
 
-    if (!targetDayId) return;
+    return targetDayId ? `${blockId}:${weekId}:${targetDayId}` : "";
+  }, [blockId, currentBlock, days, focusDayId, isAthleteView, week, weekId]);
 
+  useLayoutEffect(() => {
+    if (!visibleProgramReady) return;
+    const key = `${blockId}:${weekId}`;
+    if (scrolledWeekKeyRef.current === key) return;
+    scrolledWeekKeyRef.current = key;
     resetProgramWeekScrollContainers();
+  }, [blockId, visibleProgramReady, weekId]);
 
+  useLayoutEffect(() => {
+    if (!visibleProgramReady || !athleteDayCenterKey) return;
+
+    const targetDayId = athleteDayCenterKey.slice(
+      athleteDayCenterKey.lastIndexOf(":") + 1,
+    );
     const dayElement = document.getElementById(`program-day-${targetDayId}`);
     const gridElement = dayElement?.closest(
       ".athlete-program-days-grid",
@@ -476,16 +566,7 @@ export default function ProgramWeekPageProvider() {
     if (dayElement && gridElement) {
       scrollAthleteDayIntoCenterOnOpen(dayElement, gridElement);
     }
-  }, [
-    focusDayId,
-    days,
-    programReady,
-    blockId,
-    weekId,
-    isAthleteView,
-    currentBlock,
-    week,
-  ]);
+  }, [athleteDayCenterKey, visibleProgramReady]);
 
   useEffect(() => {
     if (role !== "atleet" || !userId) return;
@@ -1247,7 +1328,7 @@ export default function ProgramWeekPageProvider() {
     planningSplitOpen,
     isPending,
     navigatingUrl,
-    programReady,
+    programReady: visibleProgramReady,
     authLoading,
     currentBlock,
     week,

@@ -31,11 +31,25 @@ function scheduleIdlePrefetch(callback: () => void) {
   if (typeof window === "undefined") return;
 
   if ("requestIdleCallback" in window) {
-    window.requestIdleCallback(() => callback(), { timeout: 4000 });
+    window.requestIdleCallback(() => callback(), { timeout: 8000 });
     return;
   }
 
-  globalThis.setTimeout(callback, 1500);
+  globalThis.setTimeout(callback, 2500);
+}
+
+function shouldSkipHeavyPrefetch() {
+  if (typeof navigator === "undefined") return false;
+
+  const connection = (
+    navigator as Navigator & {
+      connection?: { saveData?: boolean; effectiveType?: string };
+    }
+  ).connection;
+
+  if (!connection) return false;
+  if (connection.saveData) return true;
+  return connection.effectiveType === "slow-2g" || connection.effectiveType === "2g";
 }
 
 async function prefetchAthleteProfile(userId: string) {
@@ -69,6 +83,8 @@ export function usePrefetchAppData(
 
     void (async () => {
       if (role === "atleet") {
+        const sessionHref = readAthleteProgramHrefSession();
+
         await Promise.all([
           prefetchAthleteProgramEntry(queryClient, userId, userId),
           prefetchAthleteFillScore(queryClient, userId, fullName),
@@ -76,29 +92,38 @@ export function usePrefetchAppData(
           prefetchNotificationCount(queryClient, userId, role),
           prefetchChatOverview(queryClient, userId, role),
           void import("@/components/chat/ChatApp"),
+          sessionHref && sessionHref !== "/programs"
+            ? prefetchProgramWeekFromHref(queryClient, sessionHref, {
+                userId,
+                role,
+              })
+            : Promise.resolve(),
         ]);
 
         void prefetchAthleteProfile(userId);
 
         const href =
           getCachedAthleteProgramHref(queryClient, userId, userId) ??
-          readAthleteProgramHrefSession();
+          sessionHref;
 
-        if (href && href !== "/programs") {
+        if (href && href !== "/programs" && href !== sessionHref) {
           await prefetchProgramWeekFromHref(queryClient, href, {
             userId,
             role,
           });
-          const parsed = parseProgramWeekHref(href);
+        }
+
+        scheduleIdlePrefetch(() => {
+          if (shouldSkipHeavyPrefetch()) return;
+
+          const weekHref = href && href !== "/programs" ? href : null;
+          const parsed = weekHref ? parseProgramWeekHref(weekHref) : null;
           if (parsed) {
             void cacheAllWeeksForBlock(parsed.blockId, { userId, role });
           }
-        }
 
-        // Always cache the athlete's full program locally for offline use.
-        void prefetchAthleteProgramsForOffline(userId, { userId, role });
-
-        scheduleIdlePrefetch(() => {
+          // Full offline cache waits until the visible screen has had the network.
+          void prefetchAthleteProgramsForOffline(userId, { userId, role });
           void import("@/app/kennisbank/page");
           void import("@/app/statistics/page");
           void import("@/app/leaderboard/page");

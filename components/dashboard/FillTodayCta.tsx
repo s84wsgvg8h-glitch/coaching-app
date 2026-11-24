@@ -99,7 +99,11 @@ export default function FillTodayCta({
   }, [athleteId, resolvedExternally]);
 
   const programHref = resolvedExternally ? programHrefProp : href;
-  const programLoading = resolvedExternally ? Boolean(programLoadingProp) : loading;
+  const programLoading = programHref
+    ? false
+    : resolvedExternally
+      ? Boolean(programLoadingProp)
+      : loading;
   const programAvailable = resolvedExternally
     ? hasProgramProp !== false
     : hasProgram;

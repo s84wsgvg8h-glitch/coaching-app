@@ -4,7 +4,7 @@ import dynamic from "next/dynamic";
 import AppShell from "@/components/AppShell";
 import { useAuth } from "@/components/AuthProvider";
 import { useAthleteFillScore } from "@/hooks/useAthleteFillScore";
-import { useAthleteProgramEntry } from "@/hooks/useAthleteProgramEntry";
+import { useAthleteTrainingHref } from "@/hooks/useAthleteProgramEntry";
 import { useCoachDashboardData } from "@/hooks/useCoachDashboardData";
 import CoachCockpitHeader from "@/components/dashboard/CoachCockpitHeader";
 import AthleteDashboard from "@/components/dashboard/AthleteDashboard";
@@ -53,8 +53,7 @@ export default function DashboardPage() {
     fullName,
     isAthlete && !authLoading && Boolean(userId),
   );
-  const programEntryQuery = useAthleteProgramEntry(
-    userId,
+  const trainingEntry = useAthleteTrainingHref(
     userId,
     isAthlete && !authLoading && Boolean(userId),
   );
@@ -65,8 +64,8 @@ export default function DashboardPage() {
   );
 
   const weeklyFillScore = fillScoreQuery.data?.percentage ?? null;
-  const athleteProgramHref = programEntryQuery.data?.href ?? null;
-  const athleteHasProgram = programEntryQuery.data?.hasProgram ?? true;
+  const athleteProgramHref = trainingEntry.href;
+  const athleteHasProgram = trainingEntry.hasProgram;
 
   const coachData = coachDashboardQuery.data;
 
@@ -130,12 +129,9 @@ export default function DashboardPage() {
       fullName={fullName}
       role={role}
       weeklyFillScore={weeklyFillScore}
+      fillScoreLoading={isAthlete && fillScoreQuery.isPending}
       programHref={athleteProgramHref}
-      programLoading={
-        isAthlete &&
-        programEntryQuery.isFetching &&
-        Boolean(programEntryQuery.data)
-      }
+      programLoading={isAthlete && trainingEntry.isLoading}
       hasProgram={athleteHasProgram}
     />
   ) : null;
