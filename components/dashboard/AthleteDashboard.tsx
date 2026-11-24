@@ -15,30 +15,21 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import "@/styles/athlete-dashboard.css";
+import DashboardAgenda from "@/components/DashboardAgenda";
 import FillTodayCta from "@/components/dashboard/FillTodayCta";
 import AthleteWeeklyFillScoreCard from "@/components/dashboard/AthleteWeeklyFillScoreCard";
 import AthleteTodosHabitsWidget from "@/components/dashboard/AthleteTodosHabitsWidget";
 import AthleteDashboardKpiRow from "@/components/dashboard/AthleteDashboardKpiRow";
+import QuickBodyweightLog from "@/components/dashboard/QuickBodyweightLog";
+import AthleteInboxPanel from "@/components/dashboard/AthleteInboxPanel";
 
 const widgetFallback = () => (
   <div className="min-h-[6rem] animate-pulse rounded-2xl bg-app-surface" />
 );
 
-const DashboardAgenda = dynamic(
-  () => import("@/components/DashboardAgenda"),
-  { loading: widgetFallback, ssr: false },
-);
 const GoalsProgressWidget = dynamic(
   () => import("@/components/dashboard/GoalsProgressWidget"),
-  { loading: widgetFallback, ssr: false },
-);
-const QuickBodyweightLog = dynamic(
-  () => import("@/components/dashboard/QuickBodyweightLog"),
-  { loading: widgetFallback, ssr: false },
-);
-const AthleteInboxPanel = dynamic(
-  () => import("@/components/dashboard/AthleteInboxPanel"),
-  { loading: widgetFallback, ssr: false },
+  { loading: widgetFallback },
 );
 
 type MobileQuickNavItem = {

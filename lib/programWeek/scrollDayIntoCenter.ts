@@ -17,20 +17,37 @@ export function scrollAthleteDayIntoCenter(
   dayElement: HTMLElement,
   gridElement: HTMLElement,
   behavior: ScrollBehavior = "auto",
+  manageSnap = true,
 ) {
   const gridRect = gridElement.getBoundingClientRect();
   const dayRect = dayElement.getBoundingClientRect();
   const gridCenter = gridRect.left + gridRect.width / 2;
   const dayCenter = dayRect.left + dayRect.width / 2;
   const delta = dayCenter - gridCenter;
+  const instant = behavior === "auto";
+  const controlSnap = instant && manageSnap;
+  const previousSnap = controlSnap ? gridElement.style.scrollSnapType : "";
 
-  if (Math.abs(delta) < 1) return;
+  if (controlSnap) {
+    // iOS scroll-snap fights the first scrollLeft assignment and visibly jumps.
+    gridElement.style.scrollSnapType = "none";
+  }
+
+  const restoreSnap = () => {
+    if (controlSnap) gridElement.style.scrollSnapType = previousSnap;
+  };
+
+  if (Math.abs(delta) < 1) {
+    restoreSnap();
+    return;
+  }
 
   const targetLeft = gridElement.scrollLeft + delta;
 
   // Direct assignment avoids a visible scroll animation on first paint.
-  if (behavior === "auto") {
+  if (instant) {
     gridElement.scrollLeft = targetLeft;
+    if (controlSnap) requestAnimationFrame(restoreSnap);
     return;
   }
 
@@ -57,12 +74,17 @@ export function scrollAthleteDayIntoCenterOnOpen(
   dayElement: HTMLElement,
   gridElement: HTMLElement,
 ) {
-  scrollAthleteDayIntoCenter(dayElement, gridElement, "auto");
+  const previousSnap = gridElement.style.scrollSnapType;
+  gridElement.style.scrollSnapType = "none";
+  scrollAthleteDayIntoCenter(dayElement, gridElement, "auto", false);
 
   requestAnimationFrame(() => {
     if (!isAthleteDayRoughlyCentered(dayElement, gridElement)) {
-      scrollAthleteDayIntoCenter(dayElement, gridElement, "auto");
+      scrollAthleteDayIntoCenter(dayElement, gridElement, "auto", false);
     }
+    requestAnimationFrame(() => {
+      gridElement.style.scrollSnapType = previousSnap;
+    });
   });
 }
 
